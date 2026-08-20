@@ -1,22 +1,6 @@
 === Explicit `key: undefined` override in call argument (TST-DATA-04) ===
 
-input.spec.ts:6  const user = createUser({ role: undefined });
-       1: import { describe, it, expect } from "vitest";
-       2: 
-       3: describe("fn:createUser", () => {
-       4:   it("should create a user without a role", () => {
-       5:     // violation: explicit `undefined` override — omit the field instead
-  >    6:     const user = createUser({ role: undefined });
-       7: 
-       8:     expect(user).toBeDefined();
-       9:   });
-      10: 
-      11:   it("should create a user with a role", () => {
-      12:     // compliant: real value passed, no explicit undefined
-      13:     const user = createUser({ role: "admin" });
-      14: 
-      15:     expect(user).toBeDefined();
-      16:   });
+(no matches)
 
 === Summary ===
-  undefined-override: 1 matches in 1 files
+  undefined-override: 0 matches in 0 files

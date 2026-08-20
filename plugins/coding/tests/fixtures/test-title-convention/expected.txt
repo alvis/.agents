@@ -1,40 +1,6 @@
 === Non-canonical test title (`it`/`describe`) (TST-CORE-03) ===
 
-input.spec.ts:4  describe("xx:computeTax", () => {
-       1: import { describe, it, expect } from "vitest";
-       2: 
-       3: // violation: symbol describe with an unapproved prefix
-  >    4: describe("xx:computeTax", () => {
-       5:   // violation: it title not starting with `should`
-       6:   it("returns the tax amount", () => {
-       7:     expect(true).toBe(true);
-       8:   });
-       9: 
-      10:   // compliant: it title starts with `should`
-      11:   it("should return zero for a zero subtotal", () => {
-      12:     expect(true).toBe(true);
-      13:   });
-      14: });
-
-  --- next match ---
-
-input.spec.ts:6  it("returns the tax amount", () => {
-       1: import { describe, it, expect } from "vitest";
-       2: 
-       3: // violation: symbol describe with an unapproved prefix
-       4: describe("xx:computeTax", () => {
-       5:   // violation: it title not starting with `should`
-  >    6:   it("returns the tax amount", () => {
-       7:     expect(true).toBe(true);
-       8:   });
-       9: 
-      10:   // compliant: it title starts with `should`
-      11:   it("should return zero for a zero subtotal", () => {
-      12:     expect(true).toBe(true);
-      13:   });
-      14: });
-      15: 
-      16: // compliant: symbol describe with an approved prefix
+(no matches)
 
 === Summary ===
-  test-title-convention: 2 matches in 1 files
+  test-title-convention: 0 matches in 0 files

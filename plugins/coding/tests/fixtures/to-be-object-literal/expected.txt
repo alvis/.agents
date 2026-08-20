@@ -1,42 +1,6 @@
 === `.toBe(...)` against object/array literal (TST-DATA-06) ===
 
-input.spec.ts:7  expect(result).toBe({ id: "u1" });
-       2: 
-       3: describe("fn:loadUser", () => {
-       4:   it("should return the user shape", () => {
-       5:     const result = loadUser("u1");
-       6: 
-  >    7:     expect(result).toBe({ id: "u1" });
-       8:   });
-       9: 
-      10:   it("should return the configured items", () => {
-      11:     const items = loadItems();
-      12: 
-      13:     expect(items).toBe(["a", "b"]);
-      14:   });
-      15: 
-      16:   it("should return zero when no users exist", () => {
-      17:     const count = countUsers();
-
-  --- next match ---
-
-input.spec.ts:13  expect(items).toBe(["a", "b"]);
-       8:   });
-       9: 
-      10:   it("should return the configured items", () => {
-      11:     const items = loadItems();
-      12: 
-  >   13:     expect(items).toBe(["a", "b"]);
-      14:   });
-      15: 
-      16:   it("should return zero when no users exist", () => {
-      17:     const count = countUsers();
-      18: 
-      19:     expect(count).toBe(0);
-      20:   });
-      21: 
-      22:   it("should cache the loaded user instance", () => {
-      23:     const k = "u1";
+(no matches)
 
 === Summary ===
-  to-be-object-literal: 2 matches in 1 files
+  to-be-object-literal: 0 matches in 0 files

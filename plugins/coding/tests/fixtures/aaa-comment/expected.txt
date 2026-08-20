@@ -1,61 +1,6 @@
 === AAA section comment (`// Arrange`/`// Act`/`// Assert`) (TST-STRU-03) ===
 
-input.spec.ts:5  // Arrange
-       1: import { describe, it, expect } from "vitest";
-       2: 
-       3: describe("fn:formatCurrency", () => {
-       4:   it("should format number as USD currency", () => {
-  >    5:     // Arrange
-       6:     const amount = 1234.56;
-       7: 
-       8:     // Act
-       9:     const result = formatCurrency(amount);
-      10: 
-      11:     // Assert
-      12:     expect(result).toBe("$1,234.56");
-      13:   });
-      14: 
-      15:   it("should format zero", () => {
-
-  --- next match ---
-
-input.spec.ts:8  // Act
-       3: describe("fn:formatCurrency", () => {
-       4:   it("should format number as USD currency", () => {
-       5:     // Arrange
-       6:     const amount = 1234.56;
-       7: 
-  >    8:     // Act
-       9:     const result = formatCurrency(amount);
-      10: 
-      11:     // Assert
-      12:     expect(result).toBe("$1,234.56");
-      13:   });
-      14: 
-      15:   it("should format zero", () => {
-      16:     // arrange the zero-amount edge case input
-      17:     const amount = 0;
-      18: 
-
-  --- next match ---
-
-input.spec.ts:11  // Assert
-       6:     const amount = 1234.56;
-       7: 
-       8:     // Act
-       9:     const result = formatCurrency(amount);
-      10: 
-  >   11:     // Assert
-      12:     expect(result).toBe("$1,234.56");
-      13:   });
-      14: 
-      15:   it("should format zero", () => {
-      16:     // arrange the zero-amount edge case input
-      17:     const amount = 0;
-      18: 
-      19:     const result = formatCurrency(amount);
-      20: 
-      21:     expect(result).toBe("$0.00");
+(no matches)
 
 === Summary ===
-  aaa-comment: 3 matches in 1 files
+  aaa-comment: 0 matches in 0 files

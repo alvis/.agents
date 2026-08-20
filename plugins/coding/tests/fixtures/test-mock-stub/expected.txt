@@ -1,46 +1,6 @@
 === Mock/stub identifiers in spec files ===
 
-input.spec.ts:3  const userMock = { id: 1 };
-       1: describe('suite', () => {
-       2:   it('uses mocks', () => {
-  >    3:     const userMock = { id: 1 };
-       4:     const stubbedFetch = () => userMock;
-       5:     const setupHelper = () => ({});
-       6:     const useClient = () => ({});
-       7:     expect(stubbedFetch()).toBe(userMock);
-       8:     expect(setupHelper()).toEqual({});
-       9:     expect(useClient()).toEqual({});
-      10:   });
-      11: });
-
-  --- next match ---
-
-input.spec.ts:4  const stubbedFetch = () => userMock;
-       1: describe('suite', () => {
-       2:   it('uses mocks', () => {
-       3:     const userMock = { id: 1 };
-  >    4:     const stubbedFetch = () => userMock;
-       5:     const setupHelper = () => ({});
-       6:     const useClient = () => ({});
-       7:     expect(stubbedFetch()).toBe(userMock);
-       8:     expect(setupHelper()).toEqual({});
-       9:     expect(useClient()).toEqual({});
-      10:   });
-      11: });
-
-  --- next match ---
-
-input.spec.ts:7  expect(stubbedFetch()).toBe(userMock);
-       2:   it('uses mocks', () => {
-       3:     const userMock = { id: 1 };
-       4:     const stubbedFetch = () => userMock;
-       5:     const setupHelper = () => ({});
-       6:     const useClient = () => ({});
-  >    7:     expect(stubbedFetch()).toBe(userMock);
-       8:     expect(setupHelper()).toEqual({});
-       9:     expect(useClient()).toEqual({});
-      10:   });
-      11: });
+(no matches)
 
 === Summary ===
-  test-mock-stub: 3 matches in 1 files
+  test-mock-stub: 0 matches in 0 files

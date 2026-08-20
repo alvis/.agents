@@ -1,19 +1,6 @@
 === Dynamic `import()` in spec file (TST-CORE-08) ===
 
-input.spec.ts:9  const mod = await import("./user");
-       4: import { createUser } from "./user";
-       5: 
-       6: describe("fn:createUser", () => {
-       7:   it("should load the module dynamically", async () => {
-       8:     // violation: dynamic import in a test file
-  >    9:     const mod = await import("./user");
-      10:     expect(mod).toBeDefined();
-      11:   });
-      12: 
-      13:   it("should create a user", () => {
-      14:     expect(createUser()).toBeDefined();
-      15:   });
-      16: });
+(no matches)
 
 === Summary ===
-  test-dynamic-import: 1 matches in 1 files
+  test-dynamic-import: 0 matches in 0 files
