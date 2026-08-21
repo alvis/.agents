@@ -94,8 +94,29 @@ const checks = (findings: Finding[]): Set<string> =>
   new Set(findings.map(({ check }) => check));
 const selected = (findings: Finding[], check: string): Finding[] =>
   findings.filter((finding) => finding.check === check);
-const dateDaysAgo = (days: number): string =>
-  new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+// Local-calendar date `days` days back: state-doctor's days_since() counts
+// whole days from the LOCAL midnight of the written date (time.mktime on a
+// "%Y-%m-%d" struct), so the fixture must be built on the same calendar
+// basis. The previous UTC-based form diverged by one day for every local
+// hour before the UTC offset elapsed.
+const dateDaysAgo = (days: number): string => {
+  const local = new Date();
+  local.setDate(local.getDate() - days);
+  const month = String(local.getMonth() + 1).padStart(2, "0");
+  const day = String(local.getDate()).padStart(2, "0");
+  return `${local.getFullYear()}-${month}-${day}`;
+};
+// Mirror of days_since() for deriving the exact expected count from a date
+// the fixture wrote, so the assertion stays exact across DST transitions.
+// Residual TOCTOU: this clock read happens after workspace.run(), whose
+// doctor process reads its own clock — straddling local midnight between
+// the two could shift the derived count by one. The window is bounded by a
+// single doctor invocation (milliseconds), and the producer stays
+// byte-frozen, so its clock cannot be mocked across the process boundary.
+const wholeDaysSince = (dateText: string): number =>
+  Math.floor(
+    (Date.now() - new Date(`${dateText}T00:00:00`).getTime()) / 86_400_000,
+  );
 const statusLine = (date: string, payload: string): string =>
   `- ${date}T09:00:00Z PM@pm rev:1 status demo: ${payload}`;
 
@@ -797,7 +818,9 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await workspace.writeState(row("AAA"), "", "planned");
     expect(
       selected(workspace.run().findings, "charter-provenance")[0],
-    ).toMatchObject({ severity: "info" });
+    ).toMatchObject({
+      severity: "info",
+    });
     for (const phase of ["working", "reviewing"]) {
       await workspace.writeState(row("AAA"), "", phase);
       const finding = selected(
@@ -814,11 +837,12 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       "- Merge evidence: `PR #42 merged`\n- Blocked on: `an operator ruling on D4`\n",
       "completed",
     );
-    await writeJournal(workspace, [statusLine(dateDaysAgo(9), "completed")]);
+    const completed = dateDaysAgo(9);
+    await writeJournal(workspace, [statusLine(completed, "completed")]);
     const finding = selected(workspace.run().findings, "retention")[0];
     expect(finding).toMatchObject({ severity: "info" });
     expect(finding?.message).toContain("an operator ruling on D4");
-    expect(finding?.message).toContain("9d ago");
+    expect(finding?.message).toContain(`${wholeDaysSince(completed)}d ago`);
     expect(finding?.message).toContain("Awaiting you");
   });
   it.each(["", "- Blocked on: `unknown`\n"])(
