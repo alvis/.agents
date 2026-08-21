@@ -10,8 +10,9 @@ installer.
 ## The contracts
 
 Contracts load progressively — only the small `hooks/ALLAGENT.md`,
-`hooks/MAINAGENT.md`, and `hooks/SUBAGENT.md` entry points are injected; everything else
-is read at the moment it matters.
+`hooks/MAINAGENT.md`, and `hooks/SUBAGENT.md` entry points are
+injected, and once per session `hooks/STOP.md` blocks with a `.state`
+reminder; everything else is read at the moment it matters.
 
 | Reference | Read when | Owns |
 | --- | --- | --- |

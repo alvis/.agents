@@ -63,16 +63,17 @@ sed "s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}
 
 Claude Code sets `CLAUDE_PLUGIN_ROOT`, Codex sets `PLUGIN_ROOT`, and Grok Build sets
 `GROK_PLUGIN_ROOT`, so every path in every hook command — the `sed` replacement
-included — carries that exact anchor, quoted. Anchoring on one variable alone makes the
+included — carries that exact anchor, quoted; this example is derived from its
+single home, `scripts/harness_contract.ts`. Anchoring on one variable alone makes the
 hook resolve nothing under another harness, and a `sed | jq` pipeline still exits 0
-while emitting nothing. Quoting is
-equally load-bearing: the anchor expands to a path the user chose, so an unquoted
-expansion word-splits on a space and runs its first segment. OpenCode does not set
-any of these root variables: its adapter reads payload sources from the projected
-bundle and substitutes `{{PLUGIN_DIR}}` directly. Do not extend the native chain
-for a compatibility consumer. A future native harness may extend it only from
-that harness's own documentation and in every command in the same change; a
-partially updated chain fails silently.
+while emitting nothing. Quoting is equally load-bearing:
+the anchor expands to a path the user chose, so an unquoted expansion word-splits on
+a space and runs its first segment. OpenCode does not set any of these root variables:
+its adapter reads payload sources from the projected bundle and substitutes
+`{{PLUGIN_DIR}}` directly. Do not extend the native chain for a compatibility
+consumer. A future native harness may extend it only from that harness's own
+documentation and in every command in the same change; a partially updated chain
+fails silently.
 
 - `ALLAGENT.md` — injected at `SessionStart` **and** `SubagentStart`; carries that plugin's
   own routing only. Do not rebuild a central roster table in it.
@@ -83,7 +84,9 @@ partially updated chain fails silently.
 Under Grok Build these payloads stay registered but are openly scoped out: its
 `SessionStart` and `SubagentStart` handlers ignore stdout, so no routing text
 injects there. The PreToolUse validators still fire natively, emitting grok's
-top-level `{"decision","reason"}` envelopes.
+top-level `{"decision","reason"}` envelopes. `Stop` behaves the same way — its
+stdout is ignored — so the once-per-session `.state` reminder's block envelope
+stays advisory there until xAI makes `Stop` blocking.
 
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files
 are re-read on every session, they are byte-budgeted (see below) — put detail in

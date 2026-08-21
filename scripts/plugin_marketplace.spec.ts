@@ -19,7 +19,6 @@ import {
   MINIMUM_NODE_MAJOR,
   removeTemporaryDirectory,
 } from "./test-support.ts";
-
 import {
   HARNESS_ROOT_VARIABLES,
   PLUGIN_ROOT_ANCHOR,
@@ -30,12 +29,46 @@ const root = join(import.meta.dirname, "..");
 const pluginsRoot = join(root, "plugins");
 const claudeCatalogPath = join(root, ".claude-plugin", "marketplace.json");
 const codexCatalogPath = join(root, ".agents", "plugins", "marketplace.json");
+
 const grokCatalogPath = join(root, ".grok-plugin", "marketplace.json");
+const harnessVariables = HARNESS_ROOT_VARIABLES;
 const payloadEvents = new Map([
   ["hooks/ALLAGENT.md", new Set(["SessionStart", "SubagentStart"])],
   ["hooks/MAINAGENT.md", new Set(["SessionStart"])],
   ["hooks/SUBAGENT.md", new Set(["SubagentStart"])],
+  // Stop hooks answer in the block/continue contract instead of injecting
+  // context, and a one-shot Stop hook keeps its per-session marker under a
+  // test-owned TMPDIR.
+  ["hooks/STOP.md", new Set(["Stop"])],
 ]);
+
+function stopHookRegistrations(): { plugin: string; directory: string; command: string }[] {
+  return claudePlugins().flatMap(({ name, source }) => {
+    const hooksPath = join(root, source, "hooks/hooks.json");
+    if (!existsSync(hooksPath)) return [];
+    const document = json<{ hooks: Record<string, readonly HookEntry[]> }>(
+      hooksPath,
+    ).hooks;
+    if (!("Stop" in document)) return [];
+    return hookCommands(document, "Stop").map((command) => ({
+      plugin: name,
+      directory: resolve(root, source),
+      command,
+    }));
+  });
+}
+
+function runStopHook(
+  command: string,
+  environment: NodeJS.ProcessEnv,
+  payload: Record<string, unknown>,
+): ReturnType<typeof spawnSync> {
+  return spawnSync("/bin/sh", ["-c", command], {
+    encoding: "utf8",
+    env: environment,
+    input: JSON.stringify(payload),
+  });
+}
 
 interface ClaudePlugin {
   readonly category: string;
@@ -758,4 +791,73 @@ describe("shared hook contracts", () => {
       ).toBe(true);
     }
   });
+
+  it.each(harnessVariables)(
+    "should remind once per session at Stop under %s",
+    async (variable) => {
+      const registrations = stopHookRegistrations();
+      expect(registrations).not.toHaveLength(0);
+      // A one-shot Stop reminder must fire on the session's first stop only: a
+      // later stop stays silent, the re-fire a block itself triggers — arriving
+      // with stop_hook_active set — stays silent without spending the session's
+      // one shot, and every session keeps its own shot. Malformed input
+      // identifies neither a session nor its turn state, so it stays silent.
+      const temporary = await createTemporaryDirectory("stop-once-");
+      try {
+        for (const { plugin, directory, command } of registrations) {
+          const environment = cleanHarnessEnvironment(variable, directory);
+          environment.TMPDIR = temporary;
+          const stop = (
+            payload: Record<string, unknown>,
+          ) => runStopHook(command, environment, payload);
+
+          const first = stop({
+            hook_event_name: "Stop",
+            session_id: `${plugin}-s1`,
+            stop_hook_active: false,
+          });
+          const firstDecision = JSON.parse(first.stdout!);
+          expect(first.status, plugin).toBe(0);
+          expect(firstDecision.decision, plugin).toBe("block");
+          expect(firstDecision.reason, plugin).toContain(".state");
+
+          const second = stop({
+            hook_event_name: "Stop",
+            session_id: `${plugin}-s1`,
+            stop_hook_active: false,
+          });
+          expect(second.status, plugin).toBe(0);
+          expect(second.stdout, plugin).toBe("");
+
+          const interrupted = stop({
+            hook_event_name: "Stop",
+            session_id: `${plugin}-s2`,
+            stop_hook_active: true,
+          });
+          expect(interrupted.status, plugin).toBe(0);
+          expect(interrupted.stdout, plugin).toBe("");
+
+          const afterInterrupted = stop({
+            hook_event_name: "Stop",
+            session_id: `${plugin}-s2`,
+            stop_hook_active: false,
+          });
+          expect(afterInterrupted.status, plugin).toBe(0);
+          expect(JSON.parse(afterInterrupted.stdout!).decision, plugin).toBe(
+            "block",
+          );
+
+          const malformed = spawnSync("/bin/sh", ["-c", command], {
+            encoding: "utf8",
+            env: environment,
+            input: "not json",
+          });
+          expect(malformed.status, plugin).toBe(0);
+          expect(malformed.stdout, plugin).toBe("");
+        }
+      } finally {
+        await removeTemporaryDirectory(temporary);
+      }
+    },
+  );
 });
