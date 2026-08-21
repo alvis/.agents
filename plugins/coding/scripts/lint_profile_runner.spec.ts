@@ -13,6 +13,8 @@ import { delimiter, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { validateProfile } from "./lint_profile_runner.ts";
+
 const here = import.meta.dirname;
 const runner = resolve(here, "lint_profile_runner.ts");
 const repositoryRoot = resolve(here, "../../..");
@@ -242,6 +244,20 @@ describe("profile-driven scanner execution", () => {
     expect(JSON.parse(result.stdout.toString()).error).toContain(
       "escapes profile root",
     );
+  });
+});
+
+describe("profile validation guard", () => {
+  it("requires --profile when the profile declares scanners", () => {
+    expect(
+      validateProfile(undefined, {
+        scanners: [{ path: "../../scripts/react.ts" }],
+      }),
+    ).toBe("profile scanner requires --profile");
+  });
+  it("still accepts scanner-free profiles without --profile", () => {
+    expect(validateProfile(undefined, {})).toBeUndefined();
+    expect(validateProfile(undefined, { scanners: [] })).toBeUndefined();
   });
 });
 
