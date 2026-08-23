@@ -30,6 +30,7 @@ const root = join(import.meta.dirname, "..");
 const pluginsRoot = join(root, "plugins");
 const claudeCatalogPath = join(root, ".claude-plugin", "marketplace.json");
 const codexCatalogPath = join(root, ".agents", "plugins", "marketplace.json");
+const grokCatalogPath = join(root, ".grok-plugin", "marketplace.json");
 const payloadEvents = new Map([
   ["hooks/ALLAGENT.md", new Set(["SessionStart", "SubagentStart"])],
   ["hooks/MAINAGENT.md", new Set(["SessionStart"])],
@@ -87,6 +88,32 @@ function hookCommands(
   return (document[event] ?? []).flatMap(({ hooks }) =>
     hooks.map(({ command }) => command),
   );
+}
+async function projectionSandbox() {
+  const directory = await createTemporaryDirectory("projections-");
+  mkdirSync(join(directory, ".claude-plugin"), { recursive: true });
+  cpSync(
+    claudeCatalogPath,
+    join(directory, ".claude-plugin", "marketplace.json"),
+  );
+  mkdirSync(join(directory, "scripts"), { recursive: true });
+  cpSync(
+    join(root, "scripts/generate_marketplace_projections.ts"),
+    join(directory, "scripts", "generate_marketplace_projections.ts"),
+  );
+  return {
+    directory,
+    run: (args: readonly string[]) =>
+      spawnSync(
+        "bun",
+        [
+          "run",
+          join(directory, "scripts", "generate_marketplace_projections.ts"),
+          ...args,
+        ],
+        { encoding: "utf8", cwd: directory },
+      ),
+  };
 }
 function cleanHarnessEnvironment(
   variable?: string,
@@ -160,10 +187,66 @@ describe("marketplace projections", () => {
     expect(
       spawnSync(
         "bun",
-        ["run", join(root, "scripts/generate_codex_marketplace.ts"), "--check"],
+        [
+          "run",
+          join(root, "scripts/generate_marketplace_projections.ts"),
+          "--check",
+        ],
         { cwd: root },
       ).status,
     ).toBe(0);
+  });
+
+  it("should keep the Grok marketplace a structural Claude projection", () => {
+    const claude = json<{
+      metadata: { description: string };
+      name: string;
+      owner: { name: string };
+    }>(claudeCatalogPath);
+    expect(json<Record<string, unknown>>(grokCatalogPath)).toEqual({
+      name: claude.name,
+      description: claude.metadata.description,
+      owner: { name: claude.owner.name },
+      plugins: claudePlugins().map(({ name, source }) => ({
+        name,
+        source: { type: "local", path: source },
+      })),
+    });
+  });
+
+  it("should pass generator --check when both projections are fresh", async () => {
+    const sandbox = await projectionSandbox();
+    try {
+      expect(sandbox.run([]).status).toBe(0);
+      expect(sandbox.run(["--check"]).status).toBe(0);
+    } finally {
+      await removeTemporaryDirectory(sandbox.directory);
+    }
+  });
+
+  it("should fail generator --check with exit 2 when a projection is stale", async () => {
+    const sandbox = await projectionSandbox();
+    try {
+      expect(sandbox.run([]).status).toBe(0);
+      writeFileSync(
+        join(sandbox.directory, ".grok-plugin", "marketplace.json"),
+        "{}\n",
+      );
+      writeFileSync(
+        join(sandbox.directory, ".agents", "plugins", "marketplace.json"),
+        "",
+      );
+      const check = sandbox.run(["--check"]);
+      expect(check.status).toBe(2);
+      expect(check.stderr).toContain(
+        "Grok Build marketplace projection is stale",
+      );
+      expect(check.stderr).toContain("Codex marketplace projection is stale");
+      expect(sandbox.run([]).status).toBe(0);
+      expect(sandbox.run(["--check"]).status).toBe(0);
+    } finally {
+      await removeTemporaryDirectory(sandbox.directory);
+    }
   });
 
   it("should keep Codex manifests thin adapters over shared content", () => {
