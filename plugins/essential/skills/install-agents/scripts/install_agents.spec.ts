@@ -57,6 +57,7 @@ function writeTemplate(plugin: string, name: string, alias = false): string {
     JSON.stringify({ memory: "project" }),
   );
   writeFileSync(resolve(template, "frontmatter/codex.json"), "{}");
+  writeFileSync(resolve(template, "frontmatter/grok.json"), "{}");
   writeFileSync(
     resolve(template, "base.md"),
     `# ${name}\n${alias ? "\nApply @essential:references/directions/lead-agent.md.\n" : ""}${memory(name)}`,
@@ -103,6 +104,7 @@ describe("agent discovery and installation", () => {
   it.each([
     ["claude", ".md"],
     ["codex", ".toml"],
+    ["grok", ".md"],
   ] as const)("installs source templates for %s", (harness, suffix) => {
     const { essential } = sourceCheckout();
     const destination = resolve(temporaryRoot(), "agents");
@@ -278,6 +280,7 @@ describe("installer command-line handling", () => {
     const shown = run("--help");
     expect(shown).toMatchObject({ exitCode: 0, stderr: "" });
     expect(shown.stdout).toContain("usage: install_agents.ts");
+    expect(shown.stdout).toContain("--harness {claude,codex,grok}");
     expect(shown.stdout).toContain("--include-marketplace");
 
     const missing = run("--destination");
@@ -290,6 +293,28 @@ describe("installer command-line handling", () => {
     const unknown = run("--unknown");
     expect(unknown.exitCode).toBe(2);
     expect(unknown.stderr).toContain("unrecognized arguments: --unknown");
+
+    const invalid = run("--harness=other");
+    expect(invalid.exitCode).toBe(2);
+    expect(invalid.stderr).toContain(
+      "invalid choice: 'other' (choose from 'claude', 'codex', 'grok')",
+    );
+  });
+
+  it("defaults the Grok destination under GROK_HOME", () => {
+    const { essential } = sourceCheckout();
+    const home = temporaryRoot();
+    const result = spawnSync(
+      "bun",
+      ["run", script, "--plugin-root", essential, "--harness", "grok"],
+      { encoding: "utf8", env: { ...process.env, GROK_HOME: home } },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(readdirSync(resolve(home, "agents")).sort()).toEqual([
+      ".essential",
+      "first-agent.md",
+      "second-agent.md",
+    ]);
   });
 
   it("installs through Bun with explicit paths", () => {

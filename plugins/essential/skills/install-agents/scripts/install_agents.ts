@@ -22,9 +22,12 @@ import {
   loadAgentSources,
   stitchAgentDefinition,
   stitchCodexAgentDefinition,
+  stitchGrokAgentDefinition,
 } from "./stitch_agent.ts";
 
 type PluginRecord = Record<string, unknown>;
+/** Harnesses whose agent templates this installer stitches and installs. */
+type HarnessName = "claude" | "codex" | "grok";
 
 /** One discovered agent template directory and the plugin that owns it. */
 export interface AgentTemplate {
@@ -88,24 +91,26 @@ function pluginTemplates(owner: string, pluginRoot: string): AgentTemplate[] {
  * @param harness plugin manager whose list command runs
  * @returns normalized plugin records as plain objects
  */
-export function readPluginRecords(harness: "claude" | "codex"): PluginRecord[] {
+export function readPluginRecords(harness: HarnessName): PluginRecord[] {
   const command =
     harness === "claude"
       ? ["claude", "plugin", "list", "--json"]
-      : ["codex", "plugin", "list", "--json"];
+      : harness === "codex"
+        ? ["codex", "plugin", "list", "--json"]
+        : ["grok", "plugin", "list", "--json"];
   let completed: ReturnType<typeof Bun.spawnSync>;
   try {
     completed = Bun.spawnSync(command, { stdout: "pipe", stderr: "pipe" });
   } catch (error) {
     throw new AgentTemplateError(
-      `cannot list installed ${harness === "claude" ? "" : "codex "}plugins: ${(error as Error).message}`,
+      `cannot list installed ${harness} plugins: ${(error as Error).message}`,
     );
   }
   if (completed.exitCode !== 0) {
     const detail =
       completed.stderr.toString().trim() || completed.stdout.toString().trim();
     throw new AgentTemplateError(
-      `cannot list installed ${harness === "claude" ? "" : "codex "}plugins: ${detail}`,
+      `cannot list installed ${harness} plugins: ${detail}`,
     );
   }
   let payload: unknown;
@@ -115,6 +120,23 @@ export function readPluginRecords(harness: "claude" | "codex"): PluginRecord[] {
     throw new AgentTemplateError(
       `invalid JSON from ${harness} plugin list: ${(error as Error).message}`,
     );
+  }
+  if (harness === "grok") {
+    // Grok Build records carry {status, name, repo_key, version, path, source,
+    // marketplace}; enablement is the record's own status field.
+    if (!Array.isArray(payload))
+      throw new AgentTemplateError(
+        "grok plugin list --json did not return a list",
+      );
+    return payload.filter(
+      (record): record is PluginRecord =>
+        record !== null && typeof record === "object" && !Array.isArray(record),
+    ).map((record) => ({
+      id: `${String(record.name)}@${String(record.marketplace ?? "")}`,
+      enabled: record.status === "enabled",
+      version: record.version,
+      installPath: record.path,
+    }));
   }
   if (harness === "claude") {
     if (!Array.isArray(payload))
@@ -203,7 +225,7 @@ export function codexCachePluginRoot(
 export function installedPluginRoots(
   essentialRoot: string,
   records: readonly PluginRecord[],
-  harness: "claude" | "codex",
+  harness: HarnessName,
   includeMarketplaces: readonly string[] = [],
 ): Array<readonly [string, string]> {
   const resolvedEssential = realpathSync(essentialRoot);
@@ -297,7 +319,7 @@ export function discoverAgentTemplates(
   essentialRoot: string,
   options: {
     readonly pluginRecords?: readonly PluginRecord[];
-    readonly harness?: "claude" | "codex";
+    readonly harness?: HarnessName;
     readonly includeMarketplaces?: readonly string[];
   } = {},
 ): AgentTemplate[] {
@@ -320,7 +342,7 @@ export function discoverAgentTemplates(
 
 function preflight(
   templates: readonly AgentTemplate[],
-  harness: "claude" | "codex",
+  harness: HarnessName,
   options: {
     readonly essentialRoot: string;
     readonly referenceRoot: string;
@@ -350,7 +372,9 @@ function preflight(
       name,
       harness === "claude"
         ? stitchAgentDefinition(template.path, stitchOptions)
-        : stitchCodexAgentDefinition(template.path, stitchOptions),
+        : harness === "codex"
+          ? stitchCodexAgentDefinition(template.path, stitchOptions)
+          : stitchGrokAgentDefinition(template.path, stitchOptions),
     ] as const;
   });
 }
@@ -382,7 +406,7 @@ export function installAgents(
   destination: string,
   options: {
     readonly pluginRecords?: readonly PluginRecord[];
-    readonly harness?: "claude" | "codex";
+    readonly harness?: HarnessName;
     readonly includeMarketplaces?: readonly string[];
     readonly stdout?: (text: string) => void;
   } = {},
@@ -410,7 +434,7 @@ export function installAgents(
     referenceRoot: installedEssential,
     allowLegacy: basename(dirname(root)) !== "plugins",
   });
-  const suffix = harness === "claude" ? ".md" : ".toml";
+  const suffix = harness === "codex" ? ".toml" : ".md";
   const stage = mkdtempSync(join(tmpdir(), `${harness}-agents-`));
   const write =
     options.stdout ?? ((text: string) => process.stdout.write(text));
@@ -444,8 +468,8 @@ export function installAgents(
 }
 
 const program = basename(import.meta.url);
-const usage = `usage: ${program} [-h] [--plugin-root PLUGIN_ROOT]\n${" ".repeat(program.length + 7)}[--harness {claude,codex}]\n${" ".repeat(program.length + 7)}[--destination DESTINATION]\n${" ".repeat(program.length + 7)}[--include-marketplace INCLUDE_MARKETPLACE]`;
-const help = `${usage}\n\nDiscover, preflight, stitch, and install enabled plugin agent templates.\n\noptions:\n  -h, --help            show this help message and exit\n  --plugin-root PLUGIN_ROOT\n  --harness {claude,codex}\n  --destination DESTINATION\n  --include-marketplace INCLUDE_MARKETPLACE\n                        also discover enabled agent templates from this\n                        trusted marketplace\n`;
+const usage = `usage: ${program} [-h] [--plugin-root PLUGIN_ROOT]\n${" ".repeat(program.length + 7)}[--harness {claude,codex,grok}]\n${" ".repeat(program.length + 7)}[--destination DESTINATION]\n${" ".repeat(program.length + 7)}[--include-marketplace INCLUDE_MARKETPLACE]`;
+const help = `${usage}\n\nDiscover, preflight, stitch, and install enabled plugin agent templates.\n\noptions:\n  -h, --help            show this help message and exit\n  --plugin-root PLUGIN_ROOT\n  --harness {claude,codex,grok}\n  --destination DESTINATION\n  --include-marketplace INCLUDE_MARKETPLACE\n                        also discover enabled agent templates from this\n                        trusted marketplace\n`;
 function cliError(message: string): never {
   process.stderr.write(`${usage}\n${program}: error: ${message}\n`);
   process.exit(2);
@@ -457,7 +481,7 @@ function cliError(message: string): never {
  */
 export function main(argv = process.argv.slice(2)): number {
   let pluginRoot = resolve(scriptDirectory, "../../..");
-  let harness: "claude" | "codex" = "claude";
+  let harness: HarnessName = "claude";
   let destination: string | undefined;
   const includeMarketplaces: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -478,16 +502,16 @@ export function main(argv = process.argv.slice(2)): number {
       pluginRoot = argument.slice("--plugin-root=".length);
     else if (argument === "--harness") {
       const selected = value();
-      if (selected !== "claude" && selected !== "codex")
+      if (!new Set(["claude", "codex", "grok"]).has(selected))
         cliError(
-          `argument --harness: invalid choice: '${selected}' (choose from 'claude', 'codex')`,
+          `argument --harness: invalid choice: '${selected}' (choose from 'claude', 'codex', 'grok')`,
         );
       harness = selected;
     } else if (argument.startsWith("--harness=")) {
       const selected = argument.slice("--harness=".length);
-      if (selected !== "claude" && selected !== "codex")
+      if (!new Set(["claude", "codex", "grok"]).has(selected))
         cliError(
-          `argument --harness: invalid choice: '${selected}' (choose from 'claude', 'codex')`,
+          `argument --harness: invalid choice: '${selected}' (choose from 'claude', 'codex', 'grok')`,
         );
       harness = selected;
     } else if (argument === "--destination") destination = value();
@@ -500,9 +524,11 @@ export function main(argv = process.argv.slice(2)): number {
     else cliError(`unrecognized arguments: ${argument}`);
   }
   destination ??= resolve(
-    harness === "codex"
-      ? (process.env.CODEX_HOME ?? resolve(homedir(), ".codex"))
-      : resolve(homedir(), ".claude"),
+    harness === "claude"
+      ? resolve(homedir(), ".claude")
+      : harness === "codex"
+        ? (process.env.CODEX_HOME ?? resolve(homedir(), ".codex"))
+        : (process.env.GROK_HOME ?? resolve(homedir(), ".grok")),
     "agents",
   );
   try {

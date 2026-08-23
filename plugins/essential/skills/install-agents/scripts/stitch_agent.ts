@@ -14,6 +14,7 @@ interface IntelligenceProjection {
   readonly best_for: readonly string[];
   readonly claude: HarnessProjection;
   readonly codex: HarnessProjection;
+  readonly grok: HarnessProjection;
 }
 
 /** Frontmatter and body split sources of one agent template directory. */
@@ -21,6 +22,7 @@ export interface AgentSources {
   readonly metadata: JsonObject;
   readonly claude: JsonObject;
   readonly codex: JsonObject;
+  readonly grok: JsonObject;
 }
 
 const scriptDirectory = import.meta.dirname;
@@ -88,6 +90,14 @@ const codexDerivedFields = new Set([
   "model",
   "model_reasoning_effort",
   "developer_instructions",
+]);
+const grokDerivedFields = new Set([
+  "name",
+  "description",
+  "intelligence",
+  "intelligenceLevel",
+  "model",
+  "effort",
 ]);
 
 /** Error thrown when an agent template violates the split-source contract. */
@@ -166,9 +176,14 @@ export function loadIntelligenceLevels(
   for (const [level, projection] of Object.entries(matrix)) {
     if (!object(projection))
       throw new AgentTemplateError("invalid intelligence-level matrix entry");
-    if (!sameKeys(projection, new Set(["rank", "best_for", "claude", "codex"])))
+    if (
+      !sameKeys(
+        projection,
+        new Set(["rank", "best_for", "claude", "codex", "grok"]),
+      )
+    )
       throw new AgentTemplateError(
-        `intelligence level ${quote(level)} must define rank, best_for, claude, and codex`,
+        `intelligence level ${quote(level)} must define rank, best_for, claude, codex, and grok`,
       );
     const rank = projection.rank;
     if (level === "inherit") {
@@ -199,6 +214,7 @@ export function loadIntelligenceLevels(
     for (const [harness, allowed] of [
       ["claude", new Set(["model", "effort"])],
       ["codex", new Set(["model", "model_reasoning_effort"])],
+      ["grok", new Set(["model", "effort"])],
     ] as const) {
       const fields = projection[harness];
       if (
@@ -286,6 +302,7 @@ function legacyAgentSources(path: string): AgentSources {
     metadata: { name, description, intelligence },
     claude: legacy,
     codex: {},
+    grok: {},
   };
 }
 
@@ -301,7 +318,7 @@ export function loadAgentSources(
 ): AgentSources {
   const frontmatter = resolve(templateDirectory, "frontmatter");
   const paths = Object.fromEntries(
-    ["meta.json", "claude.json", "codex.json"].map((name) => [
+    ["meta.json", "claude.json", "codex.json", "grok.json"].map((name) => [
       name,
       resolve(frontmatter, name),
     ]),
@@ -319,7 +336,8 @@ export function loadAgentSources(
     options.allowLegacy === true &&
     present["claude.json"] &&
     !present["meta.json"] &&
-    !present["codex.json"];
+    !present["codex.json"] &&
+    !present["grok.json"];
   if (!Object.values(present).every(Boolean) && !legacy) {
     const missing = Object.keys(present).find((name) => !present[name]);
     throw new AgentTemplateError(
@@ -341,6 +359,7 @@ export function loadAgentSources(
         metadata: readJsonObject(paths["meta.json"]!),
         claude: readJsonObject(paths["claude.json"]!),
         codex: readJsonObject(paths["codex.json"]!),
+        grok: readJsonObject(paths["grok.json"]!),
       };
   if (!sameKeys(sources.metadata, metadataFields))
     throw new AgentTemplateError(
@@ -349,6 +368,7 @@ export function loadAgentSources(
   for (const [harness, overlay, reserved] of [
     ["claude", sources.claude, claudeDerivedFields],
     ["codex", sources.codex, codexDerivedFields],
+    ["grok", sources.grok, grokDerivedFields],
   ] as const) {
     const collision = Object.keys(overlay).find((field) => reserved.has(field));
     if (collision !== undefined)
@@ -564,7 +584,7 @@ function removeMarkdownSection(body: string, heading: string): string {
   const after = body.slice(match.index + match[0].length).replace(/^\n+/, "");
   return before && after ? `${before}\n\n${after}` : before || after;
 }
-function codexHarnessNeutralText(text: string): string {
+function harnessNeutralText(text: string): string {
   return text
     .replaceAll(
       "run it inside my isolated worktree",
@@ -573,7 +593,7 @@ function codexHarnessNeutralText(text: string): string {
     .replace(/,? and Workflow launches/g, "")
     .replace(/^[^\n.!?]*\bworktree\b[^\n.!?]*[.!?][ \t]*/gm, "");
 }
-function codexDeveloperInstructions(body: string): string {
+function stripClaudeOnlyBehavior(body: string): string {
   let projected = removeMarkdownSection(body, "Memory");
   const delegation = markdownSection(projected, "Delegation Modes")[0] ?? null;
   if (delegation !== null && delegation[1]?.includes("Dynamic Workflow")) {
@@ -587,7 +607,7 @@ function codexDeveloperInstructions(body: string): string {
       );
     projected = `${projected.slice(0, delegation.index)}## Delegation Modes\n\n${direct[0].trimEnd()}\n${projected.slice(delegation.index + delegation[0].length)}`;
   }
-  projected = `${codexHarnessNeutralText(projected).trimEnd()}\n`;
+  projected = `${harnessNeutralText(projected).trimEnd()}\n`;
   const unsupported = [
     ".claude/agent-memory/",
     "Dynamic Workflow",
@@ -596,7 +616,7 @@ function codexDeveloperInstructions(body: string): string {
   ].find((marker) => projected.includes(marker));
   if (unsupported !== undefined)
     throw new AgentTemplateError(
-      `Codex developer instructions retain Claude-only behavior: ${unsupported}`,
+      `stitched agent retains Claude-only behavior: ${unsupported}`,
     );
   return projected;
 }
@@ -628,7 +648,7 @@ export function stitchCodexAgentDefinition(
     ["name", sources.metadata.name],
     [
       "description",
-      codexHarnessNeutralText(String(sources.metadata.description)),
+      harnessNeutralText(String(sources.metadata.description)),
     ],
     [
       "nickname_candidates",
@@ -641,7 +661,7 @@ export function stitchCodexAgentDefinition(
     [
       "developer_instructions",
       resolveEssentialReferences(
-        codexDeveloperInstructions(body),
+        stripClaudeOnlyBehavior(body),
         templateDirectory,
         options.essentialRoot,
         options.referenceRoot,
@@ -652,10 +672,37 @@ export function stitchCodexAgentDefinition(
     .map(([name, value]) => `${name} = ${tomlValue(value)}\n`)
     .join("");
 }
+/**
+ * stitches one split template into the Grok Build Markdown agent file.
+ * @param templateDirectory directory holding base.md and frontmatter/
+ * @param options essentialRoot and referenceRoot resolve @essential aliases;
+ *   allowLegacy accepts legacy single-file frontmatter
+ * @returns full Grok agent file including frontmatter
+ */
+export function stitchGrokAgentDefinition(
+  templateDirectory: string,
+  options: {
+    readonly essentialRoot?: string;
+    readonly referenceRoot?: string;
+    readonly allowLegacy?: boolean;
+  } = {},
+): string {
+  const { sources, body } = template(templateDirectory, options);
+  const intelligence =
+    intelligenceLevels[String(sources.metadata.intelligence)]!;
+  const projected: JsonObject = {
+    name: sources.metadata.name,
+    description: harnessNeutralText(String(sources.metadata.description)),
+    ...intelligence.grok,
+    ...sources.grok,
+  };
+  const yaml = JSON.stringify(projected, undefined, 2);
+  return `---\n${yaml}\n---\n\n${resolveEssentialReferences(stripClaudeOnlyBehavior(body), templateDirectory, options.essentialRoot, options.referenceRoot)}`;
+}
 
 const program = basename(import.meta.url);
-const usage = `usage: ${program} [-h] [--output OUTPUT] [--harness {claude,codex}]\n${" ".repeat(program.length + 7)}[--essential-root ESSENTIAL_ROOT]\n${" ".repeat(program.length + 7)}template`;
-const help = `${usage}\n\nValidate and stitch a split agent template into a Claude agent file.\n\npositional arguments:\n  template\n\noptions:\n  -h, --help            show this help message and exit\n  --output OUTPUT\n  --harness {claude,codex}\n  --essential-root ESSENTIAL_ROOT\n                        Essential plugin root used to resolve @essential\n                        references; inferred from normal source-checkout and\n                        installed-cache layouts\n`;
+const usage = `usage: ${program} [-h] [--output OUTPUT] [--harness {claude,codex,grok}]\n${" ".repeat(program.length + 7)}[--essential-root ESSENTIAL_ROOT]\n${" ".repeat(program.length + 7)}template`;
+const help = `${usage}\n\nValidate and stitch a split agent template into a stitched agent file.\n\npositional arguments:\n  template\n\noptions:\n  -h, --help            show this help message and exit\n  --output OUTPUT\n  --harness {claude,codex,grok}\n  --essential-root ESSENTIAL_ROOT\n                        Essential plugin root used to resolve @essential\n                        references; inferred from normal source-checkout and\n                        installed-cache layouts\n`;
 function cliError(message: string): never {
   process.stderr.write(`${usage}\n${program}: error: ${message}\n`);
   process.exit(2);
@@ -700,9 +747,9 @@ export function main(argv = process.argv.slice(2)): number {
     cliError("the following arguments are required: template");
   if (templates.length > 1)
     cliError(`unrecognized arguments: ${templates.slice(1).join(" ")}`);
-  if (!new Set(["claude", "codex"]).has(harness))
+  if (!new Set(["claude", "codex", "grok"]).has(harness))
     cliError(
-      `argument --harness: invalid choice: '${harness}' (choose from 'claude', 'codex')`,
+      `argument --harness: invalid choice: '${harness}' (choose from 'claude', 'codex', 'grok')`,
     );
   if (essentialRoot === undefined) {
     const candidate = resolve(scriptDirectory, "../../..");
@@ -713,7 +760,9 @@ export function main(argv = process.argv.slice(2)): number {
     const stitched =
       harness === "claude"
         ? stitchAgentDefinition(templates[0]!, { essentialRoot })
-        : stitchCodexAgentDefinition(templates[0]!, { essentialRoot });
+        : harness === "codex"
+          ? stitchCodexAgentDefinition(templates[0]!, { essentialRoot })
+          : stitchGrokAgentDefinition(templates[0]!, { essentialRoot });
     if (output === undefined) process.stdout.write(stitched);
     else writeFileSync(output, stitched, "utf8");
     return 0;

@@ -12,6 +12,9 @@
     "codex": {
       "model": "gpt-5.6-luna",
       "model_reasoning_effort": "low"
+    },
+    "grok": {
+      "model": "inherit"
     }
   },
   "low": {
@@ -28,6 +31,10 @@
     "codex": {
       "model": "gpt-5.6-luna",
       "model_reasoning_effort": "max"
+    },
+    "grok": {
+      "model": "inherit",
+      "effort": "low"
     }
   },
   "medium": {
@@ -44,6 +51,10 @@
     "codex": {
       "model": "gpt-5.6-sol",
       "model_reasoning_effort": "medium"
+    },
+    "grok": {
+      "model": "inherit",
+      "effort": "medium"
     }
   },
   "high": {
@@ -60,6 +71,10 @@
     "codex": {
       "model": "gpt-5.6-sol",
       "model_reasoning_effort": "high"
+    },
+    "grok": {
+      "model": "inherit",
+      "effort": "high"
     }
   },
   "xhigh": {
@@ -76,6 +91,10 @@
     "codex": {
       "model": "gpt-5.6-sol",
       "model_reasoning_effort": "xhigh"
+    },
+    "grok": {
+      "model": "inherit",
+      "effort": "xhigh"
     }
   },
   "max": {
@@ -92,6 +111,10 @@
     "codex": {
       "model": "gpt-5.6-sol",
       "model_reasoning_effort": "max"
+    },
+    "grok": {
+      "model": "inherit",
+      "effort": "max"
     }
   },
   "inherit": {
@@ -102,6 +125,7 @@
     "claude": {
       "model": "inherit"
     },
-    "codex": {}
+    "codex": {},
+    "grok": {}
   }
 }
