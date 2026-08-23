@@ -1,40 +1,6 @@
 === Conditional test skip (`runIf`/`skipIf`) (TST-CORE-11) ===
 
-input.spec.ts:4  describe.runIf(process.env.TEST_DATABASE_URL)("fn:fetchUser", () => {
-       1: import { describe, it, expect } from "vitest";
-       2: 
-       3: // violation: silent skip via describe.runIf
-  >    4: describe.runIf(process.env.TEST_DATABASE_URL)("fn:fetchUser", () => {
-       5:   it("should return the user row", () => {
-       6:     expect(true).toBe(true);
-       7:   });
-       8: });
-       9: 
-      10: // violation: silent skip via it.skipIf
-      11: describe("fn:fetchOrder", () => {
-      12:   it.skipIf(!process.env.TEST_DATABASE_URL)("should return the order", () => {
-      13:     expect(true).toBe(true);
-      14:   });
-
-  --- next match ---
-
-input.spec.ts:12  it.skipIf(!process.env.TEST_DATABASE_URL)("should return the order", () => {
-       7:   });
-       8: });
-       9: 
-      10: // violation: silent skip via it.skipIf
-      11: describe("fn:fetchOrder", () => {
-  >   12:   it.skipIf(!process.env.TEST_DATABASE_URL)("should return the order", () => {
-      13:     expect(true).toBe(true);
-      14:   });
-      15: });
-      16: 
-      17: // compliant: no conditional skip — config hard-fails at file load elsewhere
-      18: describe("fn:fetchProduct", () => {
-      19:   it("should return the product", () => {
-      20:     expect(true).toBe(true);
-      21:   });
-      22: });
+(no matches)
 
 === Summary ===
-  test-conditional-skip: 2 matches in 1 files
+  test-conditional-skip: 0 matches in 0 files

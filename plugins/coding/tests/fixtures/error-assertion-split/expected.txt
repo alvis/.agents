@@ -1,42 +1,6 @@
 === Split error assertion — collapse to `expect(error).toEqual(new Error('…'))` (TST-DATA-07) ===
 
-input.spec.ts:9  expect(error).toBeInstanceOf(Error);
-       4: 
-       5: describe('fn:doWork', () => {
-       6:   it('should split the error assertion (flagged)', async () => {
-       7:     const error = await doWork().catch((e: unknown) => e);
-       8: 
-  >    9:     expect(error).toBeInstanceOf(Error);
-      10:     expect((error as Error).message).toBe('boom');
-      11:   });
-      12: 
-      13:   it('should split a custom error assertion (flagged)', async () => {
-      14:     const error = await doWork().catch((e: unknown) => e);
-      15: 
-      16:     expect(error).toBeInstanceOf(FetchError);
-      17:     expect((error as FetchError).cause).toBe('network');
-      18:   });
-      19: 
-
-  --- next match ---
-
-input.spec.ts:16  expect(error).toBeInstanceOf(FetchError);
-      11:   });
-      12: 
-      13:   it('should split a custom error assertion (flagged)', async () => {
-      14:     const error = await doWork().catch((e: unknown) => e);
-      15: 
-  >   16:     expect(error).toBeInstanceOf(FetchError);
-      17:     expect((error as FetchError).cause).toBe('network');
-      18:   });
-      19: 
-      20:   it('should assert the whole error (clean)', async () => {
-      21:     const error = await doWork().catch((e: unknown) => e);
-      22: 
-      23:     expect(error).toEqual(new Error('boom'));
-      24:   });
-      25: 
-      26:   it('should narrow for control flow only (clean)', () => {
+(no matches)
 
 === Summary ===
-  error-assertion-split: 2 matches in 1 files
+  error-assertion-split: 0 matches in 0 files

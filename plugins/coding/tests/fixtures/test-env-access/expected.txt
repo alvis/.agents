@@ -1,42 +1,6 @@
 === Direct process.env/global access in spec file (TST-MOCK-11) ===
 
-input.spec.ts:1  process.env.API_URL = "https://api.test";
-  >    1: process.env.API_URL = "https://api.test";
-       2: process['env'].TOKEN = "token";
-       3: process["env"].DEBUG = "1";
-       4: globalThis.fetch = fakeFetch;
-       5: vi.stubEnv("MODE", "test");
-       6: vi.stubGlobal("fetch", fakeFetch);
-
-  --- next match ---
-
-input.spec.ts:2  process['env'].TOKEN = "token";
-       1: process.env.API_URL = "https://api.test";
-  >    2: process['env'].TOKEN = "token";
-       3: process["env"].DEBUG = "1";
-       4: globalThis.fetch = fakeFetch;
-       5: vi.stubEnv("MODE", "test");
-       6: vi.stubGlobal("fetch", fakeFetch);
-
-  --- next match ---
-
-input.spec.ts:3  process["env"].DEBUG = "1";
-       1: process.env.API_URL = "https://api.test";
-       2: process['env'].TOKEN = "token";
-  >    3: process["env"].DEBUG = "1";
-       4: globalThis.fetch = fakeFetch;
-       5: vi.stubEnv("MODE", "test");
-       6: vi.stubGlobal("fetch", fakeFetch);
-
-  --- next match ---
-
-input.spec.ts:4  globalThis.fetch = fakeFetch;
-       1: process.env.API_URL = "https://api.test";
-       2: process['env'].TOKEN = "token";
-       3: process["env"].DEBUG = "1";
-  >    4: globalThis.fetch = fakeFetch;
-       5: vi.stubEnv("MODE", "test");
-       6: vi.stubGlobal("fetch", fakeFetch);
+(no matches)
 
 === Summary ===
-  test-env-access: 4 matches in 1 files
+  test-env-access: 0 matches in 0 files
