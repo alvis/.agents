@@ -65,6 +65,14 @@ function inside(root: string, target: string): boolean {
     (!path.startsWith(`..${sep}`) && path !== ".." && !isAbsolute(path))
   );
 }
+function declaresScanners(profile: unknown): boolean {
+  return (
+    profile !== null &&
+    typeof profile === "object" &&
+    !Array.isArray(profile) &&
+    ((profile as Profile).scanners?.length ?? 0) > 0
+  );
+}
 function profileRoot(profilePath: string): string {
   let directory = dirname(profilePath);
   while (basename(directory) !== "skills") {
@@ -86,7 +94,10 @@ export function validateProfile(
   profilePath: string | undefined,
   profile: unknown,
 ): string | undefined {
-  if (profilePath === undefined) return undefined;
+  if (profilePath === undefined)
+    return declaresScanners(profile)
+      ? "profile scanner requires --profile"
+      : undefined;
   if (!isAbsolute(profilePath)) return "--profile must be an absolute path";
   if (profile === null || typeof profile !== "object" || Array.isArray(profile))
     return "profile must contain a JSON object";
@@ -354,7 +365,9 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     return exitCode;
   }
   for (const scanner of profile.scanners ?? []) {
-    const scannerPath = resolve(dirname(profilePath as string), scanner.path);
+    if (profilePath === undefined)
+      return failure("profile scanner requires --profile");
+    const scannerPath = resolve(dirname(profilePath), scanner.path);
     const scannerArgs = scanner.needs_coding_scanlib
       ? ["--scanlib", resolve(args.codingRoot, "scripts/scanlib"), ...common]
       : common;

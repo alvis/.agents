@@ -1,12 +1,15 @@
-# Claude Code and Codex Plugin Marketplace
+# Agent Plugin Marketplace
 
-Eight composable plugins for Claude Code and Codex: specifications with real
+Eight composable plugins for Claude Code and Codex, with compatibility paths
+for Grok Build and OpenCode V1: specifications with real
 provenance, plans with stable task identity, execution state that survives
 crashes and machine moves, and decisions that never silently rewrite history.
-Both harnesses install the same plugins and load the same Agent Skills;
-harness-specific manifests are thin adapters. This README explains how the
-system thinks and how to get the most out of it; each plugin's own `README.md`
-documents its skills in depth.
+Claude Code and Codex are native targets. Grok Build consumes the Claude
+projection through its documented compatibility layer. OpenCode V1 uses a
+generated best-effort projection. See the complete emoji-qualified
+[compatibility matrix](COMPATIBILITY.md) before relying on a harness-specific
+feature. This README explains how the system thinks and how to get the most out
+of it; each plugin's own `README.md` documents its skills in depth.
 
 ## How the system thinks
 
@@ -108,6 +111,50 @@ withheld until its required specialist is installed. Open `/hooks` after
 installation and trust the bundled plugin hooks; Codex skips new or changed
 context-injection hooks until their definitions are reviewed.
 
+### Grok Build
+
+Grok Build reads the Claude marketplace, plugins, skills, agents, MCP servers,
+hooks, and instructions through its
+[Claude Code compatibility layer](https://docs.x.ai/build/features/skills-plugins-marketplaces).
+Use the Claude installation above. This repository does not generate a separate
+Grok manifest, and compatibility-layer support is marked 🟡 in the
+[matrix](COMPATIBILITY.md).
+
+### OpenCode V1
+
+Project a selected plugin and its recursive dependencies into a target Git
+worktree:
+
+```bash
+bun /path/to/.agents/scripts/install_opencode.ts \
+  --scope project \
+  --project-root /path/to/target-project \
+  --plugin specification
+```
+
+Install selected plugins for the current user, or project every marketplace
+plugin:
+
+```bash
+bun scripts/install_opencode.ts --scope user --plugin essential --plugin coding
+bun /path/to/.agents/scripts/install_opencode.ts \
+  --scope project --project-root /path/to/target-project --all
+```
+
+The installer writes only its managed paths beneath `.opencode/` or
+`${XDG_CONFIG_HOME:-~/.config}/opencode/`; it never edits `opencode.json` or
+`opencode.jsonc`. It refuses unmanaged collisions and records source hashes in
+`alvis/manifest.json`. <!-- doc-path-gate: ignore --> An external target-bound ownership and recovery record
+under `${XDG_STATE_HOME:-~/.local/state}/alvis-opencode-v1/` prevents a copied
+or forged project receipt from claiming user files and lets the next non-dry
+run roll back a hard-interrupted install. OpenCode names are hyphenated to satisfy its skill and
+command rules: `coding:pr` becomes the `coding-pr` skill and `/coding-pr`
+command. Rerun the installer after updating this source checkout.
+
+OpenCode support targets stable V1 only. OpenCode V2 and `opencode2` are not
+supported. The adapter uses OpenCode V1's experimental system-transform hook,
+so context injection is explicitly 🧪 rather than native support.
+
 The core lifecycle expects Claude Code or Codex, Bash, `jq`, Git, and Bun,
 plus the target project's own build and test tools. The publication path
 additionally expects an authenticated `gh`; it prefers `jj` where the
@@ -115,6 +162,9 @@ repository is jj-colocated and uses Git directly everywhere else.
 Notion synchronization is optional — see
 [the specification plugin README](plugins/specification/README.md) for its
 transport-profile requirements.
+
+The source and projection boundaries are documented in
+[Harness projections](docs/architecture/harness-projections.md).
 
 ## The lifecycle, end to end
 
