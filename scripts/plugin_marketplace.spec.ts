@@ -172,6 +172,9 @@ describe("marketplace projections", () => {
       expect(existsSync(join(directory, ".codex-plugin", "plugin.json"))).toBe(
         true,
       );
+      expect(existsSync(join(directory, ".grok-plugin", "plugin.json"))).toBe(
+        true,
+      );
     }
   });
 
@@ -265,6 +268,26 @@ describe("marketplace projections", () => {
       expect(codex.description).toBe(plugin.description);
       expect(codex.skills).toBe("./skills/");
       expect(codex.mcpServers).toEqual(claude.mcpServers);
+    }
+  });
+
+  it("should keep Grok manifests thin adapters over shared content", () => {
+    for (const plugin of claudePlugins()) {
+      const directory = resolve(root, plugin.source);
+      const claude = json<{
+        author: { name: unknown };
+        description: string;
+        name: string;
+        version: string;
+      }>(join(directory, ".claude-plugin", "plugin.json"));
+      const grokDirectory = join(directory, ".grok-plugin");
+      expect(readdirSync(grokDirectory)).toEqual(["plugin.json"]);
+      expect(json<unknown>(join(grokDirectory, "plugin.json"))).toEqual({
+        name: claude.name,
+        version: claude.version,
+        description: claude.description,
+        author: { name: claude.author.name },
+      });
     }
   });
 
