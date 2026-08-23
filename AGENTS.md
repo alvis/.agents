@@ -5,13 +5,12 @@ does, delete it — that governs this file and everything shipped from this tree
 
 ## What this repository is
 
-This is the **source** of one plugin marketplace with three support tiers:
-Claude Code and Codex are native projections; Grok Build consumes the Claude
-projection through its documented compatibility layer; OpenCode V1 uses the
-best-effort projector in `scripts/install_opencode.ts`. OpenCode V2 and
-`opencode2` are unsupported. Qualify non-native support against
-`COMPATIBILITY.md`; never flatten adapter, experimental, external, or unavailable
-behavior into a blanket support claim.
+This is the **source** of one plugin marketplace for Claude Code, Codex, and
+Grok Build: the plugins under `plugins/` are projected into all three harnesses'
+manifest formats. OpenCode V1 consumes a best-effort generated projection from
+`scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
+Qualify non-native support against `COMPATIBILITY.md`; never flatten adapter,
+experimental, external, or unavailable behavior into a blanket support claim.
 
 This remains a greenfield project: breaking changes are accepted and expected.
 No legacy compatibility is needed; remove every deprecated symbol.
@@ -32,11 +31,12 @@ plus `gh`, and optionally `jj`, for publishing.
 |---|---|
 | Claude marketplace manifest | `.claude-plugin/marketplace.json` |
 | Codex marketplace projection | `.agents/plugins/marketplace.json` |
+| Grok marketplace projection | `.grok-plugin/marketplace.json` |
 | OpenCode V1 projector | `scripts/install_opencode.ts` + `scripts/opencode_adapter.js` + `scripts/opencode_contract.json` |
 | Harness compatibility projection | `COMPATIBILITY.md` from `scripts/generate_harness_compatibility.ts` |
-| Plugin manifests | `plugins/<p>/.{claude,codex}-plugin/plugin.json` |
+| Plugin manifests | `plugins/<p>/.{claude,codex,grok}-plugin/plugin.json` |
 | Skill | `plugins/<p>/skills/<name>/SKILL.md` (+ `references/`, `scripts/`, `assets/`) |
-| Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex}.json` |
+| Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex,grok}.json` |
 | Standard | `plugins/<p>/standards/<name>/{meta,scan,write}.md` + `rules/` |
 | Injected payload | `plugins/<p>/hooks/{ALLAGENT,MAINAGENT,SUBAGENT}.md` |
 | Routing table | `plugins/<p>/references/ROUTING.md` |
@@ -44,7 +44,8 @@ plus `gh`, and optionally `jj`, for publishing.
 
 There are **no source `commands/` directories**. Agents ship from `agents/` as
 templates (`base.md` body + split JSON files under `frontmatter/`) that
-`/essential:install-agents` installs as Claude Markdown or Codex TOML. Every
+`/essential:install-agents` installs as Claude Markdown, Codex TOML, or Grok
+Markdown. Every
 plugin depends on `essential`; `web` and `react` also depend on `coding`.
 
 ## The injection contract
@@ -80,6 +81,11 @@ fails silently.
   (`coding`→`tech-lead`, `web`→`design-lead`).
 - `SUBAGENT.md` — `essential` only, `SubagentStart`.
 
+Under Grok Build these payloads stay registered but are openly scoped out: its
+`SessionStart` and `SubagentStart` handlers ignore stdout, so no routing text
+injects there. The PreToolUse validators still fire natively, emitting grok's
+top-level `{"decision","reason"}` envelopes.
+
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files
 are re-read on every session, they are byte-budgeted (see below) — put detail in
 `references/` and link to it at the decision point.
@@ -94,10 +100,10 @@ These plugins are built to one model of how knowledge ages:
 reads, or retires anything. The invariants below are what it forbids while you edit
 these sources, and each is the rule a locally sensible change breaks first.
 
-- **Every native harness, or none.** Claude Code and Codex are one target, not a
+- **Every native harness, or none.** Claude Code, Codex, and Grok Build are one target, not a
   primary plus a port. Anything in their native contract — hook command, script,
-  agent or skill projection, installed path, config format, tool name — works under both
-  or is not done. Reading one harness's value resolves to nothing under the other
+  agent or skill projection, installed path, config format, tool name — works under all of them
+  or is not done. Reading one harness's value resolves to nothing under the others
   and almost always fails silent rather than loud, so resolve every harness-specific
   value through one ordered chain that a new harness extends by one segment, keep
   that chain in exactly one place, terminate it so an unrecognized harness exits
@@ -143,7 +149,7 @@ Enforced mechanically — each with the file that enforces it.
 | Agent metadata `name` matches `^[a-z0-9]+(?:-[a-z0-9]+)*$` and equals its directory name | same |
 | Agent metadata `intelligence` exists in `plugins/essential/skills/install-agents/references/intelligence-levels.json`; harness model/effort fields are derived | same |
 | Agent harness overlays **omit `tools`** (agents inherit runtime capabilities) | same |
-| Codex overlay values are scalar TOML fields; nickname candidates derive from metadata; shared prose makes no promise from Claude-only isolation | same |
+| Codex overlay values are scalar TOML fields; nickname candidates derive from metadata; stitched Codex and Grok bodies make no promise from Claude-only isolation | same |
 | `memory` is `"project"`; body has exactly one `## Memory` section | same |
 | Every injected payload ≤ 2,000 bytes, per plugin | `scripts/contract_footprint.ts`, declared in `plugins/<p>/hooks/contract_footprint.spec.ts` |
 | Every plugin's unconditional hook read chain ≤ 40,960 bytes | same |
@@ -204,8 +210,9 @@ corpus fixtures under `plugins/coding/tests/fixtures/` and the extensionless
 any other `.py` appears in it or `pytest.ini` returns.
 
 `claude plugin validate --strict .` checks the manifest and frontmatter schema
-against the installed CLI. It stays out of both the suite and CI, which is why
-you run it by hand before publishing a manifest change.
+against the installed CLI; `grok plugin validate plugins/<p>` does the same for
+each plugin against the installed Grok CLI. Both stay out of the suite and CI,
+which is why you run them by hand before publishing a manifest change.
 
 Further suites live in `plugins/<p>/tests/` and beside their scripts.
 

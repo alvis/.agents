@@ -23,7 +23,8 @@ content rules for skills authored by `write-skill`.
   when the instruction appears in a supporting file.
 - Never require the caller's current working directory, a hard-coded install
   path, `../`, or a harness-specific path substitution to find a resource.
-- Maintain one shared `SKILL.md` for Claude Code and Codex. Do not generate a
+- Maintain one shared `SKILL.md` for Claude Code, Codex, and Grok Build. Do not
+  generate a
   portable projection of a non-portable source.
 
 ## Reusable knowledge target
@@ -91,7 +92,7 @@ agent configuration from agent metadata. `requirements` is this marketplace's
 harness-neutral extension; external skills may omit it and remain eligible.
 
 Agent Skills reference validators may report the marketplace-owned `requirements`
-extension as unknown; use this skill's validator and both marketplace harness
+extension as unknown; use this skill's validator and the marketplace harness
 validators as the structural authority for shared skills. Other portable optional
 fields are `license`, non-empty `compatibility` of at
 most 500 characters, and additional `metadata` string entries. Agent

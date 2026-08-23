@@ -1,6 +1,6 @@
 ---
 name: write-skill
-description: "Use when authoring, revising, or validating an Agent Skill for Claude Code, Codex, or both through its create, update, and verify actions: define a reusable capability, align existing skills with repository policy, or check structure, triggers, portability, and behavior before use."
+description: "Use when authoring, revising, or validating an Agent Skill for Claude Code, Codex, Grok Build, or any combination through its create, update, and verify actions: define a reusable capability, align existing skills with repository policy, or check structure, triggers, portability, and behavior before use."
 requirements:
   intelligence: high
 ---
@@ -33,8 +33,8 @@ functional and trigger evaluation.
 ## Shared policy
 
 Follow [references/authoring.md](references/authoring.md) for all three actions.
-Load [references/harnesses.md](references/harnesses.md) only when a Claude Code
-or Codex difference affects execution, required tools, or validation.
+Load [references/harnesses.md](references/harnesses.md) only when a Claude Code,
+Codex, or Grok Build difference affects execution, required tools, or validation.
 
 ## Shared thought experiment and blindspot test
 

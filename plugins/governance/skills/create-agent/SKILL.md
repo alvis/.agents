@@ -1,6 +1,6 @@
 ---
 name: create-agent
-description: "Creates a new specialist agent from a shared base prompt plus split metadata, Claude, and Codex JSON sources, proposing intelligence and permissions by role archetype and confirming them with the user before writing. Use when adding a new subagent, defining a new specialist role, scaffolding an agent definition, or when update-agent hands off new-agent creation."
+description: "Creates a new specialist agent from a shared base prompt plus split metadata and per-harness Claude, Codex, and Grok JSON sources, proposing intelligence and permissions by role archetype and confirming them with the user before writing. Use when adding a new subagent, defining a new specialist role, scaffolding an agent definition, or when update-agent hands off new-agent creation."
 requirements:
   intelligence: high
 context: fork
@@ -9,7 +9,8 @@ argument-hint: "<role description> [--plugin=<owner>] [--intelligence=...] [--pe
 
 # Create Agent
 
-Create `base.md` plus `frontmatter/meta.json`, `claude.json`, and `codex.json`
+Create `base.md` plus `frontmatter/meta.json`, `claude.json`, `codex.json`, and
+`grok.json`
 under `plugins/<owner>/agents/<name>/` for one
 genuinely distinct role, with ownership and critical settings confirmed before
 anything is written. `update-agent` owns changes to existing definitions.
@@ -74,11 +75,16 @@ anything is written. `update-agent` owns changes to existing definitions.
    as the last option. Flags override their named fields and skip their
    prompts; `--yes` accepts all recommendations. No file is written before
    this gate resolves; record the confirmed settings.
-5. Create only the four canonical source files beneath the confirmed owner's
+5. Create only the five canonical source files beneath the confirmed owner's
    `agents/<name>/` directory. `frontmatter/meta.json` contains
    exactly `name`, `description`, and `intelligence`; `claude.json` contains
    only Claude-specific fields and requires `initialPrompt`; `codex.json`
-   contains only native Codex-specific fields and is `{}` when none apply.
+   contains only native Codex-specific fields and is `{}` when none apply;
+   `grok.json` contains only native Grok Build-specific fields and is likewise
+   `{}` unless one applies — required but empty, the same ceremony as
+   `codex.json`. Frontmatter hooks stay Claude-only by construction: Grok Build
+   forbids hooks in agent frontmatter, so they never appear in `codex.json` or
+   `grok.json`.
    Every file must be valid JSON. The directory and metadata `name` contain
    only the role. End metadata `description` with exactly three distinct
    preferred short names in the canonical sentence so the main agent can name
@@ -121,18 +127,20 @@ anything is written. `update-agent` owns changes to existing definitions.
 
 ## Verification
 
-- Parse `frontmatter/meta.json`, `claude.json`, and `codex.json` with
-  `uv run --python 3.13 python -m json.tool`.
-- Run Essential's deterministic stitch helper twice against the source directory,
-  writing only to separate temporary outputs, then inspect both artifacts:
-  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness claude --output <temporary-claude-path>`
+- Parse `frontmatter/meta.json`, `claude.json`, `codex.json`, and `grok.json`
+  with `uv run --python 3.13 python -m json.tool`.
+- Run Essential's deterministic stitch helper three times against the source
+  directory, writing only to separate temporary outputs, then inspect all
+  three artifacts:
+  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness claude --output <temporary-claude-path>`,
+  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness codex --output <temporary-codex-path>`,
   and
-  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness codex --output <temporary-codex-path>`.
+  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness grok --output <temporary-grok-path>`.
 - Check placeholders, the template key allowlist and required keys, referenced
   files/aliases/skills, duplicate seams, prompt contradictions, and the owning
   plugin routing row, point-form role-specific Collaboration section, and
   direct teammate-messaging capability against the runtime capability list.
-  Both rendered definitions must contain exactly one intelligence line matching
+  Each rendered definition must contain exactly one intelligence line matching
   `meta.json`. Shared delegation,
   handoff, workflow, and review policy belongs in Essential's `hooks/ALLAGENT.md`, not
   individual agent bodies. Official runtime loading remains "not exercised" unless
@@ -145,6 +153,6 @@ flags, or `--yes`), archetype, trigger/near-miss examples, context
 assignments, thought-experiment and blindspot coverage, validation commands and
 results, whether runtime loading was exercised, confirmation that temporary
 Markdown thought-experiment notes were deleted before commit, and any unresolved
-concern. Completion requires all four files, a
+concern. Completion requires all five files, a
 non-overlapping trigger surface, a role-specific voice, and all available
 validation passing.
