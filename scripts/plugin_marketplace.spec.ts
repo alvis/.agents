@@ -20,11 +20,16 @@ import {
   removeTemporaryDirectory,
 } from "./test-support.ts";
 
+import {
+  HARNESS_ROOT_VARIABLES,
+  PLUGIN_ROOT_ANCHOR,
+  PLUGIN_ROOT_GUARD,
+} from "./harness_contract.ts";
+
 const root = join(import.meta.dirname, "..");
 const pluginsRoot = join(root, "plugins");
 const claudeCatalogPath = join(root, ".claude-plugin", "marketplace.json");
 const codexCatalogPath = join(root, ".agents", "plugins", "marketplace.json");
-const harnessVariables = ["CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT"] as const;
 const payloadEvents = new Map([
   ["hooks/ALLAGENT.md", new Set(["SessionStart", "SubagentStart"])],
   ["hooks/MAINAGENT.md", new Set(["SessionStart"])],
@@ -88,7 +93,7 @@ function cleanHarnessEnvironment(
   value?: string,
 ): NodeJS.ProcessEnv {
   const environment = { ...process.env };
-  for (const name of harnessVariables) delete environment[name];
+  for (const name of HARNESS_ROOT_VARIABLES) delete environment[name];
   if (variable !== undefined) environment[variable] = value;
   return environment;
 }
@@ -521,10 +526,8 @@ describe("shared hook contracts", () => {
       ).hooks;
       for (const event of Object.keys(hooks))
         for (const command of hookCommands(hooks, event)) {
-          expect(command).toContain("${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}");
-          expect(command).toMatch(
-            /^\[ -n "\$\{CLAUDE_PLUGIN_ROOT:-\$\{PLUGIN_ROOT:-}}" ] \|\| \{ echo "plugin root unset"/,
-          );
+          expect(command).toContain(PLUGIN_ROOT_ANCHOR);
+          expect(command.startsWith(PLUGIN_ROOT_GUARD)).toBe(true);
         }
     }
   });
@@ -550,7 +553,7 @@ describe("shared hook contracts", () => {
     }
   });
 
-  it.each(harnessVariables)("should emit context with %s", (variable) => {
+  it.each(HARNESS_ROOT_VARIABLES)("should emit context with %s", (variable) => {
     for (const plugin of pluginsWithHooks) {
       const directory = resolve(root, plugin.source);
       const hooks = json<{ hooks: Record<string, readonly HookEntry[]> }>(
@@ -599,7 +602,7 @@ describe("shared hook contracts", () => {
       ).hooks;
       for (const event of Object.keys(hooks))
         for (const command of hookCommands(hooks, event))
-          expect(command).toContain('"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}');
+          expect(command).toContain(`"${PLUGIN_ROOT_ANCHOR}`);
     }
   });
 
