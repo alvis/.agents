@@ -132,6 +132,23 @@ function runCamelHook(
   return runHookWithKey("toolInput", matcher, toolInput, variable);
 }
 
+function runHookWithVariables(
+  matcher: string,
+  toolInput: Record<string, unknown>,
+  variables: Record<string, string>,
+): Envelope {
+  const environment = { ...process.env };
+  for (const name of HARNESS_ROOT_VARIABLES) delete environment[name];
+  Object.assign(environment, variables);
+  const completed = spawnSync("bash", ["-c", commandFor(matcher)], {
+    encoding: "utf8",
+    env: environment,
+    input: JSON.stringify({ tool_input: toolInput }),
+  });
+  expect(completed.status, completed.stderr).toBe(0);
+  return JSON.parse(completed.stdout) as Envelope;
+}
+
 function expectAllowed(output: Envelope): void {
   expect(output.decision).toBeUndefined();
   expect(output.reason).toBeUndefined();
@@ -249,6 +266,22 @@ describe("PreToolUse hook wiring", () => {
       else expectAllowed(passed);
     },
   );
+
+  it("should resolve two set harness variables by chain precedence", () => {
+    // The grok envelope would appear if grok outranked the winner.
+    expectAllowed(
+      runHookWithVariables(questions, {}, {
+        CLAUDE_PLUGIN_ROOT: plugin,
+        GROK_PLUGIN_ROOT: "/plugins/grok",
+      }),
+    );
+    expectAllowed(
+      runHookWithVariables(plans, {}, {
+        PLUGIN_ROOT: plugin,
+        GROK_PLUGIN_ROOT: "/plugins/grok",
+      }),
+    );
+  });
 });
 
 describe("question validator", () => {

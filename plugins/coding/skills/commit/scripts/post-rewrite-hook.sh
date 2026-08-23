@@ -3,8 +3,15 @@ set -euo pipefail
 
 # post-rewrite-hook.sh -- PostToolUse hook
 # Auto-verifies integrity after any successful history-rewriting op (git or jj).
-# Input:  JSON on stdin { tool_name, tool_input: { command }, tool_output, exit_code }
+# Input:  JSON on stdin { tool_name, tool_input | toolInput: { command },
+#         tool_output | toolOutput, exit_code } -- Claude Code and Codex send
+#         snake_case tool_input/tool_output, Grok Build sends camelCase
+#         toolInput/toolOutput.
 # Output: stderr = verify results (always shown to agent)
+#
+# Grok Build loads plugin hooks only from hooks/hooks.json, so this
+# frontmatter-registered hook stays inert under grok today; the dual-key read
+# keeps the script honest if that changes.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
@@ -15,7 +22,7 @@ INPUT="$(cat)"
 extract_command() {
   local input="$1"
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null
+    printf '%s' "$input" | jq -r '(.tool_input // .toolInput).command // empty' 2>/dev/null
   else
     printf '%s' "$input" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
   fi
@@ -24,7 +31,9 @@ extract_command() {
 extract_exit_code() {
   local input="$1"
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$input" | jq -r '.tool_output.exit_code // .exit_code // empty' 2>/dev/null
+    # Grok documents no output field on PostToolUse payloads, so an unreadable
+    # exit code keeps today's fail-open skip.
+    printf '%s' "$input" | jq -r '(.tool_output // .toolOutput).exit_code // (.tool_output // .toolOutput).exitCode // .exit_code // empty' 2>/dev/null
   else
     printf '%s' "$input" | sed -n 's/.*"exit_code"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' | head -1
   fi
