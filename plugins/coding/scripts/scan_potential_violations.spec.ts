@@ -139,7 +139,7 @@ describe("coding scanner golden fixtures", () => {
 
   // This test rescans the full fixture tree once per loaded rule through real
   // subprocess captures. It is the one in this file observed exceeding the
-  // default budget on hosted runners, so the raise lives on this test alone and
+  // default budget on hosted macOS, so the raise lives on this test alone and
   // genuine hangs elsewhere still fail fast.
   it("exposes every rule as a category", async () => {
     for (const rule of await loadRules())

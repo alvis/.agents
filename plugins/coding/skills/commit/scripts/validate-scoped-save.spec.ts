@@ -240,6 +240,10 @@ describe("path-scoped lifecycle saving", () => {
   });
   afterEach(() => h.close());
 
+  // This test alone drives the full build→preflight→save→verify chain of real
+  // bun and git subprocesses. It is the one in this file observed exceeding the
+  // default budget on hosted macOS, so the raise lives on this test alone and
+  // genuine hangs elsewhere still fail fast.
   it("preserves unrelated index and worktree in a real path-limited save", () => {
     const selected = [
       "src.txt",
@@ -296,7 +300,7 @@ describe("path-scoped lifecycle saving", () => {
     expect(h.verify(manifest, preflight, saved).output.receipt_path).toBe(
       verified.receipt_path,
     );
-  });
+  }, 30_000);
 
   it("records and saves both sides of an exact rename", () => {
     h.git("mv", "src.txt", "renamed-src.txt");
