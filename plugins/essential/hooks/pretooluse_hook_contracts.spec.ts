@@ -18,9 +18,9 @@ const hooks = JSON.parse(
     PreToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }>;
   };
 };
-const questions = "AskUserQuestion|request_user_input";
-const plans = "ExitPlanMode|update_plan";
-const dispatch = "Agent|spawn_agent";
+const questions = "AskUserQuestion|request_user_input|ask_user_question";
+const plans = "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode";
+const dispatch = "Agent|spawn_agent|Task|spawn_subagent";
 const matchers = [questions, plans, dispatch] as const;
 const validTags = [
   "Architectural",
@@ -73,11 +73,18 @@ Recent work:
 - Parser migration landed; consumer conversion remains — state/journal.md
 `;
 
-interface HookOutput {
-  readonly additionalContext?: string;
-  readonly permissionDecision?: string;
-  readonly permissionDecisionReason?: string;
+interface ClaudeEnvelope {
+  readonly hookSpecificOutput?: {
+    readonly additionalContext?: string;
+    readonly permissionDecision?: string;
+    readonly permissionDecisionReason?: string;
+  };
 }
+interface GrokEnvelope {
+  readonly decision?: string;
+  readonly reason?: string;
+}
+type Envelope = ClaudeEnvelope & GrokEnvelope;
 
 function commandFor(matcher: string): string {
   const entries = hooks.hooks.PreToolUse.filter(
@@ -94,32 +101,85 @@ function harnessEnvironment(variable: string): NodeJS.ProcessEnv {
   return environment;
 }
 
+function runHookWithKey(
+  key: "tool_input" | "toolInput",
+  matcher: string,
+  toolInput: Record<string, unknown>,
+  variable: string,
+): Envelope {
+  const completed = spawnSync("bash", ["-c", commandFor(matcher)], {
+    encoding: "utf8",
+    env: harnessEnvironment(variable),
+    input: JSON.stringify({ [key]: toolInput }),
+  });
+  expect(completed.status, completed.stderr).toBe(0);
+  return JSON.parse(completed.stdout) as Envelope;
+}
+
 function runHook(
   matcher: string,
   toolInput: Record<string, unknown>,
   variable = "CLAUDE_PLUGIN_ROOT",
-): HookOutput {
-  const completed = spawnSync("bash", ["-c", commandFor(matcher)], {
-    encoding: "utf8",
-    env: harnessEnvironment(variable),
-    input: JSON.stringify({ tool_input: toolInput }),
-  });
-  expect(completed.status, completed.stderr).toBe(0);
-  return (JSON.parse(completed.stdout) as { hookSpecificOutput: HookOutput })
-    .hookSpecificOutput;
+): Envelope {
+  return runHookWithKey("tool_input", matcher, toolInput, variable);
 }
 
-function expectAllowed(output: HookOutput): void {
-  expect(output.permissionDecision).toBeUndefined();
-  expect(output.additionalContext).toBeTruthy();
+function runCamelHook(
+  matcher: string,
+  toolInput: Record<string, unknown>,
+  variable: string,
+): Envelope {
+  return runHookWithKey("toolInput", matcher, toolInput, variable);
 }
 
-function denialReason(output: HookOutput): string {
-  expect(output.permissionDecision).toBe("deny");
-  expect(output.additionalContext).toBeUndefined();
-  expect(output.permissionDecisionReason).toBeTypeOf("string");
-  return output.permissionDecisionReason!;
+function expectAllowed(output: Envelope): void {
+  expect(output.decision).toBeUndefined();
+  expect(output.reason).toBeUndefined();
+  expect(output.hookSpecificOutput?.permissionDecision).toBeUndefined();
+  expect(output.hookSpecificOutput?.additionalContext).toBeTruthy();
 }
+
+function denialReason(output: Envelope): string {
+  expect(output.decision).toBeUndefined();
+  expect(output.reason).toBeUndefined();
+  expect(output.hookSpecificOutput?.permissionDecision).toBe("deny");
+  expect(output.hookSpecificOutput?.permissionDecisionReason).toBeTypeOf(
+    "string",
+  );
+  return output.hookSpecificOutput!.permissionDecisionReason!;
+}
+
+function expectGrokAllow(output: Envelope): void {
+  expect(output.decision).toBe("allow");
+  expect(output.reason).toBeTypeOf("string");
+  expect(output.hookSpecificOutput).toBeUndefined();
+}
+
+function grokDenialReason(output: Envelope): string {
+  expect(output.decision).toBe("deny");
+  expect(output.reason).toBeTypeOf("string");
+  expect(output.hookSpecificOutput).toBeUndefined();
+  return output.reason!;
+}
+
+/** payload per matcher that its validator must deny */
+const violations: Record<string, Record<string, unknown>> = {
+  [questions]: question({
+    label: "Consolidate purchasing",
+    description: "One supplier.",
+  }),
+  [plans]: { plan: "## Context\n\nSlow.\n" },
+  [dispatch]: { name: "Raj_TechLead", task: "do it" },
+};
+/** fragment each violation's denial reason must carry */
+const violationFragments: Record<string, string> = {
+  [questions]: "Consolidate purchasing",
+  [plans]: "missing headings",
+  [dispatch]: "Raj_TechLead",
+};
+const matrix = matchers.flatMap((matcher) =>
+  HARNESS_ROOT_VARIABLES.map((variable) => [matcher, variable] as const),
+);
 
 function question(
   ...options: Array<Record<string, string>>
@@ -154,21 +214,40 @@ describe("PreToolUse hook wiring", () => {
     }
   });
 
-  it.each(
-    matchers.flatMap((matcher) =>
-      HARNESS_ROOT_VARIABLES.map((variable) => [matcher, variable] as const),
-    ),
-  )("should resolve %s with %s", (matcher, variable) =>
-    expectAllowed(runHook(matcher, {}, variable)),
+  it.each(matrix)(
+    "should emit the native allow envelope for %s resolved through %s",
+    (matcher, variable) => {
+      const output = runHook(matcher, {}, variable);
+      if (variable === "GROK_PLUGIN_ROOT") expectGrokAllow(output);
+      else expectAllowed(output);
+    },
   );
-  it.each(HARNESS_ROOT_VARIABLES)(
-    "should deny a violation with %s",
-    (variable) =>
-      expect(
-        denialReason(
-          runHook(dispatch, { name: "Raj_TechLead", task: "do it" }, variable),
-        ),
-      ).toContain("Raj_TechLead"),
+
+  it.each(matrix)(
+    "should emit the native deny envelope for %s resolved through %s",
+    (matcher, variable) => {
+      const output = runHook(matcher, violations[matcher]!, variable);
+      const reason =
+        variable === "GROK_PLUGIN_ROOT"
+          ? grokDenialReason(output)
+          : denialReason(output);
+      expect(reason).toContain(violationFragments[matcher]!);
+    },
+  );
+
+  it.each(matrix)(
+    "should validate %s through camelCase toolInput under %s",
+    (matcher, variable) => {
+      const isGrok = variable === "GROK_PLUGIN_ROOT";
+      const denied = runCamelHook(matcher, violations[matcher]!, variable);
+      const reason = isGrok
+        ? grokDenialReason(denied)
+        : denialReason(denied);
+      expect(reason).toContain(violationFragments[matcher]!);
+      const passed = runCamelHook(matcher, {}, variable);
+      if (isGrok) expectGrokAllow(passed);
+      else expectAllowed(passed);
+    },
   );
 });
 
@@ -362,16 +441,18 @@ describe("fail-open behavior", () => {
   ] as const)("should allow uncheckable %s payloads", (matcher, input) =>
     expectAllowed(runHook(matcher, input)),
   );
-  it.each(matchers)("should fail open on malformed stdin for %s", (matcher) => {
-    const completed = spawnSync("bash", ["-c", commandFor(matcher)], {
-      encoding: "utf8",
-      env: harnessEnvironment("CLAUDE_PLUGIN_ROOT"),
-      input: "not json at all",
-    });
-    expect(completed.status, completed.stderr).toBe(0);
-    expectAllowed(
-      (JSON.parse(completed.stdout) as { hookSpecificOutput: HookOutput })
-        .hookSpecificOutput,
-    );
-  });
+  it.each(matrix)(
+    "should fail open identically on malformed stdin for %s under %s",
+    (matcher, variable) => {
+      const completed = spawnSync("bash", ["-c", commandFor(matcher)], {
+        encoding: "utf8",
+        env: harnessEnvironment(variable),
+        input: "not json at all",
+      });
+      expect(completed.status, completed.stderr).toBe(0);
+      const output = JSON.parse(completed.stdout) as Envelope;
+      if (variable === "GROK_PLUGIN_ROOT") expectGrokAllow(output);
+      else expectAllowed(output);
+    },
+  );
 });

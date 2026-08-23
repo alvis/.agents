@@ -15,13 +15,11 @@ source "$SCRIPTS_DIR/context.sh"
 MESSAGE_CEILING=4096
 
 deny() {
-  printf '%s' "$1" | jq -Rs \
-    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:.}}'
-  exit 0
+  output_pretooluse_decision "deny" "$1"
 }
 
 allow() {
-  output_hook_context "PreToolUse" \
+  output_pretooluse_decision "allow" \
     "Remind you to follow instructions in essential:references/orchestration.md"
 }
 
@@ -31,7 +29,11 @@ if ! printf '%s' "$input" | jq -e . >/dev/null 2>&1; then
   allow
 fi
 
-name=$(printf '%s' "$input" | jq -r '.tool_input.name // ""')
+# Claude Code and Codex send snake_case tool_input; Grok Build sends camelCase
+# toolInput. Collapse once so every field read below is key-agnostic.
+input=$(printf '%s' "$input" | jq -c '(.tool_input // .toolInput)')
+
+name=$(printf '%s' "$input" | jq -r '.name // ""')
 
 # Checked before the prompt guard below: Codex's spawn_agent carries a name and
 # a task but no prompt, and a malformed name is still a malformed name there.
@@ -39,11 +41,11 @@ if [[ -n "$name" ]] && ! printf '%s' "$name" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+){
   deny "name \"${name}\" must be lowercase kebab <short-name>-<role>-<task>. See essential:references/orchestration.md."
 fi
 
-if [[ "$(printf '%s' "$input" | jq -r '.tool_input.prompt | type')" != "string" ]]; then
+if [[ "$(printf '%s' "$input" | jq -r '.prompt | type')" != "string" ]]; then
   allow
 fi
 
-prompt=$(printf '%s' "$input" | jq -r '.tool_input.prompt')
+prompt=$(printf '%s' "$input" | jq -r '.prompt')
 
 # subagent-handover.md governs the first handover to a named teammate. Only the
 # main agent assigns a name, so a named dispatch is that handover; a nested
@@ -76,7 +78,7 @@ if [[ -n "$name" ]]; then
 fi
 
 # orchestration.md scopes the ceiling to every dispatch, named or not.
-length=$(printf '%s' "$input" | jq -r '.tool_input.prompt | length')
+length=$(printf '%s' "$input" | jq -r '.prompt | length')
 if [[ "$length" -gt "$MESSAGE_CEILING" ]]; then
   deny "prompt is ${length} characters, over the ${MESSAGE_CEILING} ceiling. Externalize the detail to a file and reference its path."
 fi

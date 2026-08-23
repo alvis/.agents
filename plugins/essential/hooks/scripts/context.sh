@@ -21,6 +21,55 @@ EOF
   exit 0
 }
 
+# Resolve the harness whose plugin-root variable fired, in the same order as
+# the anchor chain in scripts/harness_contract.ts. Prints claude, codex, or
+# grok; a new harness extends this chain by one segment.
+resolve_harness() {
+  if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+    printf '%s\n' claude
+  elif [[ -n "${PLUGIN_ROOT:-}" ]]; then
+    printf '%s\n' codex
+  elif [[ -n "${GROK_PLUGIN_ROOT:-}" ]]; then
+    printf '%s\n' grok
+  else
+    return 1
+  fi
+}
+
+# Emit a PreToolUse decision in the resolving harness's native envelope. Claude
+# Code and Codex read permissionDecision* inside hookSpecificOutput and express
+# an allow as plain context beside it; Grok Build honors only a top-level
+# {"decision","reason"} object and ignores those keys entirely.
+output_pretooluse_decision() {
+  local decision="$1"
+  local reason="$2"
+  local harness
+  harness="$(resolve_harness)" || {
+    echo "plugin root unset" >&2
+    exit 1
+  }
+  if [[ "$harness" == "grok" ]]; then
+    jq -cn --arg decision "$decision" --arg reason "$reason" \
+      '{decision: $decision, reason: $reason}'
+    exit 0
+  fi
+  if [[ "$decision" != "deny" ]]; then
+    output_hook_context "PreToolUse" "$reason"
+  fi
+  local escaped_reason
+  escaped_reason=$(printf '%s' "$reason" | jq -Rs .)
+  cat <<EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "$decision",
+    "permissionDecisionReason": $escaped_reason
+  }
+}
+EOF
+  exit 0
+}
+
 # Get working directory context
 get_working_directory_context() {
   printf '%s\n' "**Working directory**: \`$(pwd)\`"

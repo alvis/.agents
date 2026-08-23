@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion|request_user_input",
+        "matcher": "AskUserQuestion|request_user_input|ask_user_question",
         "hooks": [
           {
             "type": "command",
@@ -11,7 +11,7 @@
         ]
       },
       {
-        "matcher": "ExitPlanMode|update_plan",
+        "matcher": "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode",
         "hooks": [
           {
             "type": "command",
@@ -20,7 +20,7 @@
         ]
       },
       {
-        "matcher": "Agent|spawn_agent",
+        "matcher": "Agent|spawn_agent|Task|spawn_subagent",
         "hooks": [
           {
             "type": "command",
