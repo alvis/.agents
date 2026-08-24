@@ -30,7 +30,7 @@ const INTEGRATION_CAVEAT_BY_SKILL: Readonly<Record<string, string>> = {
 };
 const OPENCODE_UNAVAILABLE_SKILLS: Readonly<Record<string, string>> = {
   "essential:install-agents":
-    "The projector already installs OpenCode agents; this skill's installer supports only Claude Code and Codex.",
+    "The projector already installs OpenCode agents; this skill's installer supports Claude Code, Codex, and Grok Build.",
 };
 
 interface Feature {
@@ -301,7 +301,7 @@ function skillFeature(path: string): Feature {
       identity,
       FULL,
       FULL,
-      ADAPTED,
+      FULL,
       UNAVAILABLE,
       `${unavailableCaveat} Source: ${sourceLink(path)}.`,
     );

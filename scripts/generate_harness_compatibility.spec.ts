@@ -47,7 +47,7 @@ describe("skill classification", () => {
   });
   it("keeps the agent installer native except under OpenCode V1", () => {
     expect(row("essential:install-agents")).toBe(
-      "| `essential:install-agents` skill | ✅ Native | ✅ Native | 🟡 Adapted | ❌ Unavailable | The projector already installs OpenCode agents; this skill's installer supports only Claude Code and Codex. Source: [plugins/essential/skills/install-agents/SKILL.md](plugins/essential/skills/install-agents/SKILL.md). |",
+      "| `essential:install-agents` skill | ✅ Native | ✅ Native | ✅ Native | ❌ Unavailable | The projector already installs OpenCode agents; this skill's installer supports Claude Code, Codex, and Grok Build. Source: [plugins/essential/skills/install-agents/SKILL.md](plugins/essential/skills/install-agents/SKILL.md). |",
     );
   });
   it("keeps default skills adapted for Grok and OpenCode with projected names", () => {
