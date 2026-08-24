@@ -3,16 +3,11 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished } from "vitest";
 
 import { HARNESS_ROOT_VARIABLES } from "../../../../../scripts/harness_contract.ts";
 
 const hook = resolve(import.meta.dirname, "pre-commit-hook.sh");
-const roots: string[] = [];
-afterEach(() => {
-  for (const root of roots.splice(0))
-    rmSync(root, { recursive: true, force: true });
-});
 
 interface ClaudeEnvelope {
   readonly hookSpecificOutput?: {
@@ -28,7 +23,7 @@ type Envelope = ClaudeEnvelope & GrokEnvelope;
 
 function fixture(): string {
   const root = mkdtempSync(resolve(tmpdir(), "pre-commit-hook-"));
-  roots.push(root);
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(resolve(root, "checkpoints"));
   const repo = resolve(root, "repo");
   mkdirSync(repo);
