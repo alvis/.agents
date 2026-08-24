@@ -4,7 +4,7 @@
     "name": "Alvis"
   },
   "metadata": {
-    "description": "Curated collection of agents, commands, and integrations for Claude Code development workflows",
+    "description": "Curated collection of agents, commands, and integrations for Claude Code, Codex, and Grok Build development workflows",
     "version": "1.0.0"
   },
   "plugins": [
@@ -23,7 +23,7 @@
     {
       "name": "governance",
       "source": "./plugins/governance",
-      "description": "Tools for creating and managing Claude Code configuration files",
+      "description": "Tools for creating and managing Claude Code, Codex, and Grok Build configuration files",
       "category": "meta"
     },
     {

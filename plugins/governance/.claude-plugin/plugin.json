@@ -4,6 +4,6 @@
   "dependencies": [
     "essential"
   ],
-  "description": "Tools for creating and managing Claude Code configuration files including commands, skills, standards, and agents",
+  "description": "Tools for creating and managing Claude Code, Codex, and Grok Build configuration files including commands, skills, standards, and agents",
   "version": "1.0.0"
 }
