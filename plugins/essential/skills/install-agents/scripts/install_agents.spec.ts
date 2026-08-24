@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -9,7 +10,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { delimiter, dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -19,6 +20,7 @@ import {
   discoverAgentTemplates,
   installAgents,
   installedPluginRoots,
+  readPluginRecords,
 } from "./install_agents.ts";
 import { AgentTemplateError } from "./stitch_agent.ts";
 
@@ -88,6 +90,34 @@ function run(...args: readonly string[]) {
     stdout: result.stdout,
     stderr: result.stderr,
   };
+}
+
+function grokListStub(directory: string, payloadPath: string): string {
+  const bin = resolve(directory, "bin");
+  mkdirSync(bin, { recursive: true });
+  const stub = resolve(bin, "grok");
+  writeFileSync(stub, `#!/bin/sh\ncat '${payloadPath}'\n`);
+  chmodSync(stub, 0o755);
+  return bin;
+}
+
+// readPluginRecords shells out through Bun.spawnSync, so it runs under the Bun
+// runtime with the stub `grok` resolved through a PATH prefix.
+function grokListRecords(bin: string) {
+  return spawnSync(
+    "bun",
+    [
+      "-e",
+      `const { readPluginRecords } = await import(${JSON.stringify(script)});\nprocess.stdout.write(JSON.stringify(readPluginRecords("grok")));`,
+    ],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${bin}${delimiter}${process.env.PATH ?? ""}`,
+      },
+    },
+  );
 }
 
 describe("agent discovery and installation", () => {
@@ -272,6 +302,122 @@ describe("agent discovery and installation", () => {
         version: "missing",
       }),
     ).toThrow("cache root is absent");
+  });
+
+  it("normalizes grok plugin list records and discovers enabled same-marketplace roots", () => {
+    const root = temporaryRoot();
+    const installed = resolve(root, "installed");
+    const essential = resolve(installed, "essential");
+    const coding = resolve(installed, "coding");
+    const react = resolve(installed, "react");
+    const docs = resolve(installed, "docs");
+    writeTemplate(essential, "first-agent", true);
+    writeTemplate(coding, "second-agent");
+    writeTemplate(react, "react-agent");
+    mkdirSync(docs);
+    // Mirrors `grok plugin list --json`: enablement is the record's own status
+    // field and the install location is its path field.
+    const payload = resolve(root, "plugin-list.json");
+    writeFileSync(
+      payload,
+      JSON.stringify([
+        {
+          status: "enabled",
+          name: "essential",
+          repo_key: "alvis/essential",
+          version: "1.0.0",
+          path: essential,
+          source: "local",
+          marketplace: "main",
+        },
+        {
+          status: "enabled",
+          name: "coding",
+          repo_key: "alvis/coding",
+          version: "1.0.0",
+          path: coding,
+          source: "local",
+          marketplace: "main",
+        },
+        {
+          status: "enabled",
+          name: "react",
+          repo_key: "other/react",
+          version: "1.0.0",
+          path: react,
+          source: "local",
+          marketplace: "other",
+        },
+        {
+          status: "disabled",
+          name: "docs",
+          repo_key: "alvis/docs",
+          version: "1.0.0",
+          path: docs,
+          source: "local",
+          marketplace: "main",
+        },
+        null,
+        "malformed",
+      ]),
+    );
+
+    const listed = grokListRecords(grokListStub(root, payload));
+    expect(listed.status, listed.stderr).toBe(0);
+    const normalized = JSON.parse(listed.stdout!) as Array<
+      Record<string, unknown>
+    >;
+    expect(normalized).toEqual([
+      {
+        id: "essential@main",
+        enabled: true,
+        version: "1.0.0",
+        installPath: essential,
+      },
+      {
+        id: "coding@main",
+        enabled: true,
+        version: "1.0.0",
+        installPath: coding,
+      },
+      {
+        id: "react@other",
+        enabled: true,
+        version: "1.0.0",
+        installPath: react,
+      },
+      {
+        id: "docs@main",
+        enabled: false,
+        version: "1.0.0",
+        installPath: docs,
+      },
+    ]);
+    expect(
+      discoverAgentTemplates(essential, {
+        harness: "grok",
+        pluginRecords: normalized,
+      }).map(({ owner, name }) => [owner, name]),
+    ).toEqual([
+      ["coding", "second-agent"],
+      ["essential", "first-agent"],
+    ]);
+  });
+
+  it("rejects malformed grok plugin list payloads", () => {
+    const root = temporaryRoot();
+    const payload = resolve(root, "plugin-list.json");
+    const bin = grokListStub(root, payload);
+    writeFileSync(payload, '{"plugins":[]}');
+    expect(grokListRecords(bin).stderr).toContain("did not return a list");
+    writeFileSync(payload, "[not json");
+    expect(grokListRecords(bin).stderr).toContain(
+      "invalid JSON from grok plugin list",
+    );
+    rmSync(payload);
+    expect(grokListRecords(bin).stderr).toContain(
+      "cannot list installed grok plugins",
+    );
   });
 });
 
