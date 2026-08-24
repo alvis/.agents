@@ -128,17 +128,29 @@ labels come only from the receiving repository's live inventory below.
   authenticated `gh`, and remote push access. `jj` is preferred and drives
   publication whenever it is both installed on PATH and initialized for this
   repository; prove that functionally rather than by directory presence, since a
-  `.jj` and a `.git` directory can both exist without sharing a backing
-  repository. Confirm `git rev-parse HEAD` equals
-  `jj log -r @- --no-graph -T 'commit_id'`; anything else — `jj` missing, either
-  command failing, or the two ids differing — selects the git path, which is
-  fully supported and never requires initializing `jj`. Authoring PR text alone
-  needs neither, so the text-only path is never blocked by the publication
-  prerequisites. Unless `--no-verify` is explicit, local CI parity additionally
-  requires jj 0.44 or newer, an initialized colocated repository, and exact
-  target resolution so every test and lint task can run through `jj run`; follow
-  the shared jj guide and `coding:sync-tool` instead of substituting a Git
-  runner.
+  `.jj` and a `.git` directory can exist without sharing a backing repository.
+  A registered parallel workspace intentionally has no workspace-local `.git`;
+  accept it when `jj git root` names a Git directory and the active `@-` object
+  exists there. Use the same predicate as `sync-pr-stack.sh`:
+
+  ```bash
+  PUBLICATION_VCS=git PUBLICATION_GIT_DIR=
+  if command -v jj >/dev/null 2>&1 &&
+    CANDIDATE_GIT_DIR=$(jj git root 2>/dev/null) &&
+    case "$CANDIDATE_GIT_DIR" in */.git) true ;; *) false ;; esac &&
+    JJ_PARENT_OID=$(jj log -r @- --no-graph -T 'commit_id ++ "\n"' 2>/dev/null) &&
+    git --git-dir="$CANDIDATE_GIT_DIR" cat-file -e "$JJ_PARENT_OID^{commit}" 2>/dev/null
+  then PUBLICATION_VCS=jj
+    PUBLICATION_GIT_DIR=$CANDIDATE_GIT_DIR
+  else git rev-parse --git-dir >/dev/null || exit $?
+  fi
+  ```
+
+  Anything else selects the fully supported Git path. Authoring PR text alone
+  needs neither. Unless `--no-verify` is explicit, local CI parity additionally
+  requires jj 0.44 or newer and exact target resolution so every task can run
+  through `jj run`; follow the shared jj guide and `coding:sync-tool` instead of
+  substituting a Git runner.
 
 ## State gate
 
@@ -157,18 +169,34 @@ write PM-owned pointers or overview files.
 #### Bind the push remote
 
 Bind `REMOTE` before any publication helper. Use the caller-selected named
-remote when supplied, then the current branch's configured push remote, then
+remote when supplied. On Git, next use the current branch's configured push
+remote; jj has no workspace-local Git branch, so it must skip that lookup rather
+than inherit the backing worktree's unrelated HEAD. Then use
 `remote.pushDefault`. With none configured, accept only the sole remote whose
 push URL resolves through GitHub. Every Git remote lookup uses `--` before the
 name so a remote beginning with `-` remains data, not an option:
 
 ```bash
+if [ "$PUBLICATION_VCS" = jj ]; then
+  PRIOR_GIT_DIR=${GIT_DIR-} PRIOR_GIT_DIR_WAS_SET=${GIT_DIR+x}
+  export GIT_DIR=$PUBLICATION_GIT_DIR
+fi
 source "${CODING_PR_SKILL_DIR}/scripts/resolve-push-remote.sh"
+if [ "$PUBLICATION_VCS" = jj ]; then
+  if [ -n "$PRIOR_GIT_DIR_WAS_SET" ]; then export GIT_DIR=$PRIOR_GIT_DIR; else unset GIT_DIR; fi
+fi
 ```
 
-Record `REMOTE` and `PUSH_OWNER` in the publication plan. On zero or ambiguous
-GitHub candidates, preserve the candidate evidence and stop rather than selecting
-one.
+`PUBLICATION_VCS=jj` is part of the sourced resolver contract: while
+`PUBLICATION_GIT_DIR` exposes the shared remote configuration, the resolver
+must not inspect its backing Git HEAD for branch-scoped settings.
+
+Record `REMOTE`, receiving `HOST/$REPOSITORY`, and `PUSH_OWNER` in the
+publication plan. On zero or ambiguous GitHub candidates, preserve the
+candidate evidence and stop rather than selecting one. PR discovery is always
+scoped with `--repo "$HOST/$REPOSITORY"`, then filtered to exact
+`headRepositoryOwner.login == "$PUSH_OWNER"`; a branch name alone never
+identifies a PR.
 
 Inspect the selected tool's working state — `jj status`, `jj log`, and
 `jj bookmark list`, or `git status --short`, `git log --oneline`, and
@@ -326,14 +354,24 @@ selected affected head's exact base:
 
 ```bash
 ROOT_BASE=$PR_BASE_01
-printf 'ROOT_BASE=%s\n' "$ROOT_BASE"
+ROOT_BASE_ROW=$(gh api --hostname "$HOST" \
+  "repos/$REPOSITORY/git/ref/heads/$ROOT_BASE")
+ROOT_BASE_OID=$(jq -er --arg ref "refs/heads/$ROOT_BASE" '
+  select(.ref == $ref and .object.type == "commit") | .object.sha
+' <<<"$ROOT_BASE_ROW")
+printf 'ROOT_BASE=%s\nROOT_BASE_OID=%s\n' "$ROOT_BASE" "$ROOT_BASE_OID"
 ```
 
 For a suffix restack, `PR_BASE_01` is the unselected predecessor, not the
-repository destination. Record `ROOT_BASE` with the selected head/base map and
-keep it unchanged for a retry only while that selection and map remain
-unchanged. Any discovery restart or base-map change recomputes it before the
-next helper call.
+repository destination. The receiving repository's exact base ref is
+authoritative even when heads publish to a fork; never derive `ROOT_BASE_OID`
+from the selected push remote. During the same discovery snapshot, bind each remote
+head as `EXPECTED_REMOTE_OID_NN=<full-oid>` or `absent` when the remote ref does
+not exist. Record `ROOT_BASE`, `ROOT_BASE_OID`, repository, owner, remote, and
+these remote OIDs with the selected head/base map. Keep them unchanged for a
+retry only while that selection and map remain unchanged. Any discovery
+restart, remote/base identity change, or base-map change recomputes all of them
+before the next helper call.
 
 On the jj path, all history edits and existing-bookmark movement belong to
 `coding:commit`; rely on jj's automatic descendant rebase and bookmark movement.
@@ -354,34 +392,68 @@ On the git path, prepare the local branch; the helper owns its only push:
 git branch --force "$BOOKMARK" "$CHANGE_ID"
 ```
 
-The helper's Git push is leased, never bare `--force`. Its jj batch push checks
-each bookmark against its last-seen remote state, giving force-with-lease-like
-protection against overwriting a remote advance.
+The helper's Git push is leased with the caller-bound
+`--force-with-lease=refs/heads/<bookmark>:<expected-remote-oid>`; `absent` uses
+an empty expected value to protect missing-ref creation, and its refspec uses
+the bound full local OID rather than a mutable branch name. Its jj path observes
+each remote before and after fetch, binds one immutable post-fetch operation,
+then issues one explicit multi-bookmark push at that operation and relies on
+jj's post-fetch lease.
 
 Before creating or editing PRs, publish the complete affected selection through
 the helper in one call:
 
 ```bash
-bash "${CODING_PR_SKILL_DIR}/scripts/restack.sh" \
-  --remote "$REMOTE" \
-  --base "$ROOT_BASE" \
-  "$BOOKMARK_01=$EXPECTED_HEAD_OID_01" \
-  "$BOOKMARK_02=$EXPECTED_HEAD_OID_02"
+if SYNC_RECEIPT=$(bash "${CODING_PR_SKILL_DIR}/scripts/sync-pr-stack.sh" \
+  --repo "$HOST/$REPOSITORY" --head-owner "$PUSH_OWNER" --remote "$REMOTE" \
+  --base "$ROOT_BASE" --base-oid "$ROOT_BASE_OID" \
+  --head "$BOOKMARK_01" "$EXPECTED_HEAD_OID_01" "$EXPECTED_REMOTE_OID_01" \
+  --head "$BOOKMARK_02" "$EXPECTED_HEAD_OID_02" "$EXPECTED_REMOTE_OID_02")
+then SYNC_STATUS=0
+else SYNC_STATUS=$?
+fi
+jq -e '(.vcs == "git" or .vcs == "jj") and (.items|type == "array") and (.errors|type == "array")' >/dev/null <<<"$SYNC_RECEIPT" || exit 1
+[ "$SYNC_STATUS" -eq 0 ] || { jq '{items, errors}' <<<"$SYNC_RECEIPT" >&2; exit "$SYNC_STATUS"; }
 ```
 
 On jj this produces one `jj git push --remote "$REMOTE"` with repeated explicit
 `--bookmark` selectors for all and only affected unmerged heads; it never uses
-`--all`. On plain Git the helper retains per-branch `--force-with-lease`
-publication. Do not follow a jj batch with gh-stack rebase, sync, push, or
-submit. Preserve stderr and the helper's `restacked` and `errors` arrays so a
-failure reports verified partial state rather than implying an all-or-nothing
-result.
+`--all`. On plain Git the helper publishes bottom-up with the exact leases
+above. Do not follow a jj batch with gh-stack rebase, sync, push, or submit.
+Preserve stderr and parse `SYNC_RECEIPT.items`, including each `head_status`,
+`base_status`, `observed_remote_oid`, numeric `pr_number`, and exact head/base
+read-back, plus its structured `errors`. Every live head must be `verified`
+before the helper starts any base edit. A missing PR reports
+`base_status: deferred`; creation remains here.
+
+Interpret every status literally:
+
+- `head_status`: `pending` was not attempted; `planned` is dry-run only;
+  `verified` matches the bound local OID on the remote; `skipped_merged` is an
+  exact merged PR omitted from publication; `failed` requires fresh discovery.
+- `base_status`: `pending` was not attempted; `planned` is dry-run only;
+  `verified` passed numeric PR identity and exact base read-back; `deferred`
+  requires PR creation and its separate verification below; `not_applicable`
+  belongs only to a merged PR; `failed` requires fresh discovery.
+
+A successful non-dry run has no errors, every live head is `verified`, and
+every existing open PR base is `verified`; `deferred` and `skipped_merged` are
+terminal only through their actions above. A handled nonzero still carries the
+complete partial receipt: parse it before stopping, preserve verified prefix
+work, and restart discovery through the matching recovery row. Dry-run success
+contains only `planned`, `deferred`, or `not_applicable` mutation statuses and
+authorizes no push, edit, or creation.
 When the head has no open PR, create a draft:
 
 ```bash
 PR=$(gh pr create --repo "$HOST/$REPOSITORY" --draft --title "$TITLE" --body-file - \
   --base "$PR_BASE" --head "$PUSH_OWNER:$BOOKMARK" <<<"$BODY")
 ```
+
+After creation, read back that numeric PR with `--repo "$HOST/$REPOSITORY"`
+and verify its number, `headRepositoryOwner.login`, `headRefOid`,
+`baseRefName`, and `baseRefOid` against the bound owner, head, base name, and
+base OID. Creation is not complete until this deferred base becomes verified.
 
 When the head has one open PR, edit it and retain draft state:
 
@@ -447,11 +519,16 @@ and their base map are unchanged; otherwise restart discovery and recompute it
 first:
 
 ```bash
-bash "${CODING_PR_SKILL_DIR}/scripts/restack.sh" \
-  --remote "$REMOTE" \
-  --base "$ROOT_BASE" \
-  "$BOOKMARK_01=$EXPECTED_HEAD_OID_01" \
-  "$BOOKMARK_02=$EXPECTED_HEAD_OID_02"
+if SYNC_RECEIPT=$(bash "${CODING_PR_SKILL_DIR}/scripts/sync-pr-stack.sh" \
+  --repo "$HOST/$REPOSITORY" --head-owner "$PUSH_OWNER" --remote "$REMOTE" \
+  --base "$ROOT_BASE" --base-oid "$ROOT_BASE_OID" \
+  --head "$BOOKMARK_01" "$EXPECTED_HEAD_OID_01" "$EXPECTED_REMOTE_OID_01" \
+  --head "$BOOKMARK_02" "$EXPECTED_HEAD_OID_02" "$EXPECTED_REMOTE_OID_02")
+then SYNC_STATUS=0
+else SYNC_STATUS=$?
+fi
+jq -e '(.vcs == "git" or .vcs == "jj") and (.items|type == "array") and (.errors|type == "array")' >/dev/null <<<"$SYNC_RECEIPT" || exit 1
+[ "$SYNC_STATUS" -eq 0 ] || { jq '{items, errors}' <<<"$SYNC_RECEIPT" >&2; exit "$SYNC_STATUS"; }
 ```
 
 Supply every selected bookmark explicitly in bottom-up order with the exact
@@ -459,21 +536,56 @@ local git commit SHA expected after the rewrite, and pass the first head's exact
 intended base as `--base`; for a suffix restack this is its unselected
 predecessor, not the repository default. Never rediscover either from a prefix.
 The script preflights the set, uses leased pushes, verifies every remote SHA,
-and updates open PR bases; it never reshapes history. Preflight prevents known
-partial writes, but forge operations are not transactional: `restacked` records
-each verified remote head even if a later base edit or push fails, so recover
-from that map before retrying. Verify the PR base chain and every `headRefOid`,
-then reauthor changed heads against verified bases and reset reviewer evidence
-only where the head or base OID changed.
+and updates open PR bases by retained numeric PR ID; it never reshapes history.
+Forge operations are not transactional: recover from each item's
+`head_status` and `base_status`, never infer success from process progress.
+`verified` heads may coexist with `failed`, `pending`, or `deferred` bases.
+Restart discovery whenever any bound remote or base identity changed. Verify
+the PR base chain and every `headRefOid`, then reauthor changed heads against
+verified bases and reset reviewer evidence only where the head or base OID changed.
 
-| Publication error | Action |
+| Publication error | Recovery action |
 |---|---|
+| `missing_repo` | Supply receiving `[host/]owner/repository`, then rerun discovery. |
+| `invalid_repo` | Correct the receiving repository syntax; do not guess a target. |
+| `missing_head_owner` | Resolve the selected push remote's repository owner and pass it explicitly. |
+| `invalid_head_owner` | Correct the exact GitHub owner login, then restart discovery. |
+| `missing_remote` | Run the push-remote gate and pass its selected remote. |
+| `missing_base` | Resolve and pass the first selected head's exact base branch. |
+| `invalid_base` | Correct the base with `git check-ref-format --branch`, then restart discovery. |
+| `missing_base_oid` | Observe and pass the full remote OID for `ROOT_BASE`. |
+| `invalid_base_oid` | Replace an abbreviated or malformed base OID with its full object ID. |
+| `missing_head` | Supply at least one bottom-up `--head` triple. |
+| `incomplete_head` | Supply bookmark, full local OID, and remote OID or `absent`. |
+| `invalid_head` | Correct the bookmark with Git's native ref-format check. |
+| `invalid_local_oid` | Resolve and pass the bookmark's full local object ID. |
+| `invalid_remote_oid` | Pass the full caller-observed remote object ID or literal `absent`. |
+| `duplicate_head` | Remove the repeated bookmark and preserve one bottom-up entry. |
+| `unknown_argument` | Remove the unsupported argument or use the documented interface. |
+| `head_equals_base` | Remove the root base from the selected head list. |
+| `unsupported_object_format` | Use a repository with Git SHA-1 or SHA-256 object format. |
+| `remote_lookup_failed` | Repair the selected remote configuration, then rerun the remote gate. |
+| `remote_observation_failed` | Restore remote access and restart discovery; retain no prior snapshot. |
+| `base_advanced` | Fetch, re-evaluate topology through `coding:commit`, and bind a new root base snapshot. |
+| `remote_advanced` | Preserve the remote commit; run `jj git fetch --remote "$REMOTE"` or `git fetch -- "$REMOTE"`, reconcile through `coding:commit`, and restart discovery. |
+| `fetch_failed` | Repair authentication/network access, fetch the named remote, and restart discovery. |
+| `local_mismatch` | Resolve the local bookmark again; save or reshape only through `coding:commit`. |
+| `pr_discovery_failed` | Repair `gh` access and rerun repository-scoped discovery. |
+| `pr_ambiguous` | Resolve the duplicate open PRs externally; do not select one by order. |
+| `pr_closed` | Choose a new head or explicitly reopen/replace the closed PR outside the helper. |
+| `nonlinear_stack` | Repair the supplied bottom-up ancestry through `coding:commit`, then rediscover. |
+| `push_failed` | Inspect item statuses, preserve verified heads, fetch, reconcile, and restart discovery. |
+| `remote_verification_failed` | Restore remote read access and verify every head before any retry. |
+| `remote_head_mismatch` | Preserve the observed remote OID, fetch, reconcile, and restart discovery. |
+| `pr_edit_failed` | Preserve verified heads/bases, repair forge access, and retry from fresh discovery. |
+| `pr_readback_failed` | Treat the edit as unknown; fetch the numeric PR before any retry. |
+| `pr_identity_mismatch` | Stop and resolve the repository, PR number, state, or owner mismatch. |
+| `pr_head_mismatch` | Preserve the observed PR head, reconcile it with the remote, and restart discovery. |
+| `pr_base_name_mismatch` | Read the numeric PR, resolve its actual base, and restart discovery. |
+| `pr_base_oid_mismatch` | Preserve the advanced base, re-evaluate topology, and bind a new snapshot. |
 | `gh pr create` authentication failure | Run `gh auth status`; report a user/external blocker. |
 | Bookmark or branch conflict | Confirm the intended change, then rerun the selected action against that exact head. |
-| Push rejected because remote advanced | `jj git fetch --remote "$REMOTE"` (git: `git fetch -- "$REMOTE"`), rebase through `coding:commit`, then retry. |
 | Conventional title invalid | Reword through `coding:commit`, then restart that iteration. |
-| Existing PR has wrong base | `gh pr edit "$PR" --base "$PR_BASE"`, then verify. |
-| Restack conflict | Resolve through `coding:commit`, run integrity checks, then republish bottom-up. |
 
 With `--publish-only`, return the verified stack map plus refreshed expected
 hosted checks and their workflow/ruleset/config inputs. Do not enter review or

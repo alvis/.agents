@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 REMOTE=${CALLER_REMOTE:-}
-CURRENT_BRANCH=$(git branch --show-current) || exit $?
+CURRENT_BRANCH=
+if [ "${PUBLICATION_VCS:-git}" != jj ]; then
+  CURRENT_BRANCH=$(git branch --show-current) || exit $?
+fi
 if [ -z "$REMOTE" ] && [ -n "$CURRENT_BRANCH" ]; then
   REMOTE=$(git config --get -- "branch.$CURRENT_BRANCH.pushRemote") || REMOTE=
 fi
