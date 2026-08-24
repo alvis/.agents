@@ -26,7 +26,7 @@ import {
 } from "./stitch_agent.ts";
 
 type PluginRecord = Record<string, unknown>;
-/** Harnesses whose agent templates this installer stitches and installs. */
+/** harnesses whose agent templates this installer stitches and installs */
 type HarnessName = "claude" | "codex" | "grok";
 
 /** One discovered agent template directory and the plugin that owns it. */

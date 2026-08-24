@@ -673,7 +673,7 @@ export function stitchCodexAgentDefinition(
     .join("");
 }
 /**
- * stitches one split template into the Grok Build Markdown agent file.
+ * stitches one split template into the Grok Build Markdown agent file
  * @param templateDirectory directory holding base.md and frontmatter/
  * @param options essentialRoot and referenceRoot resolve @essential aliases;
  *   allowLegacy accepts legacy single-file frontmatter
