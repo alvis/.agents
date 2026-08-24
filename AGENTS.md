@@ -67,13 +67,12 @@ included — carries that exact anchor, quoted. Anchoring on one variable alone 
 hook resolve nothing under another harness, and a `sed | jq` pipeline still exits 0
 while emitting nothing. Quoting is
 equally load-bearing: the anchor expands to a path the user chose, so an unquoted
-expansion word-splits on a space and runs its first segment. Grok consumes this
-Claude-compatible contract. OpenCode does not set either root variable: its
-adapter reads payload sources from the projected bundle and substitutes
-`{{PLUGIN_DIR}}` directly. Do not extend the native chain for a compatibility
-consumer. A future native harness may extend it only from that harness's own
-documentation and in every command in the same change; a partially updated chain
-fails silently.
+expansion word-splits on a space and runs its first segment. OpenCode does not set
+any of these root variables: its adapter reads payload sources from the projected
+bundle and substitutes `{{PLUGIN_DIR}}` directly. Do not extend the native chain
+for a compatibility consumer. A future native harness may extend it only from
+that harness's own documentation and in every command in the same change; a
+partially updated chain fails silently.
 
 - `ALLAGENT.md` — injected at `SessionStart` **and** `SubagentStart`; carries that plugin's
   own routing only. Do not rebuild a central roster table in it.
