@@ -6,6 +6,8 @@ import { delimiter, join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { PLUGIN_ROOT_ANCHOR } from "../../../scripts/harness_contract.ts";
+
 import type { SpawnSyncReturns } from "node:child_process";
 
 const root = resolve(import.meta.dirname, "../../..");
@@ -75,6 +77,7 @@ describe.skipIf(claude === undefined)(
       ) as HooksDocument;
       const substitutions: readonly (readonly [string, string])[] = [
         ["${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}", pluginRoot],
+        [PLUGIN_ROOT_ANCHOR, pluginRoot],
         ["${HOME}", process.env.HOME!],
       ];
       const completed: SpawnSyncReturns<string>[] = [];

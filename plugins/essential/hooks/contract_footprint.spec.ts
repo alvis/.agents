@@ -11,7 +11,12 @@ describe("essential contract footprint budget", () => {
     expect(
       checkPlugin(
         plugin,
-        ["hooks/ALLAGENT.md", "hooks/MAINAGENT.md", "hooks/SUBAGENT.md"],
+        [
+          "hooks/ALLAGENT.md",
+          "hooks/MAINAGENT.md",
+          "hooks/SUBAGENT.md",
+          "hooks/STOP.md",
+        ],
         ["hooks/ALLAGENT.md", "references/working-attitude.md"],
       ),
     ).toEqual([]));

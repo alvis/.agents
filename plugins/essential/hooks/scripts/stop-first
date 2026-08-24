@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stop hook: reminds the agent once per session that .state needs its update.
+# The first Stop of a session blocks once with the reminder; every later Stop —
+# including the one the block itself triggers, which arrives with
+# stop_hook_active set — exits silently. The one-shot marker is keyed on the
+# session id so concurrent sessions never suppress each other's reminder, and
+# it is written only after the envelope reaches stdout, so a failed emission
+# retries on the next stop instead of spending the session's one shot.
+# Compatible with bash 3.2+
+
+root="${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}"
+if [ -z "$root" ]; then
+  echo "plugin root unset" >&2
+  exit 1
+fi
+
+input="$(cat)"
+
+# Malformed input identifies neither a session nor its turn state; fail open
+# silently, matching validate-question, instead of blocking with parse noise.
+if ! printf '%s' "$input" | jq -e . >/dev/null 2>&1; then
+  exit 0
+fi
+
+# A blocked Stop re-fires this hook; never remind twice within one turn chain.
+if jq -e '.stop_hook_active == true' >/dev/null <<<"$input"; then
+  exit 0
+fi
+
+session_id="$(jq -r '.session_id // .sessionId // empty' <<<"$input")"
+case "$session_id" in
+  '' | *[!A-Za-z0-9_-]*) session_id="unknown-session" ;;
+esac
+
+flag="${TMPDIR:-/tmp}/essential-stop-reminded-${session_id}"
+if [ -e "$flag" ]; then
+  exit 0
+fi
+
+sed "s|{{PLUGIN_DIR}}|$root|g" "${1:-$root/hooks/STOP.md}" |
+  jq -Rs '{decision: "block", reason: .}'
+
+# Marking only after emission makes a missed delivery retry on the next stop.
+# The residual risk runs the other way: ids that fail sanitization collide on
+# `unknown-session`, so such sessions share one shot instead of one each and
+# a later one can stay silent until TMPDIR cleanup.
+: > "$flag"
