@@ -16,7 +16,8 @@ Frontmatter
   neighboring exclusion only when it prevents a real trigger collision.
 - requirements.intelligence: choose one concrete level from Essential's
   intelligence mapping. Skills never use `inherit`, model, or effort fields.
-- For a shared Claude Code and Codex skill, follow the authoring contract's
+- For a shared Claude Code, Codex, and Grok Build skill, follow the authoring
+  contract's
   portable fields and never depend on experimental or harness-only metadata.
 -->
 

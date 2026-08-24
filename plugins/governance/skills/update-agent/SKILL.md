@@ -10,7 +10,7 @@ argument-hint: "<agent path, name, or glob> [--changes=...] [--all]"
 # Update Agent
 
 Find selected source sets under `plugins/*/agents/<name>/`, then update
-their `base.md` and split `frontmatter/{meta,claude,codex}.json` to the current template or a
+their `base.md` and split `frontmatter/{meta,claude,codex,grok}.json` to the current template or a
 stated behavior change. `create-agent` owns genuinely new roles.
 
 ## Boundaries
@@ -57,9 +57,12 @@ stated behavior change. `create-agent` owns genuinely new roles.
    (intelligence level, permissionMode, runtime tool inheritance, memory, and isolation criteria).
    Change those fields only when the requested migration or template requires
    it; report every such change.
-4. Reconcile `frontmatter/meta.json`, `claude.json`, and `codex.json` with
-   their ownership boundaries. Metadata contains only `name`, `description`,
-   and `intelligence`; harness files contain only harness-specific fields.
+4. Reconcile `frontmatter/meta.json`, `claude.json`, `codex.json`, and
+   `grok.json` with their ownership boundaries. Metadata contains only `name`,
+   `description`, and `intelligence`; harness files contain only
+   harness-specific fields; `grok.json` stays present and `{}` unless a native
+   Grok Build field applies — frontmatter hooks remain Claude-only by
+   construction because Grok Build forbids them in agent frontmatter.
    Remove obsolete keys only with evidence. Always omit `tools` so runtime-provided capabilities remain visible;
    encode leaf and delegation posture in the role charter and shared orchestration rules. Use
    `disallowedTools` only for narrow durable restrictions on read-mostly roles, never as a general allowlist.
@@ -105,12 +108,14 @@ stated behavior change. `create-agent` owns genuinely new roles.
 
 ## Verification
 
-- Run Essential's deterministic stitch helper twice for every selected source set,
-  writing only separate temporary outputs, and inspect both generated definitions:
-  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness claude --output <temporary-claude-path>`
+- Run Essential's deterministic stitch helper three times for every selected
+  source set, writing only separate temporary outputs, and inspect all three
+  generated definitions:
+  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness claude --output <temporary-claude-path>`,
+  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness codex --output <temporary-codex-path>`,
   and
-  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness codex --output <temporary-codex-path>`.
-- Always parse all three JSON files with
+  `bun run plugins/essential/skills/install-agents/scripts/stitch_agent.ts plugins/<owner>/agents/<name> --harness grok --output <temporary-grok-path>`.
+- Always parse all four JSON files with
   `uv run --python 3.13 python -m json.tool`, check for
   placeholders, and validate the key surface, intelligence level,
   permission values, tool/spawn posture, context paths, namespaced skills,

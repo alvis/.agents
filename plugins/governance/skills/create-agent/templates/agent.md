@@ -1,9 +1,10 @@
-<!-- INSTRUCTION: This template describes ONE stitched agent, assembled from four canonical source files under
+<!-- INSTRUCTION: This template describes ONE stitched agent, assembled from five canonical source files under
      plugins/<owner>/agents/<name>/:
      - base.md — the BODY below (pure markdown, persona/charter/loop/context, no frontmatter)
      - frontmatter/meta.json — shared name, description, and intelligence metadata
      - frontmatter/claude.json — Claude-only frontmatter
      - frontmatter/codex.json — Codex-only fields
+     - frontmatter/grok.json — Grok Build-only fields
      Validate and build only a temporary artifact with Essential's install-agents stitch helper.
      The stitcher derives one Intelligence level line beneath the rendered H1 from meta.json;
      never duplicate that line in base.md.
@@ -47,6 +48,14 @@ Do not repeat `name`, `description`, or `intelligence`, and do not set derived `
 ```
 
 Keep this object empty until Codex supports a native scalar per-agent field not already derived from `meta.json`, the intelligence matrix, or `base.md`. Nested objects and arrays are rejected because they cannot be serialized by the scalar TOML projection. Never define `name`, `description`, `nickname_candidates`, `intelligence`, `intelligenceLevel`, `model`, `model_reasoning_effort`, or `developer_instructions` here.
+
+## frontmatter/grok.json
+
+```json
+{}
+```
+
+Required but empty — the same ceremony as `codex.json`. Keep this object empty until Grok Build exposes a native scalar per-agent field not already derived from `meta.json`, the intelligence matrix, or `base.md`. Grok Build forbids hooks in agent frontmatter, so hook-bearing fields stay Claude-only by construction. Never define `name`, `description`, `intelligence`, `intelligenceLevel`, `model`, or `effort` here; the stitcher derives them.
 
 ### permissionMode — pick by launch scenario, not by vibe
 

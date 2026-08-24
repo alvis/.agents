@@ -1,15 +1,15 @@
-# Agent Plugin Marketplace
+# Claude Code, Codex, and Grok Build Plugin Marketplace
 
-Eight composable plugins for Claude Code and Codex, with compatibility paths
-for Grok Build and OpenCode V1: specifications with real
-provenance, plans with stable task identity, execution state that survives
-crashes and machine moves, and decisions that never silently rewrite history.
-Claude Code and Codex are native targets. Grok Build consumes the Claude
-projection through its documented compatibility layer. OpenCode V1 uses a
-generated best-effort projection. See the complete emoji-qualified
-[compatibility matrix](COMPATIBILITY.md) before relying on a harness-specific
-feature. This README explains how the system thinks and how to get the most out
-of it; each plugin's own `README.md` documents its skills in depth.
+Eight composable plugins for Claude Code, Codex, and Grok Build, with a
+best-effort OpenCode V1 projection: specifications with real provenance,
+plans with stable task identity, execution state that survives crashes and
+machine moves, and decisions that never silently rewrite history.
+Claude Code, Codex, and Grok Build are native targets whose harness-specific
+manifests are thin adapters. OpenCode V1 uses a generated best-effort
+projection; see the emoji-qualified [compatibility matrix](COMPATIBILITY.md)
+before relying on a harness-specific feature. This README explains how the
+system thinks and how to get the most out of it; each plugin's own
+`README.md` documents its skills in depth.
 
 ## How the system thinks
 
@@ -113,12 +113,27 @@ context-injection hooks until their definitions are reviewed.
 
 ### Grok Build
 
-Grok Build reads the Claude marketplace, plugins, skills, agents, MCP servers,
-hooks, and instructions through its
-[Claude Code compatibility layer](https://docs.x.ai/build/features/skills-plugins-marketplaces).
-Use the Claude installation above. This repository does not generate a separate
-Grok manifest, and compatibility-layer support is marked 🟡 in the
-[matrix](COMPATIBILITY.md).
+```bash
+cd /path/to/claude-marketplace-checkout
+grok plugin install plugins/specification --trust
+```
+
+Grok reads `.grok-plugin/marketplace.json`, a structural projection of the
+authoritative Claude catalog, and validates each plugin's thin
+`.grok-plugin/plugin.json` adapter. Install is source-scoped: `grok plugin
+install` takes a local path directly and `--trust` enables it, while
+`marketplace add` only lists discovery entries.
+
+Grok discovers plugin agents only from direct `agents/*.md` children, so this
+repository's split layout yields none there — agents come from the installer.
+Ask Grok to run `essential:install-agents` with `--harness grok`; specialists
+land in `${GROK_HOME:-~/.grok}/agents/*.md`.
+
+Scoped out under Grok Build: its `SessionStart` and `SubagentStart` handlers
+ignore stdout, so the routing-payload injection is a registered no-op there.
+The PreToolUse gates run natively, emitting top-level `{"decision","reason"}`
+envelopes over camelCase `toolInput` stdin; the plan-heading gate fail-opens
+because Grok's `exit_plan_mode` sends no plan field.
 
 ### OpenCode V1
 
@@ -155,7 +170,7 @@ OpenCode support targets stable V1 only. OpenCode V2 and `opencode2` are not
 supported. The adapter uses OpenCode V1's experimental system-transform hook,
 so context injection is explicitly 🧪 rather than native support.
 
-The core lifecycle expects Claude Code or Codex, Bash, `jq`, Git, and Bun,
+The core lifecycle expects Claude Code, Codex, or Grok Build, Bash, `jq`, Git, and Bun,
 plus the target project's own build and test tools. The publication path
 additionally expects an authenticated `gh`; it prefers `jj` where the
 repository is jj-colocated and uses Git directly everywhere else.
@@ -287,7 +302,7 @@ or PR publication only after the local flow is understood.
 
 A cross-harness 22-agent team is organized into a main-session Project Manager, domain leads, and their teammates. Shared operation lives in `plugins/essential/hooks/ALLAGENT.md` and `plugins/essential/hooks/MAINAGENT.md`, subagent conduct including the scripted-execution proxy protocol lives in `plugins/essential/hooks/SUBAGENT.md`, owner-specific routing lives in each contributing plugin's `plugins/<owner>/hooks/ALLAGENT.md`, and per-agent delegation topology lives in each agent definition. A plugin that owns an injected domain binding carries a `plugins/<owner>/hooks/MAINAGENT.md`, injected at `SessionStart` only: `coding` binds to `tech-lead` and `web` binds to `design-lead`. Each lead wraps its `## Collaboration` map in an `<IMPORTANT>` tag, marking it as the map the lead routes from.
 
-Install via the `essential:install-agents` skill in the active harness. Canonical sources live under `plugins/<owner>/agents/<name>/` as `base.md` plus `frontmatter/meta.json`, `claude.json`, and `codex.json`. The installer discovers source-checkout siblings, enabled same-marketplace plugins, and explicitly trusted marketplaces passed with `--include-marketplace`; it validates the complete discovered roster, stages stitched files, and copies them into the selected harness's personal agent directory. It overwrites current same-named discoveries and leaves unrelated or stale files untouched. Edits require a re-install, and changes take effect in the next session.
+Install via the `essential:install-agents` skill in the active harness. Canonical sources live under `plugins/<owner>/agents/<name>/` as `base.md` plus `frontmatter/meta.json`, `claude.json`, `codex.json`, and `grok.json`. The installer discovers source-checkout siblings, enabled same-marketplace plugins, and explicitly trusted marketplaces passed with `--include-marketplace`; it validates the complete discovered roster, stages stitched files, and copies them into the selected harness's personal agent directory. It overwrites current same-named discoveries and leaves unrelated or stale files untouched. Edits require a re-install, and changes take effect in the next session.
 
 ### Roster
 
@@ -318,7 +333,7 @@ Install via the `essential:install-agents` skill in the active harness. Canonica
 
 Each agent's `## Collaboration` section records proven role-level collaborators and delegation targets using role-only definition names. These are runtime defaults, not an allowlist; naming, `agent_id` messaging, main-agent brokering, and nested-spawn policy live in `plugins/essential/hooks/ALLAGENT.md`.
 
-The Claude adapter gives each agent project-scoped memory at `.claude/agent-memory/<role>/MEMORY.md`; Codex keeps memory harness-owned. Definitions state the durable role-specific knowledge to retain, while `essential:templates/memory.md` defines the shared evidence, freshness, contradiction, archival, and size-control contract. Memory writers keep filesystem write and edit capabilities available without new hooks; source-read-only roles restrict them to memory by charter.
+The Claude adapter gives each agent project-scoped memory at `.claude/agent-memory/<role>/MEMORY.md`; Codex and Grok Build keep memory harness-owned. Definitions state the durable role-specific knowledge to retain, while `essential:templates/memory.md` defines the shared evidence, freshness, contradiction, archival, and size-control contract. Memory writers keep filesystem write and edit capabilities available without new hooks; source-read-only roles restrict them to memory by charter.
 
 ### Delegation topology
 
@@ -423,6 +438,10 @@ The one check that stays outside, because it needs the installed CLI:
 
 ```bash
 claude plugin validate --strict .
+grok plugin validate plugins/<p>
 ```
 
-Useful references: [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), [plugin installation and scopes](https://code.claude.com/docs/en/discover-plugins), and [plugin reference](https://code.claude.com/docs/en/plugins-reference).
+Each runs against its installed CLI by hand before publishing a manifest
+change.
+
+Useful references: [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), [plugin installation and scopes](https://code.claude.com/docs/en/discover-plugins), [plugin reference](https://code.claude.com/docs/en/plugins-reference), and [xAI skills, plugins, and marketplaces](https://docs.x.ai/build/features/skills-plugins-marketplaces).

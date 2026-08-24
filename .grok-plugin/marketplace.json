@@ -1,0 +1,65 @@
+{
+  "name": "alvis",
+  "description": "Curated collection of agents, commands, and integrations for Claude Code, Codex, and Grok Build development workflows",
+  "owner": {
+    "name": "Alvis"
+  },
+  "plugins": [
+    {
+      "name": "coding",
+      "source": {
+        "type": "local",
+        "path": "./plugins/coding"
+      }
+    },
+    {
+      "name": "essential",
+      "source": {
+        "type": "local",
+        "path": "./plugins/essential"
+      }
+    },
+    {
+      "name": "governance",
+      "source": {
+        "type": "local",
+        "path": "./plugins/governance"
+      }
+    },
+    {
+      "name": "react",
+      "source": {
+        "type": "local",
+        "path": "./plugins/react"
+      }
+    },
+    {
+      "name": "specification",
+      "source": {
+        "type": "local",
+        "path": "./plugins/specification"
+      }
+    },
+    {
+      "name": "web",
+      "source": {
+        "type": "local",
+        "path": "./plugins/web"
+      }
+    },
+    {
+      "name": "client",
+      "source": {
+        "type": "local",
+        "path": "./plugins/client"
+      }
+    },
+    {
+      "name": "production",
+      "source": {
+        "type": "local",
+        "path": "./plugins/production"
+      }
+    }
+  ]
+}

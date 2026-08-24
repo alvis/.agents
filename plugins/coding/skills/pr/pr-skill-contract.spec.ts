@@ -521,6 +521,7 @@ describe("PR skill contract", () => {
         REVIEW_SCAN_MARKER: marker,
       };
       delete environment.CLAUDE_PLUGIN_ROOT;
+      delete environment.GROK_PLUGIN_ROOT;
       delete environment.CLAUDE_SKILL_DIR;
       const completed = spawnSync(
         "bash",

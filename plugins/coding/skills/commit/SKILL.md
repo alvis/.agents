@@ -9,12 +9,12 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "bash \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/skills/commit/scripts/pre-commit-hook.sh\""
+          command: "bash \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/skills/commit/scripts/pre-commit-hook.sh\""
   PostToolUse:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "bash \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/skills/commit/scripts/post-rewrite-hook.sh\""
+          command: "bash \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/skills/commit/scripts/post-rewrite-hook.sh\""
 ---
 
 # Save Any Code Change — jj-first, git-compatible
@@ -23,8 +23,8 @@ Before any `jj` decision or command, follow
 `coding:references/jj.md`.
 
 Before any script call, set `CODING_COMMIT_SKILL_DIR` to the absolute directory
-containing this loaded `SKILL.md`. This works in both harnesses; ordinary Codex
-shell calls do not receive a plugin-root environment variable.
+containing this loaded `SKILL.md`. This works in all three harnesses; not every harness exposes a plugin-root
+variable to ordinary shell calls.
 
 This skill is the single entrypoint for saving work: local snapshots, edits to prior changes, splits, reorders, parallel tasks, the two exceptional direct-bookmark sync routes, and the compatibility route from `--create-pr` to `coding:pr create`. It auto-routes based on working-copy state; flags exist only for explicit operations and behavioural overrides. It is the sole owner of history mutations — `coding:finalize-commits` verifies stacks, and `coding:pr create` authors PR text, owns PR publication, and drives CI convergence.
 

@@ -2,29 +2,29 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion|request_user_input",
+        "matcher": "AskUserQuestion|request_user_input|ask_user_question",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/scripts/validate-question\""
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/validate-question\""
           }
         ]
       },
       {
-        "matcher": "ExitPlanMode|update_plan",
+        "matcher": "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/scripts/validate-plan\""
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/validate-plan\""
           }
         ]
       },
       {
-        "matcher": "Agent|spawn_agent",
+        "matcher": "Agent|spawn_agent|Task|spawn_subagent",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/scripts/validate-dispatch\""
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/validate-dispatch\""
           }
         ]
       }
@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/scripts/session-start\""
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/session-start\""
           }
         ]
       },
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/ALLAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'"
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/ALLAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'"
           }
         ]
       },
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; if [ -n \"${PLUGIN_ROOT:-}\" ] && [ ! -f \"${CODEX_HOME:-${HOME}/.codex}/agents/tech-lead.toml\" ]; then exit 0; fi; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/MAINAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'"
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; if [ -n \"${PLUGIN_ROOT:-}\" ] && [ ! -f \"${CODEX_HOME:-${HOME}/.codex}/agents/tech-lead.toml\" ]; then exit 0; fi; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/MAINAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'"
           }
         ]
       }
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/scripts/subagent-start\""
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/subagent-start\""
           }
         ]
       },
@@ -68,7 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/ALLAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/ALLAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
           }
         ]
       },
@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-}}/hooks/SUBAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}|g\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/SUBAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
           }
         ]
       }

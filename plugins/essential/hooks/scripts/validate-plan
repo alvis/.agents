@@ -11,13 +11,11 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPTS_DIR/context.sh"
 
 deny() {
-  printf '%s' "$1" | jq -Rs \
-    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:.}}'
-  exit 0
+  output_pretooluse_decision "deny" "$1"
 }
 
 allow() {
-  output_hook_context "PreToolUse" \
+  output_pretooluse_decision "allow" \
     "Remind you to follow instructions in essential:references/directions/plan.md"
 }
 
@@ -27,14 +25,20 @@ if ! printf '%s' "$input" | jq -e . >/dev/null 2>&1; then
   allow
 fi
 
+# Claude Code and Codex send snake_case tool_input; Grok Build sends camelCase
+# toolInput. Collapse once so every field read below is key-agnostic.
+input=$(printf '%s' "$input" | jq -c '(.tool_input // .toolInput)')
+
 # The plan body travels inline in tool_input.plan. Codex's update_plan carries a
 # step array under the same key and has no headings to check, so anything that
-# is not plan prose passes straight through.
-if [[ "$(printf '%s' "$input" | jq -r '.tool_input.plan | type')" != "string" ]]; then
+# is not plan prose passes straight through. Known no-op under Grok Build: its
+# exit_plan_mode reads plan.md from the session directory on disk and sends no
+# plan field, so this gate fail-opens there by design.
+if [[ "$(printf '%s' "$input" | jq -r '.plan | type')" != "string" ]]; then
   allow
 fi
 
-plan=$(printf '%s' "$input" | jq -r '.tool_input.plan')
+plan=$(printf '%s' "$input" | jq -r '.plan')
 
 missing=""
 for heading in Goal Requirements Boundary Direction Context; do

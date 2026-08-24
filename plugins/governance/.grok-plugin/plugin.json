@@ -1,0 +1,8 @@
+{
+  "name": "governance",
+  "version": "1.0.0",
+  "description": "Tools for creating and managing Claude Code, Codex, and Grok Build configuration files including commands, skills, standards, and agents",
+  "author": {
+    "name": "Alvis"
+  }
+}

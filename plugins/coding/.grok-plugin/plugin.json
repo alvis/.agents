@@ -1,0 +1,8 @@
+{
+  "name": "coding",
+  "version": "1.0.0",
+  "description": "General code writing tools including quality checks, testing, architecture, and implementation support",
+  "author": {
+    "name": "Alvis"
+  }
+}

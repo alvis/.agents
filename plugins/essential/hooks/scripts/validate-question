@@ -11,13 +11,11 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPTS_DIR/context.sh"
 
 deny() {
-  printf '%s' "$1" | jq -Rs \
-    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:.}}'
-  exit 0
+  output_pretooluse_decision "deny" "$1"
 }
 
 allow() {
-  output_hook_context "PreToolUse" \
+  output_pretooluse_decision "allow" \
     "Remind you to follow instructions in essential:references/directions/questions.md"
 }
 
@@ -27,6 +25,12 @@ if ! printf '%s' "$input" | jq -e . >/dev/null 2>&1; then
   allow
 fi
 
+# Claude Code and Codex send snake_case tool_input; Grok Build sends camelCase
+# toolInput. Collapse once so every field read below is key-agnostic. Grok's
+# ask_user_question also carries a different field schema, so any shape this
+# filter cannot read fails open rather than inventing a denial.
+input=$(printf '%s' "$input" | jq -c '(.tool_input // .toolInput)')
+
 # A tag is a single capitalised word in brackets, so ordinary Markdown links in
 # a description are not mistaken for one. Only the first line of a description
 # counts, matching where questions.md says tags may go. An option that already
@@ -34,7 +38,7 @@ fi
 # as "[Note]" beside a real tag is not read as a tag claim.
 reason=$(printf '%s' "$input" | jq -r '
   ["Architectural","Ideal","Recommended","Pragmatic","Hotfix","Workaround"] as $valid
-  | [ .tool_input.questions[]?
+  | [ .questions[]?
       | [ .options[]?
           | { label: (.label // ""),
               tags: ( ( (.label // "") + " " + (((.description // "") | split("\n"))[0] // "") )

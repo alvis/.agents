@@ -1,0 +1,8 @@
+{
+  "name": "production",
+  "version": "1.0.0",
+  "description": "Media and creative production lifecycle: asset provenance, render manifests, and revision-bound review for video, audio, and campaign deliverables",
+  "author": {
+    "name": "Alvis"
+  }
+}

@@ -13,8 +13,8 @@ Before any `jj` decision or command, follow
 route precedes `coding:pr update` publication.
 
 Before any script call, set `CODING_PR_SKILL_DIR` to the absolute directory
-containing this loaded `SKILL.md`. This works in both harnesses; ordinary Codex
-shell calls do not receive a plugin-root environment variable.
+containing this loaded `SKILL.md`. This works in all three harnesses; not every harness exposes a plugin-root
+variable to ordinary shell calls.
 
 Route every remote pull-request operation through one explicit subcommand. Local
 history mutation remains owned by `coding:commit`; local pre-commit review remains

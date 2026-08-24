@@ -14,9 +14,10 @@ verification commands live in `SKILL.md`.
   evolving Claude schema. Its default run delegates schema validation to
   Claude; `--policy-only` is the bounded path when that validator is not
   available.
-- Codex validation uses the documented Agent Skills contract and applicable
-  documented Codex behavior. Do not invent a `codex plugin validate` command
-  or infer Codex support from a Claude-only field.
+- Codex and Grok Build validation use the documented Agent Skills contract and
+  each harness's documented behavior. Do not invent a `codex plugin validate`
+  command or infer support from a Claude-only field; Grok Build's documented
+  `grok plugin validate` may be used where that CLI is installed.
 - Functional and trigger checks are required when behavior or discovery changed,
   not for a wording-only edit with unchanged meaning.
 - The cold-start release gate in `references/functional-mode.md` applies to every

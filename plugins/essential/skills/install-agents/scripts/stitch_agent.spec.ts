@@ -20,6 +20,7 @@ import {
   preferredNameCandidates,
   stitchAgentDefinition,
   stitchCodexAgentDefinition,
+  stitchGrokAgentDefinition,
   validateAgentContract,
 } from "./stitch_agent.ts";
 
@@ -50,6 +51,7 @@ function writeTemplate(
     readonly metadata?: Record<string, unknown>;
     readonly claude?: Record<string, unknown>;
     readonly codex?: Record<string, unknown>;
+    readonly grok?: Record<string, unknown>;
     readonly body?: string;
   } = {},
 ): string {
@@ -73,6 +75,10 @@ function writeTemplate(
     resolve(template, "frontmatter/codex.json"),
     JSON.stringify(options.codex ?? {}),
   );
+  writeFileSync(
+    resolve(template, "frontmatter/grok.json"),
+    JSON.stringify(options.grok ?? {}),
+  );
   const body = options.body ?? "# Test agent\n";
   writeFileSync(
     resolve(template, "base.md"),
@@ -93,12 +99,13 @@ function run(...args: readonly string[]) {
 }
 
 describe("agent stitching", () => {
-  it("projects one split template deterministically for both harnesses", () => {
+  it("projects one split template deterministically for every harness", () => {
     const root = temporaryRoot();
     const template = writeTemplate(root, "test-agent", {
       metadata: { intelligence: "high" },
       claude: { color: "blue", permissionMode: "default" },
       codex: { sandbox_mode: "workspace-write" },
+      grok: { color: "green" },
       body: "\n# Test agent\n\nInstructions.\n",
     });
 
@@ -124,7 +131,39 @@ describe("agent stitching", () => {
     expect(codex).toContain('sandbox_mode = "workspace-write"');
     expect(codex).not.toContain("## Memory");
     expect(stitchCodexAgentDefinition(template)).toBe(codex);
+
+    const grok = stitchGrokAgentDefinition(template);
+    const grokProjected = JSON.parse(grok.split("---\n", 3)[1]!) as Record<
+      string,
+      unknown
+    >;
+    expect(grokProjected).toMatchObject({
+      name: "test-agent",
+      color: "green",
+      model: intelligenceLevels.high!.grok.model,
+      effort: intelligenceLevels.high!.grok.effort,
+    });
+    expect(grokProjected).not.toHaveProperty("intelligence");
+    expect(grok).toContain("# Test agent\n\nIntelligence level: high.");
+    expect(grok).not.toContain("## Memory");
+    expect(stitchGrokAgentDefinition(template)).toBe(grok);
   });
+
+  it.each([
+    ["a memory path", "\nSee also `.claude/agent-memory/test-agent/EXTRA.md`."],
+    ["a worktree", "\nFirst. A worktree survives this sentence."],
+  ])(
+    "hard-fails when a Grok body retains %s",
+    (_label, extra) => {
+      const root = temporaryRoot();
+      const template = writeTemplate(root, "test-agent", {
+        body: `# Test agent${extra}\n`,
+      });
+      expect(() => stitchGrokAgentDefinition(template)).toThrow(
+        /retains Claude-only behavior/,
+      );
+    },
+  );
 
   it("preserves plugin namespaces while removing Claude-only delegation", () => {
     const root = temporaryRoot();
@@ -223,7 +262,7 @@ describe("agent stitching", () => {
     );
   });
 
-  it("stitches every distributed template for both harnesses", () => {
+  it("stitches every distributed template for every harness", () => {
     let count = 0;
     for (const plugin of readdirSync(resolve(repositoryRoot, "plugins"))) {
       const agents = resolve(repositoryRoot, "plugins", plugin, "agents");
@@ -232,6 +271,9 @@ describe("agent stitching", () => {
           const template = resolve(agents, agent);
           expect(stitchAgentDefinition(template).length).toBeGreaterThan(100);
           expect(stitchCodexAgentDefinition(template).length).toBeGreaterThan(
+            100,
+          );
+          expect(stitchGrokAgentDefinition(template).length).toBeGreaterThan(
             100,
           );
           count += 1;
@@ -249,7 +291,7 @@ describe("stitcher command-line handling", () => {
     const shown = run("--help");
     expect(shown).toMatchObject({ exitCode: 0, stderr: "" });
     expect(shown.stdout).toContain("usage: stitch_agent.ts");
-    expect(shown.stdout).toContain("--harness {claude,codex}");
+    expect(shown.stdout).toContain("--harness {claude,codex,grok}");
 
     const missing = run();
     expect(missing.exitCode).toBe(2);
@@ -261,7 +303,7 @@ describe("stitcher command-line handling", () => {
     const invalid = run("--harness", "other", "template");
     expect(invalid.exitCode).toBe(2);
     expect(invalid.stderr).toContain(
-      "invalid choice: 'other' (choose from 'claude', 'codex')",
+      "invalid choice: 'other' (choose from 'claude', 'codex', 'grok')",
     );
   });
 
