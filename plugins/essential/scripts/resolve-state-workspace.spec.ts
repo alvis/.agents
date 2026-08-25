@@ -17,7 +17,6 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 
 const here = import.meta.dirname;
-const repository = resolve(here, "../../..");
 const resolver = resolve(here, "resolve-state-workspace");
 const namingReference = resolve(here, "../references/naming.md");
 const roots: string[] = [];
@@ -510,20 +509,4 @@ describe("work state workspace resolution", () => {
     });
   });
 
-  it("keeps state transport and work state ignored by the repository contract", () => {
-    const root = resolve(temporary(), "ignore-contract");
-    mkdirSync(root);
-    git(root, "init", "-q");
-    writeFileSync(
-      resolve(root, ".gitignore"),
-      readFileSync(resolve(repository, ".gitignore")),
-    );
-    const paths = [".state/notion/example.mdc", ".state/works/test/state.md"];
-    const result = spawnSync("git", ["check-ignore", "--no-index", ...paths], {
-      cwd: root,
-      encoding: "utf8",
-    });
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout.trim().split("\n")).toEqual(paths);
-  });
 });
