@@ -41,7 +41,7 @@ Placeholders (for non-LLM callers performing literal substitution):
   goal_body                  yes       Outcome this PR is intended to achieve and why it matters; no implementation detail.
   requirements_body          yes       Testable, observable behavior required from the result; no generic quality/process gates.
   context_body               yes       Why this change is needed; bug links; design background.
-  specification_body         no        One canonical committed-doc path or external page such as Notion. Drop section if empty.
+  specification_body         no        A canonical committed-doc path or external page such as Notion. Drop section if empty.
   implementation_body        no        What was implemented; trade-offs; design choices; evidence and results. Drop section if empty.
   breaking_changes_body      no        Breaking-change list + migration notes. Drop section if commit subject lacks `!` and no `BREAKING CHANGE:` trailer.
   risk_body                  by zone   Concrete failure modes and mitigations. Required for yellow/red/black.
@@ -95,7 +95,7 @@ Substitution rules:
 
 ## 📘 Specification [ Optional ]
 
-<!-- one canonical committed-doc path or external page such as Notion -->
+<!-- a canonical committed-doc path or external page such as Notion -->
 {{specification_body}}
 
 ## 🛠️ Implementation [ Optional ]

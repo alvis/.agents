@@ -832,7 +832,7 @@ passes its base; text-only callers default to the first parent. Never invoke `gh
      `Background:`. Stop when absent rather than duplicating Summary or
      inventing background from the diff.
    - `{{specification_body}}` — content under `## Spec` / `Spec:` /
-     `Specification:`; one canonical committed-doc path or external page such
+     `Specification:`; a canonical committed-doc path or external page such
      as Notion. Stop when absent rather than inventing a link.
    - `{{implementation_body}}` — content under `## Implementation` / `What:`
      / `How:`, if present.
