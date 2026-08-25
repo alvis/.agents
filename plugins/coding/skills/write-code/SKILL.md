@@ -91,7 +91,16 @@ Pass `--from-composite` only to children that declare it (`setup-project`,
 
 1. Confirm the coordinator lease, then parse the instruction. Separate user intent, observed facts, inferences,
    accepted reversible assumptions, and unresolved decisions. Resolve material
-   unknowns before dependent work. Initialize or refresh the work root and
+   unknowns before dependent work. Dependency discovery is part of that
+   resolution: before scheduling any implementation child, investigate whether
+   an official SDK or another maintained package already does the same or a
+   similar job, refuse to reinvent it, and propose the candidates to the user
+   with evidence, official SDKs first; implementation proceeds only after the
+   user confirms the library choice, and the decision and its evidence are
+   recorded in `state.md`. On resume, a recorded confirmed choice whose
+   evidence still holds settles that dependency: schedule without re-proposal.
+   Building from scratch is allowed only when no maintained option exists or
+   the user declines every candidate. Initialize or refresh the work root and
    `state.md` with the complete goal, plan/lifecycle, criteria, decisions,
    dependencies, blockers, reviews, evidence, promotion, and sync state; link
    `state/working.md`. Use stable three-letter parent IDs and `AAA01`-style child IDs,
