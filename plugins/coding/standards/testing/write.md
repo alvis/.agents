@@ -104,7 +104,7 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 
 ### Structure (TST-STRU)
 
-- **TST-STRU-01**: `*.spec.ts` for unit, `*.int.spec.ts` for integration, `*.e2e.spec.ts` for e2e. Unit tests isolated; integration tests must not use unit-style mocks.
+- **TST-STRU-01**: `*.spec.ts` for unit, `*.spec.int.ts` for integration, `*.spec.e2e.ts` for e2e. Unit tests isolated; integration tests must not use unit-style mocks.
 - **TST-STRU-02**: Canonical order: imports, constants/fixtures/mocks, setup hooks, then `describe`. No `describe` before setup.
 - **TST-STRU-03**: AAA with blank-line separation. Comments explain why, stay concise, lowercase style.
 - **TST-STRU-05**: One-time async setup lives in the runner `globalSetup`; expose serializable handles via `project.provide` and read them with `inject` into a `const`. No `beforeAll`/`afterAll`, no `let`.
@@ -153,10 +153,12 @@ Pick the form by *what you assert*, not by call count:
 | Test Type   | File Pattern    | Purpose                       | Mocking                       |
 |-------------|-----------------|-------------------------------|-------------------------------|
 | Unit        | `*.spec.ts`     | Isolated component testing    | Required for IO/external deps |
-| Integration | `*.int.spec.ts` | Component interaction testing | NOT allowed                   |
-| E2E         | `*.e2e.spec.ts` | Full system testing           | NOT allowed                   |
+| Integration | `*.spec.int.ts` | Component interaction testing | NOT allowed                   |
+| E2E         | `*.spec.e2e.ts` | Full system testing           | NOT allowed                   |
 
-**Test Isolation**: Unit tests (`.spec.ts`) must be fully isolated — mock databases, APIs, and services. Integration tests (`.int.spec.ts`) may use real internal dependencies and external services. **Mocking is NOT allowed in integration tests** — they must exercise real code paths.
+Patterns derive from [`TST-STRU-01`].
+
+**Test Isolation**: Unit tests (`.spec.ts`) must be fully isolated — mock databases, APIs, and services. Integration tests (`.spec.int.ts`) may use real internal dependencies and external services. **Mocking is NOT allowed in integration tests** — they must exercise real code paths.
 
 ## Anti-Patterns
 

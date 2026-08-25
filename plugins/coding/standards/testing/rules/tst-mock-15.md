@@ -53,8 +53,10 @@ vi.mock("node:fs", () => ({
 | Test Type   | File Pattern    | Purpose                       |
 | ----------- | --------------- | ----------------------------- |
 | Unit        | `*.spec.ts`     | Isolated component testing    |
-| Integration | `*.int.spec.ts` | Component interaction testing |
-| E2E         | `*.e2e.spec.ts` | Full system testing           |
+| Integration | `*.spec.int.ts` | Component interaction testing |
+| E2E         | `*.spec.e2e.ts` | Full system testing           |
+
+Patterns derive from [`TST-STRU-01`].
 
 ## Edge Cases
 
