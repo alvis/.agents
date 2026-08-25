@@ -588,6 +588,45 @@ describe("PR message scanner", () => {
       result: { valid: true, violations: [] },
     });
   });
+  it("accepts an in-order optional Specification section", async () => {
+    const scanned = await run(
+      message(
+        [
+          "## 📘 Specification",
+          "docs/pr/specification.md governs this change.",
+        ],
+        verification(),
+      ),
+    );
+    expect(scanned).toMatchObject({ code: 0, result: { valid: true } });
+  });
+  it("rejects an out-of-order Specification section", async () => {
+    const scanned = await run(
+      message(verification(), [
+        "## 📘 Specification",
+        "docs/pr/specification.md governs this change.",
+      ]),
+    );
+    expect(scanned.code).toBe(1);
+    expect(
+      scanned.result.violations.some(({ message }) =>
+        message.includes("out of order"),
+      ),
+    ).toBe(true);
+  });
+  it("rejects generic Specification content", async () => {
+    const scanned = await run(
+      message(["## 📘 Specification", "None."], verification()),
+    );
+    expect(scanned.code).toBe(1);
+    expect(
+      scanned.result.violations.some(({ message }) =>
+        message.includes(
+          "included section has no specific content: ## 📘 Specification",
+        ),
+      ),
+    ).toBe(true);
+  });
   it("requires a goal and behavioral requirements", async () => {
     const missing = await run(
       message(verification()).replace(

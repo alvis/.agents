@@ -21,9 +21,9 @@ Always required: Summary + Goal + Requirements + Context + Verification. Goal
 states the outcome; Requirements lists observable behavior, never generic
 process gates.
 Yellow, red, and black zones also require Risk + Test Plan; red and black
-require Why This Size. Implementation, Breaking, Rollback, Feature Flag,
-Screenshots, Generated Files, Risk, Test Plan, Why This Size, Related,
-Boundary, and Notes are conditional and carry the `[ Optional ]` suffix in this
+require Why This Size. Specification, Implementation, Breaking, Rollback,
+Feature Flag, Screenshots, Generated Files, Risk, Test Plan, Why This Size,
+Related, Boundary, and Notes are conditional and carry the `[ Optional ]` suffix in this
 authoring template even when a zone, archetype, or diff makes one mandatory for
 that PR. Remove `[ Optional ]` from every heading in the final rendered PR
 message. Every section heading starts with an emoji.
@@ -41,6 +41,7 @@ Placeholders (for non-LLM callers performing literal substitution):
   goal_body                  yes       Outcome this PR is intended to achieve and why it matters; no implementation detail.
   requirements_body          yes       Testable, observable behavior required from the result; no generic quality/process gates.
   context_body               yes       Why this change is needed; bug links; design background.
+  specification_body         no        One canonical committed-doc path or external page such as Notion. Drop section if empty.
   implementation_body        no        What was implemented; trade-offs; design choices; evidence and results. Drop section if empty.
   breaking_changes_body      no        Breaking-change list + migration notes. Drop section if commit subject lacks `!` and no `BREAKING CHANGE:` trailer.
   risk_body                  by zone   Concrete failure modes and mitigations. Required for yellow/red/black.
@@ -52,8 +53,8 @@ Placeholders (for non-LLM callers performing literal substitution):
   generated_files_body       by diff   Generated paths and their source/generator. Required whenever any generated files exist.
   verification_body          yes       Checklist of the checks that must pass before sign-off, ticked as each is confirmed.
   boundary_body              no        Related work the instruction placed outside this change. Drop section if empty.
-  additional_notes_body      no        Known limitations, follow-ups. Drop section if empty.
-  related_issues_body        no        `Closes #N`, spec links. Drop section if empty.
+  additional_notes_body      no        Deviations from the spec or original request (what changed and why), known limitations, follow-ups. Drop section if empty.
+  related_issues_body        no        `Closes #N`, issue and discussion links. Drop section if empty.
 
 Substitution rules:
 - All placeholders are literal `{{name}}` tokens; no nesting, no expressions.
@@ -91,6 +92,11 @@ Substitution rules:
 <!-- why this change is needed: the problem and symptoms, related bug or ticket
      links, what problem it solves and why, and relevant design background -->
 {{context_body}}
+
+## 📘 Specification [ Optional ]
+
+<!-- one canonical committed-doc path or external page such as Notion -->
+{{specification_body}}
 
 ## 🛠️ Implementation [ Optional ]
 
@@ -166,7 +172,9 @@ Substitution rules:
      reviewed and approved tasks until that reviewer acts on the new surface; a
      no-op publication preserves evidence bound to the unchanged pair.
      Authoring may publish these tasks pending; review conformance requires all
-     three tasks checked for the active pair. -->
+     three tasks checked for the active pair. When Additional Notes records
+     deviations from the specification or original request, append
+     `- [ ] Specification deviations approved: <what changed and why>`. -->
 {{verification_body}}
 
 ## 🚫 Boundary [ Optional ]
@@ -178,11 +186,12 @@ Substitution rules:
 
 ## 📋 Additional Notes [ Optional ]
 
-<!-- known limitations, follow-ups, anything else a maintainer needs -->
+<!-- deviations from the spec or original request (what changed and why),
+     known limitations, follow-ups, anything else a maintainer needs -->
 {{additional_notes_body}}
 
 ## 🔗 Related Issues [ Optional ]
 
-<!-- related tickets, issues, RFCs, specs, and discussions, for example:
-     Closes #N · See #N · Spec: <link> · Discussion: <link> -->
+<!-- related tickets, issues, RFCs, and discussions, for example:
+     Closes #N · See #N · Discussion: <link> -->
 {{related_issues_body}}

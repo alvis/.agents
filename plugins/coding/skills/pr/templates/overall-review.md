@@ -101,7 +101,9 @@ Notes for the sections where the guidance is not self-evident:
 - **Goal and Requirements** — state whether the change matches its stated goal
   and spec and whether the implementation actually delivers each behavioral
   requirement. Say *skipped — goal/spec unknown* only for external goal/spec
-  alignment.
+  alignment. Render a deviation from the specification that Additional Notes
+  fails to capture as an unanchored chore; an outstanding chore drives the
+  verdict to request changes exactly as any other does.
 - **Tests** — answer whether these tests would fail if the implementation broke.
   "Coverage is fine" is not a verdict.
 - **Standards** — cover file structure, testing, documentation, universal code,

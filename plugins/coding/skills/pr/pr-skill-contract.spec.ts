@@ -176,7 +176,11 @@ describe("PR skill contract", () => {
       "what problem it solves and why",
       "design patterns",
       "anything a reader would reasonably expect here",
-      "RFCs, specs, and discussions",
+      "RFCs, and discussions",
+      "## 📘 Specification [ Optional ]",
+      "{{specification_body}}",
+      "deviations from the spec or original request",
+      "- [ ] Specification deviations approved:",
     ])
       expect(template).toContain(phrase);
     const headings = template
@@ -303,6 +307,32 @@ describe("PR skill contract", () => {
     expect(template).not.toContain("PR message and intent");
     expect(workflow).not.toContain("scan-pr-message.py");
     expect(checklist).not.toContain("message scanner");
+  });
+
+  it("tracks the governing specification across template, authoring, and review", () => {
+    const template = read(messageTemplate),
+      authoring = read(createUpdate),
+      workflow = read(reviewWorkflow),
+      checklist = read(join(pr, "references/review-checklist.md")),
+      overall = read(overallReviewTemplate);
+    const headings = template
+      .split("\n")
+      .filter((line) => line.startsWith("## "));
+    expect(headings.indexOf("## 📘 Specification [ Optional ]")).toBe(
+      headings.indexOf("## 🧵 Context") + 1,
+    );
+    expect(headings.indexOf("## 📘 Specification [ Optional ]")).toBe(
+      headings.indexOf("## 🛠️ Implementation [ Optional ]") - 1,
+    );
+    expect(template).not.toContain("Spec: <link>");
+    expect(authoring).toContain("`{{specification_body}}`");
+    expect(authoring).toContain("Stop when absent rather than inventing a link");
+    expect(authoring).toContain("- [ ] Specification deviations approved:");
+    expect(checklist).toContain("Read the linked specification");
+    expect(checklist).toContain("spec_deviations: captured | missing | skipped");
+    expect(workflow).toContain("**Read the linked specification.**");
+    expect(workflow).toContain("a linked specification that could not be read");
+    expect(overall).toContain("unanchored chore");
   });
 
   it("normalizes canonical commit-body headings during authoring", () => {
