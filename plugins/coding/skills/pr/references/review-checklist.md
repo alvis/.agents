@@ -75,6 +75,13 @@ most valuable ones in the review:
 - **Scope against the stated goal.** The PR title, body, and any resolvable
   goal/spec are the contract. Report what the PR claims but does not do, and what it
   does without claiming — scope creep is a finding, not a bonus.
+- **Read the linked specification before grading alignment.** A resolvable spec
+  makes `goal_spec_alignment: skipped_unknown` unavailable: confirm every deviation
+  from it is captured under Additional Notes, and raise each uncaptured deviation
+  as an unanchored merge-blocking chore. Treat an unticked
+  `- [ ] Specification deviations approved:` task in Verification as the same
+  process chore owed against the PR body — the deviations it records stay
+  unapproved until that task is ticked.
 - **Does it follow every applicable standard?** Review file placement against
   `file-structure/`, behavior and APIs against `universal/` and `function/`,
   tests against `testing/`, docs and comments against `documentation/`, and
@@ -113,6 +120,7 @@ findings:
     evidence: <the rule, failure path, or repository precedent it rests on>
     alternative: <exact path this change belongs in instead, or null>
 goal_spec_alignment: matches | diverges | skipped_unknown
+spec_deviations: captured | missing | skipped
 intent_behavior: matches | diverges | skipped
 standards_alignment: matches | diverges | skipped
 reuse: no_missed_reuse | missed_reuse | skipped
@@ -173,6 +181,10 @@ overall body without copying inline-only markers or markup.
   a better location was actually found.
 - `goal_spec_alignment` is `skipped_unknown` when no goal or spec can be resolved.
   Never infer a goal from the diff and then grade the diff against it.
+- `spec_deviations` is `captured` when every deviation observed against the linked
+  specification is recorded under Additional Notes, `missing` when one is not —
+  each missing deviation is published as an unanchored chore — and `skipped`
+  only when the PR links no resolvable specification.
 - The other verdict fields summarize the corresponding mandatory checks; use
   `skipped` only when the concern could not be completed and name that blocker
   in `not_reviewed`.

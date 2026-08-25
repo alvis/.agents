@@ -345,6 +345,11 @@ The diff is the subject of the review, not the limit of the reading.
 - **Prove the stated intent.** Trace each stated Goal and behavioral Requirement
   through implementation, callers, edge/failure paths, and tests. Behavior that
   diverges from the contract is a finding.
+- **Read the linked specification.** Grade alignment against the specification
+  the PR links, and confirm every deviation from it is captured under Additional
+  Notes; an uncaptured deviation is a merge-blocking chore. A linked
+  specification that cannot be read is not `skipped_unknown` — it caps the event
+  in step 2 below.
 - **Apply the complete standards set.** Check file structure, testing,
   documentation, universal code, function/API, and every applicable
   language-specific standard resolved above.
@@ -455,8 +460,9 @@ as a third condition would leave a review with weak tests and only P3 findings
 matching no row at all while the body still needs a substantive verdict to key off.
 
 **2. Cap the event where the review cannot be trusted.** Tests unconvincing, red CI,
-a head/base value no longer equal to its pinned value, or a blocker
-prevented a full review: the event is capped at `COMMENT`. The cap beats step 1 rather than competing
+a head/base value no longer equal to its pinned value,
+a linked specification that could not be read, or a blocker prevented a full review:
+the event is capped at `COMMENT`. The cap beats step 1 rather than competing
 with it. A P0 raised against a revision that is no longer the head is not a blocker you
 can stand behind, and `REQUEST_CHANGES` on evidence that moved underneath you claims a
 certainty the review does not have.
@@ -516,7 +522,8 @@ Write the detailed secret-free finding/thread ledger to a durable temporary
 file. Return its absolute path and a structured report below 1000 tokens with,
 per PR: review URL, reviewed head/base refs and OIDs, review tree and ownership,
 tracking path, zone, goal/spec and intended-behavior
-alignment, standards alignment, reuse, minimality, finding counts by priority and kind,
+alignment, specification-deviation capture (`captured`, `missing`, or `skipped`),
+standards alignment, reuse, minimality, finding counts by priority and kind,
 submitted event, trust cap or `none`, unanchored count, paths not reviewed, and
 blocker. An outstanding `chore` is a
 merge blocker and must never be summarized as zero findings. Preserve stack

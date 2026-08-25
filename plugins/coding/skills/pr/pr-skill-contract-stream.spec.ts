@@ -296,6 +296,24 @@ describe("PR skill contract stream", () => {
     expect(workflow).toContain("`{{generated_files_body}}`");
   });
 
+  it("names and tracks the governing specification across the lifecycle", () => {
+    const template = read(messageTemplate),
+      authoring = read(createUpdate),
+      review = read(join(pr, "references/review-workflow.md")),
+      checklist = read(join(pr, "references/review-checklist.md")),
+      overall = read(join(pr, "templates/overall-review.md"));
+    expect(template).toContain("## 📘 Specification [ Optional ]");
+    expect(template).not.toContain("Spec: <link>");
+    for (const document of [template, authoring])
+      expect(document).toContain("{{specification_body}}");
+    expect(authoring).toContain(
+      "`- [ ] Specification deviations approved: <what changed and why>`",
+    );
+    expect(review).toContain("**Read the linked specification.**");
+    expect(checklist).toContain("spec_deviations: captured | missing | skipped");
+    expect(overall).toContain("unanchored chore");
+  });
+
   it("keeps PR-size thresholds in one machine-readable home with matching presentations", () => {
     const thresholds = JSON.parse(read(thresholdsPath)) as {
       schema_version: number;

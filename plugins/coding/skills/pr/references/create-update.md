@@ -831,6 +831,9 @@ passes its base; text-only callers default to the first parent. Never invoke `gh
    - `{{context_body}}` — content under `## Context` / `Why:` /
      `Background:`. Stop when absent rather than duplicating Summary or
      inventing background from the diff.
+   - `{{specification_body}}` — content under `## Spec` / `Spec:` /
+     `Specification:`; a canonical committed-doc path or external page such
+     as Notion. Stop when absent rather than inventing a link.
    - `{{implementation_body}}` — content under `## Implementation` / `What:`
      / `How:`, if present.
    - `{{breaking_changes_body}}` — `BREAKING CHANGE:` footers; "None." when
@@ -861,15 +864,19 @@ passes its base; text-only callers default to the first parent. Never invoke `gh
      this change and ticked as each one is confirmed. Every item is a check;
      an observation, a result, or evidence of what already happened belongs in
      Implementation. Change-specific checks are mandatory; standard items never
-     replace them. Append one assigned/reviewed/approved reviewer triplet per
+     replace them. When Additional Notes records deviations from the
+     specification or original request, append
+     `- [ ] Specification deviations approved: <what changed and why>`.
+     Append one assigned/reviewed/approved reviewer triplet per
      `required_reviewers`, in slot order, using the exact head/base OIDs recorded
      in step 4 and the template's Verification shape.
    - `{{boundary_body}}` — bullets naming related work the instruction placed
      outside this change, so its edges are not read as gaps. It records the
      scope it was given, not the author's own judgment calls. "None." when
      absent.
-   - `{{additional_notes_body}}` — remaining unmapped body content; "None."
-     when absent.
+   - `{{additional_notes_body}}` — remaining unmapped body content; record
+     deviations from the specification or original request (what changed and
+     why), known limitations, and follow-ups there; "None." when absent.
 
    Drop an optional section that resolves to "None." rather than leaving a
    stub. Never publish a generic or missing always-, zone-, archetype-, or
