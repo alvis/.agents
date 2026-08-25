@@ -11,7 +11,7 @@ Render inline comments through [inline-review.md](inline-review.md).
 ```markdown
 📌
 
-{{zone_emoji}} Reviewed `{{head_sha_short}}` — {{files_changed}} files, +{{additions}}/-{{deletions}}, {{zone}} zone.
+{{verdict_glyph}} Reviewed `{{head_sha_short}}` — {{files_changed}} files, +{{additions}}/-{{deletions}}, {{zone}} zone.
 
 {{one_paragraph_read}}
 
@@ -74,8 +74,10 @@ Render inline comments through [inline-review.md](inline-review.md).
 Notes for the sections where the guidance is not self-evident:
 
 - **Opening marker** — render `📌` on its own line, then a blank line and the
-  review facts prefixed by the size-zone emoji: `🟢` green, `🟡` yellow,
-  `🔴` red, or `⚫` black. Preserve one space between `{{zone}}` and
+  review facts prefixed by the verdict glyph — `✅` approve, `❌` request
+  changes, or `⚠️` capped at comment — resolved from the substantive verdict in
+  [review-workflow.md](../references/review-workflow.md), exactly as
+  `{{verdict_alert}}` is. Preserve one space between `{{zone}}` and
   `zone`.
 - **Section headings** — every `###` heading starts with its template emoji;
   never emit an unprefixed review section.
