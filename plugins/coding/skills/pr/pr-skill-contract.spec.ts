@@ -315,20 +315,26 @@ describe("PR skill contract", () => {
       expect(text).toContain(phrase);
   });
 
-  it("uses section and zone emoji in the review template", () => {
+  it("uses section and verdict glyphs in the review template", () => {
     const template = read(overallReviewTemplate),
       rendered = template.split("```markdown", 2)[1]!.split("```", 1)[0]!;
     const headings = rendered
       .split("\n")
       .filter((line) => line.startsWith("### "));
     expect(rendered).toMatch(
-      /^\n📌\n\n\{\{zone_emoji\}\} Reviewed `\{\{head_sha_short\}\}`/,
+      /^\n📌\n\n\{\{verdict_glyph\}\} Reviewed `\{\{head_sha_short\}\}`/,
     );
     expect(
       headings.every((heading) => !/^[\x00-\x7f]$/.test(heading[4]!)),
     ).toBe(true);
-    for (const zone of ["`🟢` green", "`🟡` yellow", "`🔴` red", "`⚫` black"])
-      expect(template).toContain(zone);
+    expect(template).not.toMatch(/[🟢🟡🔴⚫]/u);
+    const normalized = template.split(/\s+/).join(" ");
+    for (const verdict of [
+      "`✅` approve",
+      "`❌` request changes",
+      "`⚠️` capped at comment",
+    ])
+      expect(normalized).toContain(verdict);
   });
 
   it("authors new stacks against existing commit OIDs", () => {
