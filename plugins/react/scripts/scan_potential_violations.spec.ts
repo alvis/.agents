@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -16,10 +16,50 @@ import { run } from "../../coding/scripts/scanlib/core.ts";
 import { loadRules } from "../../coding/scripts/scanlib/loader.ts";
 import { scanBarrel } from "./scanners/barrel-missing-props-reexport.ts";
 
+interface CaptureResult {
+  readonly code: number;
+  readonly stdout: string;
+}
+
+interface FixtureCase {
+  readonly category: string;
+  readonly directory: string;
+  readonly expectedFinding?: ReportFinding;
+  readonly name: string;
+}
+
+interface ReportFinding {
+  readonly lineNumber: number;
+  readonly path: string;
+}
+
 const here = import.meta.dirname;
 const fixtures = resolve(here, "../tests/fixtures");
 const rulesDirectory = resolve(here, "scanners");
 const roots: string[] = [];
+const EXPECTED_FINDING_BY_FIXTURE: Readonly<Record<string, ReportFinding>> = {
+  "barrel-missing-props-reexport": { lineNumber: 1, path: "index.ts" },
+  barrel: { lineNumber: 2, path: "index.ts" },
+  "props-children-inline": { lineNumber: 4, path: "input.tsx" },
+  "props-element-handrolled": { lineNumber: 4, path: "input.tsx" },
+  "props-interface": { lineNumber: 2, path: "input.tsx" },
+};
+const fixtureCases = readdirSync(fixtures, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry): FixtureCase => {
+    const directory = resolve(fixtures, entry.name);
+    const categoryFile = resolve(directory, "category.txt");
+    return {
+      category: existsSync(categoryFile)
+        ? readFileSync(categoryFile, "utf8").trim()
+        : entry.name,
+      directory,
+      expectedFinding: EXPECTED_FINDING_BY_FIXTURE[entry.name],
+      name: entry.name,
+    };
+  })
+  .sort((left, right) => left.name.localeCompare(right.name));
+
 function runBun(command: readonly string[]): {
   readonly exitCode: number;
   readonly stdout: string;
@@ -40,50 +80,88 @@ afterEach(() => {
 async function capture(
   argv: readonly string[],
   directory = rulesDirectory,
-): Promise<string> {
+): Promise<CaptureResult> {
   let stdout = "";
-  await run(argv, {
+  const code = await run(argv, {
     rulesDirectory: directory,
     stdout: (text) => {
       stdout += text;
     },
   });
-  return stdout;
+  return { code, stdout };
 }
 
-const cases = readdirSync(fixtures, { withFileTypes: true })
-  .filter(
-    (entry) =>
-      entry.isDirectory() &&
-      existsSync(resolve(fixtures, entry.name, "expected.txt")),
-  )
-  .map((entry) => entry.name)
-  .sort();
+function expectStructuralReport(
+  stdout: string,
+  category: string,
+  expectedFinding?: ReportFinding,
+): void {
+  const reportMatch =
+    /^=== ([^\n]+) ===\n\n[\s\S]*?\n=== Summary ===\n  ([a-z0-9-]+): (\d+) matches in (\d+) files\n$/.exec(
+      stdout,
+    );
+  if (reportMatch === null) throw new Error("scanner report shape is invalid");
+  const [, label, reportedCategory, matchCountText, fileCountText] =
+    reportMatch;
+  const findings: readonly ReportFinding[] = [
+    ...stdout.matchAll(/^(.+):(\d+)  /gm),
+  ].map(([, path, lineNumber]) => ({
+    lineNumber: Number(lineNumber),
+    path,
+  }));
+  const matchCount = Number(matchCountText);
+  const fileCount = Number(fileCountText);
 
-describe("react scanner golden fixtures", () => {
-  it.each(cases)("matches the %s golden", async (name) => {
-    const directory = resolve(fixtures, name);
-    const categoryFile = resolve(directory, "category.txt");
-    const category = existsSync(categoryFile)
-      ? readFileSync(categoryFile, "utf8").trim()
-      : name;
-    const previous = process.cwd();
-    process.chdir(directory);
-    try {
-      expect(await capture([".", "--category", category])).toBe(
-        readFileSync(resolve(directory, "expected.txt"), "utf8"),
-      );
-    } finally {
-      process.chdir(previous);
-    }
+  expect(label.trim().length).toBeGreaterThan(0);
+  expect(reportedCategory).toBe(category);
+  expect(
+    findings.every(
+      (finding) =>
+        !isAbsolute(finding.path) &&
+        !finding.path.split(/[\\/]/).includes("..") &&
+        finding.lineNumber > 0,
+    ),
+  ).toBe(true);
+  expect({
+    findingCount: findings.length,
+    findingFileCount: new Set(findings.map((finding) => finding.path)).size,
+  }).toEqual({
+    findingCount: matchCount,
+    findingFileCount: fileCount,
   });
+  if (expectedFinding === undefined) expect(matchCount).toBe(0);
+  else expect(findings).toContainEqual(expectedFinding);
+}
+
+describe("react scanner fixture reports", () => {
+  it.each(fixtureCases)(
+    "should emit a structural report for $name",
+    async ({ category, directory, expectedFinding }) => {
+      const previous = process.cwd();
+      process.chdir(directory);
+      try {
+        const result = await capture([".", "--category", category]);
+        expect(result.code).toBe(0);
+        expectStructuralReport(result.stdout, category, expectedFinding);
+      } finally {
+        process.chdir(previous);
+      }
+    },
+  );
 });
 
 describe("react rule loading", () => {
   it("loads unique rules sorted by order", async () => {
     const rules = await loadRules(rulesDirectory);
     expect(new Set(rules.map((rule) => rule.id)).size).toBe(rules.length);
-    expect(rules.map((rule) => rule.order)).toEqual([0, 10, 20, 30]);
+    expect(rules.map((rule) => [rule.order, rule.id])).toEqual(
+      [...rules]
+        .sort(
+          (left, right) =>
+            left.order - right.order || left.id.localeCompare(right.id),
+        )
+        .map((rule) => [rule.order, rule.id]),
+    );
   });
   it("skips underscore helpers and isolates a broken rule", async () => {
     const directory = mkdtempSync(resolve(tmpdir(), "react-rules-"));

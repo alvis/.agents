@@ -1,10 +1,9 @@
 import { spawnSync } from "node:child_process";
 import {
   chmod,
+  copyFile,
   mkdir,
   mkdtemp,
-  readFile,
-  readdir,
   rename,
   rm,
   writeFile,
@@ -14,9 +13,20 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const classifier = join(import.meta.dirname, "classify-pr-size.ts");
-const classifierUsage =
-  "usage: classify-pr-size.ts [-h] [--repo REPO] --base BASE --head HEAD";
+interface ThresholdZone {
+  max_authored_net_loc: number;
+  max_files_changed: number;
+  name: string;
+  required_reviewers: number;
+}
+interface ThresholdFixture {
+  metrics: Record<
+    "authored_net_loc" | "files_changed" | "required_reviewers",
+    { reason: string; unit: string }
+  >;
+  schema_version: number;
+  zones: ThresholdZone[];
+}
 type Result = {
   authored_additions: number;
   authored_deletions: number;
@@ -27,6 +37,11 @@ type Result = {
   net_loc: number;
   zone: string;
 };
+
+const classifier = join(import.meta.dirname, "classify-pr-size.ts");
+const classifierUsage =
+  "usage: classify-pr-size.ts [-h] [--repo REPO] --base BASE --head HEAD";
+
 function git(repo: string, ...args: string[]): string {
   const result = spawnSync("git", ["-C", repo, ...args], { encoding: "utf8" });
   expect(result.status, result.stderr).toBe(0);
@@ -72,6 +87,63 @@ function runClassifier(args: string[], cwd?: string) {
     cwd,
     encoding: "utf8",
   });
+}
+
+function createThresholds(): ThresholdFixture {
+  return {
+    schema_version: 1,
+    metrics: {
+      authored_net_loc: { reason: "review surface", unit: "lines" },
+      files_changed: { reason: "review surface", unit: "paths" },
+      required_reviewers: { reason: "review depth", unit: "reviewers" },
+    },
+    zones: [
+      {
+        name: "green",
+        max_files_changed: 1,
+        max_authored_net_loc: 1,
+        required_reviewers: 0,
+      },
+      {
+        name: "yellow",
+        max_files_changed: 2,
+        max_authored_net_loc: 2,
+        required_reviewers: 1,
+      },
+      {
+        name: "red",
+        max_files_changed: 3,
+        max_authored_net_loc: 3,
+        required_reviewers: 2,
+      },
+    ],
+  };
+}
+
+async function createClassifierFixture(
+  root: string,
+  thresholds: ThresholdFixture,
+): Promise<{ base: string; head: string; repo: string; script: string }> {
+  const repo = join(root, "repo");
+  const scripts = join(root, "skill/scripts");
+  const assets = join(root, "skill/assets");
+  await mkdir(repo);
+  await mkdir(scripts, { recursive: true });
+  await mkdir(assets);
+  git(repo, "init", "--quiet", "--initial-branch=main");
+  git(repo, "config", "user.email", "test@example.com");
+  git(repo, "config", "user.name", "Test");
+  await writeFile(join(repo, "README.md"), "base\n");
+  const base = commit(repo, "base");
+  await writeFile(join(repo, "app.py"), "one\ntwo\n");
+  const head = commit(repo, "head");
+  const script = join(scripts, "classify-pr-size.ts");
+  await copyFile(classifier, script);
+  await writeFile(
+    join(assets, "size-thresholds.json"),
+    JSON.stringify(thresholds),
+  );
+  return { base, head, repo, script };
 }
 
 describe("PR size classification", () => {
@@ -561,33 +633,80 @@ describe("PR size classification", () => {
       zone: "black",
     });
   }, 30_000);
-  it("keeps authoring, stacking, and review on the canonical classifier", async () => {
-    const pr = join(import.meta.dirname, "..");
-    for (const name of [
-      "create-update.md",
-      "review-workflow.md",
-      "stacked-prs.md",
-    ]) {
-      const content = await readFile(join(pr, "references", name), "utf8");
-      expect(content.split("scripts/classify-pr-size.ts")).toHaveLength(2);
-      expect(content).toContain("generated");
-      expect(content).toContain("file count");
+});
+
+describe("PR size threshold inputs", () => {
+  it("should classify with limits from the controlled threshold input", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pr-size-thresholds-"));
+    try {
+      const fixture = await createClassifierFixture(root, createThresholds());
+
+      const result = spawnSync(
+        "bun",
+        [
+          "run",
+          fixture.script,
+          "--repo",
+          fixture.repo,
+          "--base",
+          fixture.base,
+          "--head",
+          fixture.head,
+        ],
+        { encoding: "utf8" },
+      );
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        files_changed: 1,
+        net_loc: 2,
+        zone: "yellow",
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
-    const coding = join(import.meta.dirname, "../../..");
-    const rules = (await readdir(join(coding, "standards/git/rules"))).filter(
-      (name) => name.startsWith("GIT-PR-SIZE-") && name.endsWith(".md"),
-    );
-    const policy = await Promise.all(
-      [
-        "meta.md",
-        "scan.md",
-        "write.md",
-        ...rules.map((name) => `rules/${name}`),
-      ].map((name) => readFile(join(coding, "standards/git", name), "utf8")),
-    );
-    const normalized = policy.join("\n").replace(/\s+/g, " ").toLowerCase();
-    expect(normalized).toContain("authored net loc");
-    expect(normalized).toContain("exclude additions and deletions");
-    expect(normalized).toContain("remain in the file count");
   });
+
+  it.each([
+    [0, "max_files_changed", true],
+    [0, "max_authored_net_loc", true],
+    [0, "max_files_changed", 0],
+    [0, "max_authored_net_loc", 0],
+    [0, "max_files_changed", -1],
+    [0, "max_authored_net_loc", -1],
+    [0, "required_reviewers", true],
+    [0, "required_reviewers", -1],
+    [1, "max_files_changed", 1],
+    [1, "max_authored_net_loc", 1],
+    [1, "required_reviewers", -1],
+  ] as const)(
+    "should reject invalid threshold limit zone %i %s=%s",
+    async (zoneIndex, field, invalidValue) => {
+      const root = await mkdtemp(join(tmpdir(), "pr-size-thresholds-"));
+      try {
+        const thresholds = createThresholds();
+        Reflect.set(thresholds.zones[zoneIndex]!, field, invalidValue);
+        const fixture = await createClassifierFixture(root, thresholds);
+
+        const result = spawnSync(
+          "bun",
+          [
+            "run",
+            fixture.script,
+            "--repo",
+            fixture.repo,
+            "--base",
+            fixture.base,
+            "--head",
+            fixture.head,
+          ],
+          { encoding: "utf8" },
+        );
+
+        expect(result.status).not.toBe(0);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
 });

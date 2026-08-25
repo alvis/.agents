@@ -1,6 +1,5 @@
 import {
   copyFileSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -9,13 +8,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { run } from "./scanlib/core.ts";
 import { loadRules } from "./scanlib/loader.ts";
-import { deriveRuleIdPrefixes, FALLBACK_PREFIXES } from "./scanlib/prefixes.ts";
+import { deriveRuleIdPrefixes } from "./scanlib/prefixes.ts";
 import {
   isSpecFile,
   isTestFile,
@@ -25,32 +24,28 @@ import {
   tsOnly,
 } from "./scanlib/predicates.ts";
 
+interface FixtureCase {
+  readonly category: string;
+  readonly directory: string;
+  readonly expectedFinding: ReportFinding;
+  readonly inputName?: string;
+}
+
+interface ReportFinding {
+  readonly lineNumber: number;
+  readonly path: string;
+}
+
+interface ParsedReport {
+  readonly category: string;
+  readonly fileCount: number;
+  readonly findings: readonly ReportFinding[];
+  readonly label: string;
+  readonly matchCount: number;
+}
+
 const here = import.meta.dirname;
 const fixtures = resolve(here, "../tests/fixtures");
-// Rules whose `appliesTo` gates on the `.spec.` marker cannot see their
-// violation input once the corpus ships under plain names, so each golden
-// directory keeps only compliant files and these tests re-materialize the
-// spec-named twin at runtime.
-const SPEC_GATED_CATEGORIES = [
-  { category: "aaa-comment", matches: [5, 8, 11] },
-  { category: "error-assertion-split", matches: [9, 16] },
-  { category: "test-conditional-skip", matches: [4, 12] },
-  { category: "test-dynamic-import", matches: [9] },
-  { category: "test-env-access", matches: [1, 2, 3, 4] },
-  { category: "test-hooks", matches: [2, 3, 4, 5] },
-  { category: "test-mock-cleanup", matches: [1, 2] },
-  { category: "test-mock-stub", matches: [3, 4, 7] },
-  { category: "test-title-convention", matches: [4, 6] },
-  { category: "to-be-object-literal", matches: [7, 13] },
-  { category: "undefined-override", matches: [6] },
-] as const;
-const TEST_NAMING_SOURCE = [
-  "// violation: this file uses the `.test.ts` extension instead of `.spec.ts`",
-  "export function placeholder(): number {",
-  "  return 1;",
-  "}",
-  "",
-].join("\n");
 const SPEC_CORPUS = [
   "import { compute } from './source';",
   "",
@@ -76,14 +71,56 @@ const SPEC_CORPUS = [
   "",
 ].join("\n");
 
-const fixtureDirectories = readdirSync(fixtures, { withFileTypes: true })
-  .filter(
-    (entry) =>
-      entry.isDirectory() &&
-      existsSync(resolve(fixtures, entry.name, "expected.txt")),
-  )
-  .map((entry) => entry.name)
-  .sort();
+const EXPECTED_FINDING_BY_CATEGORY: Readonly<Record<string, ReportFinding>> = {
+  "aaa-comment": { lineNumber: 5, path: "input.spec.ts" },
+  "abbreviation-denylist": { lineNumber: 3, path: "input.ts" },
+  "author-stamp": { lineNumber: 2, path: "input.ts" },
+  "canonical-param-name": { lineNumber: 2, path: "input.ts" },
+  "catch-error-defensive": { lineNumber: 5, path: "input.ts" },
+  "comment-rule-id": { lineNumber: 1, path: "input.ts" },
+  "conditional-spread": { lineNumber: 4, path: "input.ts" },
+  "dynamic-import-static": { lineNumber: 2, path: "input.ts" },
+  "error-assertion-split": { lineNumber: 9, path: "input.spec.ts" },
+  "escape-cast": { lineNumber: 3, path: "input.ts" },
+  "jsdoc-fullstop": { lineNumber: 2, path: "input.ts" },
+  "jsdoc-uppercase": { lineNumber: 2, path: "input.ts" },
+  let: { lineNumber: 2, path: "input.ts" },
+  "py-future-annotations": { lineNumber: 4, path: "input.py" },
+  "py-missing-all": {
+    lineNumber: 9,
+    path: "violating_pkg/__init__.py",
+  },
+  "py-type-ignore-format": { lineNumber: 8, path: "input.py" },
+  "section-name": { lineNumber: 3, path: "input.ts" },
+  "silent-catch": { lineNumber: 4, path: "input.ts" },
+  "source-import-path": { lineNumber: 3, path: "input.ts" },
+  "star-import-export": { lineNumber: 2, path: "input.ts" },
+  "test-conditional-skip": { lineNumber: 4, path: "input.spec.ts" },
+  "test-dynamic-import": { lineNumber: 9, path: "input.spec.ts" },
+  "test-env-access": { lineNumber: 1, path: "input.spec.ts" },
+  "test-file-naming": { lineNumber: 1, path: "input.test.ts" },
+  "test-hooks": { lineNumber: 2, path: "input.spec.ts" },
+  "test-mock-cleanup": { lineNumber: 1, path: "input.spec.ts" },
+  "test-mock-stub": { lineNumber: 3, path: "input.spec.ts" },
+  "test-title-convention": { lineNumber: 4, path: "input.spec.ts" },
+  "to-be-object-literal": { lineNumber: 7, path: "input.spec.ts" },
+  "undefined-override": { lineNumber: 6, path: "input.spec.ts" },
+  "unit-suffix": { lineNumber: 3, path: "input.ts" },
+};
+
+const fixtureCases = readdirSync(fixtures, { withFileTypes: true })
+  .flatMap((entry): readonly FixtureCase[] => {
+    if (!entry.isDirectory() || entry.name === "_corpus") return [];
+    const directory = resolve(fixtures, entry.name);
+    const inputName = readdirSync(directory).find((name) =>
+      /^input\.[^.]+$/.test(name),
+    );
+    const expectedFinding = EXPECTED_FINDING_BY_CATEGORY[entry.name];
+    if (expectedFinding === undefined)
+      throw new Error(`missing structural oracle for ${entry.name}`);
+    return [{ category: entry.name, directory, expectedFinding, inputName }];
+  })
+  .sort((left, right) => left.category.localeCompare(right.category));
 const roots: string[] = [];
 
 function temporaryRoot(): string {
@@ -118,24 +155,82 @@ async function capture(
   return { code, stdout, stderr };
 }
 
-describe("coding scanner golden fixtures", () => {
-  it("discovers golden fixtures", () =>
-    expect(fixtureDirectories.length).toBeGreaterThan(0));
+function expectStructuralReport(
+  stdout: string,
+  category: string,
+  expectedFinding: ReportFinding,
+): void {
+  const reportMatch =
+    /^=== ([^\n]+) ===\n\n[\s\S]*?\n=== Summary ===\n  ([a-z0-9-]+): (\d+) matches in (\d+) files\n$/.exec(
+      stdout,
+    );
+  if (reportMatch === null) throw new Error("scanner report shape is invalid");
+  const [, label, reportedCategory, matchCountText, fileCountText] =
+    reportMatch;
+  const findings = [...stdout.matchAll(/^(.+):(\d+)  /gm)].map(
+    ([, path, lineNumber]) => ({
+      lineNumber: Number(lineNumber),
+      path,
+    }),
+  );
+  const report: ParsedReport = {
+    category: reportedCategory,
+    fileCount: Number(fileCountText),
+    findings,
+    label,
+    matchCount: Number(matchCountText),
+  };
 
-  it.each(fixtureDirectories)("matches the %s golden", async (name) => {
-    const directory = resolve(fixtures, name);
-    const previous = process.cwd();
-    process.chdir(directory);
-    try {
-      const result = await capture([".", "--category", name]);
-      expect(result.code).toBe(0);
-      expect(result.stdout).toBe(
-        readFileSync(resolve(directory, "expected.txt"), "utf8"),
-      );
-    } finally {
-      process.chdir(previous);
-    }
+  expect(report.label.trim().length).toBeGreaterThan(0);
+  expect(report.category).toBe(category);
+  expect(
+    report.findings.every(
+      (finding) =>
+        !isAbsolute(finding.path) &&
+        !finding.path.split(/[\\/]/).includes("..") &&
+        finding.lineNumber > 0,
+    ),
+  ).toBe(true);
+  expect({
+    findingCount: report.findings.length,
+    findingFileCount: new Set(report.findings.map((finding) => finding.path))
+      .size,
+  }).toEqual({
+    findingCount: report.matchCount,
+    findingFileCount: report.fileCount,
   });
+  expect(report.findings).toContainEqual(expectedFinding);
+}
+
+describe("coding scanner fixture reports", () => {
+  it.each(fixtureCases)(
+    "should emit a structural report for $category",
+    async ({ category, directory, expectedFinding, inputName }) => {
+      const root =
+        inputName === undefined ? directory : temporaryRoot();
+      if (inputName !== undefined) {
+        const source = readFileSync(resolve(directory, inputName), "utf8");
+        const extension = inputName.slice("input".length);
+        for (const runtimeInputName of [
+          `input${extension}`,
+          `input.spec${extension}`,
+          `input.test${extension}`,
+          `test_input${extension}`,
+        ])
+          writeFileSync(resolve(root, runtimeInputName), source);
+      }
+
+      const previous = process.cwd();
+      process.chdir(root);
+      try {
+        const result = await capture([".", "--category", category]);
+        expect(result.code).toBe(0);
+        expectStructuralReport(result.stdout, category, expectedFinding);
+      } finally {
+        process.chdir(previous);
+      }
+    },
+  );
 
   // This test rescans the full fixture tree once per loaded rule through real
   // subprocess captures. It is the one in this file observed exceeding the
@@ -186,19 +281,6 @@ describe("rule module loading", () => {
     } finally {
       write.mockRestore();
     }
-  });
-
-  it("uses only public kebab-case production rule filenames", () => {
-    const publicModules = readdirSync(resolve(here, "scanners")).filter(
-      (name) => name.endsWith(".ts") && !name.startsWith("_"),
-    );
-    expect(
-      publicModules.every(
-        (name) =>
-          basename(name, ".ts") === basename(name, ".ts").toLowerCase() &&
-          !name.includes("_"),
-      ),
-    ).toBe(true);
   });
 });
 
@@ -264,7 +346,6 @@ describe("path predicates and rule id prefixes", () => {
     expect(prefixes.every((prefix) => /^[A-Z][A-Z0-9_]*$/.test(prefix))).toBe(
       true,
     );
-    expect(FALLBACK_PREFIXES.length).toBeGreaterThan(0);
   });
 });
 
@@ -401,34 +482,6 @@ describe("static file read scoping", () => {
 });
 
 describe("spec-gated rule applicability", () => {
-  it.each(SPEC_GATED_CATEGORIES)(
-    "flags $category violations in a runtime-written spec file",
-    async ({ category, matches }) => {
-      const root = temporaryRoot();
-      const source = readFileSync(
-        resolve(fixtures, category, "input.ts"),
-        "utf8",
-      );
-      writeFileSync(resolve(root, "input.spec.ts"), source);
-      const result = await capture([root, "--category", category]);
-      expect(result.code).toBe(0);
-      for (const lineno of matches)
-        expect(result.stdout).toContain(`input.spec.ts:${lineno}`);
-      expect(result.stdout).toContain(
-        `${category}: ${matches.length} matches in 1 files`,
-      );
-    },
-  );
-
-  it("flags a .test.ts filename but leaves plain sources alone", async () => {
-    const root = temporaryRoot();
-    writeFileSync(resolve(root, "example.test.ts"), TEST_NAMING_SOURCE);
-    const result = await capture([root, "--category", "test-file-naming"]);
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain("example.test.ts:1");
-    expect(result.stdout).toContain("test-file-naming: 1 matches in 1 files");
-  });
-
   it("does not flag hook-shaped calls outside spec files", async () => {
     const result = await capture([
       resolve(fixtures, "_corpus/not-a-spec.ts"),

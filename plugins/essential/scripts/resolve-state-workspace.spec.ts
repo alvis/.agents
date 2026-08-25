@@ -11,14 +11,13 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { resolve } from "node:path";
+import { extname, isAbsolute, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 const here = import.meta.dirname;
 const resolver = resolve(here, "resolve-state-workspace");
-const namingReference = resolve(here, "../references/naming.md");
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -407,8 +406,10 @@ describe("work state workspace resolution", () => {
     expect(String(result.payload.work_id_grammar)).toContain(
       "^[a-z0-9]+(-[a-z0-9]+)*$",
     );
-    expect(result.payload.naming_reference).toBe(namingReference);
-    expect(existsSync(namingReference)).toBe(true);
+    const namingReference = String(result.payload.naming_reference);
+    expect(namingReference.length).toBeGreaterThan(0);
+    expect(isAbsolute(namingReference)).toBe(true);
+    expect(extname(namingReference)).toBe(".md");
   });
 
   it("requires the default tree ignore and rejects later negation", () => {

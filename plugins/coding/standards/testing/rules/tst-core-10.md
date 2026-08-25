@@ -1,118 +1,107 @@
-# TST-CORE-10: No Tests Over Static Content
+# TST-CORE-10: No Tests Over Checked-In Static Content
 
 ## Intent
 
-A test must exercise behavior. Static content is not behavior: it is a value whose single source of truth already lives somewhere else. A test that re-states that value proves only that two files agree with each other — it fails when someone edits the source and forgets the test, and passes when both are wrong in the same way. That is a change-detector: it taxes every legitimate change to the data while catching no defect.
+Tests exercise executable behavior. A checked-in repository or plugin artifact
+is implementation input, not an assertion subject. Testing its presence, path,
+bytes, prose, or agreement with another checked-in file creates a second source
+of truth that fails on legitimate edits without proving a consumer works.
 
-This applies to static content in any language and any form: constant exports, rosters, manifests, config maps, fixtures-as-truth, and copy text. Asserting it back is the testing analogue of the dead code `GEN-DESN-04` deletes — the fix is deletion, not a test.
+This rule applies to every checked-in artifact, including source constants,
+manifests, configuration, documentation, hook payloads, templates, inventories,
+fixtures used as expected output, and generated projections committed to the
+repository.
 
-## Exception — Systematic Properties
+<IMPORTANT>
+Never assert any of these properties directly over a checked-in artifact:
 
-One line separates the two cases:
+- existence or absence;
+- path or directory layout;
+- file, field, entry, or identifier inventories and exact counts;
+- bytes, hashes, sizes, text, literals, substrings, headings, or prose;
+- parity with another checked-in artifact or preservation of a committed
+  projection, snapshot, or golden output;
+- schema validity, uniqueness, ordering, referential integrity, bounds, or any
+  other systematic property of the checked-in artifact itself.
 
-- **Remove** a test that re-states a specific **value** whose source of truth lives elsewhere.
-- **Keep** a test that asserts a **property holding over the set regardless of the values**.
+Do not recreate a removed repository-content gate under another test name,
+snapshot, fixture, or CI-only assertion.
+</IMPORTANT>
 
-**The operative test — ask what the assertion fails on.** If it fails when the data legitimately changes, it is a change-detector: remove it. If it fails only when the data is genuinely *wrong*, it is a property: keep it. Apply this question first — then check Edge Cases, which settle the shapes where a naive reading of it goes wrong (exact counts, mirrors, generated snapshots, properties over test scaffolding).
+## Allowed Boundary
 
-How the test derives its oracle is part of that question. When conformance is defined by a category, grammar, schema, or template, derive the expected structure from that authority or use its canonical classifier. Never copy an exhaustive set of valid instances into the test: an enumerated oracle is a hand-maintained mirror even when the assertion loops over it. Keep the derivation independent of the behavior under test; do not validate an implementation by calling that implementation or consuming its derived output.
+A checked-in artifact may be supplied as input to an actual consumer or
+generator. Assertions must be restricted to observable runtime behavior or the
+structure of the produced result; they must not restate which checked-in file
+exists, where it lives, or what literal content it contains.
 
-The properties below are the common shapes a systematic property takes. They are **illustrative, not exhaustive** — an assertion that matches no row is not a violation for that reason. Put it to the operative test above. (Non-emptiness, idempotence, range invariants, and conservation are all legitimate properties with no row here.)
+Generated results created in memory or a temporary directory may be checked for
+schema, required fields, unique identities, ordering, referential integrity,
+count consistency, round-trip behavior, and deterministic generation. Missing,
+malformed, or stale input scenarios must likewise be created in a temporary
+workspace and exercised through the real consumer or generator.
 
-| Property | Example |
-|---|---|
-| Bound / cap | body is at most 500 lines |
-| Uniqueness | no duplicate rule IDs |
-| Ordering | rules sorted by order then ID |
-| Referential integrity | every agent has a matching routing row |
-| Schema validity | generated frontmatter parses as YAML |
-| Cross-source parity | two **independently derived** sources agree — not a hand-maintained mirror (see Edge Cases) |
-| Round-trip preservation | serialize → write → read returns the input — a closed loop through the code, not a comparison against a checked-in copy (see Edge Cases) |
+Checked-in fixtures remain valid inputs to executed behavior. Expected-output
+mirrors are not valid oracles: derive structural expectations from the runtime
+result, schema, or consumer contract instead of comparing complete wording with
+a checked-in file.
+
+## Decision Test
+
+Ask what the assertion observes:
+
+- **Checked-in repository state** — remove it.
+- **Behavior produced by an executed consumer** — keep it when the behavior is
+  distinct and meaningful.
+- **A result produced by an executed generator** — keep structural assertions;
+  remove exact wording or parity with a committed projection.
+
+Reading a repository file inside a test is only compliant when that value is
+passed into the executed consumer or generator and every assertion targets the
+resulting behavior or output structure.
 
 ## Fix
 
-Apply in order; stop at the first that holds:
-
-1. **Is the property already asserted elsewhere?** Delete the test. Do not replace a mirror with an assertion that duplicates a test the file already has.
-2. **Does a systematic property capture what actually matters — i.e. is there a defect the value assertion was standing in for?** Replace the value assertion with the property assertion.
-3. **No property, but the content has a consumer?** Delete the test and test the consumer function instead (example below).
-4. **No property and no consumer?** The content itself is dead code — delete the content, not only the test (see `GEN-DESN-04`).
-
-Where no property exists and the test's only job was pinning the value, deletion is the whole fix. Do not invent a property to justify keeping the test — an exact count over an unbounded roster stands in for nothing, and there is no cap to assert in its place.
-
-**The matcher does not decide this — the question does.** Four assertions over the same static rule set, all using the same `assertEqual`, split two-and-two:
-
-```python
-# ❌ pins a count — the value is static content, and the comment tracks its churn
-self.assertEqual(len(self.rules), 30)  # expecting 30 rules post error-assertion-split
-
-# ❌ mirrors the IDs — restates in the test what the source already declares
-self.assertEqual({rule.id for rule in self.rules}, self.EXPECTED_IDS)
-
-# ✅ uniqueness — holds for any roster, fails only on a real duplicate
-self.assertEqual(len(ids), len(set(ids)))
-
-# ✅ ordering — holds for any roster, fails only on genuine drift
-self.assertEqual(keys, sorted(keys))
-```
-
-Reading the matcher is not a shortcut to the verdict: `toHaveLength`, `assertEqual`, and `toBeLessThanOrEqual` each appear on both sides of this rule. Hold the data fixed and change only the question asked of it:
+1. Delete assertions over checked-in existence, absence, layout, inventory,
+   bytes, literals, or parity, together with orphaned helpers and expected files.
+2. If a consumer exists, exercise it with an explicit input and assert the
+   observable result.
+3. If a generator exists, write into memory or a temporary directory and assert
+   result structure, deterministic generation, or stale/missing-output behavior
+   against that freshly generated result.
+4. If no executable behavior exists, deletion is the complete fix. Do not
+   invent another repository-content property to retain the gate.
 
 ```typescript
-// ❌ pins the roster's contents — breaks when a role is legitimately added
-expect(ROLES).toEqual(["admin", "user"]);
+// violation: the checkout is the assertion subject
+expect(existsSync(join(repositoryRoot, ".gitignore"))).toBe(true);
+expect(readFileSync(skillPath, "utf8")).toContain("required prose");
 
-// ✅ same data, a property of it — breaks only on a real duplicate
-expect(new Set(ROLES).size).toBe(ROLES.length);
-```
-
-Structural conformance follows the same rule:
-
-```python
-# ❌ copies a Unicode category into test scaffolding
-assert heading[0] in EVERY_EMOJI
-
-# ✅ asks a canonical Unicode classifier for the required property
-assert unicode_data.has_property(first_grapheme(heading), EMOJI_PROPERTY)
-
-# ❌ copies the template's structure into the test
-assert h2_headings(subject) == ["Summary", "Context", "Verification"]
-
-# ✅ derives the required structure from the authoritative template
-assert h2_headings(subject) == h2_headings(template)
-```
-
-If shape correctness matters at compile time, encode it next to the constant — the TypeScript expression of this rule, not the rule itself:
-
-```typescript
-const _check = SUPPORTED_MIME_TYPES satisfies ReadonlySet<MimeType>;
-```
-
-If callers depend on the constant, test the *consumer* function that uses it instead:
-
-```typescript
-describe("fn:validateUpload", () => {
-  it("should reject files whose mime type is unsupported", () => {
-    expect(() => validateUpload({ mime: "application/x-msdownload" })).toThrow();
-  });
-});
+// compliant: generated output is the assertion subject
+const outputPath = join(temporaryDirectory, "marketplace.json");
+await generateMarketplace({ outputPath });
+const output = JSON.parse(readFileSync(outputPath, "utf8"));
+expect(output.plugins).toEqual(
+  expect.arrayContaining([
+    expect.objectContaining({ name: expect.any(String) }),
+  ]),
+);
 ```
 
 ## Edge Cases
 
-- An exact-count assertion over a static set (`toHaveLength(23)`, `assertEqual(23, len(...))`) is a change-detector, not an invariant — the count is itself static content. Assert the property the count was standing in for, or delete it outright when it stood in for nothing.
-- **A property over the data itself is legitimate; a property over your own scaffolding is not.** When the static content *is* a deliverable — a shipped manifest, a roster, a config artifact, a field whose length must stay capped — asserting a property over it guards the real thing, and it stays. That the data is static is the point: the cap is a systematic property of the artifact, and no consumer needs to run for it to be evidence. What is pointless is asserting a property over a fixture the test file hand-wrote purely to exercise *other* code: nothing there can fail except the author's own setup, so it tests the scaffolding, not the system. "Fixtures-as-truth" in the Intent means restating fixture *values* — it never forbids properties over data that is itself the product.
-- **A mirror is not parity.** Cross-source parity means two sources *derive* the same answer independently (two implementations, a generator against its spec). A hand-maintained list in the test file that someone updates to match the source is a mirror, not a second derivation — it restates the values and is a violation, however much it resembles a parity check.
-- **An exhaustive oracle is still a mirror.** A test-local list of every accepted emoji, heading, field, token, or syntax form duplicates the category or structure it claims to verify and becomes incomplete as that authority evolves. Use a Unicode-aware predicate, parser, schema validator, or extraction from the authoritative template instead; a loop does not make enumerated data systematic.
-- **Deleting the assertion can orphan its fixture.** When removing a mirror, the test-local constant it compared against (`EXPECTED_IDS` and similar) usually becomes dead too. Delete it with the assertion; leaving it behind trades a change-detector for dead code (`GEN-DESN-04`).
-- **Asserting a function's output message tests the function, not the content.** A test that feeds a consumer an over-long input and asserts it reports an error exercises behavior and is compliant — the message text is an observation of the SUT, not static content restated. Prefer asserting the error structurally over substring-matching its copy, which is brittle for reasons of its own (`TST-DATA-07`).
-- A coverage contribution does not redeem a static-content test. Such an assertion executes code and moves the coverage number, so coverage-driven keep/restore logic will protect it; that is a defect in the measurement, not evidence of value. Cover the source through its consumer or a systematic property instead.
-- A *generated* constant is tested through its **generator function**, given input and asserted on output. Snapshotting the generated export itself is a violation like any other static-content assertion — the generated file is not a second source of truth.
-- Type-level checks (`satisfies`, `as const`) belong in source files, never in `*.spec.ts`.
-- A barrel re-export identity assertion (`expect(barrel.UserService).toBe(UserService)`)
-  is the same change-detector pathology — it tests the module system, not
-  behavior. Barrel files are ignore-marked (`TST-COVR-01`); never write
-  re-export tests.
+- Runtime messages, error envelopes, exit status, and emitted JSON are behavior,
+  even when their assertions contain literals.
+- A temporary workspace may deliberately omit or corrupt a file when absence or
+  malformed input is the scenario supplied to the consumer.
+- Two implementations may receive the same generated input and have their
+  results compared; this is runtime parity, not checked-in-file parity.
+- Type-level checks such as `satisfies` and `as const` belong beside source data,
+  never in a test over that checked-in declaration.
+- Coverage contribution cannot redeem a repository-content assertion. Replace
+  it with consumer or generator coverage, or accept the uncovered static data.
+- Barrel re-export identity assertions test checked-in module layout and must be
+  removed.
 
 ## Related
 

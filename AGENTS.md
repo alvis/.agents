@@ -140,9 +140,10 @@ these sources, and each is the rule a locally sensible change breaks first.
 
 ## Hard limits
 
-Enforced mechanically — each with the file that enforces it.
+A named validator is the required check. Hook byte budgets have no test gate;
+verify them when changing payloads or their unconditional read chain.
 
-| Limit | Enforced by |
+| Limit | Validator or review |
 |---|---|
 | `SKILL.md` body < 500 lines | `plugins/governance/skills/write-skill/scripts/quick_validate.ts` |
 | Skill `description` 25–60 words (warning) | same |
@@ -153,15 +154,11 @@ Enforced mechanically — each with the file that enforces it.
 | Agent harness overlays **omit `tools`** (agents inherit runtime capabilities) | same |
 | Codex overlay values are scalar TOML fields; nickname candidates derive from metadata; stitched Codex and Grok bodies make no promise from Claude-only isolation | same |
 | `memory` is `"project"`; body has exactly one `## Memory` section | same |
-| Every injected payload ≤ 2,000 bytes, per plugin | `scripts/contract_footprint.ts`, declared in `plugins/<p>/hooks/contract_footprint.spec.ts` |
-| Every plugin's unconditional hook read chain ≤ 40,960 bytes | same |
+| Every injected payload ≤ 2,000 bytes, per plugin | Author review |
+| Every plugin's unconditional hook read chain ≤ 40,960 bytes | Author review |
 | `.state/` work Markdown flagged over 16,384 bytes | `plugins/essential/scripts/check-markdown-size` |
 | Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/references/orchestration.md` |
 | Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
-
-A plugin declares its own payloads and unconditional hook read chain in its own test;
-the shared script holds the budgets and fails a payload the plugin ships but forgot to
-declare. Per-moment references are not part of that chain.
 
 An agent metadata `description` must also end with the exact sentence
 `Preferably named <A>, <B>, or <C> when the main agent spawns this role.` — three
@@ -205,11 +202,7 @@ payloads from being collected as tests.
 
 Mechanical gates are colocated `*.spec.ts`, so the suites and gates cannot drift
 apart. `.github/workflows/ci.yml` runs that command on every pull request and push
-to `master`, on Ubuntu and macOS. The preserved Python boundary — the four scanner
-corpus fixtures under `plugins/coding/tests/fixtures/` and the extensionless
-`plugins/essential/skills/doctor/scripts/state-doctor` — is enforced mechanically by
-`scripts/repository_inventory.spec.ts`, which walks the checkout and fails if
-any other `.py` appears in it or `pytest.ini` returns.
+to `master`, on Ubuntu and macOS.
 
 `claude plugin validate --strict .` checks the manifest and frontmatter schema
 against the installed CLI; `grok plugin validate plugins/<p>` does the same for

@@ -1,6 +1,0 @@
-=== Lifecycle hooks (beforeAll/afterAll/beforeEach/afterEach) ===
-
-(no matches)
-
-=== Summary ===
-  test-hooks: 0 matches in 0 files

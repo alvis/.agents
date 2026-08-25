@@ -1,10 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
-  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -17,7 +14,6 @@ import { validateProfile } from "./lint_profile_runner.ts";
 
 const here = import.meta.dirname;
 const runner = resolve(here, "lint_profile_runner.ts");
-const repositoryRoot = resolve(here, "../../..");
 const roots: string[] = [];
 function runBun(
   command: readonly string[],
@@ -258,56 +254,5 @@ describe("profile validation guard", () => {
   it("still accepts scanner-free profiles without --profile", () => {
     expect(validateProfile(undefined, {})).toBeUndefined();
     expect(validateProfile(undefined, { scanners: [] })).toBeUndefined();
-  });
-});
-
-describe("committed repository contracts", () => {
-  it("keeps the committed React profile portable and nonrecursive", () => {
-    const profile = JSON.parse(
-      readFileSync(
-        resolve(here, "../../react/skills/lint/assets/profile.json"),
-        "utf8",
-      ),
-    );
-    expect(profile.eligibility.extensions).toEqual([".tsx", ".jsx"]);
-    expect(profile.scanners[0].needs_coding_scanlib).toBe(true);
-  });
-  it("keeps declared Claude plugin dependencies resolvable and nonrecursive", () => {
-    const manifests = new Map(
-      readdirSync(resolve(repositoryRoot, "plugins"), { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) =>
-          resolve(
-            repositoryRoot,
-            "plugins",
-            entry.name,
-            ".claude-plugin/plugin.json",
-          ),
-        )
-        .filter((path) => existsSync(path))
-        .map((path) => {
-          const manifest = JSON.parse(readFileSync(path, "utf8")) as {
-            readonly name: string;
-            readonly dependencies?: readonly string[];
-          };
-          return [manifest.name, manifest] as const;
-        }),
-    );
-    expect(manifests.size).toBeGreaterThan(0);
-    for (const [name, manifest] of manifests)
-      for (const dependency of manifest.dependencies ?? []) {
-        expect(manifests.has(dependency), `${name}: ${dependency}`).toBe(true);
-        expect(dependency).not.toBe(name);
-      }
-  });
-  it("keeps dependencies out of Claude marketplace entries", () => {
-    const marketplace = JSON.parse(
-      readFileSync(
-        resolve(repositoryRoot, ".claude-plugin/marketplace.json"),
-        "utf8",
-      ),
-    ) as { readonly plugins: readonly Record<string, unknown>[] };
-    for (const plugin of marketplace.plugins)
-      expect(plugin, String(plugin.name)).not.toHaveProperty("dependencies");
   });
 });

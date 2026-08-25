@@ -1,6 +1,0 @@
-=== Test file uses `.test.*` instead of `.spec.*` (TST-STRU-01) ===
-
-(no matches)
-
-=== Summary ===
-  test-file-naming: 0 matches in 0 files

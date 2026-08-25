@@ -1,6 +1,0 @@
-=== AAA section comment (`// Arrange`/`// Act`/`// Assert`) (TST-STRU-03) ===
-
-(no matches)
-
-=== Summary ===
-  aaa-comment: 0 matches in 0 files

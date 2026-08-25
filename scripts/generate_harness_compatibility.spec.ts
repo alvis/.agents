@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -9,7 +9,6 @@ import { checkMatrix, parseArgs, render } from "./generate_harness_compatibility
 
 const here = import.meta.dirname;
 const generator = resolve(here, "generate_harness_compatibility.ts");
-const committedMatrix = resolve(here, "../COMPATIBILITY.md");
 const stalenessMessage =
   "COMPATIBILITY.md is stale; rerun scripts/generate_harness_compatibility.ts";
 const roots: string[] = [];
@@ -22,48 +21,40 @@ function temporaryRoot(): string {
   roots.push(root);
   return root;
 }
-function row(fragment: string): string {
-  const line = render()
-    .split("\n")
-    .find((candidate) => candidate.includes(`| \`${fragment}\` skill |`));
-  expect(line, `matrix row for ${fragment}`).toBeDefined();
-  return line!;
-}
-
 describe("matrix rendering", () => {
   it("renders identical output on repeated calls", () => {
     expect(render()).toBe(render());
   });
-  it("matches the committed compatibility matrix byte for byte", () => {
-    expect(readFileSync(committedMatrix, "utf8")).toBe(render());
-  });
-});
+  it("should render structurally valid tables with unique feature identities", () => {
+    const tables = render()
+      .split(/\n(?=## )/)
+      .map((section) =>
+        section
+          .split("\n")
+          .filter((line) => line.startsWith("| "))
+          .map((line) =>
+            line
+              .slice(1, -1)
+              .split("|")
+              .map((cell) => cell.trim()),
+          ),
+      )
+      .filter((table) => table.length > 0);
 
-describe("skill classification", () => {
-  it("marks integration-caveat skills external in every harness", () => {
-    expect(row("coding:pr")).toBe(
-      "| `coding:pr` skill | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires authenticated GitHub tooling. Source: [plugins/coding/skills/pr/SKILL.md](plugins/coding/skills/pr/SKILL.md). |",
-    );
-  });
-  it("keeps the agent installer native except under OpenCode V1", () => {
-    expect(row("essential:install-agents")).toBe(
-      "| `essential:install-agents` skill | ✅ Native | ✅ Native | ✅ Native | ❌ Unavailable | The projector already installs OpenCode agents; this skill's installer supports Claude Code, Codex, and Grok Build. Source: [plugins/essential/skills/install-agents/SKILL.md](plugins/essential/skills/install-agents/SKILL.md). |",
-    );
-  });
-  it("keeps default skills adapted for Grok and OpenCode with projected names", () => {
-    expect(row("coding:presetter")).toBe(
-      "| `coding:presetter` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-presetter`. Source: [plugins/coding/skills/presetter/SKILL.md](plugins/coding/skills/presetter/SKILL.md). |",
-    );
-  });
-  it("appends the hook caveat to the commit skill's adapted projection", () => {
-    expect(row("coding:commit")).toContain(
-      "OpenCode name: `coding-commit`. Skill-scoped backup and post-rewrite hooks are unavailable.",
-    );
-  });
-  it("scopes Claude-only installation skills to Claude Code", () => {
-    expect(row("essential:install-output-styles")).toBe(
-      "| `essential:install-output-styles` skill | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | Claude-only by contract. Source: [plugins/essential/skills/install-output-styles/SKILL.md](plugins/essential/skills/install-output-styles/SKILL.md). |",
-    );
+    expect(tables.length).toBeGreaterThan(0);
+    const identities: string[] = [];
+    for (const table of tables) {
+      expect(table.length).toBeGreaterThan(2);
+      const columnCount = table[0]!.length;
+      expect(columnCount).toBeGreaterThan(1);
+      for (const cells of table) {
+        expect(cells).toHaveLength(columnCount);
+        expect(cells.every((cell) => cell.length > 0)).toBe(true);
+      }
+      identities.push(...table.slice(2).map(([identity]) => identity!));
+    }
+    expect(identities.length).toBeGreaterThan(0);
+    expect(new Set(identities).size).toBe(identities.length);
   });
 });
 
@@ -102,22 +93,17 @@ describe("command-line contract", () => {
       "usage: generate_harness_compatibility.ts [-h] [--check]\ngenerate_harness_compatibility.ts: error: unrecognized arguments: extra\n",
     );
   });
-  it("verifies the fresh committed matrix through --check", () => {
-    const result = spawnSync("bun", [generator, "--check"], {
-      encoding: "utf8",
-    });
-    expect(result.status).toBe(0);
-    expect(result.stderr).toBe("");
-  });
 });
 
 describe("staleness verification seam", () => {
-  it("accepts the current matrix", () => {
-    expect(checkMatrix(committedMatrix)).toBeUndefined();
+  it("should accept a freshly rendered temporary matrix", () => {
+    const target = join(temporaryRoot(), "COMPATIBILITY.md");
+    writeFileSync(target, render());
+    expect(checkMatrix(target)).toBeUndefined();
   });
   it("rejects a tampered copy through the explicit-target seam", () => {
     const tampered = join(temporaryRoot(), "COMPATIBILITY.md");
-    writeFileSync(tampered, `${readFileSync(committedMatrix, "utf8")}\n`);
+    writeFileSync(tampered, `${render()}\n`);
     expect(checkMatrix(tampered)).toBe(stalenessMessage);
   });
   it("rejects a missing target", () => {

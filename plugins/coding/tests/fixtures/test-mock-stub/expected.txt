@@ -1,6 +1,0 @@
-=== Mock/stub identifiers in spec files ===
-
-(no matches)
-
-=== Summary ===
-  test-mock-stub: 0 matches in 0 files

@@ -1,6 +1,0 @@
-=== Split error assertion — collapse to `expect(error).toEqual(new Error('…'))` (TST-DATA-07) ===
-
-(no matches)
-
-=== Summary ===
-  error-assertion-split: 0 matches in 0 files

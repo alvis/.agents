@@ -33,7 +33,6 @@ vi.mock("sharp@0.34", () => ({ default: sharpHarness.entry }), {
 });
 
 import {
-  MODEL_PARAMS,
   NanoBananaProvider,
   _convert_format,
   _extract_images_from_response,
@@ -76,7 +75,6 @@ afterEach(async () => {
 describe("Google image generation", () => {
   it("exposes model defaults and maps OpenAI sizes into config and dry-run payloads", () => {
     const provider = new NanoBananaProvider();
-    expect(MODEL_PARAMS.model.default).toBe("gemini-3.1-flash-image-preview");
     expect(provider._build_config({ size: "1536x1024" })).toEqual({
       responseModalities: ["IMAGE"],
       imageConfig: { aspectRatio: "3:2", imageSize: "1K" },

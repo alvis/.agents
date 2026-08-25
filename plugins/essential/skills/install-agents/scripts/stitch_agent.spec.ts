@@ -263,7 +263,6 @@ describe("agent stitching", () => {
   });
 
   it("stitches every distributed template for every harness", () => {
-    let count = 0;
     for (const plugin of readdirSync(resolve(repositoryRoot, "plugins"))) {
       const agents = resolve(repositoryRoot, "plugins", plugin, "agents");
       try {
@@ -276,13 +275,11 @@ describe("agent stitching", () => {
           expect(stitchGrokAgentDefinition(template).length).toBeGreaterThan(
             100,
           );
-          count += 1;
         }
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
     }
-    expect(count).toBeGreaterThan(10);
   });
 });
 

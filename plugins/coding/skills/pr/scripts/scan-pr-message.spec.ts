@@ -660,9 +660,6 @@ describe("PR message scanner", () => {
     );
     expect(scanned).toMatchObject({ code: 0, result: { valid: true } });
   });
-  it("binds the test fixture to the bundled template", async () => {
-    expect(await readFile(template, "utf8")).toContain("## 🧪 Verification");
-  });
   it("rejects the full process-only requirement grammar", async () => {
     for (const subject of [
       "tests",
@@ -961,16 +958,6 @@ describe("PR message scanner", () => {
   it("rejects non-emoji Unicode symbols", () => {
     for (const character of "⌘あ♙☇")
       expect(isEmojiPrefix(character)).toBe(false);
-  });
-  it("gives every bundled heading a valid emoji", async () => {
-    const headings = (await readFile(template, "utf8"))
-      .split("\n")
-      .filter((line) => line.startsWith("## "));
-    expect(
-      headings.every((heading) =>
-        isEmojiPrefix(heading.slice(3).split(/\s+/, 1)[0]!),
-      ),
-    ).toBe(true);
   });
   it("scans a keycap emoji as one prefix", async () => {
     const heading = "## 1️⃣ Steps [ Optional ]";

@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -20,8 +20,6 @@ import {
   removeTemporaryDirectory,
   writeFixture,
 } from "./test-support.ts";
-
-const repositoryRoot = join(import.meta.dirname, "..");
 
 interface FixtureCase {
   readonly name: string;
@@ -465,9 +463,6 @@ describe("documentation path validation", () => {
     }
   });
 
-  it("should keep this repository free of unresolved documentation paths", () => {
-    expect(check(repositoryRoot)).toEqual([]);
-  });
 });
 
 describe("parser complexity contracts", () => {

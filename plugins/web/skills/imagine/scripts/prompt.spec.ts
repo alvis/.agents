@@ -6,10 +6,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ImagineError } from "./providers/base";
 import {
-  PROMPT_FIELDS,
   _augment_prompt,
   _augment_prompt_fields,
-  _fields_from_args,
   _read_prompt,
 } from "./prompt";
 
@@ -50,7 +48,6 @@ describe("imagine prompt assembly", () => {
       constraints: "clean",
       negative: "noise",
     };
-    expect(Object.keys(_fields_from_args(args))).toEqual([...PROMPT_FIELDS]);
     expect(_augment_prompt(args, "opaque request")).toBe(
       [
         "Use case: marketing",

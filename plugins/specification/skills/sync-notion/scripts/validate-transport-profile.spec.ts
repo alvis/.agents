@@ -7,7 +7,7 @@ import {
   symlink,
   writeFile,
 } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -18,8 +18,6 @@ import {
 } from "../../../../../scripts/test-support.ts";
 
 const scriptDirectory = import.meta.dirname;
-const plugin = resolve(scriptDirectory, "../../..");
-const skills = join(plugin, "skills");
 const validator = join(scriptDirectory, "validate-transport-profile.ts");
 const metadataCheck = join(scriptDirectory, "validate-transport-metadata.sh");
 
@@ -431,93 +429,5 @@ describe("transport identity metadata checking", () => {
     } finally {
       await removeTemporaryDirectory(root);
     }
-  });
-});
-
-describe("specification transport contracts", () => {
-  it("should bind body authors through every specification call", async () => {
-    const required = [
-      join(skills, "mdc/SKILL.md"),
-      join(skills, "mdc/references/closing-markers.md"),
-      join(skills, "mdc/references/editing-rules.md"),
-      join(skills, "mdc/references/examples.md"),
-      join(skills, "mdc/references/syntax.md"),
-    ];
-    await expect(
-      Promise.all(required.map((path) => readFile(path, "utf8"))),
-    ).resolves.toHaveLength(required.length);
-    const contracts = [
-      join(plugin, "README.md"),
-      join(plugin, "agents/specification-expert/base.md"),
-      join(skills, "spec-code/SKILL.md"),
-      join(skills, "implement-code/SKILL.md"),
-      join(skills, "sync-spec/SKILL.md"),
-      join(skills, "sync-notion/SKILL.md"),
-    ];
-    for (const contract of contracts) {
-      const text = await readFile(contract, "utf8");
-      expect(text).toContain("--body-author=<plugin:skill>");
-      expect(text).not.toContain("Skill(mdc)");
-    }
-    const syncNotion = await readFile(
-      join(skills, "sync-notion/SKILL.md"),
-      "utf8",
-    );
-    expect(syncNotion).toContain("next_action: select_body_author");
-    expect(syncNotion).toContain("Never infer a default");
-    const provenance = JSON.parse(
-      await readFile(
-        join(skills, "spec-code/assets/provenance.template.json"),
-        "utf8",
-      ),
-    ) as Record<string, unknown>;
-    expect(provenance.body_author).toEqual({
-      capability_id: "<plugin>:<skill>",
-      selection_source: "<explicit_argument|delegated_caller>",
-    });
-  });
-
-  it("should prevent profile and property-policy bypasses", async () => {
-    const agent = await readFile(
-      join(plugin, "agents/specification-expert/base.md"),
-      "utf8",
-    );
-    for (const token of [
-      "Bash: notion-sync",
-      "--follow-children",
-      "--depth-children",
-      "--depth-database",
-      "--depth-link",
-    ])
-      expect(agent).not.toContain(token);
-    expect(agent).toContain("specification:sync-notion");
-    expect(agent).toContain("selected transport profile alone");
-    expect(agent).toContain("conformance-validated\n  `recursive_pull` vector");
-    expect(
-      await readFile(
-        join(skills, "spec-code/references/document-mode.md"),
-        "utf8",
-      ),
-    ).toContain("explicit destination-owned mapping");
-    expect(
-      (
-        await readFile(
-          join(skills, "sync-notion/references/database-resolution.md"),
-          "utf8",
-        )
-      )
-        .split(/\s+/)
-        .join(" "),
-    ).toContain("destination-owned mapping");
-    expect(
-      (
-        await readFile(
-          join(skills, "sync-spec/references/concurrent-edit-matrix.md"),
-          "utf8",
-        )
-      )
-        .split(/\s+/)
-        .join(" "),
-    ).toContain("independently prove `conditional_update`");
   });
 });

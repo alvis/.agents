@@ -283,7 +283,11 @@ describe("project-scope installation", () => {
       ]);
       const source = manifest.source as Record<string, unknown>;
       expect(source.marketplace_sha256).toBe(
-        sha256(readFileSync(join(repositoryRoot, ".claude-plugin", "marketplace.json"))),
+        sha256(
+          readFileSync(
+            join(repositoryRoot, ".claude-plugin", "marketplace.json"),
+          ),
+        ),
       );
 
       const managedPaths = manifest.managed_paths as readonly string[];
@@ -300,9 +304,22 @@ describe("project-scope installation", () => {
       expect(digests["plugins/alvis-marketplace.js"]).toBe(
         sha256(readFileSync(join(target, "plugins", "alvis-marketplace.js"))),
       );
-      expect(readFileSync(join(target, "alvis", "contract.json"))).toEqual(
-        readFileSync(join(repositoryRoot, "scripts", "opencode_contract.json")),
-      );
+      const contract = readJson(join(target, "alvis", "contract.json"));
+      expect(Number.isInteger(contract.schema_version)).toBe(true);
+      expect(contract.schema_version).toBeGreaterThan(0);
+      for (const key of [
+        "manager",
+        "skill_separator",
+        "canonical_skill",
+        "canonical_command",
+        "projected_skill",
+        "projected_command",
+        "canonical_bundle_path",
+        "projected_bundle_path",
+      ]) {
+        expect(contract[key]).toBeTypeOf("string");
+        expect(contract[key]).not.toBe("");
+      }
 
       const projectedSkill = `essential-${firstEssentialSkill()}`;
       const projectedSkillMd = join(target, "skills", projectedSkill, "SKILL.md");
