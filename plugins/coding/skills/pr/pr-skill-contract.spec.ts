@@ -26,6 +26,8 @@ const messageTemplate = join(pr, "templates/message.md");
 const overallReviewTemplate = join(pr, "templates/overall-review.md");
 const gitStandard = join(coding, "standards/git");
 const verifyCiParity = join(pr, "references/verify-ci-parity.md");
+const syncPrStack = join(pr, "scripts/sync-pr-stack.sh");
+const testSyncPrStack = join(pr, "scripts/test-sync-pr-stack.sh");
 const partialToBranch = join(
   coding,
   "skills/commit/references/workflow-partial-to-branch.md",
@@ -340,25 +342,39 @@ describe("PR skill contract", () => {
       expect(text).toContain(phrase);
   });
 
-  it("binds the batch root base after resolution and before both pushes", () => {
+  it("should bind every stack synchronization identity before both calls", () => {
     const workflow = read(createUpdate),
       normalized = workflow.split(/\s+/).join(" ");
     const resolution = workflow.indexOf(
         "If the immediate predecessor is selected",
       ),
-      binding = workflow.indexOf("ROOT_BASE=$PR_BASE_01");
-    const restacks = [...workflow.matchAll(/scripts\/restack\.sh/g)].map(
-      (match) => match.index,
+      repositoryBinding = workflow.indexOf("receiving `HOST/$REPOSITORY`"),
+      ownerBinding = workflow.indexOf("`PUSH_OWNER`"),
+      baseBinding = workflow.indexOf("ROOT_BASE_ROW=$(gh api"),
+      remoteBinding = workflow.indexOf("EXPECTED_REMOTE_OID_NN=");
+    const synchronizations = [
+      ...workflow.matchAll(/scripts\/sync-pr-stack\.sh/g),
+    ].map((match) => match.index);
+    expect(synchronizations).toHaveLength(2);
+    expect(existsSync(join(pr, "scripts", ["re", "stack.sh"].join("")))).toBe(
+      false,
     );
-    expect(restacks).toHaveLength(2);
-    expect(resolution).toBeLessThan(binding);
-    expect(binding).toBeLessThan(restacks[0]!);
-    expect(restacks[0]!).toBeLessThan(restacks[1]!);
+    expect(resolution).toBeLessThan(baseBinding);
+    for (const binding of [
+      repositoryBinding,
+      ownerBinding,
+      baseBinding,
+      remoteBinding,
+    ]) {
+      expect(binding).toBeGreaterThanOrEqual(0);
+      expect(binding).toBeLessThan(synchronizations[0]!);
+    }
+    expect(synchronizations[0]!).toBeLessThan(synchronizations[1]!);
     for (const phrase of [
       "first selected affected head's exact base",
       "For a suffix restack, `PR_BASE_01` is the unselected predecessor",
-      "keep it unchanged for a retry only while",
-      "discovery restart or base-map change recomputes it",
+      "remote/base identity change",
+      "recomputes all of them",
     ])
       expect(normalized).toContain(phrase);
   });
@@ -649,34 +665,93 @@ describe("PR skill contract", () => {
     }
   });
 
-  it("requires an explicit restack root base and reports partial progress", () => {
-    const workflow = read(createUpdate),
-      helper = read(join(pr, "scripts/restack.sh"));
+  it("should document fail-closed synchronization bindings and receipts", () => {
+    const workflow = read(createUpdate);
     for (const phrase of [
       '--base "$ROOT_BASE"',
+      '--base-oid "$ROOT_BASE_OID"',
+      '--repo "$HOST/$REPOSITORY"',
+      '--head-owner "$PUSH_OWNER"',
+      '"$EXPECTED_REMOTE_OID_01"',
       "for a suffix restack this is its unselected",
-      "forge operations are not transactional",
+      "Forge operations are not transactional",
+      "`head_status`",
+      "`base_status`",
+      "PUBLICATION_GIT_DIR",
+      'cat-file -e "$JJ_PARENT_OID^{commit}"',
+      "if SYNC_RECEIPT=$(bash",
+      "SYNC_STATUS=$?",
+      "`skipped_merged`",
+      "`not_applicable`",
+      "bound full local OID rather than a mutable branch name",
+      "binds one immutable post-fetch operation",
+      "never derive `ROOT_BASE_OID`",
     ])
       expect(workflow).toContain(phrase);
-    for (const phrase of [
-      "missing-base",
-      "duplicate-bookmark",
-      "multiple-open",
-      "closed-head",
-      "nonlinear",
-      "vcs_is_ancestor",
-      "previous_base=$root_base",
-    ])
-      expect(helper).toContain(phrase);
-    expect(helper.indexOf("if ! state=$(gh pr list")).toBeLessThan(
-      helper.indexOf('if [ "$state" != MERGED ]'),
-    );
-    const verified = '[ "$remote_sha" = "$expected_sha" ]',
-      postVerify = helper.slice(helper.indexOf(verified) + verified.length);
-    expect(postVerify.indexOf("restacked[")).toBeLessThan(
-      postVerify.indexOf('gh pr edit "$bookmark"'),
-    );
   });
+
+  it("should document recovery for every stable synchronization error", () => {
+    const workflow = read(createUpdate),
+      helper = read(syncPrStack),
+      directFailureCodes = [
+        ...helper.matchAll(/\bfail_with\s+\S+\s+([a-z][a-z0-9_]*)\b/g),
+      ].map((match) => match[1]!),
+      directErrorCodes = [
+        ...helper.matchAll(/\badd_error\s+([a-z][a-z0-9_]*)\b/g),
+      ].map((match) => match[1]!),
+      baseFailureCodes = [
+        ...helper.matchAll(/\bmark_base_failure\s+\S+\s+([a-z][a-z0-9_]*)\b/g),
+      ].map((match) => match[1]!),
+      emittedErrorCodes = [
+        ...new Set([
+          ...directFailureCodes,
+          ...directErrorCodes,
+          ...baseFailureCodes,
+        ]),
+      ].sort(),
+      documentedErrorCodes = [
+        ...workflow.matchAll(/^\| `([a-z][a-z0-9_]*)` \|/gm),
+      ]
+        .map((match) => match[1]!)
+        .sort(),
+      approvedDynamicSinks = [
+        'add_error "$code" "$subject" "$pr_number"',
+        'fail_with 1 "$code" "$bookmark" "$pr_number"',
+      ],
+      errorSinkCalls = helper
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) =>
+          /\b(?:fail_with|add_error|mark_base_failure)\s/.test(line),
+        ),
+      literalSinkPatterns = [
+        /\bfail_with\s+\S+\s+[a-z][a-z0-9_]*\b/,
+        /\badd_error\s+[a-z][a-z0-9_]*\b/,
+        /\bmark_base_failure\s+\S+\s+[a-z][a-z0-9_]*\b/,
+      ],
+      unrecognizedErrorSinks = errorSinkCalls.filter(
+        (line) =>
+          !approvedDynamicSinks.includes(line) &&
+          !literalSinkPatterns.some((pattern) => pattern.test(line)),
+      );
+    expect(unrecognizedErrorSinks).toEqual([]);
+    expect(
+      errorSinkCalls.filter((line) => approvedDynamicSinks.includes(line)),
+    ).toEqual(approvedDynamicSinks);
+    expect(documentedErrorCodes).toEqual(emittedErrorCodes);
+  });
+
+  it("should run synchronization regressions on every Vitest platform", () => {
+    const completed = spawnSync(
+      "env",
+      ["SYNC_PR_STACK_SKIP_REAL_JJ=true", "bash", testSyncPrStack],
+      { encoding: "utf8" },
+    );
+    expect(completed.status, completed.stderr).toBe(0);
+    expect(completed.stdout).toContain(
+      "44 fake-boundary scenarios and 4 real-Git scenarios passed",
+    );
+  }, 45_000); // Bare-remote races compete with the repository's parallel CI suites.
 
   it.each([
     ["octo/widgets", "octo:fix/labels"],
@@ -730,7 +805,7 @@ describe("PR skill contract", () => {
       resolver = read(join(pr, "scripts/resolve-push-remote.sh")),
       normalized = workflow.split(/\s+/).join(" ");
     expect(workflow.indexOf("scripts/resolve-push-remote.sh")).toBeLessThan(
-      workflow.indexOf("scripts/restack.sh"),
+      workflow.indexOf("scripts/sync-pr-stack.sh"),
     );
     for (const phrase of [
       "REMOTE=${CALLER_REMOTE:-}",

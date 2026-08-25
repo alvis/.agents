@@ -77,13 +77,16 @@ Load [github-stacks.md](github-stacks.md) for every GitHub PR-stack request,
 including discovery, checkout, creation, publication, update, navigation,
 restructure, unstack, or merge. That reference is the sole owner of GitHub
 stack inventory behavior and selects one conditional history owner. A
-repository is jj-colocated only when `git rev-parse HEAD` equals
-`jj log -r @- --no-graph -T 'commit_id'`; every other result is fully supported
-plain Git. On the jj route, `coding:commit` owns history mutation for edit- and
-fix-induced rewrites, where jj automatically rebases descendants and moves
-bookmarks. Merge-induced descendant topology changes remain owned by
-`coding:pr merge`. On the plain Git route, the extension retains its local
-tracking and native stack operators.
+repository uses jj when `jj git root` resolves its backing Git directory and
+that store contains the active workspace's exact `@-` commit object. This
+includes registered parallel jj workspaces with no workspace-local `.git`;
+route their pre-publication Git configuration and remote reads through the
+resolved backing store. Every other result is fully supported plain Git. On the
+jj route, `coding:commit` owns history mutation for edit- and fix-induced
+rewrites, where jj automatically rebases descendants and moves bookmarks.
+Merge-induced descendant topology changes remain owned by `coding:pr merge`.
+On the plain Git route, the extension retains its local tracking and native
+stack operators.
 
 ## Inspect with jj
 
@@ -108,8 +111,8 @@ split, invoke `coding:commit` with the accepted slices. Reserve
 or reparenting. After the result is linear, use
 `coding:pr create <bottom-change>` for new PRs or
 `coding:pr update <bottom-pr-or-head>` for an existing stack. The create/update
-workflow owns bookmark placement, leased pushes, PR bases, and the explicit
-restack map.
+workflow owns bookmark placement, leased pushes, PR bases, and the structured
+synchronization receipt.
 
 After a lower PR merges, use `coding:pr merge` for the remaining round. Any
 merge-induced descendant rebase, bookmark movement, and affected-head batch
@@ -133,8 +136,8 @@ Every ancestry command must exit zero. If one commit must be split, invoke
 for an already partitioned chain needing reorder or reparenting. Then use
 `coding:pr create <bottom-commit>` for new PRs or
 `coding:pr update <bottom-pr-or-head>` for an existing stack. The create/update
-workflow owns branch placement,
-force-with-lease pushes, PR bases, and the explicit restack map.
+workflow owns branch placement, force-with-lease pushes, PR bases, and the
+structured synchronization receipt.
 
 After a lower PR merges, use `coding:pr merge` for the remaining round. It
 records immutable parent tips and replays only child-exclusive commits with
@@ -144,7 +147,7 @@ the destination and verify that base before resuming the next merge round.
 
 ## Verify
 
-Before publication and after every restack, confirm:
+Before publication and after every stack synchronization, confirm:
 
 - each change is independently green;
 - branch/bookmark names and PR bases express the same bottom-to-top chain;
