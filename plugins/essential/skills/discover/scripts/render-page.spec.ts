@@ -313,13 +313,13 @@ describe("fn:renderPage", () => {
               id: "s",
               label: "S",
               title: "T",
-              blocks: [{ type: "diagram" } as never],
+              blocks: [{ type: "timeline" } as never],
             },
           ],
         }),
       ),
     ).toThrow(
-      new RenderError('sections[0].blocks[0].type: unknown block type "diagram"'),
+      new RenderError('sections[0].blocks[0].type: unknown block type "timeline"'),
     );
   });
 
@@ -339,7 +339,9 @@ describe("fn:renderPage", () => {
 
   it("should refuse an unsupported kind naming the offending field", () => {
     expect(() => renderPage(page({ kind: "triage-board" as never }))).toThrow(
-      new RenderError('kind: the skeleton renders only "ranked-options", received "triage-board"'),
+      new RenderError(
+        'kind: required one of "ranked-options", "guided-interview", "risk-context-report", "architecture-board", received "triage-board"',
+      ),
     );
   });
 });
@@ -384,5 +386,38 @@ describe("fn:main", () => {
       await main([join(directory, "absent.json"), "-o", join(directory, "o.html")]),
     ).toBe(1);
     await removeDirectory(directory);
+  });
+});
+
+describe("fn:renderPage kinds", () => {
+  it.each([
+    "ranked-options",
+    "guided-interview",
+    "risk-context-report",
+    "architecture-board",
+  ])("should render the %s kind", (kind) => {
+    const html = renderPage(page({ kind } as Partial<PageData>));
+
+    expect(html).toContain(`data-kind="${kind}"`);
+  });
+
+  it("should refuse an unknown kind, naming the field and quoting the value", () => {
+    expect(() => renderPage(page({ kind: "mood-board" } as Partial<PageData>)))
+      .toThrow(
+        'kind: required one of "ranked-options", "guided-interview", "risk-context-report", "architecture-board", received "mood-board"',
+      );
+  });
+
+  it("should render the architecture-board example end to end", async () => {
+    const data = JSON.parse(
+      await readFile(join(discover, "examples/data/architecture-board.json"), "utf8"),
+    ) as PageData;
+    const html = renderPage(data);
+
+    expect(html).toContain('data-kind="architecture-board"');
+    expect(html).toContain('<figure class="diagram"');
+    // the sample carries a genuine long-range edge, not just a chain
+    expect(html).toContain("dg-edge-around");
+    expect(html).not.toMatch(/https?:\/\//i);
   });
 });

@@ -2,6 +2,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
+import { DIAGRAM_CSS, renderDiagram } from "./page-diagram.ts";
+
+import type { DiagramBlock } from "./page-diagram.ts";
+
 /** a labelled statistic rendered into the masthead or a metric strip. */
 export interface Metric {
   /** short uppercase caption naming what the value measures */
@@ -41,6 +45,8 @@ export type Block =
   | { type: "table"; columns: string[]; rows: Cell[][] }
   /** an aside set off from the surrounding prose */
   | { type: "callout"; title: string; text: string }
+  /** a layered node-and-edge graph, drawn as inline SVG at natural size */
+  | DiagramBlock
   /** a single-answer question; `id` names its radio group and must be unique */
   | { type: "choice"; id: string; label: string; ask: string; choices: Choice[] }
   /** a free-text question; `id` becomes the textarea's document id */
@@ -68,8 +74,12 @@ export interface Section {
 
 /** the whole presentation, as authored in the data file. */
 export interface PageData {
-  /** presentation kind; the skeleton renders only `ranked-options` */
-  kind: "ranked-options";
+  /** presentation kind; every kind shares one chrome and differs by content */
+  kind:
+    | "ranked-options"
+    | "guided-interview"
+    | "risk-context-report"
+    | "architecture-board";
   /** stable identifier for the page, emitted as `data-page-id` */
   id: string;
   /** the action label the collapsed drawer carries */
@@ -330,6 +340,14 @@ export const PAGE_JS = `
  * the judgement each verdict carries, as text. The table draws a glyph and a
  * colour too, but only this reaches assistive technology.
  */
+/** every presentation kind the renderer accepts. */
+const PAGE_KINDS = [
+  "ranked-options",
+  "guided-interview",
+  "risk-context-report",
+  "architecture-board",
+] as const;
+
 const VERDICT_LABEL: Record<string, string> = {
   good: "clean",
   mixed: "acceptable",
@@ -383,7 +401,13 @@ function renderReply(data: PageData): string {
   return data.reply.template.replaceAll("{{answers}}", () => lines.join("\n"));
 }
 
-function requireString(value: unknown, path: string): string {
+/**
+ * reads a required non-empty string, refusing anything else by JSON path
+ * @param value the author-supplied value
+ * @param path JSON path of the value, named verbatim by the refusal
+ * @returns the value as a string
+ */
+export function requireString(value: unknown, path: string): string {
   if (typeof value !== "string" || !value)
     throw new RenderError(
       `${path}: required non-empty string, received ${JSON.stringify(value)}`,
@@ -426,6 +450,8 @@ function renderBlock(block: Block, path: string): string {
         .join("")}</tbody></table></div>`;
     case "callout":
       return `<div class="callout"><h3>${escapeHtml(block.title)}</h3><p>${escapeHtml(block.text)}</p></div>`;
+    case "diagram":
+      return renderDiagram(block, path);
     case "choice":
       return `<fieldset class="question" data-question data-question-kind="choice" data-question-id="${escapeHtml(block.id)}" data-question-label="${escapeHtml(block.label)}"><legend>${escapeHtml(block.label)}</legend><p class="ask">${escapeHtml(block.ask)}</p><div class="choices">${block.choices
         .map(
@@ -458,9 +484,9 @@ function renderSection(section: Section, index: number): string {
  * @returns a complete document that loads no external resource
  */
 export function renderPage(data: PageData): string {
-  if (data.kind !== "ranked-options")
+  if (!PAGE_KINDS.some((kind) => kind === data.kind))
     throw new RenderError(
-      `kind: the skeleton renders only "ranked-options", received ${JSON.stringify(data.kind)}`,
+      `kind: required one of ${PAGE_KINDS.map((kind) => JSON.stringify(kind)).join(", ")}, received ${JSON.stringify(data.kind)}`,
     );
   const title = requireString(data.title, "title");
   const action = requireString(data.action, "action");
@@ -482,7 +508,7 @@ export function renderPage(data: PageData): string {
 <link rel="icon" href="data:," />
 <title>${escapeHtml(title)}</title>
 <style>
-${PAGE_CSS}
+${PAGE_CSS}${DIAGRAM_CSS}
 </style>
 </head>
 <body data-page-id="${escapeHtml(requireString(data.id, "id"))}" data-kind="${escapeHtml(data.kind)}">
