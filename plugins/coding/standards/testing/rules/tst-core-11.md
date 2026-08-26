@@ -41,9 +41,9 @@ describe("fn:fetchUser", () => {
 ## Edge Cases
 
 - Build-time excludes (vitest `exclude` glob) for platform-incompatible tests are allowed — they're explicit at config level, not runtime skip surfaces.
-- Tests that fundamentally cannot exist without an external service belong in `.int.spec.ts` / `.e2e.spec.ts` — the rule still applies; missing creds throw at file load.
+- Tests that fundamentally cannot exist without an external service belong in `.spec.int.ts` / `.spec.e2e.ts` — the rule still applies; missing creds throw at file load. Patterns per [`TST-STRU-01`].
 - A genuinely optional test (purely informational, never required) should be deleted, not gated.
 
 ## Related
 
-TST-CORE-04, TST-COVR-01, TST-COVR-02, TST-MOCK-11
+TST-CORE-04, TST-COVR-01, TST-COVR-02, TST-MOCK-11, TST-STRU-01

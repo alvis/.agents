@@ -80,7 +80,7 @@ Wrapping async setup in `beforeAll`/`afterAll` couples teardown to a single file
 ## Edge Cases
 
 - **Serializable-only**: `provide` values cross a process boundary. Provide a port / URL / connection string — never the live socket, server, or connection object. Reconstruct the client from the handle inside the test file.
-- **Integration & e2e**: `*.int.spec.ts` / `*.e2e.spec.ts` use the same pattern. Combine with `TST-CORE-11` — required config that global setup depends on must `throw` at file load so missing config hard-fails.
+- **Integration & e2e**: `*.spec.int.ts` / `*.spec.e2e.ts` use the same pattern. Combine with `TST-CORE-11` — required config that global setup depends on must `throw` at file load so missing config hard-fails. Patterns per [`TST-STRU-01`].
 - **`setupFiles` vs `globalSetup`**: `setupFiles` runs in-process before *every* test file (per-file, repeated). Use it for in-process per-file setup, not one-time async infrastructure. `globalSetup` runs once for the whole run.
 - **Library-mandated hooks**: a third-party tool that requires a lifecycle hook remains the documented `TST-STRU-04` exception; it does not override this rule for async infra.
 

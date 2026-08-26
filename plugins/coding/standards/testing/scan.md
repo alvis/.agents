@@ -49,7 +49,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 - DO NOT use module types for class instance mock typing, such as `typeof import("#svc")` for instance doubles [`TST-MOCK-14`]
 - DO NOT wrap existing mock instances with nested `vi.fn` in `vi.mock` factories [`TST-MOCK-15`]
 - DO NOT flag existing `vi.fn<T>()` type generics as a violation; typed `vi.fn<T>` is encouraged when named types are available and is not required only when the type can be inferred within a `satisfies` container [`TST-MOCK-16`]
-- DO NOT use `.test.ts` extension; use `.spec.ts` for unit, `.int.spec.ts` for integration, `.e2e.spec.ts` for e2e, such as `user.test.ts` instead of `user.spec.ts` [`TST-STRU-01`]
+- DO NOT use `.test.ts` extension; use `.spec.ts` for unit, `.spec.int.ts` for integration, `.spec.e2e.ts` for e2e, such as `user.test.ts` instead of `user.spec.ts` [`TST-STRU-01`]
 - DO NOT use ad-hoc test file layout/import order [`TST-STRU-02`]
 - DO NOT add AAA section comments or inline noise comments or `expect(result).toBe(x); // check ...` [`TST-STRU-03`]
 - DO NOT use `beforeAll`/`afterAll`/`beforeEach`/`afterEach` for any purpose other than the narrow allowances in `TST-MOCK-04`/`TST-MOCK-10`; every occurrence is review-worthy [`TST-STRU-04`]
@@ -97,7 +97,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 | `TST-MOCK-14` | Module type is used for class instance mock typing | `Partial<typeof import("#svc")>`; `const client: typeof import("#svc") = { ... }` for an instance double |
 | `TST-MOCK-15` | Existing mock instance is wrapped by nested `vi.fn` in `vi.mock` factory | `existsSync: vi.fn((...args: unknown[]) => existsSync(...args))`; `upload: vi.fn(async (...args) => upload(...args))` |
 | `TST-MOCK-16` | Existing `vi.fn<T>()` type generic is incorrectly removed | `vi.fn<HttpReply>()` changed to `vi.fn()`; `vi.fn<(req: Request) => Response>()` changed to `vi.fn()` |
-| `TST-STRU-01` | Test file uses `.test.ts` instead of `.spec.ts` / `.int.spec.ts` / `.e2e.spec.ts` | `user.test.ts`; `user-api.integration.ts` |
+| `TST-STRU-01` | Test file uses `.test.ts` instead of `.spec.ts` / `.spec.int.ts` / `.spec.e2e.ts` | `user.test.ts`; `user-api.integration.ts` |
 | `TST-STRU-02` | File layout/import order is ad-hoc | `describe(...) // before mock setup`; `import { describe, it, expect, vi } from 'vitest';` |
 | `TST-STRU-03` | AAA spacing/comment policy is violated | `// Arrange`; `expect(result.name).toBe('John'); // check that result has name` |
 | `TST-STRU-04` | Lifecycle hook used outside the narrow `TST-MOCK-04`/`TST-MOCK-10` allowances | `beforeEach(() => { user = createUser() })`; `afterAll(() => server.close())`; `beforeAll(() => seed(db))` |
