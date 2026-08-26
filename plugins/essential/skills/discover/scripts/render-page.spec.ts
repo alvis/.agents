@@ -141,6 +141,45 @@ describe("fn:renderPage", () => {
     );
   });
 
+  it("should give the collapsed bar's whole height to the control that opens it", async () => {
+    const html = renderPage(await loadExample());
+    const css = stylesheet(html);
+    const bar = /\.drawer-bar\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    const toggle = /\.drawer-toggle\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    const barPadding = bar
+      .split(";")
+      .map((declaration) => declaration.trim())
+      .filter((declaration) => declaration.startsWith("padding"));
+
+    // WCAG 2.2 SC 2.5.8 asks for a 24x24 CSS px target. A 48px bar proves
+    // nothing about the control a pointer actually has to hit: with the bar
+    // centring its items, the button collapses to text height inside it. So
+    // the control must claim the bar's height, and the bar must spend none of
+    // that height on block padding the control cannot occupy.
+    expect(toggle).toMatch(/align-self:\s*stretch/);
+    expect(toggle).toMatch(/min-height:\s*var\(--bar\)/);
+    expect(barPadding).toStrictEqual(["padding-inline:var(--pad)"]);
+  });
+
+  it("should forward a press anywhere on the collapsed bar to that control", async () => {
+    const html = renderPage(await loadExample());
+    const bar = /<div class="drawer-bar"[^>]*>/.exec(html)?.[0] ?? "";
+    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
+
+    // the count sits outside the button, so without this the pill and the
+    // strip it occupies stay dead to the pointer
+    expect(bar).toContain("data-drawer-bar");
+    expect(script).toMatch(/\[data-drawer-bar\]/);
+    // purely additive: the button keeps the semantics, so the bar itself must
+    // not become a second control in the accessibility tree
+    expect(bar).not.toMatch(/\brole=|\btabindex=/);
+    // a click that merely ends a drag over the bar's text is not a press
+    expect(script).toMatch(/isCollapsed/);
+    // scoped to the bar, never the panel, or reading an expanded drawer would
+    // collapse it out from under the reader
+    expect(script).not.toMatch(/drawer-panel[\s\S]{0,80}addEventListener\("click"/);
+  });
+
   it("should expand the drawer to navigation, summaries and the reply", async () => {
     const data = await loadExample();
     const html = renderPage(data);
