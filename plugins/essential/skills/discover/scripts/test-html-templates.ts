@@ -9,6 +9,8 @@ import {
   resolveSource,
 } from "./build-artifact";
 
+import type { VendorRuntimeBundle } from "./build-artifact";
+
 const EXAMPLES_ROOT = join(DISCOVER_ROOT, "examples", "html");
 const EXAMPLES_SRC_ROOT = join(DISCOVER_ROOT, "examples", "src");
 const TEMPLATE_SRC = join(DISCOVER_ROOT, "templates", "src", "page");
@@ -52,6 +54,11 @@ const CONVENTION_EXAMPLES = [
   "architecture-board",
   "triage-board",
 ] as const;
+const TEST_RUNTIME: VendorRuntimeBundle = {
+  includesMermaid: true,
+  script: "globalThis.__discoverValidationRuntime = true;",
+  versions: ["@tailwindcss/browser@test", "mermaid@test"],
+};
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -81,55 +88,22 @@ async function validateRuntime(skipped: string[]): Promise<string[]> {
       ];
 }
 
-async function validateArtifactBuilder(skipped: string[]): Promise<string[]> {
-  const tailwindCache = join(
-    DISCOVER_ROOT,
-    "assets",
-    "html",
-    "vendor",
-    "tailwind-browser.cache.js",
-  );
-  const mermaidCache = join(
-    DISCOVER_ROOT,
-    "assets",
-    "html",
-    "vendor",
-    "mermaid.cache.js",
-  );
+async function validateArtifactBuilder(): Promise<string[]> {
   try {
-    const runtime = (await exists(tailwindCache))
-      ? await readFile(tailwindCache, "utf8")
-      : undefined;
     const source = await resolveSource("domain-explainer");
     await build(source, {
       artifact: false,
-      runtime,
-      offline: runtime !== undefined,
+      runtime: TEST_RUNTIME,
     });
     await build(source, {
       artifact: true,
-      runtime,
-      offline: runtime !== undefined,
+      runtime: TEST_RUNTIME,
     });
-    const hasMermaidCache = await exists(mermaidCache);
     await build(await resolveSource("architecture-board"), {
       artifact: false,
-      runtime,
-      mermaid: hasMermaidCache
-        ? await readFile(mermaidCache, "utf8")
-        : undefined,
-      offline: runtime !== undefined && hasMermaidCache,
+      runtime: TEST_RUNTIME,
     });
   } catch (error) {
-    if (
-      (!(await exists(tailwindCache)) || !(await exists(mermaidCache))) &&
-      String(error as Error).includes("could not fetch")
-    ) {
-      skipped.push(
-        "build-artifact.ts: network probe unavailable and required runtime cache set is incomplete",
-      );
-      return [];
-    }
     return [`build-artifact.ts validation failed: ${String(error as Error)}`];
   }
   return [];
@@ -209,7 +183,7 @@ export async function run(
     }
   }
   if (stage === "complete" && includeBuilder) {
-    errors.push(...(await validateArtifactBuilder(skipped)));
+    errors.push(...(await validateArtifactBuilder()));
   }
   const examplesPresent = (await readdir(EXAMPLES_ROOT))
     .filter((path) => path.endsWith(".html"))
