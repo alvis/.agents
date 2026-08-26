@@ -1,0 +1,439 @@
+{
+  "kind": "guided-interview",
+  "id": "guided-interview-invoice-finalization-v1",
+  "action": "Guided interview",
+  "title": "Invoice finalization — the contract this interview settles",
+  "masthead": {
+    "eyebrow": "Guided interview · invoice finalization API",
+    "headline": "Eleven answers decide the API contract, not the implementation.",
+    "lede": "Each question below changes what the endpoint may promise. Nothing is locked until you answer; every untouched recommendation stays marked unresolved in the single reply.",
+    "meta": [
+      {
+        "label": "Trigger",
+        "value": "p95 at 18s, peak 74s"
+      },
+      {
+        "label": "Scope",
+        "value": "Finalize + deliver invoice"
+      },
+      {
+        "label": "Questions",
+        "value": "11 across 5 sections"
+      },
+      {
+        "label": "Next owner",
+        "value": "LLM coder"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "execution",
+      "eyebrow": "Architecture",
+      "label": "Execution",
+      "title": "May finalization finish after the request returns?",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "A synchronous answer removes the queue, the job record, the progress UI, the replay controls, and the on-call path. An asynchronous answer creates all five. The current p95 is 18 seconds; PDF rendering has reached 74 seconds on 400-line invoices."
+        },
+        {
+          "type": "choice",
+          "id": "execution-boundary",
+          "label": "Execution boundary",
+          "ask": "What experience should the API promise once the invoice is submitted?",
+          "choices": [
+            {
+              "value": "Accept, then finalize",
+              "summary": "Return a job ID, expose progress, and notify when the immutable invoice is ready.",
+              "recommended": true
+            },
+            {
+              "value": "Complete in request",
+              "summary": "Simpler state model, but large invoices can exceed the gateway limit."
+            },
+            {
+              "value": "Split the boundary",
+              "summary": "Commit accounting now; render the PDF and send email later."
+            }
+          ]
+        },
+        {
+          "type": "scale",
+          "id": "latency-tolerance",
+          "label": "Tolerated wait before the caller gets an ID",
+          "ask": "How long may the synchronous part of finalization take before the caller is handed a job ID?",
+          "points": [
+            {
+              "value": "200ms",
+              "label": "200 ms — nothing but validation"
+            },
+            {
+              "value": "1s",
+              "label": "1 second"
+            },
+            {
+              "value": "5s",
+              "label": "5 seconds"
+            },
+            {
+              "value": "30s",
+              "label": "30 seconds — today's typical"
+            },
+            {
+              "value": "no-limit",
+              "label": "No limit — finish inline"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Why this question is first",
+          "text": "Deferring this answer blocks the API response contract and the storage model. Every question below assumes work may be retried."
+        }
+      ]
+    },
+    {
+      "id": "identity",
+      "eyebrow": "Data contract",
+      "label": "Identity",
+      "title": "What makes two attempts the same business action?",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "View",
+            "What it sees",
+            "What it implies"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Request view"
+              },
+              {
+                "text": "One click, one submission: a user presses Finalize once and expects one invoice."
+              },
+              {
+                "text": "Deduplicate on user intent",
+                "verdict": "good"
+              }
+            ],
+            [
+              {
+                "text": "System reality"
+              },
+              {
+                "text": "Three repeatable effects: persist ledger entry, reserve invoice number, deliver email."
+              },
+              {
+                "text": "Each effect needs its own checkpoint",
+                "verdict": "mixed"
+              }
+            ],
+            [
+              {
+                "text": "Naive retry"
+              },
+              {
+                "text": "A retried worker re-runs all three effects from the top."
+              },
+              {
+                "text": "Duplicate invoice numbers and duplicate email",
+                "verdict": "bad"
+              }
+            ]
+          ]
+        },
+        {
+          "type": "choice",
+          "id": "idempotency-identity",
+          "label": "Idempotency identity",
+          "ask": "Which stable identity should suppress duplicate effects?",
+          "choices": [
+            {
+              "value": "Client finalization key",
+              "summary": "Survives request and worker retries; one key owns every effect.",
+              "recommended": true
+            },
+            {
+              "value": "Invoice + revision",
+              "summary": "Rejects stale retries but makes every edit a new operation."
+            },
+            {
+              "value": "Server job ID",
+              "summary": "Deduplicates workers, not duplicate submissions before a job exists."
+            }
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "guarded-effects",
+          "label": "Effects the identity must guard",
+          "ask": "Which effects must be suppressed on a retry that carries the same identity?",
+          "options": [
+            {
+              "value": "Ledger entry",
+              "summary": "Double-posting corrupts the accounting period."
+            },
+            {
+              "value": "Invoice number reservation",
+              "summary": "A gap or a duplicate is externally visible and auditable."
+            },
+            {
+              "value": "Customer email",
+              "summary": "A second copy is visible to the customer and cannot be recalled."
+            },
+            {
+              "value": "PDF render",
+              "summary": "Idempotent by content hash; re-rendering costs money, not correctness."
+            },
+            {
+              "value": "Webhook to the billing partner",
+              "summary": "The partner deduplicates, but only within its own window."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recovery",
+      "eyebrow": "Recovery",
+      "label": "Recovery",
+      "title": "How much history must operators be able to replay?",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Attempt recorded",
+              "text": "Persist the input hash and the effect checkpoints before execution begins.",
+              "state": "done"
+            },
+            {
+              "title": "Partial failure",
+              "text": "Email can fail after accounting and the invoice-number reservation have already succeeded.",
+              "state": "current"
+            },
+            {
+              "title": "Operator replay",
+              "text": "Resume only the unfinished effects, under the same idempotency identity.",
+              "state": "todo"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "id": "retention-window",
+          "label": "Replay retention",
+          "ask": "How long should the input and effect ledger remain replayable?",
+          "choices": [
+            {
+              "value": "30-day replay, 7-year audit",
+              "summary": "Separates the executable payload's retention from the financial evidence.",
+              "recommended": true
+            },
+            {
+              "value": "Full-period replay",
+              "summary": "Maximum recoverability with a much larger sensitive-data surface."
+            },
+            {
+              "value": "Automatic retry only",
+              "summary": "Lowest operator surface; unresolved partial failures require engineering."
+            }
+          ]
+        },
+        {
+          "type": "scale",
+          "id": "replay-autonomy",
+          "label": "Operator autonomy on replay",
+          "ask": "How much may an operator replay without an engineer present?",
+          "points": [
+            {
+              "value": "none",
+              "label": "Nothing — engineering only"
+            },
+            {
+              "value": "read",
+              "label": "Inspect the ledger"
+            },
+            {
+              "value": "resume",
+              "label": "Resume unfinished effects"
+            },
+            {
+              "value": "rerun",
+              "label": "Re-run any effect"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ownership",
+      "eyebrow": "Operations",
+      "label": "Ownership",
+      "title": "Who owns a job that is moving but producing the wrong outcome?",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Queue health and invoice correctness are different incidents with different responders. Naming one owner for both means the queue's symptoms page the team that cannot read the ledger."
+        },
+        {
+          "type": "choice",
+          "id": "incident-ownership",
+          "label": "Incident ownership",
+          "ask": "Who is paged when the queue is healthy but the invoices are wrong?",
+          "choices": [
+            {
+              "value": "Split by consequence",
+              "summary": "Billing owns stuck or incorrect invoices; platform owns queue saturation and delivery availability.",
+              "recommended": true
+            },
+            {
+              "value": "Billing owns everything",
+              "summary": "One accountable owner, including queue-level symptoms."
+            },
+            {
+              "value": "Platform owns everything",
+              "summary": "Centralizes operations, but detaches invoice correctness from its domain owner."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "runbook-handoff",
+          "label": "Runbook handoff",
+          "ask": "Where does the handoff between those two owners have to be explicit, and who writes it down?",
+          "placeholder": "e.g. platform escalates to billing once the queue drains but the ledger still shows unfinished effects"
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "eyebrow": "Incident policy",
+      "label": "Failure",
+      "title": "When does delayed work become an incident?",
+      "blocks": [
+        {
+          "type": "callout",
+          "title": "Consequence before threshold",
+          "text": "A latency number is meaningful only when it is tied to a user or operational consequence. If the team cannot name the consequence, preserve the threshold as unresolved rather than inventing a latency target."
+        },
+        {
+          "type": "note",
+          "id": "page-worthy-consequence",
+          "label": "First page-worthy consequence",
+          "ask": "Describe the first consequence that should page an operator.",
+          "placeholder": "e.g. a customer has been charged but has no invoice document twenty minutes later"
+        },
+        {
+          "type": "checklist",
+          "id": "paging-signals",
+          "label": "Signals that may page",
+          "ask": "Which signals are allowed to page, once the consequence above is named?",
+          "options": [
+            {
+              "value": "Unfinished effects past the promised window"
+            },
+            {
+              "value": "Invoice-number reservation without a ledger entry"
+            },
+            {
+              "value": "Queue depth alone",
+              "summary": "A symptom, not a consequence — page only if it predicts one."
+            },
+            {
+              "value": "Email delivery failure rate"
+            },
+            {
+              "value": "Replay attempts exceeding a threshold"
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "unresolved-threshold",
+          "label": "Anything this interview cannot settle",
+          "ask": "What still has to be measured or decided elsewhere before the contract can be written?",
+          "placeholder": "leave blank if nothing remains"
+        }
+      ]
+    },
+    {
+      "id": "synthesis",
+      "eyebrow": "Synthesis",
+      "label": "Synthesis",
+      "title": "Read the contract these answers create together",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The rows below show the contract created by the recommended path. Your confirmed overrides and untouched recommendations are carried separately in the reply, so the coder can tell a decision from a default."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Decision radius",
+            "Emerging contract",
+            "Implementation consequence"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Execution"
+              },
+              {
+                "text": "Submission and completion are separate states."
+              },
+              {
+                "text": "Job resource, progress query, completion notification"
+              }
+            ],
+            [
+              {
+                "text": "Effect identity"
+              },
+              {
+                "text": "One user intent owns every retried effect."
+              },
+              {
+                "text": "Persist the idempotency key and per-effect checkpoints"
+              }
+            ],
+            [
+              {
+                "text": "Recovery"
+              },
+              {
+                "text": "Replay data and audit evidence have different lifetimes."
+              },
+              {
+                "text": "Expiring payload plus a durable outcome ledger"
+              }
+            ],
+            [
+              {
+                "text": "Ownership"
+              },
+              {
+                "text": "Business and infrastructure incidents route separately."
+              },
+              {
+                "text": "Two alert classes with an explicit runbook handoff"
+              }
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Knowledge gate",
+          "text": "The reply is ready only when the page-worthy consequence is explicit. Until then it ships as an open question, not as a latency target nobody agreed to."
+        }
+      ]
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Guided interview — invoice finalization\n\nAnswers, in the order the page asks them:\n\n{{answers}}\n\nAnything marked (unanswered) is an open question, not a default. Do not resolve it by picking the recommended option."
+  }
+}
