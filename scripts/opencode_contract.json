@@ -1,11 +1,93 @@
 {
   "manager": "alvis-opencode-v1",
-  "schema_version": 1,
+  "schema_version": 2,
   "skill_separator": "-",
   "canonical_skill": "plugin:skill",
   "canonical_command": "/plugin:skill",
   "projected_skill": "plugin-skill",
   "projected_command": "/plugin-skill",
   "canonical_bundle_path": "@plugin:path",
-  "projected_bundle_path": "alvis/plugins/<plugin>/<path>"
+  "projected_bundle_path": "alvis/plugins/<plugin>/<path>",
+  "opencode_hooks": {
+    "lead_agents": {
+      "coding": "tech-lead",
+      "essential": "tech-lead",
+      "web": "design-lead"
+    },
+    "payloads": {
+      "ALLAGENT": {
+        "SessionStart": ["root"],
+        "SubagentStart": ["child"]
+      },
+      "MAINAGENT": {
+        "SessionStart": ["root"]
+      },
+      "SUBAGENT": {
+        "SubagentStart": ["child"]
+      }
+    },
+    "scripts": {
+      "session-start": {
+        "audiences": ["root"],
+        "enforcement_mode": "context",
+        "event": "SessionStart",
+        "matcher": null,
+        "supporting_resource": "hooks/scripts/context.sh"
+      },
+      "stop-first": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "advisory",
+        "event": "Stop",
+        "managed_resource": "hooks/STOP.md",
+        "matcher": null,
+        "native_arguments": ["hooks/STOP.md"]
+      },
+      "subagent-start": {
+        "audiences": ["child"],
+        "enforcement_mode": "context",
+        "event": "SubagentStart",
+        "matcher": null,
+        "supporting_resource": "hooks/scripts/context.sh"
+      },
+      "validate-dispatch": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "before",
+        "event": "PreToolUse",
+        "matcher": "Agent|spawn_agent|Task|spawn_subagent",
+        "opencode_aliases": ["task"],
+        "supporting_resource": "hooks/scripts/context.sh"
+      },
+      "validate-plan": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "before",
+        "event": "PreToolUse",
+        "matcher": "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode",
+        "supporting_resource": "hooks/scripts/context.sh"
+      },
+      "validate-question": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "before",
+        "event": "PreToolUse",
+        "matcher": "AskUserQuestion|request_user_input|ask_user_question",
+        "opencode_aliases": ["question"],
+        "supporting_resource": "hooks/scripts/context.sh"
+      }
+    },
+    "skill_scripts": {
+      "coding/skills/commit/scripts/post-rewrite-hook.sh": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "after",
+        "event": "PostToolUse",
+        "matcher": "Bash",
+        "opencode_aliases": ["bash"]
+      },
+      "coding/skills/commit/scripts/pre-commit-hook.sh": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "before",
+        "event": "PreToolUse",
+        "matcher": "Bash",
+        "opencode_aliases": ["bash"]
+      }
+    }
+  }
 }
