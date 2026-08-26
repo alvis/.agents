@@ -31,14 +31,25 @@ plugins/<plugin>/ ── install_opencode.ts ──► OpenCode config directory
 ```
 
 The installer accepts explicit plugin names or `--all`, resolves dependencies
-before dependents, and stages every output. It preflights all destination paths,
-refuses unmanaged collisions, backs up prior managed files, installs regular
-files with atomic renames, and rolls back if an installation step fails. The
-manifest is the final commit marker and records every managed path and source
-digest. A later run may replace or retire only those recorded paths.
-Before doing so, it validates canonical path shapes and verifies every existing
-managed file's digest. Modified, forged, overlapping, or symlinked claims stop
-the install as unmanaged state.
+before dependents, and obtains each plugin and skill inventory from `git
+ls-files --cached --others --exclude-standard`. It reads modified tracked bytes
+from the worktree, skips deleted entries, and rejects source symlinks and other
+non-regular entries before mutating the target. Ignored environments, caches,
+and build artifacts therefore cannot enter either projection location.
+
+Every output is staged as a regular file. The installer preflights destination
+paths, refuses unmanaged collisions, backs up prior managed files, installs with
+atomic renames, and rolls back if an installation step fails. The schema-v2
+manifest is the final commit marker and records every managed path, source
+digest, and resolved hook receipt. Repeating an install with the same worktree
+produces the same inventory and digests.
+
+A later run may replace or retire only authenticated recorded paths. Existing
+schema-v2 paths must be regular files with matching digests. An independently
+authenticated schema-v1 projection may also retire non-desired legacy
+symlinks: the installer moves the link itself into its transaction backup and
+never reads or changes its target. Modified, forged, overlapping, unowned, and
+current-schema non-regular claims remain fatal.
 
 Project scope writes `<project>/.opencode`. User scope writes
 `${XDG_CONFIG_HOME:-~/.config}/opencode`. The installer does not alter either
@@ -68,29 +79,39 @@ provider remains authoritative.
 ## Runtime adapter
 
 OpenCode V1 loads `plugins/alvis-marketplace.js` without extra npm dependencies. <!-- doc-path-gate: ignore -->
-The adapter:
+The adapter validates the manifest's resolved hook receipts, then:
 
 - adds absent MCP definitions to the merged configuration, mapping Claude HTTP
   servers to OpenCode remote servers and command definitions to local arrays;
 - preserves an existing user or project MCP entry with the same name and logs a
   warning;
-- injects `ALLAGENT` plus the root or child payload through
+- builds root, child, and unresolved context from each receipt's audience,
+  adding `MAINAGENT` only after its required projected lead is verified;
+- executes receipt-bound context scripts and payloads through
   `experimental.chat.system.transform`, mutating `output.system` in place;
-- sources Essential's existing context script instead of copying its environment
-  logic;
-- validates OpenCode `question` and `task` arguments with the existing Essential
-  validators; and
+- iterates receipt-bound before hooks for `question`, `task`, available plan
+  aliases, and skill-scoped command aliases, rejecting denials before execution;
+- retains allow advice by session and call identity, appends it to the matching
+  result, and clears it after consumption, session idle/deletion, or disposal;
+- runs receipt-bound post-rewrite verification after command execution without
+  replacing existing output or metadata;
+- gives each spawned script a cloned environment whose conflicting native roots
+  are cleared and whose child-local `PLUGIN_ROOT` names the verified projected
+  bundle, without mutating `process.env`; and
 - disables a user-scope adapter when the active worktree has a complete project
-  projection, preventing double injection. Suppression requires a matching
-  contract, adapter, Essential context script, and both validators; a marker-only
-  directory leaves the user adapter active.
+  projection, preventing double injection. Suppression verifies the matching
+  contract, adapter, and every receipt-bound runtime resource; a marker-only or
+  incomplete directory leaves the user adapter active.
 
 The system-transform hook is experimental in the V1 plugin type, so its matrix
-status is 🧪. V1 has no equivalent plan-exit event. Task sessions support child
-agents, but not persistent teammate identities or direct peer messaging. If the
-session lookup cannot establish root or child status, the adapter injects no
-`MAINAGENT` or `SUBAGENT` payload and uses the narrower context-script audience;
-it never promotes an unresolved session to root behavior.
+status is 🧪. Registering known plan aliases preserves their validators when the
+host emits a matching tool event, but V1 has no native plan-transition event.
+Stop has no blocking event and is injected only as labelled advisory context;
+the adapter never creates a synthetic turn. Task sessions support child agents,
+but not persistent teammate identities or direct peer messaging. If session
+lookup cannot establish root or child status, the adapter injects no
+`MAINAGENT` or `SUBAGENT` payload; it never promotes an unresolved session to
+root behavior.
 
 ## Fail-closed boundaries
 
@@ -102,10 +123,14 @@ hook unless its complete policy digest is recognized. It does not infer models,
 permission modes, isolation, background execution, or memory features that
 OpenCode does not document as equivalent.
 
-Runtime reads are receipt-bound. Plugin names and bundle paths must match the
-shared `scripts/opencode_contract.json` protocol; every executable or payload
-must remain beneath its regular-file bundle path and match its recorded digest
-before it is read or spawned.
+Runtime reads are receipt-bound. The installer rejects any global or
+skill-frontmatter hook whose event, matcher, command shape, script, payload, or
+requirements are not represented in `scripts/opencode_contract.json`. Plugin
+names and bundle paths must match that protocol; every executable, supporting
+resource, or payload must remain beneath its regular-file bundle path and match
+its recorded digest before it is read or spawned. The compatibility generator
+uses the same hook authority, so an unsupported registration cannot silently
+disappear from the matrix.
 
 Replacement authority is also bound outside the projected tree. The installer
 stores a target-specific ownership record and durable transaction journal under
@@ -114,8 +139,10 @@ matching external record is unmanaged even when its paths and digests look
 canonical. Before the first rename, the installer fsyncs a journal containing
 the prior and desired path digests; a later non-dry run rolls back an
 interrupted transaction or cleans up a transaction whose ownership commit
-completed. Dry-run never mutates recovery state and stops when recovery is
-required.
+completed. Schema-v1 authentication uses the legacy manifest and external
+receipt schema independently of the current contract, then commits schema-v2
+ownership only after the new install succeeds. Dry-run never mutates recovery
+state and stops when recovery is required.
 
 `COMPATIBILITY.md` is generated from current skill and agent sources plus explicit
 cross-harness exceptions. Its emoji is part of the claim: adapted, experimental,
@@ -123,8 +150,8 @@ external, and unavailable features must never be rewritten as native support.
 
 ## Upstream documentation
 
-OpenCode V1 claims were reviewed on 2026-08-21 against its documentation for
-[plugins](https://opencode.ai/docs/plugins/),
+OpenCode V1 claims were reviewed on 2026-08-25 against its documentation for
+[plugins](https://dev.opencode.ai/docs/plugins/),
 [skills](https://opencode.ai/docs/skills/),
 [agents](https://opencode.ai/docs/agents/),
 [commands](https://opencode.ai/docs/commands/),

@@ -156,19 +156,33 @@ bun /path/to/.agents/scripts/install_opencode.ts \
   --scope project --project-root /path/to/target-project --all
 ```
 
-The installer writes only its managed paths beneath `.opencode/` or
-`${XDG_CONFIG_HOME:-~/.config}/opencode/`; it never edits `opencode.json` or
-`opencode.jsonc`. It refuses unmanaged collisions and records source hashes in
-`alvis/manifest.json`. <!-- doc-path-gate: ignore --> An external target-bound ownership and recovery record
-under `${XDG_STATE_HOME:-~/.local/state}/alvis-opencode-v1/` prevents a copied
-or forged project receipt from claiming user files and lets the next non-dry
-run roll back a hard-interrupted install. OpenCode names are hyphenated to satisfy its skill and
-command rules: `coding:pr` becomes the `coding-pr` skill and `/coding-pr`
-command. Rerun the installer after updating this source checkout.
+The installer projects the current Git worktree's tracked and non-ignored
+untracked regular files. It rejects source symlinks before target mutation, so
+ignored environments, caches, and build output do not leak into the projection
+and every managed output remains a regular file. Repeating the same install is
+byte-stable.
+
+Only managed paths beneath `.opencode/` or
+`${XDG_CONFIG_HOME:-~/.config}/opencode/` are written; `opencode.json` and
+`opencode.jsonc` are never edited. Schema-v2 receipts record source hashes and
+resolved hook mappings in `alvis/manifest.json`. <!-- doc-path-gate: ignore --> An external target-bound ownership
+and recovery record under
+`${XDG_STATE_HOME:-~/.local/state}/alvis-opencode-v1/` prevents a copied or
+forged project receipt from claiming user files and lets the next non-dry run
+roll back a hard-interrupted install. An authenticated schema-v1 projection is
+migrated transactionally; modified, unowned, current-schema non-regular, and
+genuinely colliding paths remain fatal. OpenCode names are hyphenated to satisfy
+its skill and command rules: `coding:pr` becomes the `coding-pr` skill and
+`/coding-pr` command. Rerun the installer after updating this source checkout.
 
 OpenCode support targets stable V1 only. OpenCode V2 and `opencode2` are not
-supported. The adapter uses OpenCode V1's experimental system-transform hook,
-so context injection is explicitly 🧪 rather than native support.
+supported. The adapter executes receipt-bound hooks with a child-only
+`PLUGIN_ROOT`; it neither changes the parent environment nor alters Claude,
+Codex, or Grok's native root-variable precedence. OpenCode's before/after tool
+events preserve supported denials, advice, diagnostics, and commit rewrite
+checks. The system-transform hook remains experimental, Stop is advisory, and
+V1 exposes no enforceable plan-transition event; the generated compatibility
+matrix states these limits explicitly.
 
 The core lifecycle expects Claude Code, Codex, or Grok Build, Bash, `jq`, Git, and Bun,
 plus the target project's own build and test tools. The publication path

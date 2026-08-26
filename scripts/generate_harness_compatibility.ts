@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-/** Generate the source-derived harness compatibility matrix. */
+/** source-derived harness compatibility matrix generator */
 
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
@@ -7,7 +7,7 @@ import { join, relative, resolve } from "node:path";
 const ROOT = resolve(import.meta.dirname, "..");
 const TARGET = join(ROOT, "COMPATIBILITY.md");
 const CONTRACT_PATH = join(ROOT, "scripts", "opencode_contract.json");
-const REVIEWED_DATE = "2026-08-24";
+const REVIEWED_DATE = "2026-08-25";
 const FULL = "✅ Native";
 const ADAPTED = "🟡 Adapted";
 const EXTERNAL = "🔌 Integration";
@@ -117,15 +117,15 @@ const CROSS_CUTTING_FEATURES: readonly Feature[] = [
     FULL,
     ADAPTED,
     EXPERIMENTAL,
-    "OpenCode uses `experimental.chat.system.transform`; unresolved session audience receives no root/child payload.",
+    "OpenCode resolves receipt audiences through `experimental.chat.system.transform`; unresolved sessions receive only identifier mapping.",
   ),
   feature(
     "Skill-scoped hooks",
     FULL,
     FULL,
-    ADAPTED,
     UNAVAILABLE,
-    "OpenCode V1 ignores unrecognized skill frontmatter; only adapter-level guards run.",
+    ADAPTED,
+    "Grok Build ignores skill-frontmatter hooks. OpenCode runs the command-filtered commit guards from resolved receipts because its plugin API exposes no skill-scope event.",
   ),
   feature(
     "Question guard",
@@ -133,7 +133,7 @@ const CROSS_CUTTING_FEATURES: readonly Feature[] = [
     FULL,
     ADAPTED,
     ADAPTED,
-    "The adapter validates OpenCode `question` arguments with the Essential validator.",
+    "The adapter runs the receipt-bound Essential validator before OpenCode `question` execution and retains allow advice for the matching result.",
   ),
   feature(
     "Subagent dispatch guard",
@@ -141,7 +141,7 @@ const CROSS_CUTTING_FEATURES: readonly Feature[] = [
     FULL,
     ADAPTED,
     ADAPTED,
-    "OpenCode validates task prompts but has no persistent teammate-name field.",
+    "OpenCode validates `task` prompts through the receipt alias; the host has no persistent teammate identity.",
   ),
   feature(
     "Plan-exit guard",
@@ -149,7 +149,15 @@ const CROSS_CUTTING_FEATURES: readonly Feature[] = [
     FULL,
     ADAPTED,
     UNAVAILABLE,
-    "OpenCode V1 exposes no equivalent plan-exit tool event.",
+    "The adapter registers every receipt alias, but OpenCode 1.18.x exposes no native plan-transition tool event.",
+  ),
+  feature(
+    "Stop state reminder",
+    FULL,
+    FULL,
+    ADAPTED,
+    ADAPTED,
+    "Grok ignores the blocking Stop envelope. OpenCode exposes no cancellable Stop event, so the receipt is labelled advisory system context and creates no synthetic turn.",
   ),
   feature(
     "MCP servers",
@@ -246,6 +254,43 @@ function projectionContract(): Record<string, unknown> {
   return contract as Record<string, unknown>;
 }
 
+function objectField(
+  source: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> {
+  const value = source[key];
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`invalid ${key} in ${CONTRACT_PATH}`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function validateCompatibilityHookAuthority(): void {
+  const hooks = objectField(projectionContract(), "opencode_hooks");
+  const scripts = objectField(hooks, "scripts");
+  const skillScripts = objectField(hooks, "skill_scripts");
+  const expectedModes: Readonly<Record<string, string>> = {
+    "scripts/session-start": "context",
+    "scripts/stop-first": "advisory",
+    "scripts/subagent-start": "context",
+    "scripts/validate-dispatch": "before",
+    "scripts/validate-plan": "before",
+    "scripts/validate-question": "before",
+    "skill_scripts/coding/skills/commit/scripts/post-rewrite-hook.sh": "after",
+    "skill_scripts/coding/skills/commit/scripts/pre-commit-hook.sh": "before",
+  };
+  for (const [path, expectedMode] of Object.entries(expectedModes)) {
+    const separator = path.indexOf("/");
+    const section = path.slice(0, separator);
+    const key = path.slice(separator + 1);
+    const policies = section === "scripts" ? scripts : skillScripts;
+    const policy = objectField(policies, key);
+    if (policy.enforcement_mode !== expectedMode) {
+      throw new Error(`compatibility hook mode differs for ${path}`);
+    }
+  }
+}
+
 function projectedSkillName(pluginName: string, skillName: string): string {
   const separator = projectionContract().skill_separator;
   if (typeof separator !== "string") {
@@ -258,14 +303,13 @@ function frontmatterValue(path: string, key: string): string {
   const text = readFileSync(path, "utf8");
   const match = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*(.+)$`, "m").exec(text);
   if (!match) throw new Error(`missing ${key} in ${path}`);
-  let value = match[1]!.trim();
-  if (
-    value.length >= 2 &&
-    value[0] === value[value.length - 1] &&
-    (value[0] === "'" || value[0] === '"')
-  ) {
-    value = value.slice(1, -1);
-  }
+  const rawValue = match[1]!.trim();
+  const value =
+    rawValue.length >= 2 &&
+    rawValue[0] === rawValue[rawValue.length - 1] &&
+    (rawValue[0] === "'" || rawValue[0] === '"')
+      ? rawValue.slice(1, -1)
+      : rawValue;
   return value.split(/\s+/).filter(Boolean).join(" ");
 }
 
@@ -318,10 +362,10 @@ function skillFeature(path: string): Feature {
       `${integrationCaveat} Source: ${sourceLink(path)}.`,
     );
   }
-  let opencodeCaveat = "";
-  if (sourceIdentity === "coding:commit") {
-    opencodeCaveat = " Skill-scoped backup and post-rewrite hooks are unavailable.";
-  }
+  const opencodeCaveat =
+    sourceIdentity === "coding:commit"
+      ? " Receipt-bound command filtering preserves backup advice and post-rewrite diagnostics, but OpenCode exposes no skill-scope event."
+      : "";
   return feature(
     identity,
     FULL,
@@ -336,12 +380,11 @@ function agentFeature(path: string): Feature {
   const pluginName = pluginOf(path);
   const segments = relative(join(ROOT, "plugins"), path).split(/[/\\]/);
   const agentName = segments[segments.length - 2]!;
-  let caveat =
-    "OpenCode projects Markdown, inherits the active model, and lacks first-class project memory.";
-  if (agentName === "aesthetic-evaluator" || agentName === "code-quality-critic") {
-    caveat +=
-      " Its recognized write fence allows only rooted memory and canonical review-state paths; shell and external-directory access are denied.";
-  }
+  const caveat = `OpenCode projects Markdown, inherits the active model, and lacks first-class project memory.${
+    agentName === "aesthetic-evaluator" || agentName === "code-quality-critic"
+      ? " Its recognized write fence allows only rooted memory and canonical review-state paths; shell and external-directory access are denied."
+      : ""
+  }`;
   return feature(
     `\`${agentName}\` agent`,
     FULL,
@@ -385,6 +428,7 @@ function collectMarkedFiles(subdirectory: "skills" | "agents", marker: string): 
 }
 
 export function render(): string {
+  validateCompatibilityHookAuthority();
   const skillFeatures = collectMarkedFiles("skills", "SKILL.md").map(skillFeature);
   const agentFeatures = collectMarkedFiles("agents", "base.md").map(agentFeature);
   return `# Harness compatibility
@@ -417,7 +461,7 @@ ${renderTable(agentFeatures)}
 
 ## Documentation sources
 
-- OpenCode V1: [plugins](https://opencode.ai/docs/plugins/), [skills](https://opencode.ai/docs/skills/), [agents](https://opencode.ai/docs/agents/), [commands](https://opencode.ai/docs/commands/), [tools](https://opencode.ai/docs/tools/), [permissions](https://opencode.ai/docs/permissions/), [MCP servers](https://opencode.ai/docs/mcp-servers/), and [rules](https://opencode.ai/docs/rules/).
+- OpenCode V1: [plugin API](https://dev.opencode.ai/docs/plugins/), [skills](https://opencode.ai/docs/skills/), [agents](https://opencode.ai/docs/agents/), [commands](https://opencode.ai/docs/commands/), [tools](https://opencode.ai/docs/tools/), [permissions](https://opencode.ai/docs/permissions/), [MCP servers](https://opencode.ai/docs/mcp-servers/), and [rules](https://opencode.ai/docs/rules/).
 - Grok Build: [xAI skills, plugins, and marketplaces](https://docs.x.ai/build/features/skills-plugins-marketplaces).
 `;
 }
@@ -443,18 +487,18 @@ options:
 `;
 
 /**
- * Parses the generator command line with argparse-compatible errors.
+ * parses the generator command line with argparse-compatible errors
  *
  * @param argv - command-line tokens without the program name
  * @returns parsed arguments, a help request, or an error message
  */
 export function parseArgs(argv: readonly string[]): ParsedArguments {
-  let check = false;
+  const check = argv.includes("--check");
   const unrecognized: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]!;
     if (argument === "-h" || argument === "--help") return { kind: "help" };
-    else if (argument === "--check") check = true;
+    else if (argument === "--check") continue;
     else unrecognized.push(argument);
   }
   if (unrecognized.length > 0) {
@@ -467,7 +511,7 @@ export function parseArgs(argv: readonly string[]): ParsedArguments {
 }
 
 /**
- * Verifies one compatibility matrix file against freshly rendered output.
+ * verifies one compatibility matrix file against freshly rendered output
  *
  * @param targetPath - matrix file to compare with the rendered document
  * @returns undefined when the file is current, otherwise the staleness message
@@ -481,7 +525,7 @@ export function checkMatrix(targetPath: string): string | undefined {
 }
 
 /**
- * Writes or verifies the generated matrix.
+ * writes or verifies the generated matrix
  *
  * @param argv - command-line arguments; defaults to `process.argv.slice(2)`
  * @returns the process exit code

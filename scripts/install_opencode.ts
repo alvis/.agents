@@ -27,6 +27,10 @@ import {
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { resolveHookReceipts } from "./opencode_hook_receipts.ts";
+
+import type { HookReceipt } from "./opencode_hook_receipts.ts";
+
 type JsonObject = Record<string, unknown>;
 
 // Path(__file__).resolve().parents[1]: fully symlink-resolved so containment
@@ -242,10 +246,14 @@ function existsFollowing(path: string): boolean {
   }
 }
 
-function ownershipRecord(target: string, manifestPath: string): JsonObject {
+function ownershipRecord(
+  target: string,
+  manifestPath: string,
+  schemaVersion: number = contractSchemaVersion(),
+): JsonObject {
   return {
     manager: contractString("manager"),
-    schema_version: contractSchemaVersion(),
+    schema_version: schemaVersion,
     target,
     manifest_sha256: fileDigest(manifestPath),
   };
@@ -283,7 +291,11 @@ function canonicalJson(value: unknown): string {
   return ensureAscii(renderCanonical(value));
 }
 
-function readValidOwnership(target: string, manifestPath: string): JsonObject {
+function readValidOwnership(
+  target: string,
+  manifestPath: string,
+  schemaVersion: number = contractSchemaVersion(),
+): JsonObject {
   const recordPath = ownershipPath(target);
   const info = lstatSync(recordPath, { throwIfNoEntry: false });
   if (!info || !info.isFile()) {
@@ -292,11 +304,34 @@ function readValidOwnership(target: string, manifestPath: string): JsonObject {
     );
   }
   const record = readJsonObject(recordPath);
-  const expected = ownershipRecord(target, manifestPath);
+  const expected = ownershipRecord(target, manifestPath, schemaVersion);
   if (canonicalJson(record) !== canonicalJson(expected)) {
     throw new ProjectionError(`managed manifest ownership does not match ${recordPath}`);
   }
   return record;
+}
+
+function rejectSourceSymlinkComponents(sourcePath: string, pluginName: string): void {
+  const pathFromRoot = relative(ROOT, sourcePath);
+  if (
+    pathFromRoot === "" ||
+    pathFromRoot === ".." ||
+    pathFromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) ||
+    isAbsolute(pathFromRoot)
+  ) {
+    throw new ProjectionError(`invalid plugin source for ${pluginName}: ${sourcePath}`);
+  }
+  let currentPath = ROOT;
+  for (const component of pathFromRoot.split(/[\\/]/).filter(Boolean)) {
+    currentPath = join(currentPath, component);
+    const info = lstatSync(currentPath, { throwIfNoEntry: false });
+    if (!info) return;
+    if (info.isSymbolicLink()) {
+      throw new ProjectionError(
+        `plugin source contains symlink component for ${pluginName}: ${currentPath}`,
+      );
+    }
+  }
 }
 
 function marketplacePlugins(): Record<string, string> {
@@ -316,7 +351,9 @@ function marketplacePlugins(): Record<string, string> {
     if (typeof name !== "string" || typeof source !== "string") {
       throw new ProjectionError("marketplace plugins require string name and source");
     }
-    const pluginRoot = resolvePath(join(ROOT, source));
+    const sourcePath = resolve(ROOT, source);
+    rejectSourceSymlinkComponents(sourcePath, name);
+    const pluginRoot = resolvePath(sourcePath);
     const pluginInfo = existsFollowing(pluginRoot)
       ? statSync(pluginRoot)
       : undefined;
@@ -409,21 +446,92 @@ function projectTarget(scope: "project" | "user", projectRoot?: string): string 
   return join(resolvedRoot, ".opencode");
 }
 
-function copyTree(source: string, destination: string, ignored?: ReadonlySet<string>): void {
-  mkdirSync(destination, { recursive: true });
-  const entries = readdirSync(source, { withFileTypes: true }).sort((a, b) =>
-    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+function worktreeFiles(sourceRoot: string): readonly string[] {
+  const repositoryRelativeRoot = relative(ROOT, sourceRoot).split("\\").join("/");
+  if (
+    repositoryRelativeRoot === "" ||
+    repositoryRelativeRoot === ".." ||
+    repositoryRelativeRoot.startsWith("../")
+  ) {
+    throw new ProjectionError(`source root is outside the repository: ${sourceRoot}`);
+  }
+  const gitDirectoryResult = spawnSync(
+    "git",
+    ["rev-parse", "--absolute-git-dir"],
+    { cwd: ROOT, encoding: "utf8" },
   );
-  for (const entry of entries) {
-    if (ignored?.has(entry.name)) continue;
-    const sourceEntry = join(source, entry.name);
-    const destinationEntry = join(destination, entry.name);
-    // statSync follows symlinks, mirroring copytree(symlinks=False); cpSync
-    // preserves mode and timestamps like shutil.copy2.
-    const info = statSync(sourceEntry);
-    if (info.isDirectory()) copyTree(sourceEntry, destinationEntry, ignored);
-    else if (info.isFile())
-      cpSync(sourceEntry, destinationEntry, { preserveTimestamps: true });
+  if (
+    gitDirectoryResult.status !== 0 ||
+    typeof gitDirectoryResult.stdout !== "string" ||
+    gitDirectoryResult.stdout.trim() === ""
+  ) {
+    const detail =
+      typeof gitDirectoryResult.stderr === "string" &&
+      gitDirectoryResult.stderr.trim() !== ""
+        ? gitDirectoryResult.stderr.trim()
+        : `exit ${gitDirectoryResult.status ?? "unknown"}`;
+    throw new ProjectionError(`cannot resolve source repository: ${detail}`);
+  }
+  const gitDirectory = gitDirectoryResult.stdout.trim();
+  const result = spawnSync(
+    "git",
+    [
+      `--git-dir=${gitDirectory}`,
+      `--work-tree=${ROOT}`,
+      "ls-files",
+      "--cached",
+      "--others",
+      "--exclude-standard",
+      "-z",
+      "--",
+      repositoryRelativeRoot,
+    ],
+    { cwd: ROOT, encoding: "utf8" },
+  );
+  if (result.status !== 0 || typeof result.stdout !== "string") {
+    const detail =
+      typeof result.stderr === "string" && result.stderr.trim() !== ""
+        ? result.stderr.trim()
+        : `exit ${result.status ?? "unknown"}`;
+    throw new ProjectionError(`cannot enumerate source files: ${detail}`);
+  }
+  const files: string[] = [];
+  for (const repositoryRelativePath of result.stdout.split("\0").filter(Boolean)) {
+    const sourcePath = join(ROOT, repositoryRelativePath);
+    const info = lstatSync(sourcePath, { throwIfNoEntry: false });
+    if (!info) continue;
+    if (info.isSymbolicLink() || !info.isFile()) {
+      throw new ProjectionError(`source path is not a regular file: ${sourcePath}`);
+    }
+    if (!isInside(sourceRoot, sourcePath)) {
+      throw new ProjectionError(`source inventory escapes plugin root: ${sourcePath}`);
+    }
+    files.push(relative(sourceRoot, sourcePath).split("\\").join("/"));
+  }
+  return files.sort();
+}
+
+interface CopyRegularFilesParams {
+  readonly destinationRoot: string;
+  readonly files: readonly string[];
+  readonly sourceRoot: string;
+}
+
+function copyRegularFile(sourcePath: string, destinationPath: string): void {
+  const info = lstatSync(sourcePath, { throwIfNoEntry: false });
+  if (!info || info.isSymbolicLink() || !info.isFile()) {
+    throw new ProjectionError(`source path is not a regular file: ${sourcePath}`);
+  }
+  mkdirSync(dirname(destinationPath), { recursive: true });
+  cpSync(sourcePath, destinationPath, { preserveTimestamps: true });
+}
+
+function copyRegularFiles(params: CopyRegularFilesParams): void {
+  const { destinationRoot, files, sourceRoot } = params;
+  for (const relativePath of files) {
+    const sourcePath = join(sourceRoot, relativePath);
+    const destinationPath = join(destinationRoot, relativePath);
+    copyRegularFile(sourcePath, destinationPath);
   }
 }
 
@@ -547,31 +655,30 @@ function walkRelativeFiles(root: string, directory: string = root): readonly str
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const entryPath = join(directory, entry.name);
-    // Mirrors Path.rglob(follow_symlinks=False) in Python 3.13: recursion
-    // descends only real directories, while a symlinked file still counts as
-    // an enumerable file target for rewriting.
     if (entry.isDirectory()) found.push(...walkRelativeFiles(root, entryPath));
-    else if (
-      entry.isFile() ||
-      (entry.isSymbolicLink() &&
-        statSync(entryPath, { throwIfNoEntry: false })?.isFile())
-    ) {
+    else if (entry.isFile()) {
       found.push(relative(root, entryPath).split("\\").join("/"));
+    } else {
+      throw new ProjectionError(`staged path is not a regular file: ${entryPath}`);
     }
   }
   return found.sort();
 }
 
-function projectSkill(
-  pluginName: string,
-  sourceSkillRoot: string,
-  stagedRoot: string,
-): string {
+interface ProjectSkillParams {
+  readonly pluginName: string;
+  readonly sourceFiles: readonly string[];
+  readonly sourceSkillRoot: string;
+  readonly stagedRoot: string;
+}
+
+function projectSkill(params: ProjectSkillParams): string {
+  const { pluginName, sourceFiles, sourceSkillRoot, stagedRoot } = params;
   const separator = contractString("skill_separator");
   const projectedName = [pluginName, basename(sourceSkillRoot)].join(separator);
   const destinationRoot = join(stagedRoot, "skills", projectedName);
-  copyTree(sourceSkillRoot, destinationRoot);
-  for (const relativePath of walkRelativeFiles(sourceSkillRoot)) {
+  copyRegularFiles({ destinationRoot, files: sourceFiles, sourceRoot: sourceSkillRoot });
+  for (const relativePath of sourceFiles) {
     const extension = relativePath.slice(relativePath.lastIndexOf("."));
     if (!PROJECTED_TEXT_SUFFIXES.has(extension)) continue;
     const sourceFile = join(sourceSkillRoot, relativePath);
@@ -720,6 +827,7 @@ function writeManifest(
   scope: "project" | "user",
   selectedPlugins: readonly string[],
   resolvedPlugins: readonly string[],
+  hookReceiptsByPlugin: Readonly<Record<string, readonly HookReceipt[]>>,
 ): JsonObject {
   const filesBeforeManifest = stagedFiles(stagedRoot);
   const digests: Record<string, string> = {};
@@ -739,6 +847,7 @@ function writeManifest(
     plugins: resolvedPlugins.map((name) => ({
       name,
       bundle_path: `alvis/plugins/${name}`,
+      hooks: hookReceiptsByPlugin[name] ?? [],
     })),
     source: {
       revision: sourceRevision(),
@@ -770,62 +879,99 @@ function buildProjection(
   mkdirSync(join(stagedRoot, "commands"));
   mkdirSync(join(stagedRoot, "agents"));
   mkdirSync(join(stagedRoot, "alvis"));
-  cpSync(ADAPTER_PATH, join(stagedRoot, "plugins", "alvis-marketplace.js"), {
-    preserveTimestamps: true,
-  });
-  cpSync(CONTRACT_PATH, join(stagedRoot, "alvis", "contract.json"), {
-    preserveTimestamps: true,
-  });
+  copyRegularFile(
+    ADAPTER_PATH,
+    join(stagedRoot, "plugins", "alvis-marketplace.js"),
+  );
+  copyRegularFile(CONTRACT_PATH, join(stagedRoot, "alvis", "contract.json"));
 
   const skillNames = new Set<string>();
   const agentNames = new Set<string>();
+  const pluginFilesByName: Record<string, readonly string[]> = {};
   for (const pluginName of resolvedPlugins) {
     const pluginRoot = pluginsByName[pluginName]!;
-    copyTree(
-      pluginRoot,
-      join(stagedRoot, "alvis", "plugins", pluginName),
-      new Set(["__pycache__", ".pytest_cache", ".DS_Store"]),
-    );
-    const skillsRoot = join(pluginRoot, "skills");
-    if (existsFollowing(skillsRoot)) {
-      const skillDirectories = readdirSync(skillsRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => join(skillsRoot, entry.name))
-        .sort();
-      for (const skillRoot of skillDirectories) {
-        const skillPath = join(skillRoot, "SKILL.md");
-        if (!existsFollowing(skillPath)) continue;
-        const projectedName = projectSkill(pluginName, skillRoot, stagedRoot);
-        if (skillNames.has(projectedName)) {
-          throw new ProjectionError(`projected skill collision: ${projectedName}`);
-        }
-        skillNames.add(projectedName);
-        writeCommand(
-          join(stagedRoot, "commands", `${projectedName}.md`),
-          projectedName,
-          skillDescription(skillPath),
-        );
+    const pluginFiles = worktreeFiles(pluginRoot);
+    pluginFilesByName[pluginName] = pluginFiles;
+    copyRegularFiles({
+      destinationRoot: join(stagedRoot, "alvis", "plugins", pluginName),
+      files: pluginFiles,
+      sourceRoot: pluginRoot,
+    });
+    const skillDirectoryNames = [
+      ...new Set(
+        pluginFiles.flatMap((path) => {
+          const match = /^skills\/([^/]+)\/SKILL\.md$/.exec(path);
+          return match ? [match[1]!] : [];
+        }),
+      ),
+    ].sort();
+    for (const skillDirectoryName of skillDirectoryNames) {
+      const skillRoot = join(pluginRoot, "skills", skillDirectoryName);
+      const skillPrefix = `skills/${skillDirectoryName}/`;
+      const skillFiles = pluginFiles
+        .filter((path) => path.startsWith(skillPrefix))
+        .map((path) => path.slice(skillPrefix.length));
+      const projectedName = projectSkill({
+        pluginName,
+        sourceFiles: skillFiles,
+        sourceSkillRoot: skillRoot,
+        stagedRoot,
+      });
+      if (skillNames.has(projectedName)) {
+        throw new ProjectionError(`projected skill collision: ${projectedName}`);
       }
+      skillNames.add(projectedName);
+      writeCommand(
+        join(stagedRoot, "commands", `${projectedName}.md`),
+        projectedName,
+        skillDescription(join(skillRoot, "SKILL.md")),
+      );
     }
 
-    const agentsRoot = join(pluginRoot, "agents");
-    if (existsFollowing(agentsRoot)) {
-      const agentDirectories = readdirSync(agentsRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => join(agentsRoot, entry.name))
-        .sort();
-      for (const agentRoot of agentDirectories) {
-        if (!existsFollowing(join(agentRoot, "base.md"))) continue;
-        const agentName = basename(agentRoot);
-        if (agentNames.has(agentName)) {
-          throw new ProjectionError(`cross-plugin agent collision: ${agentName}`);
-        }
-        agentNames.add(agentName);
-        writeAgent(agentRoot, join(stagedRoot, "agents", `${agentName}.md`));
+    const pluginAgentNames = [
+      ...new Set(
+        pluginFiles.flatMap((path) => {
+          const match = /^agents\/([^/]+)\/base\.md$/.exec(path);
+          return match ? [match[1]!] : [];
+        }),
+      ),
+    ].sort();
+    for (const agentName of pluginAgentNames) {
+      if (agentNames.has(agentName)) {
+        throw new ProjectionError(`cross-plugin agent collision: ${agentName}`);
       }
+      agentNames.add(agentName);
+      writeAgent(
+        join(pluginRoot, "agents", agentName),
+        join(stagedRoot, "agents", `${agentName}.md`),
+      );
     }
   }
-  return writeManifest(stagedRoot, scope, selectedPlugins, resolvedPlugins);
+  const hookReceiptsByPlugin = Object.fromEntries(
+    resolvedPlugins.map((pluginName) => {
+      try {
+        return [
+          pluginName,
+          resolveHookReceipts({
+            contract: projectionContract(),
+            pluginFiles: pluginFilesByName[pluginName]!,
+            pluginName,
+            pluginRoot: pluginsByName[pluginName]!,
+          }),
+        ];
+      } catch (error) {
+        const exception = error as Error;
+        throw new ProjectionError(exception.message);
+      }
+    }),
+  );
+  return writeManifest(
+    stagedRoot,
+    scope,
+    selectedPlugins,
+    resolvedPlugins,
+    hookReceiptsByPlugin,
+  );
 }
 
 function isIdentifier(value: string): boolean {
@@ -872,12 +1018,18 @@ function isCanonicalManagedPath(parts: readonly string[], pluginNames: ReadonlyS
   );
 }
 
-function validateManagedPathState(
-  target: string,
-  relativePath: string,
-  expectedDigest: string,
-): void {
-  const destination = join(target, relativePath);
+type ExistingProjectionClassification =
+  | "authenticated-schema-v1"
+  | "fresh"
+  | "managed-schema-v2";
+
+interface PreviousProjection {
+  readonly classification: ExistingProjectionClassification;
+  readonly legacySymlinkPaths: ReadonlySet<string>;
+  readonly managedPaths: ReadonlySet<string>;
+}
+
+function validateManagedPathParents(target: string, destination: string): void {
   let parent = dirname(destination);
   while (parent !== target && isInside(target, parent)) {
     if (lstatSync(parent, { throwIfNoEntry: false })?.isSymbolicLink()) {
@@ -885,8 +1037,19 @@ function validateManagedPathState(
     }
     parent = dirname(parent);
   }
-  if (!pathExists(destination)) return;
+}
+
+function validateManagedPathState(
+  target: string,
+  relativePath: string,
+  expectedDigest: string,
+): void {
+  const destination = join(target, relativePath);
+  validateManagedPathParents(target, destination);
   const info = lstatSync(destination, { throwIfNoEntry: false })!;
+  if (!info) {
+    throw new ProjectionError(`managed path is missing: ${destination}`);
+  }
   if (info.isSymbolicLink() || !info.isFile()) {
     throw new ProjectionError(`managed path is not a regular file: ${destination}`);
   }
@@ -895,21 +1058,31 @@ function validateManagedPathState(
   }
 }
 
-function loadPreviousManagedPaths(target: string): ReadonlySet<string> {
+function loadPreviousProjection(
+  target: string,
+  desiredPaths: ReadonlySet<string>,
+): PreviousProjection {
   const manifestPath = join(target, MANIFEST_RELATIVE_PATH);
   const info = lstatSync(manifestPath, { throwIfNoEntry: false });
-  if (!info) return new Set();
+  if (!info) {
+    return {
+      classification: "fresh",
+      legacySymlinkPaths: new Set(),
+      managedPaths: new Set(),
+    };
+  }
   if (info.isSymbolicLink()) {
     throw new ProjectionError(`managed manifest must not be a symlink: ${manifestPath}`);
   }
   const manifest = readJsonObject(manifestPath);
-  readValidOwnership(target, manifestPath);
+  const schemaVersion = manifest.schema_version;
   if (
     manifest.manager !== contractString("manager") ||
-    manifest.schema_version !== contractSchemaVersion()
+    (schemaVersion !== 1 && schemaVersion !== contractSchemaVersion())
   ) {
     throw new ProjectionError(`unmanaged or incompatible manifest: ${manifestPath}`);
   }
+  readValidOwnership(target, manifestPath, schemaVersion);
   const paths = manifest.managed_paths;
   if (
     !Array.isArray(paths) ||
@@ -987,10 +1160,28 @@ function loadPreviousManagedPaths(target: string): ReadonlySet<string> {
       throw new ProjectionError(`overlapping managed paths in ${manifestPath}: ${path}`);
     }
   }
+  const legacySymlinkPaths = new Set<string>();
   for (const path of expectedDigestPaths) {
+    const destination = join(target, path);
+    validateManagedPathParents(target, destination);
+    const pathInfo = lstatSync(destination, { throwIfNoEntry: false });
+    if (schemaVersion === 1 && pathInfo?.isSymbolicLink()) {
+      if (desiredPaths.has(path)) {
+        throw new ProjectionError(
+          `legacy managed symlink overlaps the desired projection: ${destination}`,
+        );
+      }
+      legacySymlinkPaths.add(path);
+      continue;
+    }
     validateManagedPathState(target, path, (digests as Record<string, string>)[path]!);
   }
-  return managedPaths;
+  return {
+    classification:
+      schemaVersion === 1 ? "authenticated-schema-v1" : "managed-schema-v2",
+    legacySymlinkPaths,
+    managedPaths,
+  };
 }
 
 function journalPaths(journal: JsonObject, key: string): Set<string> {
@@ -1043,6 +1234,12 @@ function validateRecoveryFile(path: string, expectedDigest: string): void {
   }
 }
 
+function validateRecoverySymlink(path: string): void {
+  if (!lstatSync(path, { throwIfNoEntry: false })?.isSymbolicLink()) {
+    throw new ProjectionError(`transaction recovery path is not a symlink: ${path}`);
+  }
+}
+
 function cleanupTransaction(target: string): void {
   const directory = stateDirectory(target);
   const backupRoot = join(directory, "backup");
@@ -1059,14 +1256,21 @@ function rmRecursive(path: string): void {
 
 function restorePreparedTransaction(target: string, journal: JsonObject): void {
   const previousPaths = journalPaths(journal, "previous_paths");
+  const previousSymlinkPaths = journalPaths(journal, "previous_symlink_paths");
   const desiredPaths = journalPaths(journal, "desired_paths");
   const previousDigests = journalDigests(journal, "previous_file_digests");
   const desiredDigests = journalDigests(journal, "desired_file_digests");
   const sameMembers = (keys: ReadonlySet<string>, digests: Record<string, string>) =>
     keys.size === Object.keys(digests).length &&
     Object.keys(digests).every((key) => keys.has(key));
+  const previousRegularPaths = new Set(
+    [...previousPaths].filter((path) => !previousSymlinkPaths.has(path)),
+  );
   if (
-    !sameMembers(previousPaths, previousDigests) ||
+    [...previousSymlinkPaths].some(
+      (path) => !previousPaths.has(path) || desiredPaths.has(path),
+    ) ||
+    !sameMembers(previousRegularPaths, previousDigests) ||
     !sameMembers(desiredPaths, desiredDigests)
   ) {
     throw new ProjectionError("transaction journal path and digest sets differ");
@@ -1076,8 +1280,10 @@ function restorePreparedTransaction(target: string, journal: JsonObject): void {
   for (const relativePath of [...previousPaths].sort()) {
     const destination = join(target, relativePath);
     const backup = join(backupRoot, relativePath);
+    const isPreviousSymlink = previousSymlinkPaths.has(relativePath);
     if (pathExists(backup)) {
-      validateRecoveryFile(backup, previousDigests[relativePath]!);
+      if (isPreviousSymlink) validateRecoverySymlink(backup);
+      else validateRecoveryFile(backup, previousDigests[relativePath]!);
       if (pathExists(destination)) {
         if (!desiredPaths.has(relativePath)) {
           throw new ProjectionError(`unexpected recovery collision: ${destination}`);
@@ -1088,7 +1294,8 @@ function restorePreparedTransaction(target: string, journal: JsonObject): void {
       mkdirSync(dirname(destination), { recursive: true });
       renameSync(backup, destination);
     } else {
-      validateRecoveryFile(destination, previousDigests[relativePath]!);
+      if (isPreviousSymlink) validateRecoverySymlink(destination);
+      else validateRecoveryFile(destination, previousDigests[relativePath]!);
     }
   }
 
@@ -1164,7 +1371,9 @@ function validateCollisions(
   for (const relativePath of desiredPaths) {
     const destination = join(target, relativePath);
     if (pathExists(destination) && !previousManagedPaths.has(relativePath)) {
-      throw new ProjectionError(`unmanaged path collision: ${destination}`);
+      throw new ProjectionError(
+        `unmanaged path collision: ${destination} [classification=unmanaged; recovery=move-or-remove-path]`,
+      );
     }
     let parent = dirname(destination);
     while (parent !== target && isInside(target, parent)) {
@@ -1194,9 +1403,13 @@ function removeEmptyParents(path: string, target: string): void {
   }
 }
 
-function installStagedProjection(stagedRoot: string, target: string): void {
+function installStagedProjection(
+  stagedRoot: string,
+  target: string,
+): PreviousProjection {
   const desiredPaths = new Set(stagedFiles(stagedRoot));
-  const previousPaths = loadPreviousManagedPaths(target);
+  const previousProjection = loadPreviousProjection(target, desiredPaths);
+  const previousPaths = previousProjection.managedPaths;
   validateCollisions(target, desiredPaths, previousPaths);
   const affectedPaths = [...new Set([...previousPaths, ...desiredPaths])].sort();
 
@@ -1225,12 +1438,13 @@ function installStagedProjection(stagedRoot: string, target: string): void {
     target,
     status: "prepared",
     previous_paths: [...existingPreviousPaths].sort(),
+    previous_symlink_paths: [...previousProjection.legacySymlinkPaths].sort(),
     desired_paths: [...desiredPaths].sort(),
     previous_file_digests: Object.fromEntries(
-      [...existingPreviousPaths].sort().map((path) => [
-        path,
-        fileDigest(join(target, path)),
-      ]),
+      [...existingPreviousPaths]
+        .filter((path) => !previousProjection.legacySymlinkPaths.has(path))
+        .sort()
+        .map((path) => [path, fileDigest(join(target, path))]),
     ),
     desired_file_digests: Object.fromEntries(
       [...desiredPaths].sort().map((path) => [
@@ -1286,6 +1500,7 @@ function installStagedProjection(stagedRoot: string, target: string): void {
     .reverse()) {
     removeEmptyParents(join(target, relativePath), target);
   }
+  return previousProjection;
 }
 
 function ensurePrivateStateDirectory(target: string): string {
@@ -1467,6 +1682,7 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
       join(temporaryParent ?? tmpdir(), "alvis-opencode-stage-"),
     );
     let manifest: JsonObject;
+    let previousProjection: PreviousProjection;
     try {
       manifest = buildProjection(
         stagedRoot,
@@ -1476,13 +1692,15 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
         pluginsByName,
       );
       if (args.dryRun) {
+        const desiredPaths = new Set(stagedFiles(stagedRoot));
+        previousProjection = loadPreviousProjection(target, desiredPaths);
         validateCollisions(
           target,
-          stagedFiles(stagedRoot),
-          loadPreviousManagedPaths(target),
+          desiredPaths,
+          previousProjection.managedPaths,
         );
       } else {
-        installStagedProjection(stagedRoot, target);
+        previousProjection = installStagedProjection(stagedRoot, target);
       }
     } finally {
       rmRecursive(stagedRoot);
@@ -1498,6 +1716,9 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
           target,
           selected_plugins: selectedPlugins,
           resolved_plugins: resolvedPlugins,
+          existing_projection: previousProjection.classification,
+          retired_legacy_symlink_count:
+            previousProjection.legacySymlinkPaths.size,
           managed_file_count: managedPaths.length,
         },
         null,

@@ -1,16 +1,19 @@
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
   realpathSync,
+  renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -62,6 +65,139 @@ interface RunResult {
   readonly exitCode: number;
   readonly stderr: string;
   readonly stdout: string;
+}
+
+interface FixtureRepository {
+  readonly repository: string;
+  readonly scriptPath: string;
+}
+
+interface LegacyProjection {
+  readonly externalTarget: string;
+  readonly legacyPath: string;
+}
+
+async function createFixtureRepository(sandbox: Sandbox): Promise<FixtureRepository> {
+  const repository = join(sandbox.root, "repository");
+  await writeFixture(
+    join(repository, ".claude-plugin"),
+    "marketplace.json",
+    `${JSON.stringify({ plugins: [{ name: "fixture", source: "./plugins/fixture" }] })}\n`,
+  );
+  await writeFixture(
+    join(repository, "plugins/fixture/.claude-plugin"),
+    "plugin.json",
+    `${JSON.stringify({ name: "fixture", dependencies: [] })}\n`,
+  );
+  await writeFixture(
+    join(repository, "plugins/fixture/skills/probe"),
+    "SKILL.md",
+    [
+      "---",
+      "name: probe",
+      "description: Probe skill for projection inventory coverage.",
+      "---",
+      "",
+      "Original tracked content.",
+      "",
+    ].join("\n"),
+  );
+  await writeFixture(repository, ".gitignore", ".venv/\nbuild/\n");
+  mkdirSync(join(repository, "scripts"), { recursive: true });
+  for (const name of [
+    "install_opencode.ts",
+    "opencode_contract.json",
+    "opencode_adapter.js",
+    "opencode_hook_receipts.ts",
+    "harness_contract.ts",
+  ]) {
+    copyFileSync(resolve(import.meta.dirname, name), join(repository, "scripts", name));
+  }
+  execFileSync("git", ["init", "--quiet"], { cwd: repository });
+  execFileSync("git", ["add", "."], { cwd: repository });
+  return { repository, scriptPath: join(repository, "scripts", "install_opencode.ts") };
+}
+
+function writeLegacyProjection(sandbox: Sandbox): LegacyProjection {
+  const target = targetOf(sandbox);
+  const legacyPath = "alvis/plugins/fixture/skills/probe/.venv/bin/python";
+  const externalTarget = join(sandbox.root, "external-python");
+  writeFileSync(externalTarget, "external target remains unchanged\n");
+  mkdirSync(dirname(join(target, legacyPath)), { recursive: true });
+  symlinkSync(externalTarget, join(target, legacyPath));
+  const manifest = {
+    schema_version: 1,
+    manager: "alvis-opencode-v1",
+    scope: "project",
+    selected_plugins: ["fixture"],
+    resolved_plugins: ["fixture"],
+    plugins: [{ bundle_path: "alvis/plugins/fixture", name: "fixture" }],
+    file_digests: { [legacyPath]: sha256(readFileSync(externalTarget)) },
+    managed_paths: [legacyPath, "alvis/manifest.json"],
+  };
+  const manifestPath = join(target, "alvis/manifest.json");
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const stateDirectory = stateKeyDirectory(sandbox);
+  mkdirSync(stateDirectory, { recursive: true });
+  writeFileSync(
+    join(stateDirectory, "ownership.json"),
+    `${JSON.stringify(
+      {
+        manager: "alvis-opencode-v1",
+        schema_version: 1,
+        target,
+        manifest_sha256: sha256(readFileSync(manifestPath)),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  return { externalTarget, legacyPath };
+}
+
+function sourceHookRegistrationCount(): number {
+  const gitDirectory = execFileSync(
+    "git",
+    ["rev-parse", "--absolute-git-dir"],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  ).trim();
+  const paths = execFileSync(
+    "git",
+    [
+      `--git-dir=${gitDirectory}`,
+      `--work-tree=${realpathSync(repositoryRoot)}`,
+      "ls-files",
+      "plugins/*/hooks/hooks.json",
+      "plugins/*/skills/*/SKILL.md",
+    ],
+    { cwd: repositoryRoot, encoding: "utf8" },
+  )
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+  return paths.reduce((count, relativePath) => {
+    const text = readFileSync(join(repositoryRoot, relativePath), "utf8");
+    if (relativePath.endsWith("hooks.json")) {
+      const source = JSON.parse(text) as {
+        hooks: Record<string, readonly { readonly hooks: readonly unknown[] }[]>;
+      };
+      return (
+        count +
+        Object.values(source.hooks).reduce(
+          (eventCount, registrations) =>
+            eventCount +
+            registrations.reduce(
+              (registrationCount, registration) =>
+                registrationCount + registration.hooks.length,
+              0,
+            ),
+          0,
+        )
+      );
+    }
+    const frontmatter = text.split(/^---\r?$/m)[1] ?? "";
+    return count + (frontmatter.match(/^          command:/gm)?.length ?? 0);
+  }, 0);
 }
 
 /**
@@ -256,6 +392,218 @@ describe("command surface", () => {
   });
 });
 
+describe("projection inventory", () => {
+  it("should project modified tracked and non-ignored untracked files only", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      await writeFixture(
+        join(fixture.repository, "plugins/fixture/skills/probe"),
+        "SKILL.md",
+        [
+          "---",
+          "name: probe",
+          "description: Probe skill for projection inventory coverage.",
+          "---",
+          "",
+          "Modified tracked content.",
+          "",
+        ].join("\n"),
+      );
+      await writeFixture(
+        join(fixture.repository, "plugins/fixture/skills/probe"),
+        "notes.md",
+        "Non-ignored untracked content.\n",
+      );
+      await writeFixture(
+        join(fixture.repository, "plugins/fixture/skills/probe/.venv/bin"),
+        "python",
+        "ignored environment\n",
+      );
+      await writeFixture(
+        join(fixture.repository, "plugins/fixture/build"),
+        "artifact.js",
+        "ignored build\n",
+      );
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode).toBe(0);
+      const target = targetOf(sandbox);
+      expect(
+        readFileSync(join(target, "skills/fixture-probe/SKILL.md"), "utf8"),
+      ).toContain("Modified tracked content.");
+      expect(
+        readFileSync(join(target, "skills/fixture-probe/notes.md"), "utf8"),
+      ).toBe("Non-ignored untracked content.\n");
+      expect(existsSync(join(target, "skills/fixture-probe/.venv"))).toBe(false);
+      expect(existsSync(join(target, "alvis/plugins/fixture/build"))).toBe(false);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should reject a source symlink before mutating the target", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      await writeFixture(
+        join(fixture.repository, "plugins/fixture/scripts"),
+        "real.sh",
+        "#!/bin/sh\n",
+      );
+      symlinkSync(
+        "real.sh",
+        join(fixture.repository, "plugins/fixture/scripts/linked.sh"),
+      );
+      execFileSync("git", ["add", "plugins/fixture/scripts"], {
+        cwd: fixture.repository,
+      });
+      await writeFixture(sandbox.project, ".opencode/unmanaged.txt", "preserve me\n");
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("source path is not a regular file:");
+      expect(readFileSync(join(targetOf(sandbox), "unmanaged.txt"), "utf8")).toBe(
+        "preserve me\n",
+      );
+      expect(existsSync(join(targetOf(sandbox), "alvis/manifest.json"))).toBe(false);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should reject a symlinked plugin-source ancestor before target mutation", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      symlinkSync("plugins", join(fixture.repository, "plugin-alias"));
+      writeFileSync(
+        join(fixture.repository, ".claude-plugin/marketplace.json"),
+        `${JSON.stringify({
+          plugins: [{ name: "fixture", source: "./plugin-alias/fixture" }],
+        })}\n`,
+      );
+      execFileSync("git", ["add", ".claude-plugin/marketplace.json", "plugin-alias"], {
+        cwd: fixture.repository,
+      });
+      await writeFixture(sandbox.project, ".opencode/unmanaged.txt", "preserve me\n");
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("plugin source contains symlink component");
+      expect(readFileSync(join(targetOf(sandbox), "unmanaged.txt"), "utf8")).toBe(
+        "preserve me\n",
+      );
+      expect(existsSync(join(targetOf(sandbox), "alvis/manifest.json"))).toBe(false);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should reject an unaccounted shipped hook registration", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      await writeFixture(
+        join(fixture.repository, "plugins/fixture/hooks"),
+        "hooks.json",
+        `${JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                matcher: "mystery",
+                hooks: [
+                  {
+                    type: "command",
+                    command:
+                      '"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/mystery"',
+                  },
+                ],
+              },
+            ],
+          },
+        })}\n`,
+      );
+      execFileSync("git", ["add", "plugins/fixture/hooks/hooks.json"], {
+        cwd: fixture.repository,
+      });
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("unsupported OpenCode hook command");
+      expect(existsSync(join(targetOf(sandbox), "alvis/manifest.json"))).toBe(false);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should bind a discovered Git index to an isolated source working copy", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      const isolatedRoot = join(
+        fixture.repository,
+        ".jj",
+        "run",
+        "default",
+        "1",
+        "working_copy",
+      );
+      for (const relativePath of [
+        ".claude-plugin/marketplace.json",
+        ".gitignore",
+        "plugins/fixture/.claude-plugin/plugin.json",
+        "plugins/fixture/skills/probe/SKILL.md",
+        "scripts/harness_contract.ts",
+        "scripts/install_opencode.ts",
+        "scripts/opencode_adapter.js",
+        "scripts/opencode_contract.json",
+        "scripts/opencode_hook_receipts.ts",
+      ]) {
+        const destination = join(isolatedRoot, relativePath);
+        mkdirSync(dirname(destination), { recursive: true });
+        copyFileSync(join(fixture.repository, relativePath), destination);
+      }
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: join(isolatedRoot, "scripts", "install_opencode.ts") },
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(
+        readFileSync(join(targetOf(sandbox), "skills/fixture-probe/SKILL.md"), "utf8"),
+      ).toContain("Original tracked content.");
+      expect(
+        readFileSync(join(targetOf(sandbox), "commands/fixture-probe.md"), "utf8"),
+      ).toContain("Load the `fixture-probe` skill");
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+});
+
 describe("project-scope installation", () => {
   it("should install essential into a project with receipt, manifest, and renames", async () => {
     const sandbox = await createSandbox();
@@ -273,13 +621,17 @@ describe("project-scope installation", () => {
       const manifestPath = join(target, "alvis", "manifest.json");
       const manifestBytes = readFileSync(manifestPath);
       const manifest = JSON.parse(manifestBytes.toString("utf8")) as Record<string, unknown>;
-      expect(manifest.schema_version).toBe(1);
+      expect(manifest.schema_version).toBe(2);
       expect(manifest.manager).toBe("alvis-opencode-v1");
       expect(manifest.scope).toBe("project");
       expect(manifest.selected_plugins).toEqual(["essential"]);
       expect(manifest.resolved_plugins).toEqual(["essential"]);
       expect(manifest.plugins).toEqual([
-        { bundle_path: "alvis/plugins/essential", name: "essential" },
+        expect.objectContaining({
+          bundle_path: "alvis/plugins/essential",
+          hooks: expect.any(Array),
+          name: "essential",
+        }),
       ]);
       const source = manifest.source as Record<string, unknown>;
       expect(source.marketplace_sha256).toBe(
@@ -337,7 +689,7 @@ describe("project-scope installation", () => {
 
       const receipt = readJson(join(stateKeyDirectory(sandbox), "ownership.json"));
       expect(receipt.manager).toBe("alvis-opencode-v1");
-      expect(receipt.schema_version).toBe(1);
+      expect(receipt.schema_version).toBe(2);
       expect(receipt.target).toBe(target);
       expect(receipt.manifest_sha256).toBe(sha256(manifestBytes));
       expect(existsSync(join(stateKeyDirectory(sandbox), "transaction.json"))).toBe(false);
@@ -346,6 +698,43 @@ describe("project-scope installation", () => {
       const rerun = await installEssential(sandbox);
       expect(rerun.exitCode).toBe(0);
       expect(JSON.parse(rerun.stdout).status).toBe("installed");
+      expect(readFileSync(manifestPath)).toEqual(manifestBytes);
+      for (const relativePath of managedPaths) {
+        const info = lstatSync(join(target, relativePath));
+        expect(info.isSymbolicLink()).toBe(false);
+        expect(info.isFile()).toBe(true);
+      }
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should account for every shipped global and skill-scoped hook", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--all"],
+        sandbox,
+      );
+
+      expect(result.exitCode).toBe(0);
+      const manifest = readJson(join(targetOf(sandbox), "alvis/manifest.json"));
+      const plugins = manifest.plugins as readonly {
+        readonly hooks: readonly {
+          readonly managed_resource: string;
+          readonly source_plugin: string;
+        }[];
+        readonly name: string;
+      }[];
+      const receipts = plugins.flatMap((plugin) => plugin.hooks);
+      expect(receipts).toHaveLength(sourceHookRegistrationCount());
+      const digests = manifest.file_digests as Record<string, string>;
+      for (const plugin of plugins) {
+        for (const receipt of plugin.hooks) {
+          expect(receipt.source_plugin).toBe(plugin.name);
+          expect(Object.hasOwn(digests, receipt.managed_resource)).toBe(true);
+        }
+      }
     } finally {
       await removeTemporaryDirectory(sandbox.root);
     }
@@ -372,6 +761,9 @@ describe("project-scope installation", () => {
       const result = await installEssential(sandbox);
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain("error: unmanaged path collision:");
+      expect(result.stderr).toContain(
+        "classification=unmanaged; recovery=move-or-remove-path",
+      );
       expect(existsSync(join(targetOf(sandbox), "alvis", "manifest.json"))).toBe(false);
     } finally {
       await removeTemporaryDirectory(sandbox.root);
@@ -402,6 +794,140 @@ describe("project-scope installation", () => {
     }
   }, spawnTimeout);
 
+  it("should reject a schema-v2 managed path replaced by a symlink", async () => {
+    const sandbox = await createSandbox();
+    try {
+      expect((await installEssential(sandbox)).exitCode).toBe(0);
+      const externalTarget = join(sandbox.root, "external-contract.json");
+      writeFileSync(externalTarget, "external target\n");
+      const managedPath = join(targetOf(sandbox), "alvis/contract.json");
+      rmSync(managedPath);
+      symlinkSync(externalTarget, managedPath);
+
+      const result = await installEssential(sandbox);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("managed path is not a regular file:");
+      expect(readFileSync(externalTarget, "utf8")).toBe("external target\n");
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should retire authenticated schema-v1 symlinks without dereferencing them", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      const legacy = writeLegacyProjection(sandbox);
+
+      const dryRun = await runInstaller(
+        [
+          "--scope",
+          "project",
+          "--project-root",
+          sandbox.project,
+          "--plugin",
+          "fixture",
+          "--dry-run",
+        ],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(dryRun.exitCode).toBe(0);
+      expect(JSON.parse(dryRun.stdout)).toMatchObject({
+        existing_projection: "authenticated-schema-v1",
+        retired_legacy_symlink_count: 1,
+        status: "dry-run",
+      });
+      expect(lstatSync(join(targetOf(sandbox), legacy.legacyPath)).isSymbolicLink()).toBe(
+        true,
+      );
+
+      const installed = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(installed.exitCode).toBe(0);
+      expect(JSON.parse(installed.stdout)).toMatchObject({
+        existing_projection: "authenticated-schema-v1",
+        retired_legacy_symlink_count: 1,
+        status: "installed",
+      });
+      expect(existsSync(join(targetOf(sandbox), legacy.legacyPath))).toBe(false);
+      expect(readFileSync(legacy.externalTarget, "utf8")).toBe(
+        "external target remains unchanged\n",
+      );
+      expect(readJson(join(targetOf(sandbox), "alvis/manifest.json")).schema_version).toBe(
+        2,
+      );
+      expect(readJson(join(stateKeyDirectory(sandbox), "ownership.json")).schema_version).toBe(
+        2,
+      );
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should restore an interrupted legacy retirement before retrying migration", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      const legacy = writeLegacyProjection(sandbox);
+      const target = targetOf(sandbox);
+      const manifestPath = join(target, "alvis/manifest.json");
+      const manifestDigest = sha256(readFileSync(manifestPath));
+      const stateDirectory = stateKeyDirectory(sandbox);
+      const backupRoot = join(stateDirectory, "backup");
+      for (const relativePath of ["alvis/manifest.json", legacy.legacyPath]) {
+        const backupPath = join(backupRoot, relativePath);
+        mkdirSync(dirname(backupPath), { recursive: true });
+        renameSync(join(target, relativePath), backupPath);
+      }
+      writeFileSync(
+        join(stateDirectory, "transaction.json"),
+        `${JSON.stringify(
+          {
+            desired_file_digests: {},
+            desired_paths: [],
+            manager: "alvis-opencode-v1",
+            previous_file_digests: {
+              "alvis/manifest.json": manifestDigest,
+            },
+            previous_ownership: readJson(join(stateDirectory, "ownership.json")),
+            previous_paths: ["alvis/manifest.json", legacy.legacyPath],
+            previous_symlink_paths: [legacy.legacyPath],
+            schema_version: 2,
+            status: "prepared",
+            target,
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(result.stdout).existing_projection).toBe(
+        "authenticated-schema-v1",
+      );
+      expect(readFileSync(legacy.externalTarget, "utf8")).toBe(
+        "external target remains unchanged\n",
+      );
+      expect(existsSync(join(stateDirectory, "transaction.json"))).toBe(false);
+      expect(existsSync(backupRoot)).toBe(false);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
   it("should roll back an interrupted transaction then complete the next install", async () => {
     const sandbox = await createSandbox();
     try {
@@ -421,9 +947,10 @@ describe("project-scope installation", () => {
             previous_file_digests: {},
             previous_ownership: null,
             previous_paths: [],
-            schema_version: 1,
+            schema_version: 2,
             status: "prepared",
             target: targetOf(sandbox),
+            previous_symlink_paths: [],
           },
           null,
           2,
@@ -459,9 +986,10 @@ describe("project-scope installation", () => {
           previous_file_digests: {},
           previous_ownership: null,
           previous_paths: [],
-          schema_version: 1,
+          schema_version: 2,
           status: "prepared",
           target: targetOf(sandbox),
+          previous_symlink_paths: [],
         })}\n`,
       );
 
@@ -607,9 +1135,17 @@ describe("runtime path rewriting", () => {
       })}\n`,
     );
     mkdirSync(join(repository, "scripts"), { recursive: true });
-    for (const name of ["install_opencode.ts", "opencode_contract.json", "opencode_adapter.js"]) {
+    for (const name of [
+      "install_opencode.ts",
+      "opencode_contract.json",
+      "opencode_adapter.js",
+      "opencode_hook_receipts.ts",
+      "harness_contract.ts",
+    ]) {
       copyFileSync(resolve(import.meta.dirname, name), join(repository, "scripts", name));
     }
+    execFileSync("git", ["init", "--quiet"], { cwd: repository });
+    execFileSync("git", ["add", "."], { cwd: repository });
     scriptPathInFixture = join(repository, "scripts", "install_opencode.ts");
   });
 

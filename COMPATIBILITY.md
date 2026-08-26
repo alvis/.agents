@@ -4,7 +4,7 @@ This matrix covers the 53 skills and 22 agents currently shipped by this reposit
 
 Claude Code, Codex, and Grok Build are native targets. OpenCode support targets stable V1 through `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
 
-Reviewed against current harness documentation on 2026-08-24.
+Reviewed against current harness documentation on 2026-08-25.
 
 ## Legend
 
@@ -25,11 +25,12 @@ Reviewed against current harness documentation on 2026-08-24.
 | Skill resources and references | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode bundles complete plugin trees and retargets projected Markdown links. |
 | Standards and scanners | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | Runtime prerequisites still apply to scripts invoked by a skill. |
 | Bundled scripts | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode copies plugin executables and retargets projected skill-root paths to the bundle. |
-| Session context payloads | ✅ Native | ✅ Native | 🟡 Adapted | 🧪 Experimental | OpenCode uses `experimental.chat.system.transform`; unresolved session audience receives no root/child payload. |
-| Skill-scoped hooks | ✅ Native | ✅ Native | 🟡 Adapted | ❌ Unavailable | OpenCode V1 ignores unrecognized skill frontmatter; only adapter-level guards run. |
-| Question guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | The adapter validates OpenCode `question` arguments with the Essential validator. |
-| Subagent dispatch guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode validates task prompts but has no persistent teammate-name field. |
-| Plan-exit guard | ✅ Native | ✅ Native | 🟡 Adapted | ❌ Unavailable | OpenCode V1 exposes no equivalent plan-exit tool event. |
+| Session context payloads | ✅ Native | ✅ Native | 🟡 Adapted | 🧪 Experimental | OpenCode resolves receipt audiences through `experimental.chat.system.transform`; unresolved sessions receive only identifier mapping. |
+| Skill-scoped hooks | ✅ Native | ✅ Native | ❌ Unavailable | 🟡 Adapted | Grok Build ignores skill-frontmatter hooks. OpenCode runs the command-filtered commit guards from resolved receipts because its plugin API exposes no skill-scope event. |
+| Question guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | The adapter runs the receipt-bound Essential validator before OpenCode `question` execution and retains allow advice for the matching result. |
+| Subagent dispatch guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode validates `task` prompts through the receipt alias; the host has no persistent teammate identity. |
+| Plan-exit guard | ✅ Native | ✅ Native | 🟡 Adapted | ❌ Unavailable | The adapter registers every receipt alias, but OpenCode 1.18.x exposes no native plan-transition tool event. |
+| Stop state reminder | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | Grok ignores the blocking Stop envelope. OpenCode exposes no cancellable Stop event, so the receipt is labelled advisory system context and creates no synthetic turn. |
 | MCP servers | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | The adapter maps HTTP to remote and command definitions to local MCP servers. |
 | Specialist agents | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode Markdown agents inherit the active provider and model. |
 | Child subagent sessions | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode task sessions work; persistent teammate IDs and direct peer messaging do not. |
@@ -48,7 +49,7 @@ Reviewed against current harness documentation on 2026-08-24.
 | `client:create-screen-design` skill | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires the documented Notion transport and credentials. Source: [plugins/client/skills/create-screen-design/SKILL.md](plugins/client/skills/create-screen-design/SKILL.md). |
 | `client:update-screen-design` skill | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires the documented Notion transport and credentials. Source: [plugins/client/skills/update-screen-design/SKILL.md](plugins/client/skills/update-screen-design/SKILL.md). |
 | `coding:cleanup` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-cleanup`. Source: [plugins/coding/skills/cleanup/SKILL.md](plugins/coding/skills/cleanup/SKILL.md). |
-| `coding:commit` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-commit`. Skill-scoped backup and post-rewrite hooks are unavailable. Source: [plugins/coding/skills/commit/SKILL.md](plugins/coding/skills/commit/SKILL.md). |
+| `coding:commit` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-commit`. Receipt-bound command filtering preserves backup advice and post-rewrite diagnostics, but OpenCode exposes no skill-scope event. Source: [plugins/coding/skills/commit/SKILL.md](plugins/coding/skills/commit/SKILL.md). |
 | `coding:complete-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-complete-code`. Source: [plugins/coding/skills/complete-code/SKILL.md](plugins/coding/skills/complete-code/SKILL.md). |
 | `coding:complete-test` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-complete-test`. Source: [plugins/coding/skills/complete-test/SKILL.md](plugins/coding/skills/complete-test/SKILL.md). |
 | `coding:document` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-document`. Source: [plugins/coding/skills/document/SKILL.md](plugins/coding/skills/document/SKILL.md). |
@@ -128,5 +129,5 @@ Reviewed against current harness documentation on 2026-08-24.
 
 ## Documentation sources
 
-- OpenCode V1: [plugins](https://opencode.ai/docs/plugins/), [skills](https://opencode.ai/docs/skills/), [agents](https://opencode.ai/docs/agents/), [commands](https://opencode.ai/docs/commands/), [tools](https://opencode.ai/docs/tools/), [permissions](https://opencode.ai/docs/permissions/), [MCP servers](https://opencode.ai/docs/mcp-servers/), and [rules](https://opencode.ai/docs/rules/).
+- OpenCode V1: [plugin API](https://dev.opencode.ai/docs/plugins/), [skills](https://opencode.ai/docs/skills/), [agents](https://opencode.ai/docs/agents/), [commands](https://opencode.ai/docs/commands/), [tools](https://opencode.ai/docs/tools/), [permissions](https://opencode.ai/docs/permissions/), [MCP servers](https://opencode.ai/docs/mcp-servers/), and [rules](https://opencode.ai/docs/rules/).
 - Grok Build: [xAI skills, plugins, and marketplaces](https://docs.x.ai/build/features/skills-plugins-marketplaces).
