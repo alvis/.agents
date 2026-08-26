@@ -1,6 +1,0 @@
-=== Barrel re-exports component but not `<Name>Props` (RC-STRUCT-05) ===
-
-(no matches)
-
-=== Summary ===
-  barrel-missing-props-reexport: 0 matches in 0 files

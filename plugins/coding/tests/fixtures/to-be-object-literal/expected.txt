@@ -1,6 +1,0 @@
-=== `.toBe(...)` against object/array literal (TST-DATA-06) ===
-
-(no matches)
-
-=== Summary ===
-  to-be-object-literal: 0 matches in 0 files

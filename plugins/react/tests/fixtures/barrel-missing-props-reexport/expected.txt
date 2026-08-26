@@ -1,7 +1,0 @@
-=== Barrel re-exports component but not `<Name>Props` (RC-STRUCT-05) ===
-
-index.ts:1  export { Widget } from './Widget';   # missing: WidgetProps
-  >    1: export { Widget } from './Widget';
-
-=== Summary ===
-  barrel-missing-props-reexport: 1 matches in 1 files

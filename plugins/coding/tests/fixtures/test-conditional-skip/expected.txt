@@ -1,6 +1,0 @@
-=== Conditional test skip (`runIf`/`skipIf`) (TST-CORE-11) ===
-
-(no matches)
-
-=== Summary ===
-  test-conditional-skip: 0 matches in 0 files

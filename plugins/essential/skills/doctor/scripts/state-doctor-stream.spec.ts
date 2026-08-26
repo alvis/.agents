@@ -8,14 +8,12 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const scripts = import.meta.dirname;
-const essential = resolve(scripts, "../../..");
 const doctor = join(scripts, "state-doctor");
-const doctorSkill = join(essential, "skills/doctor/SKILL.md");
 const header =
   "| ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n";
 
@@ -902,68 +900,5 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       `# Work state\n\n- Work ID: \`demo\`\n- Phase: \`working\`\n- Blocked on: \`an operator\`\n\n## Tasks\n\n${header}${row("AAA")}`,
     );
     expect(checks(workspace.run().findings)).not.toContain("state-metadata");
-  });
-});
-
-function migrationTableCheckIds(skillText: string): Set<string> {
-  const section =
-    skillText.split("## Structure migration", 2)[1]?.split(/\r?\n/) ?? [];
-  const ids = new Set<string>();
-  let delimiter = false;
-  let rows = false;
-  for (const line of section) {
-    if (/^\|\s*-{3,}/.test(line)) {
-      delimiter = true;
-      continue;
-    }
-    if (!line.startsWith("|")) {
-      if (rows) break;
-      continue;
-    }
-    if (delimiter) {
-      rows = true;
-      const match = /^\|\s*`([a-z0-9-]+)`/.exec(line);
-      if (match) ids.add(match[1]);
-    }
-  }
-  return ids;
-}
-function unemittableCheckIds(
-  skillText: string,
-  doctorText: string,
-): Set<string> {
-  const emitted = new Set(
-    [
-      ...doctorText.matchAll(
-        /report\.(?:info|warning|error)\(\s*[^,()]+,\s*"([a-z0-9][a-z0-9-]*)"/g,
-      ),
-    ].map((match) => match[1]),
-  );
-  return new Set(
-    [...migrationTableCheckIds(skillText)].filter((id) => !emitted.has(id)),
-  );
-}
-
-describe("doctor skill migration table extraction", () => {
-  it("maps every migration offer to an emitted check", async () => {
-    const [skillText, doctorText] = await Promise.all([
-      readFile(doctorSkill, "utf8"),
-      readFile(doctor, "utf8"),
-    ]);
-    const ids = migrationTableCheckIds(skillText);
-    expect(ids.size).toBeGreaterThan(1);
-    expect(ids).not.toContain("check");
-    expect(unemittableCheckIds(skillText, doctorText)).toEqual(new Set());
-  });
-  it("catches an ID no check emits", async () => {
-    const doctorText = await readFile(doctor, "utf8");
-    const fabricated =
-      "## Structure migration\n\n| `check` | Offer |\n| --- | --- |\n| `retention` | A real one. |\n| `no-such-check` | An offer for a finding nobody emits. |\n";
-    expect(migrationTableCheckIds(fabricated)).toEqual(
-      new Set(["retention", "no-such-check"]),
-    );
-    expect(unemittableCheckIds(fabricated, doctorText)).toEqual(
-      new Set(["no-such-check"]),
-    );
   });
 });

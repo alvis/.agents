@@ -1,15 +1,11 @@
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-import { markdownFiles, violations } from "./check_markdown_scripts.ts";
+import { violations } from "./check_markdown_scripts.ts";
 import {
   createTemporaryDirectory,
   removeTemporaryDirectory,
   writeFixture,
 } from "./test-support.ts";
-
-const repositoryRoot = join(import.meta.dirname, "..");
 
 describe("shell fence limit enforcement", () => {
   it("should count content lines beyond the shell fence limit", async () => {
@@ -76,14 +72,5 @@ describe("shell fence limit enforcement", () => {
     } finally {
       await removeTemporaryDirectory(root);
     }
-  });
-});
-
-describe("repository shell fence compliance", () => {
-  it("should keep repository Markdown shell fences within the executable limit", async () => {
-    const paths = await markdownFiles([repositoryRoot]);
-    const found = (await Promise.all(paths.map(violations))).flat();
-
-    expect(found).toEqual([]);
   });
 });

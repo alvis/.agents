@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
 import {
   chmod,
   copyFile,
@@ -38,17 +37,6 @@ function runScript(
 }
 
 describe("storybook script injection paths", () => {
-  it("keeps injections outside the Storybook skill directory", () => {
-    const localInjections = join(
-      import.meta.dirname,
-      "..",
-      "skills",
-      "storybook",
-      "injections",
-    );
-    expect(existsSync(localInjections)).toBe(false);
-  });
-
   it.each([
     ["list-stories.sh", ["--cdp", "9222", "--url", "http://storybook"]],
     [

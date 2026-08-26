@@ -12,7 +12,7 @@
 - Happy-path defaults inline: `vi.fn(() => value)`, never `.mockResolvedValue()`
 - No `beforeEach` for mock setup — only for non-Vitest mock history resets (`client.resetHistory()`) or registering `ctx.onTestFailed(...)` debug-dump hooks
 - Log-observable behavior: capture logger as typed `vi.fn<LogFn>()` and assert `log.mock.calls` structurally
-- Test behavior, not static content: never restate a value whose source of truth lives elsewhere — assert the property that holds over the set (cap, uniqueness, ordering, integrity), derive structural oracles from the authoritative classifier/schema/template rather than exhaustive test-local lists, and keep only assertions that fail when the data is *wrong*, not when it legitimately changes
+- Test behavior, not the checkout: checked-in artifacts may only feed an actual consumer or generator, and assertions may cover only runtime behavior or generated-result structure
 - `const` for shared fixtures; file-level instances by default
 - Structural assertions (`toEqual`), not field-by-field
 - No silent skips: missing env/config must hard-fail at file load (`throw`), never `runIf`/`skipIf`/conditional-return
@@ -65,7 +65,7 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-CORE-07**: Do not spy on internals when external behavior can be tested.
 - **TST-CORE-08**: Avoid `await import(...)` in tests. Keep imports static and predictable.
 - **TST-CORE-09**: For log-observable behavior, capture the logger as `vi.fn<LogFn>()` or `{ info: vi.fn<Logger['info']>() } satisfies Partial<Logger>` and assert the full call record with `expect(log.mock.calls).toEqual([...])` — the array pins how many lines were logged and each line's content (one call `[[...]]` or many). Do not use `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs, count-only assertions, or `log.mock.calls[N]` indexing. Prefer the SUT's exported `Log` type; a local alias is acceptable only when no real type is exported.
-- **TST-CORE-10**: Do not restate static content — a value whose source of truth lives elsewhere (constant exports, rosters, manifests, config maps, copy text, exact counts). Such a test only fires when source and test are edited in opposite directions. Test the consumer, or encode shape in source via `satisfies`/`as const`. EXCEPTION: a systematic property holding over the set regardless of the values (bound/cap, uniqueness, ordering, referential integrity, schema validity, round-trip preservation, among others) is required, not forbidden. Derive conformance oracles from the authoritative classifier, grammar, schema, or template; an exhaustive test-local list is a mirror even when iterated. Keep the derivation independent of the behavior under test. Decide by what the assertion fails on: on a legitimate data change ⇒ change-detector, remove; only when the data is genuinely wrong ⇒ property, keep. The matcher never decides it.
+- **TST-CORE-10**: Never assert checked-in existence, absence, bytes, hashes, text, literals, inventories, path layout, or parity, including systematic properties directly over a committed deliverable. A checked-in artifact may only be input to an executed consumer or generator; assert observable behavior or the structure of output generated in memory or a temporary workspace.
 - **TST-CORE-11**: Tests must run or hard-fail. Never gate with `describe.runIf`/`it.skipIf`/`if (!env.X) return`. Required env vars are validated at file load with `throw new Error(...)` so missing config breaks the suite loudly.
 
 ### Coverage (TST-COVR)
@@ -163,7 +163,8 @@ Patterns derive from [`TST-STRU-01`].
 ## Anti-Patterns
 
 - Repeating nearly identical tests to inflate coverage numbers.
-- Restating a value whose source of truth lives elsewhere (roster counts, ID mirrors, config maps, copy text), including exhaustive test-local lists of valid structural instances — it breaks on legitimate source evolution and proves only that the mirror is current.
+- Asserting a checked-in file's existence, absence, layout, inventory, bytes,
+  literals, or parity, including through a snapshot or golden-output mirror.
 - Mocking internal pure functions instead of testing outcomes.
 - Reassigning shared test data with `let` in suites.
 - Building large fake interfaces that diverge from real contracts.
@@ -182,4 +183,4 @@ Patterns derive from [`TST-STRU-01`].
 6. Adding a test now? Run coverage before and after; keep positive-delta tests and zero-gain tests with distinct behavioral evidence (`TST-COVR-03`, `TST-COVR-04`).
 7. Structuring a test file? Enforce naming, canonical layout, and AAA spacing (`TST-STRU-01`, `TST-STRU-02`, `TST-STRU-03`).
 8. Needs an env var? Validate at file top with `throw`; never `runIf`/`skipIf` (`TST-CORE-11`).
-9. Asserting static data? Ask what it fails on — a legitimate data change means it's a change-detector; only a genuinely wrong value means it's a property worth keeping (`TST-CORE-10`).
+9. Reading a checked-in artifact? Pass it to an actual consumer or generator and assert only behavior or generated-result structure; otherwise remove the test (`TST-CORE-10`).

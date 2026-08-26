@@ -1,6 +1,0 @@
-=== Manual mock/stub cleanup in spec file (TST-MOCK-10) ===
-
-(no matches)
-
-=== Summary ===
-  test-mock-cleanup: 0 matches in 0 files

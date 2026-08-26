@@ -1,6 +1,0 @@
-=== Non-canonical test title (`it`/`describe`) (TST-CORE-03) ===
-
-(no matches)
-
-=== Summary ===
-  test-title-convention: 0 matches in 0 files

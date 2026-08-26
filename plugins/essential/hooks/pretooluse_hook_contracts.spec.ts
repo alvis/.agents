@@ -1,14 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  HARNESS_ROOT_VARIABLES,
-  PLUGIN_ROOT_ANCHOR,
-  PLUGIN_ROOT_GUARD,
-} from "../../../scripts/harness_contract.ts";
+import { HARNESS_ROOT_VARIABLES } from "../../../scripts/harness_contract.ts";
 
 const plugin = resolve(import.meta.dirname, "..");
 const hooks = JSON.parse(
@@ -87,11 +83,8 @@ interface GrokEnvelope {
 type Envelope = ClaudeEnvelope & GrokEnvelope;
 
 function commandFor(matcher: string): string {
-  const entries = hooks.hooks.PreToolUse.filter(
-    (entry) => entry.matcher === matcher,
-  );
-  expect(entries, matcher).toHaveLength(1);
-  return entries[0]!.hooks[0]!.command;
+  return hooks.hooks.PreToolUse.find((entry) => entry.matcher === matcher)!
+    .hooks[0]!.command;
 }
 
 function harnessEnvironment(variable: string): NodeJS.ProcessEnv {
@@ -214,23 +207,6 @@ function question(
 }
 
 describe("PreToolUse hook wiring", () => {
-  it("should run an executable validator script for every matcher", () => {
-    for (const matcher of matchers) {
-      const command = commandFor(matcher);
-      expect(command.startsWith(PLUGIN_ROOT_GUARD)).toBe(true);
-      const invocation = command.slice(PLUGIN_ROOT_GUARD.length);
-      expect(
-        invocation.startsWith(`"${PLUGIN_ROOT_ANCHOR}/hooks/scripts/validate-`),
-      ).toBe(true);
-      expect(invocation.endsWith('"')).toBe(true);
-      const script = resolve(
-        plugin,
-        invocation.slice(1, -1).replace(`${PLUGIN_ROOT_ANCHOR}/`, ""),
-      );
-      expect(() => accessSync(script, constants.X_OK)).not.toThrow();
-    }
-  });
-
   it.each(matrix)(
     "should emit the native allow envelope for %s resolved through %s",
     (matcher, variable) => {

@@ -1,6 +1,0 @@
-=== Direct process.env/global access in spec file (TST-MOCK-11) ===
-
-(no matches)
-
-=== Summary ===
-  test-env-access: 0 matches in 0 files

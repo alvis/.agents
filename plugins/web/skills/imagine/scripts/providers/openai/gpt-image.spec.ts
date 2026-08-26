@@ -20,7 +20,6 @@ vi.mock(
 
 import {
   GPTImageProvider,
-  MODEL_PARAMS,
   _normalize_output_format,
   _validate_transparency,
 } from "./gpt-image";
@@ -53,7 +52,6 @@ afterEach(async () => {
 describe("OpenAI image generation", () => {
   it("normalizes formats and enforces transparent-background compatibility", () => {
     const provider = new GPTImageProvider();
-    expect(MODEL_PARAMS.model.default).toBe("gpt-image-1.5");
     expect(_normalize_output_format("JPG")).toBe("jpeg");
     expect(() => _normalize_output_format("bmp")).toThrow(
       "output-format must be png, jpeg, jpg, or webp",

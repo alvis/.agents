@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SpawnSyncReturns } from "node:child_process";
 
-import { REGISTRY, resolveToolList } from "./sync.ts";
+import { resolveToolList } from "./sync.ts";
 
 const script = join(import.meta.dirname, "sync.ts");
 const bunExecutable = spawnSync("which", ["bun"], {
@@ -49,32 +49,19 @@ async function isolatedPath(root: string): Promise<string> {
 }
 
 describe("coding tool synchronization", () => {
-  it("keeps the authoritative registry order and metadata", () => {
-    expect(REGISTRY).toEqual([
-      {
-        name: "brew",
-        installer: "brew.sh",
-        minVersion: "4.0.0",
-        macosOnly: true,
-      },
-      { name: "jj", installer: "jj.sh", minVersion: "0.44.0" },
-      { name: "gh", installer: "gh.sh", minVersion: "2.0.0" },
-      { name: "fallow", installer: "fallow.sh", minVersion: "2.0.0" },
-      {
-        name: "python",
-        installer: "python.sh",
-        executable: "python3",
-        alwaysRunInstaller: true,
-      },
-    ]);
-  });
-
   it("selects trimmed CSV names in registry order and deduplicates", () => {
     expect(resolveToolList(" python, jj,jj ").map(({ name }) => name)).toEqual([
       "jj",
       "python",
     ]);
-    expect(resolveToolList("")).toBe(REGISTRY);
+    const all = resolveToolList("");
+    expect(all.length).toBeGreaterThan(0);
+    expect(new Set(all.map(({ name }) => name)).size).toBe(all.length);
+    expect(
+      all.every(
+        ({ installer, name }) => installer.length > 0 && name.length > 0,
+      ),
+    ).toBe(true);
   });
 
   it("rejects sorted unknown names with the registered roster", () => {

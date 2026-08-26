@@ -57,7 +57,6 @@ beforeEach(() => {
   bunRuntime.spawnSync = vi.fn();
 });
 
-const repositoryRoot = resolve(import.meta.dirname, "../../../../..");
 let roots: string[] = [];
 
 async function temporaryRoot(): Promise<string> {
@@ -900,13 +899,4 @@ describe("Claude targets and subprocess behavior", () => {
     expect(results[0]?.output).toContain("timed out");
     expect(results[1]).toMatchObject({ status: "pass" });
   });
-});
-
-it("this repository passes the skill policy gate", () => {
-  const failures = Object.fromEntries(
-    discoverSkills(repositoryRoot)
-      .map((path) => [path, errors(path)])
-      .filter(([, issues]) => issues.length > 0),
-  );
-  expect(failures).toEqual({});
 });

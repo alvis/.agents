@@ -1,6 +1,0 @@
-=== Explicit `key: undefined` override in call argument (TST-DATA-04) ===
-
-(no matches)
-
-=== Summary ===
-  undefined-override: 0 matches in 0 files

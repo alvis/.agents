@@ -8,13 +8,11 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 const scripts = import.meta.dirname;
-const plugin = resolve(scripts, "../../..");
-const repository = resolve(plugin, "../..");
 const verifier = join(scripts, "verify-black-zone-authorization.sh");
 const headOid = "a".repeat(40);
 const baseOid = "b".repeat(40);
@@ -278,100 +276,4 @@ describe("black-zone authorization receipt verification", () => {
       expect(result.exitCode).not.toBe(0);
       expect(result.stdout).toBe("");
     });
-});
-
-describe("black-zone publication contracts", () => {
-  it("should allow draft publication before authorization", async () => {
-    const workflow = await readFile(
-      join(plugin, "skills/pr/references/create-update.md"),
-      "utf8",
-    );
-    const loop = await readFile(
-      join(plugin, "skills/pr/references/review-loop.md"),
-      "utf8",
-    );
-    expect(workflow).not.toContain(
-      "scripts/verify-black-zone-authorization.sh",
-    );
-    expect(loop).not.toContain("scripts/verify-black-zone-authorization.sh");
-    expect(workflow.split(/\s+/).join(" ")).toContain(
-      "as a draft without prior authorization",
-    );
-    expect(workflow).toContain("review approval remains blocked");
-    expect(loop.toLowerCase().split(/\s+/).join(" ")).toContain(
-      "dispatch review without a prior authorization receipt",
-    );
-  });
-  it("should verify authorization fail-closed at review approval", async () => {
-    const review = await readFile(
-      join(plugin, "skills/pr/references/review-workflow.md"),
-      "utf8",
-    );
-    const normalized = review.split(/\s+/).join(" ");
-    expect(
-      review.match(/scripts\/verify-black-zone-authorization\.sh/g),
-    ).toHaveLength(1);
-    expect(normalized).toContain("substantive verdict is `APPROVE`");
-    expect(normalized).toContain("human `OWNER`");
-    expect(normalized).toContain(
-      "missing, malformed, deleted, or mutated comment",
-    );
-    expect(normalized).toContain("cap the event at `COMMENT`");
-  });
-  it("should use canonical cross-plugin references", async () => {
-    const catalog = await readFile(
-      join(repository, "plugins/governance/references/context-catalog.md"),
-      "utf8",
-    );
-    const createUpdate = await readFile(
-      join(plugin, "skills/pr/references/create-update.md"),
-      "utf8",
-    );
-    const loop = await readFile(
-      join(plugin, "skills/pr/references/review-loop.md"),
-      "utf8",
-    );
-    expect(catalog).toContain("coding:standards/git/");
-    expect(catalog).toContain("essential:templates/memory.md");
-    expect(createUpdate).toContain("## Pull-request directions");
-    expect(createUpdate).toContain("governance:standards/delegation/");
-    expect(loop).toContain("governance:standards/delegation/");
-  });
-  it("should prevent repository files from reclassifying fixed PR size zones", async () => {
-    const paths = [
-      "standards/git/meta.md",
-      "standards/git/scan.md",
-      "standards/git/write.md",
-      "standards/git/rules/GIT-PR-SIZE-04.md",
-      "skills/pr/references/create-update.md",
-      "skills/pr/references/review-workflow.md",
-      "skills/pr/references/review-loop.md",
-      "skills/pr/references/stacked-prs.md",
-    ];
-    const policy = (
-      await Promise.all(
-        paths.map((path) => readFile(join(plugin, path), "utf8")),
-      )
-    ).join("\n");
-    const normalized = policy.split(/\s+/).join(" ");
-    const thresholds = JSON.parse(
-      await readFile(
-        join(plugin, "skills/pr/assets/size-thresholds.json"),
-        "utf8",
-      ),
-    ) as { zones: Array<Record<string, unknown>> };
-    expect(policy).not.toContain("standard-overrides");
-    expect(thresholds.zones).toContainEqual(
-      expect.objectContaining({
-        max_authored_net_loc: 2000,
-        max_files_changed: 60,
-        name: "red",
-      }),
-    );
-    expect(policy).toContain("> 60 files");
-    expect(policy).toContain("> 2000 authored net LOC");
-    expect(normalized).toContain(
-      "repository configuration cannot change these thresholds",
-    );
-  });
 });

@@ -1,8 +1,0 @@
-=== Barrel re-exports component but not `<Name>Props` (RC-STRUCT-05) ===
-
-index.ts:2  export { Button } from './Button';   # missing: ButtonProps
-       1: // RC-STRUCT-05: barrel re-exports the component but not its `<Name>Props`.
-  >    2: export { Button } from './Button';
-
-=== Summary ===
-  barrel-missing-props-reexport: 1 matches in 1 files

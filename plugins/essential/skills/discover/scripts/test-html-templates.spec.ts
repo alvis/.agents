@@ -4,37 +4,18 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { removeDirectory, runBun, temporaryDirectory } from "./test-support.ts";
-import { run } from "./test-html-templates.ts";
 
 const scripts = import.meta.dirname;
 const discover = resolve(scripts, "..");
 const validator = join(scripts, "test-html-templates.ts");
 
 describe("presentation validator", () => {
-  it("should pass the complete repository contract with cached builder runtimes", async () => {
-    const result = await run("complete", true);
-    expect(result.errors).toEqual([]);
-    expect(result.status).toBe("pass");
-  });
-  it("should pass the non-network representative stage", async () => {
-    const result = await run("representative", false);
-    expect(result.errors).toEqual([]);
-    expect(result.status).toBe("pass");
-  });
-  it("should return success for the representative CLI stage", () => {
-    const result = runBun(validator, ["--stage", "representative"]);
-    expect(result.exitCode).toBe(0);
-  });
   it("should route help and invalid choices to the correct streams", () => {
     const help = runBun(validator, ["--help"]);
     expect(help.exitCode).toBe(0);
     const invalid = runBun(validator, ["--stage", "wrong"]);
     expect(invalid.exitCode).toBe(2);
     expect(invalid.stdout).toBe("");
-  });
-  it("should accept equals-form stage", () => {
-    const result = runBun(validator, ["--stage=representative"]);
-    expect(result.exitCode).toBe(0);
   });
   it.each([false, true])(
     "should skip an unavailable network with partial runtime caches=%s",

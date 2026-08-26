@@ -19,13 +19,8 @@ vi.mock(
 );
 
 import {
-  ALL_MODELS,
   RecraftProvider,
   V3_STYLES,
-  V4_PRO_SIZES,
-  V4_SIZES,
-  V3_V2_SIZES,
-  VECTOR_MODELS,
   _resolve_size,
 } from "./recraft-v4";
 import { ImagineError } from "../base";
@@ -57,9 +52,8 @@ afterEach(async () => {
 
 describe("Recraft image generation", () => {
   it("resolves model-specific sizes and vector output defaults", () => {
-    expect(ALL_MODELS).toHaveLength(8);
-    expect(_resolve_size("16:9", "recraftv4")).toBe(V4_SIZES["16:9"]);
-    expect(_resolve_size("1:1", "recraftv4_pro")).toBe(V4_PRO_SIZES["1:1"]);
+    expect(_resolve_size("16:9", "recraftv4")).toBe("1344x768");
+    expect(_resolve_size("1:1", "recraftv4_pro")).toBe("2048x2048");
     expect(_resolve_size("1024x1024", "recraftv3")).toBe("1024x1024");
     expect(() => _resolve_size("16:9", "recraftv3")).toThrow(
       "Aspect ratio '16:9' is not valid for V3/V2 models",
@@ -84,7 +78,6 @@ describe("Recraft image generation", () => {
       }),
     ).toMatchObject({ model: "recraftv4_vector", output_format: "png" });
     expect(provider._get_output_format({ model: "recraftv4" })).toBe("png");
-    expect(VECTOR_MODELS.has("recraftv3_vector")).toBe(true);
   });
 
   it("validates style, style-id, negative, model, size, and count constraints", () => {
@@ -134,7 +127,7 @@ describe("Recraft image generation", () => {
       model: "recraftv4",
       prompt: "opaque prompt",
       n: 2,
-      size: V4_SIZES["16:9"],
+      size: "1344x768",
       response_format: "b64_json",
       extra_body: { negative_prompt: "avoid" },
     });

@@ -43,7 +43,7 @@ Each batch reports: per-file coverage (lines/branches/statements/functions), `te
 
 ## Sub-step 3 — Remove redundant tests (plan, then parallel removal)
 
-**CRITICAL RULE — source-file-scoped coverage**: each test file mirrors exactly one source file (`src/auth/service.ts` → `spec/auth/service.spec.ts`), and coverage is verified per mirrored source file. A test is redundant ONLY IF it does not contribute to its mirrored source file's coverage. Tests that contribute to their mirrored file MUST be kept even when globally redundant, and tests that verify distinct behavioral aspects must be kept even when they cover the same lines. **Static content is carved out of this gate**: an assertion that restates a value whose source of truth lives elsewhere is removed under `TST-CORE-10` regardless of what it contributes to coverage — it executes code without testing behavior, so its coverage contribution is not evidence of value. A systematic property over that data (bound/cap, uniqueness, ordering, referential integrity, schema validity, cross-source parity, round-trip preservation) is behavior and stays.
+**CRITICAL RULE — source-file-scoped coverage**: each test file mirrors exactly one source file (`src/auth/service.ts` → `spec/auth/service.spec.ts`), and coverage is verified per mirrored source file. A test is redundant ONLY IF it does not contribute to its mirrored source file's coverage. Tests that contribute to their mirrored file MUST be kept even when globally redundant, and tests that verify distinct behavioral aspects must be kept even when they cover the same lines. **Checked-in repository content is carved out of this gate**: existence, absence, content, inventory, layout, parity, and systematic-property assertions over checked-in artifacts are removed under `TST-CORE-10` regardless of coverage. Properties of freshly generated output remain behavioral evidence.
 
 **Phase A — plan**: dispatch one Plan subagent (`subagent_type="Plan"`) to read every test file and, per test, determine lines covered, branches exercised, and the unique behavior verified. Redundancy patterns to flag (always scoped to the mirrored source file):
 
@@ -51,7 +51,9 @@ Each batch reports: per-file coverage (lines/branches/statements/functions), `te
 - same lines AND same behavioral aspect as another test;
 - artificial scenarios contributing neither coverage nor behavioral documentation;
 - wrapper-function tests without unique coverage or insight;
-- static-content assertions that restate a value owned elsewhere (constant contents, roster counts, ID mirrors, config maps, copy text) rather than asserting a systematic property over it — flag regardless of coverage contribution (`TST-CORE-10`).
+- assertions over checked-in existence, absence, bytes, literals, inventories,
+  path layout, parity, or systematic properties — flag regardless of coverage
+  contribution (`TST-CORE-10`).
 
 The plan groups candidates by file, marks each `safe_to_remove` | `uncertain` | `keep`, and emits removal tasks (max 10 tests per task, least-risky first).
 
@@ -60,7 +62,7 @@ The plan groups candidates by file, marks each `safe_to_remove` | `uncertain` | 
 1. Pre-removal check: run the mirrored source file's focused coverage; it must read 100%.
 2. Remove the single test and save.
 3. Re-run the focused coverage and compare.
-4. Decide: mirrored coverage maintained → keep removed; dropped (even 1%) → RESTORE immediately and mark `essential`. **Do not restore a static-content assertion** (`TST-CORE-10`): where the removed test was that source's only cover, a dropped percentage is a signal to test the behavior — through the content's consumer or a systematic property over it — not to reinstate a change-detector and stamp it `essential`. Report the gap and write the behavioral test. Before removing, also verify the test does not document a unique behavioral aspect (distinct semantic concept, invariant, or edge case) — if it does, keep it.
+4. Decide: mirrored coverage maintained → keep removed; dropped (even 1%) → RESTORE immediately and mark `essential`. **Do not restore a checked-in repository-content assertion** (`TST-CORE-10`): where it was the only cover, exercise the content's consumer or generator and assert runtime behavior or generated-result structure. Report any remaining gap. Before removing other tests, verify the test does not document a unique behavioral aspect (distinct semantic concept, invariant, or edge case) — if it does, keep it.
 
 Aggregate removal reports, verify 100% is maintained per mirrored source file, and compute redundancy metrics (removed, kept-as-essential, redundancy %).
 
