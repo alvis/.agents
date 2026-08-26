@@ -235,16 +235,20 @@ scripts/build-artifact.ts <board-source> --artifact
 ```
 
 The builder composes the `page.html` shell with its `sections/` files, then
-inlines the Tailwind runtime plus `discovery.css` and `discovery.js`, and fails
-the build unless the output is genuinely self-contained (no external
-`src`/`href`, no unfilled placeholder, no raw U+FFFD byte — the last being the
-sentinel the claude.ai Artifact deploy validator rejects). The Tailwind runtime
-is downloaded latest-on-request by the builder, with a gitignored cache kept as
-an offline fallback. The Mermaid runtime follows the same policy with one
-difference: it is inlined **only** into a board that carries a `[data-mermaid]`
-figure, because it is several megabytes. A board without a diagram weighs
-exactly what it weighed before Mermaid existed; a board with one is knowingly
-much heavier, and that is the trade the figure buys. Never hand-edit the compiled output; it is generated and
+inlines the Tailwind runtime plus `discovery.css` and `discovery.js`. Before
+presenting the generated artifact, inspect it for external `src`/`href`
+references, unfilled placeholders, and raw U+FFFD bytes, which the claude.ai
+Artifact deploy validator rejects. Every final build
+resolves the latest Tailwind release, downloads its browser runtime into a
+unique operating-system temporary directory, and asks Bun to bundle it with
+`discovery.js`. A board carrying a `[data-mermaid]` figure also resolves and
+downloads the latest Mermaid release into that workspace before the same
+bundle step. The generated HTML records the exact resolved versions; the
+builder removes the workspace on success or failure and fails when the network
+or bundle is unavailable rather than retaining a stale fallback. A board
+without a diagram therefore carries no Mermaid code; a board with one is
+knowingly much heavier, and that is the trade the figure buys. `--emit-page`
+only composes editable source and does not resolve runtimes. Never hand-edit the compiled output; it is generated and
 throwaway. To change styling or behaviour, edit the small sources and rebuild.
 `--artifact` mode omits `<!doctype>/<html>/<head>/<body>` because the Artifact
 tool supplies its own; the fragment restores only the source body's

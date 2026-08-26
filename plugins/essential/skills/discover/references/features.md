@@ -65,16 +65,16 @@ JSON array
 - [ ] Data-driven rendering uses the `esc()` idiom; **no un-interpolated `${…}` literals** in emitted text
 - [ ] A11y: `:focus-visible` states, `aria-pressed`/`aria-live`/roles, dialog semantics, `prefers-reduced-motion`
 - [ ] Responsive: no horizontal body scroll; wide content scrolls in its own container; `tabular-nums` for aligned digits
-- [ ] Weight discipline: carry nothing the board does not use. A board without a Mermaid figure stays in the hundreds of KB the vendored Tailwind runtime already costs; one Mermaid figure inlines the Mermaid runtime and takes the board into megabytes. That is a deliberate, per-board trade — never inline a runtime "in case"
+- [ ] Weight discipline: carry nothing the board does not use. A board without a Mermaid figure stays in the hundreds of KB the bundled Tailwind runtime already costs; one Mermaid figure adds Mermaid to the generated bundle and takes the board into megabytes. That is a deliberate, per-board trade — never include a runtime "in case"
 
 ## H. Validation mapping
 
 | Feature | Enforced by |
 |---|---|
 | Shell presence, single prompt host, annotatable sections | `scripts/test-html-templates.ts` (floor assertions) |
-| Token whitelist, dual-theme completeness, stray hex | `scripts/build-artifact.ts` `_validate()` |
-| `${…}` literal guard | `scripts/build-artifact.ts` `_validate()` |
-| Self-containment | `scripts/build-artifact.ts` `_validate()` |
+| Token whitelist, dual-theme completeness, stray hex | This checklist at review; `scripts/build-artifact.ts` `build()` preserves the inspectable `data-board-theme` block |
+| `${…}` literal guard | This checklist at review and generated-artifact inspection |
+| Self-containment | This checklist at review and generated-artifact inspection |
 | Board-set block, selection annotation, density scale, Mermaid figure wiring | `scripts/test-html-templates.ts` (runtime/stylesheet/scaffold assertions) |
-| Mermaid runtime present when a board carries a diagram; no dynamic `import()` | `scripts/build-artifact.ts` `_validate()` and `get_mermaid_runtime()` |
+| Mermaid runtime present when a board carries a diagram; no dynamic `import()` | `scripts/build-artifact.ts` `build()` and `bundleVendorRuntime()`; `scripts/build-artifact.spec.ts`; `scripts/test-html-templates.spec.ts` |
 | Per-card capture + live prompt rebuild | golden examples (`examples/reference/readiness-verdict-board.html`, `examples/reference/decision-browser.html`) + this checklist at review |
