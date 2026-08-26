@@ -1,0 +1,138 @@
+{
+  "kind": "ranked-options",
+  "id": "ranked-options-event-compatibility-v2",
+  "action": "Ranked options",
+  "title": "Ranked approaches for outbound event compatibility",
+  "masthead": {
+    "eyebrow": "Ranked options · contract migration",
+    "headline": "Four complete migration shapes, one invariant.",
+    "lede": "Every frame uses the same six consumers, forty-eight-hour overlap, v1-to-v2 contract change, and zero-drop objective. Only the compatibility mechanism changes.",
+    "meta": [
+      { "label": "Invariant", "value": "No consumer breaks" },
+      { "label": "Constraint", "value": "Six independent deploys" },
+      { "label": "Ranking basis", "value": "Rollback, then ownership" },
+      { "label": "Next owner", "value": "Essential Decide" }
+    ]
+  },
+  "sections": [
+    {
+      "id": "option-set",
+      "label": "Viable set",
+      "eyebrow": "Shared operating case",
+      "title": "Inspect the mechanism, not just its label.",
+      "blocks": [
+        {
+          "type": "metrics",
+          "items": [
+            { "label": "Consumers", "value": "6 independent" },
+            { "label": "Overlap", "value": "48 hours" },
+            { "label": "Contract", "value": "order.v1 → v2" },
+            { "label": "Error budget", "value": "0 dropped" }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": "Each ranked frame below is deliberately complete enough to review: mechanism, live state, owner, rollback, and pressure case. Rankings are suggestions until you explicitly respond."
+        }
+      ]
+    },
+    {
+      "id": "comparison",
+      "label": "Comparison",
+      "eyebrow": "Repeated fields",
+      "title": "What changes the rank?",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Each cell carries a judgment against the ranking basis — rollback, then ownership, then the failure it invites. A glyph doubles the colour so the verdict survives a greyscale print."
+        },
+        {
+          "type": "table",
+          "columns": ["Approach", "Ownership", "Rollback", "Pressure case"],
+          "rows": [
+            [
+              { "text": "Producer adapter" },
+              { "text": "One producer team", "verdict": "good" },
+              { "text": "One switch", "verdict": "good" },
+              { "text": "Legacy-only field returns", "verdict": "mixed" }
+            ],
+            [
+              { "text": "Versioned topics" },
+              { "text": "Platform", "verdict": "mixed" },
+              { "text": "Repoint a route", "verdict": "good" },
+              { "text": "Third version multiplies routes", "verdict": "bad" }
+            ],
+            [
+              { "text": "Consumer translators" },
+              { "text": "Six teams, no single revert", "verdict": "bad" },
+              { "text": "Per consumer", "verdict": "bad" },
+              { "text": "One team blocks retirement", "verdict": "bad" }
+            ],
+            [
+              { "text": "Schema gateway" },
+              { "text": "Platform", "verdict": "mixed" },
+              { "text": "Policy revision", "verdict": "mixed" },
+              { "text": "Shared critical-path defect", "verdict": "bad" }
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Cheap probe",
+          "text": "Replay one day of production events through a producer adapter and compare both envelopes before committing to infrastructure."
+        }
+      ]
+    },
+    {
+      "id": "option-decision",
+      "label": "Your shortlist",
+      "eyebrow": "One final selection",
+      "title": "Which mechanism should anchor Decide?",
+      "blocks": [
+        {
+          "type": "choice",
+          "id": "final-direction",
+          "label": "Final ranked direction",
+          "ask": "Select one direction after reviewing all four frames.",
+          "choices": [
+            {
+              "value": "Producer adapter",
+              "summary": "Preserve as the reversible baseline.",
+              "recommended": true
+            },
+            {
+              "value": "Versioned topics",
+              "summary": "Keep when long overlap is material."
+            },
+            {
+              "value": "Consumer translators",
+              "summary": "Keep only when producer ownership is unavailable."
+            },
+            {
+              "value": "Schema gateway",
+              "summary": "Choose when contract negotiation deserves a platform owner."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "dominant-tradeoff",
+          "label": "Dominant comparison tradeoff",
+          "ask": "Which tradeoff should dominate the eventual decision?",
+          "placeholder": "For example: support a twelve-month consumer migration window."
+        },
+        {
+          "type": "note",
+          "id": "unranked-shape",
+          "label": "Missing shape",
+          "ask": "Which migration shape is missing from the ranked set?",
+          "placeholder": "For example: dual-write with a reconciliation job."
+        }
+      ]
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Ranked options — outbound event compatibility\n\n{{answers}}"
+  }
+}
