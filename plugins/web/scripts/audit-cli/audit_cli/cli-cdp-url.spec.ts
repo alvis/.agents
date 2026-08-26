@@ -40,7 +40,6 @@ describe("audit CLI CDP URL plumbing", () => {
     }
     expect(failure).toBeInstanceOf(CliExit);
     expect(failure).toMatchObject({ exitCode: 2 });
-    vi.restoreAllMocks();
   });
 
   it("passes a successful agent-browser version check", () => {
@@ -49,6 +48,5 @@ describe("audit CLI CDP URL plumbing", () => {
       .mockImplementation(() => undefined);
     expect(() => checkAgentBrowser("true")).not.toThrow();
     expect(stderr).not.toHaveBeenCalled();
-    stderr.mockRestore();
   });
 });

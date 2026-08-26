@@ -19,6 +19,8 @@ import {
   validatePolicy,
 } from "./quick_validate.ts";
 
+import type { MockInstance } from "vitest";
+
 class TestGlob {
   public constructor(private readonly pattern: string) {}
 
@@ -47,14 +49,15 @@ class TestGlob {
   }
 }
 
-const bunRuntime = {
-  Glob: TestGlob,
-  spawnSync: vi.fn(),
-};
-vi.stubGlobal("Bun", bunRuntime);
+let spawnSync: MockInstance;
 
 beforeEach(() => {
-  bunRuntime.spawnSync = vi.fn();
+  vi.spyOn(Bun, "Glob").mockImplementation(function (pattern: string) {
+    return new TestGlob(pattern);
+  } as Partial<typeof Bun.Glob> as typeof Bun.Glob);
+  spawnSync = vi.spyOn(Bun, "spawnSync").mockImplementation(() => {
+    throw new Error("Bun.spawnSync called with no configured result");
+  });
 });
 
 let roots: string[] = [];
@@ -96,7 +99,6 @@ function errors(path: string, portable = false): unknown[] {
 }
 
 afterEach(() => {
-  vi.restoreAllMocks();
   for (const root of roots) rmSync(root, { recursive: true, force: true });
   roots = [];
 });
@@ -812,15 +814,15 @@ describe("Claude targets and subprocess behavior", () => {
         `# ${name}\n\n## Workflow\n\nValidate it.`,
       );
     }
-    const spawn = vi.spyOn(bunRuntime, "spawnSync").mockReturnValue({
+    spawnSync.mockReturnValue({
       exitCode: 0,
       stdout: Buffer.from("marketplace ok"),
       stderr: Buffer.from(""),
     });
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     expect(run([root])).toBe(0);
-    expect(spawn).toHaveBeenCalledTimes(1);
-    expect(spawn.mock.calls[0]?.[0]).toEqual([
+    expect(spawnSync).toHaveBeenCalledTimes(1);
+    expect(spawnSync.mock.calls[0]?.[0]).toEqual([
       "claude",
       "plugin",
       "validate",
@@ -838,14 +840,14 @@ describe("Claude targets and subprocess behavior", () => {
       "Use when testing containing-plugin resolution from a documented skill-directory target.",
       "# Portable\n\n## Workflow\n\nValidate it.",
     );
-    const spawn = vi.spyOn(bunRuntime, "spawnSync").mockReturnValue({
+    spawnSync.mockReturnValue({
       exitCode: 0,
       stdout: Buffer.from("plugin ok"),
       stderr: Buffer.from(""),
     });
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     expect(run([dirname(path)])).toBe(0);
-    expect(spawn.mock.calls[0]?.[0]).toEqual([
+    expect(spawnSync.mock.calls[0]?.[0]).toEqual([
       "claude",
       "plugin",
       "validate",
@@ -854,8 +856,7 @@ describe("Claude targets and subprocess behavior", () => {
     ]);
   });
   it("should structure thrown launch errors and continue", () => {
-    const spawn = vi
-      .spyOn(bunRuntime, "spawnSync")
+    spawnSync
       .mockImplementationOnce(() => {
         throw new Error("ENOENT: claude not found");
       })
@@ -869,7 +870,7 @@ describe("Claude targets and subprocess behavior", () => {
       "/plugin/two",
     ]);
     expect(status).toBe(1);
-    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(spawnSync).toHaveBeenCalledTimes(2);
     expect(results[0]).toEqual({
       path: "/plugin/one",
       status: "fail",
@@ -878,8 +879,7 @@ describe("Claude targets and subprocess behavior", () => {
     expect(results[1]).toMatchObject({ status: "pass" });
   });
   it("structures timed-out Claude and continues", () => {
-    const spawn = vi
-      .spyOn(bunRuntime, "spawnSync")
+    spawnSync
       .mockReturnValueOnce({
         exitCode: null,
         stdout: Buffer.from(""),
@@ -895,7 +895,7 @@ describe("Claude targets and subprocess behavior", () => {
       "/plugin/two",
     ]);
     expect(status).toBe(1);
-    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(spawnSync).toHaveBeenCalledTimes(2);
     expect(results[0]?.output).toContain("timed out");
     expect(results[1]).toMatchObject({ status: "pass" });
   });

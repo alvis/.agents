@@ -2,16 +2,39 @@
   "kind": "architecture-board",
   "id": "architecture-board-conflux-sync-v1",
   "action": "Architecture board",
+  "theme": {
+    "accent": 248,
+    "light": {
+      "--ui-canvas": "#f7f8fb",
+      "--ui-surface": "#eceef5"
+    },
+    "dark": {
+      "--ui-canvas": "oklch(.16 .018 265)",
+      "--ui-surface": "oklch(.2 .022 265)"
+    }
+  },
   "title": "Architecture board — Conflux real-time sync service",
   "masthead": {
     "eyebrow": "Architecture board · Conflux sync service",
     "headline": "Pin the architecture on a real diagram, not a doc.",
     "lede": "This board holds one layered picture of the Conflux real-time editing backend — how the service is decomposed, how an edit flows through it, and which patterns are load-bearing. Author pins mark the decisions worth defending, and every claim carries where it came from — observed, inferred, or still open.",
     "meta": [
-      { "label": "Subject", "value": "Conflux sync" },
-      { "label": "Data model", "value": "Event-sourced" },
-      { "label": "Merge", "value": "CRDT, lock-free" },
-      { "label": "Next owner", "value": "Backend build" }
+      {
+        "label": "Subject",
+        "value": "Conflux sync"
+      },
+      {
+        "label": "Data model",
+        "value": "Event-sourced"
+      },
+      {
+        "label": "Merge",
+        "value": "CRDT, lock-free"
+      },
+      {
+        "label": "Next owner",
+        "value": "Backend build"
+      }
     ]
   },
   "sections": [
@@ -34,7 +57,8 @@
               "label": "Editor clients",
               "layer": 0,
               "role": "client",
-              "note": "browser editors, each holding an optimistic local CRDT replica so typing stays responsive before the server acknowledges"
+              "note": "browser editors, each holding an optimistic local CRDT replica so typing stays responsive before the server acknowledges",
+              "detail": "A replica applies the keystroke locally, renders it, and only then sends the op. Every client is therefore briefly ahead of the server, and the merge engine is what makes those divergent replicas agree again rather than the client waiting to find out."
             },
             {
               "id": "realtime-gateway",
@@ -48,14 +72,16 @@
               "label": "Session Coordinator",
               "layer": 2,
               "role": "domain",
-              "note": "routes each op to the right document actor and owns membership; the one place per-document ordering is decided"
+              "note": "routes each op to the right document actor and owns membership; the one place per-document ordering is decided",
+              "detail": "One actor per open document, addressed by document id. Ordering is decided here and nowhere else, which is what lets the merge engine stay stateless about who sent what."
             },
             {
               "id": "presence-service",
               "label": "Presence Service",
               "layer": 2,
               "role": "domain",
-              "note": "cursors and selections only, computed live and never written to the op log, so a lost presence update is harmless"
+              "note": "cursors and selections only, computed live and never written to the op log, so a lost presence update is harmless",
+              "detail": "Holds an in-memory map of session to cursor, rebuilt from scratch whenever a gateway node restarts. Nothing here is worth persisting: a cursor that is one keystroke stale corrects itself on the next move."
             },
             {
               "id": "merge-engine",
@@ -83,7 +109,8 @@
               "label": "Snapshot Store",
               "layer": 5,
               "role": "derived",
-              "note": "a compacted, rebuildable cache of document state, always reconstructable from the op log and never authoritative on its own"
+              "note": "a compacted, rebuildable cache of document state, always reconstructable from the op log and never authoritative on its own",
+              "detail": "Written after every 500 ops so a cold open replays a bounded tail rather than the whole history. Deleting it costs a slow first load and nothing else."
             }
           ],
           "edges": [
@@ -135,39 +162,77 @@
               "label": "compact",
               "kind": "derive"
             }
+          ],
+          "pins": [
+            {
+              "x": 41,
+              "y": 24,
+              "text": "The gateway holds no document state, so any node serves any session and the edge scales horizontally behind a plain load balancer."
+            },
+            {
+              "x": 41,
+              "y": 59,
+              "text": [
+                "A Yjs-style CRDT merges concurrent edits without a central lock, trading extra per-edit metadata for a lock-free server ",
+                {
+                  "kind": "dim",
+                  "text": "— chosen over OT"
+                },
+                "."
+              ]
+            },
+            {
+              "x": 28,
+              "y": 76,
+              "text": "Every state is reconstructable by replaying this log; the snapshot store below it is a derived cache, never authoritative."
+            },
+            {
+              "x": 66,
+              "y": 59,
+              "text": [
+                "Presence fans out here and is never persisted. Whether one channel holds up at peak concurrency is ",
+                {
+                  "kind": "mark",
+                  "text": "still unproven"
+                },
+                "."
+              ]
+            }
           ]
         },
         {
           "type": "prose",
-          "text": "Read the two long-range edges first, because they carry the design. The gateway acks straight back to the client without waiting for the merge, which is why typing never blocks. And presence skips the merge and the log entirely — that is the whole reason a lost cursor update costs nothing."
-        }
-      ]
-    },
-    {
-      "id": "annotations",
-      "label": "Pin notes",
-      "eyebrow": "What each pin defends",
-      "title": "Four decisions worth pinning to the diagram.",
-      "blocks": [
-        {
-          "type": "callout",
-          "title": "The gateway is stateless — decided",
-          "text": "The Realtime Gateway holds no document state, so any node can serve any session and the edge scales horizontally behind a plain load balancer."
-        },
-        {
-          "type": "callout",
-          "title": "CRDT merge over OT — approved",
-          "text": "The Merge Engine uses a Yjs-style CRDT so concurrent edits converge without a central merge lock, trading extra per-edit metadata for a simpler, lock-free server."
-        },
-        {
-          "type": "callout",
-          "title": "The op log is the source of truth — decided",
-          "text": "Every state is reconstructable by replaying the append-only Op Log; the Snapshot Store is a derived cache, never authoritative."
-        },
-        {
-          "type": "callout",
-          "title": "Presence is ephemeral — open question",
-          "text": "Cursors and selections fan out over Redis pub/sub and are never persisted. Whether one channel holds up at peak concurrency is unproven."
+          "text": [
+            "Read the two long-range edges first, because they carry the design. The gateway acks straight back to the client without waiting for the merge, which is why typing never blocks — ",
+            {
+              "kind": "provenance",
+              "text": "18 ms p99 ack",
+              "level": "measured"
+            },
+            " ",
+            {
+              "kind": "source",
+              "text": "staging load test",
+              "ref": "PERF-114"
+            },
+            ". And ",
+            {
+              "kind": "term",
+              "text": "presence",
+              "definition": "Who else is in the document right now, and where their cursor sits."
+            },
+            " skips the merge and the log entirely, so a lost ",
+            {
+              "kind": "code",
+              "text": "cursor.update"
+            },
+            " costs nothing",
+            {
+              "kind": "dim",
+              "text": " — by design, not by accident"
+            },
+            "."
+          ]
         }
       ]
     },
@@ -184,37 +249,83 @@
         },
         {
           "type": "table",
-          "columns": ["Claim about the architecture", "Evidence source", "Status"],
+          "columns": [
+            "Claim about the architecture",
+            "Evidence source",
+            "Status"
+          ],
           "rows": [
             [
-              { "text": "Clients already hold a WebSocket to the current edge" },
-              { "text": "Sampled from live gateway connection logs" },
-              { "text": "Observed", "verdict": "good" }
+              {
+                "text": "Clients already hold a WebSocket to the current edge"
+              },
+              {
+                "text": "Sampled from live gateway connection logs"
+              },
+              {
+                "text": "Observed",
+                "verdict": "good"
+              }
             ],
             [
-              { "text": "Merge time, not transport, dominates perceived sync lag" },
-              { "text": "Three recorded editing-session traces" },
-              { "text": "Inferred", "verdict": "mixed" }
+              {
+                "text": "Merge time, not transport, dominates perceived sync lag"
+              },
+              {
+                "text": "Three recorded editing-session traces"
+              },
+              {
+                "text": "Inferred",
+                "verdict": "mixed"
+              }
             ],
             [
-              { "text": "A typical document holds a few thousand live ops in memory" },
-              { "text": "No sampled distribution yet" },
-              { "text": "Assumed", "verdict": "mixed" }
+              {
+                "text": "A typical document holds a few thousand live ops in memory"
+              },
+              {
+                "text": "No sampled distribution yet"
+              },
+              {
+                "text": "Assumed",
+                "verdict": "mixed"
+              }
             ],
             [
-              { "text": "The append-only op log is the single source of truth" },
-              { "text": "This board's architecture intent" },
-              { "text": "Decided", "verdict": "good" }
+              {
+                "text": "The append-only op log is the single source of truth"
+              },
+              {
+                "text": "This board's architecture intent"
+              },
+              {
+                "text": "Decided",
+                "verdict": "good"
+              }
             ],
             [
-              { "text": "A CRDT merge engine is used instead of OT" },
-              { "text": "Architecture review, signed off" },
-              { "text": "Approved", "verdict": "good" }
+              {
+                "text": "A CRDT merge engine is used instead of OT"
+              },
+              {
+                "text": "Architecture review, signed off"
+              },
+              {
+                "text": "Approved",
+                "verdict": "good"
+              }
             ],
             [
-              { "text": "Presence fan-out survives peak concurrency" },
-              { "text": "Unresolved — needs a load test" },
-              { "text": "Open question", "verdict": "bad" }
+              {
+                "text": "Presence fan-out survives peak concurrency"
+              },
+              {
+                "text": "Unresolved — needs a load test"
+              },
+              {
+                "text": "Open question",
+                "verdict": "bad"
+              }
             ]
           ]
         }
@@ -228,56 +339,95 @@
       "blocks": [
         {
           "type": "table",
-          "columns": ["Aspect", "What follows from it", "Standing"],
+          "columns": [
+            "Aspect",
+            "What follows from it",
+            "Standing"
+          ],
           "rows": [
             [
-              { "text": "Stateless gateway" },
+              {
+                "text": "Stateless gateway"
+              },
               {
                 "text": "Scales horizontally; any node can serve any session with no sticky routing."
               },
-              { "text": "Win", "verdict": "good" }
+              {
+                "text": "Win",
+                "verdict": "good"
+              }
             ],
             [
-              { "text": "Event-sourced op log" },
+              {
+                "text": "Event-sourced op log"
+              },
               {
                 "text": "Every document state stays reconstructable and auditable by replay."
               },
-              { "text": "Win", "verdict": "good" }
+              {
+                "text": "Win",
+                "verdict": "good"
+              }
             ],
             [
-              { "text": "CRDT convergence" },
+              {
+                "text": "CRDT convergence"
+              },
               {
                 "text": "Removes the central merge lock, so a slow client never blocks everyone else's edits."
               },
-              { "text": "Win", "verdict": "good" }
+              {
+                "text": "Win",
+                "verdict": "good"
+              }
             ],
             [
-              { "text": "CRDT metadata" },
+              {
+                "text": "CRDT metadata"
+              },
               {
                 "text": "Grows per edit, so memory and payload cost more than compact OT deltas."
               },
-              { "text": "Cost", "verdict": "mixed" }
+              {
+                "text": "Cost",
+                "verdict": "mixed"
+              }
             ],
             [
-              { "text": "Snapshot compaction" },
+              {
+                "text": "Snapshot compaction"
+              },
               {
                 "text": "Adds a background job and a window where a snapshot lags the authoritative log."
               },
-              { "text": "Cost", "verdict": "mixed" }
+              {
+                "text": "Cost",
+                "verdict": "mixed"
+              }
             ],
             [
-              { "text": "Hot-document memory" },
+              {
+                "text": "Hot-document memory"
+              },
               {
                 "text": "A single document's in-memory CRDT state can outgrow one instance's memory budget."
               },
-              { "text": "Breaks", "verdict": "bad" }
+              {
+                "text": "Breaks",
+                "verdict": "bad"
+              }
             ],
             [
-              { "text": "Presence fan-out" },
+              {
+                "text": "Presence fan-out"
+              },
               {
                 "text": "One Redis channel saturates at very high concurrent-editor counts."
               },
-              { "text": "Breaks", "verdict": "bad" }
+              {
+                "text": "Breaks",
+                "verdict": "bad"
+              }
             ]
           ]
         },
@@ -303,17 +453,46 @@
             {
               "value": "Build to the approved decisions; leave open items flagged",
               "summary": "Implement everything marked decided or approved; leave the presence fan-out as a load-test TODO.",
-              "recommended": true
+              "tags": [
+                "Pragmatic",
+                "Recommended"
+              ],
+              "pros": [
+                "The decided majority of the system starts moving now.",
+                "The open items stay visible as flags rather than dissolving into assumptions."
+              ],
+              "cons": [
+                "If the presence fan-out forces a change, some built work is reworked."
+              ]
             },
             {
               "value": "Resolve every open question before any code is written",
-              "summary": "Block implementation until presence scale and the in-memory op budget are settled."
+              "summary": "Block implementation until presence scale and the in-memory op budget are settled.",
+              "tags": [
+                "Ideal"
+              ],
+              "pros": [
+                "Nothing is built twice."
+              ],
+              "cons": [
+                "Both open questions need load data we can only get by building part of it, so this can deadlock."
+              ]
             },
             {
               "value": "Treat the whole diagram as an exploratory sketch",
-              "summary": "Nothing is binding yet; use the diagram to spark a conversation, not a build."
+              "summary": "Nothing is binding yet; use the diagram to spark a conversation, not a build.",
+              "tags": [
+                "Workaround"
+              ],
+              "pros": [
+                "Costs nothing and keeps every option open."
+              ],
+              "cons": [
+                "Discards the decisions already approved, and re-opens settled arguments."
+              ]
             }
-          ]
+          ],
+          "recommendation": "Build to the approved decisions and leave the open items flagged. The two unresolved questions both need load data we cannot get without building part of the system, so waiting for them is a deadlock rather than caution."
         },
         {
           "type": "note",
@@ -327,6 +506,6 @@
   ],
   "reply": {
     "heading": "Send your decisions back to the coder.",
-    "template": "# Feedback for the LLM coder\n\n## Goal\nImplement the Conflux real-time sync backend to the decomposition and data-flow decisions pinned on this board, before adding anything not shown here.\n\n## Architecture at a glance\nFour tiers, drawn one hop per band:\n- Client — browser editors, each holding an optimistic local CRDT replica.\n- Edge — a stateless Realtime Gateway over WebSocket; any node can serve any session.\n- Domain — Session Coordinator (routes ops to a document actor, owns membership), CRDT Merge Engine (Yjs-style convergence, no central merge lock), Presence Service (ephemeral cursors and selections).\n- Persistence — Op Log (append-only event store, single source of truth), Snapshot Store (derived, rebuildable cache), Presence Bus (Redis pub/sub, no durability).\n\n## Edit data-flow\nAn edit is received at the gateway, routed by document id, merged by the CRDT engine, and appended to the op log. The gateway acks the client without waiting for the merge, and presence fans out without ever reaching the log. Perceived sync lag is dominated by merge time, not transport.\n\n## Decisions to build to\n- Gateway is stateless — hold no document state at the edge; scale horizontally behind a plain load balancer. (decided)\n- CRDT merge over OT — accept extra per-edit metadata in exchange for a lock-free, convergent server. (approved)\n- Op log is the source of truth — reconstruct any state by replaying the append-only log; treat snapshots as a derived cache only. (decided)\n\n## Open questions — do not silently resolve\n- Presence fan-out over a single Redis channel is unproven at peak concurrency; keep it behind a load test.\n- The per-document in-memory CRDT budget is assumed, not measured; flag if a hot document could exceed one instance's memory.\n\n## Your answers\n{{answers}}\n\n## Requested next action\nBuild to the confirmed decisions above. Preserve the open questions as questions; do not choose a presence-scale or memory-budget default without a user decision. Report what you built and what still needs sign-off."
+    "template": "# Feedback for the LLM coder\n\n## Goal\nImplement the Conflux real-time sync backend to the decomposition and data-flow decisions pinned on this board, before adding anything not shown here.\n\n## Architecture at a glance\nFour tiers, drawn one hop per band:\n- Client — browser editors, each holding an optimistic local CRDT replica.\n- Edge — a stateless Realtime Gateway over WebSocket; any node can serve any session.\n- Domain — Session Coordinator (routes ops to a document actor, owns membership), CRDT Merge Engine (Yjs-style convergence, no central merge lock), Presence Service (ephemeral cursors and selections).\n- Persistence — Op Log (append-only event store, single source of truth), Snapshot Store (derived, rebuildable cache), Presence Bus (Redis pub/sub, no durability).\n\n## Edit data-flow\nAn edit is received at the gateway, routed by document id, merged by the CRDT engine, and appended to the op log. The gateway acks the client without waiting for the merge, and presence fans out without ever reaching the log. Perceived sync lag is dominated by merge time, not transport.\n\n## Decisions to build to\n- Gateway is stateless — hold no document state at the edge; scale horizontally behind a plain load balancer. (decided)\n- CRDT merge over OT — accept extra per-edit metadata in exchange for a lock-free, convergent server. (approved)\n- Op log is the source of truth — reconstruct any state by replaying the append-only log; treat snapshots as a derived cache only. (decided)\n\n## Open questions — do not silently resolve\n- Presence fan-out over a single Redis channel is unproven at peak concurrency; keep it behind a load test.\n- The per-document in-memory CRDT budget is assumed, not measured; flag if a hot document could exceed one instance's memory.\n\n## Your answers\n{{summary}}\n\n{{answers}}\n\n## Requested next action\nBuild to the confirmed decisions above. Preserve the open questions as questions; do not choose a presence-scale or memory-budget default without a user decision. Report what you built and what still needs sign-off."
   }
 }

@@ -126,7 +126,6 @@ describe("sync-tool runtime probing and command execution", () => {
       stderr: "",
     });
     expect(error).toHaveBeenCalledWith("+ false");
-    error.mockRestore();
   });
 
   it("returns failures and throws when check is requested", () => {
@@ -167,7 +166,6 @@ describe("sync-tool runtime probing and command execution", () => {
       }),
     ).toBe(true);
     expect(log).toHaveBeenCalledTimes(2);
-    log.mockRestore();
   });
 
   it("supports no-wait without evaluating the check", () => {
@@ -175,7 +173,6 @@ describe("sync-tool runtime probing and command execution", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     expect(pollUntil(check, { banner: "waiting", noWait: true })).toBe(false);
     expect(check).not.toHaveBeenCalled();
-    log.mockRestore();
   });
 
   it("formats status lines", () => {

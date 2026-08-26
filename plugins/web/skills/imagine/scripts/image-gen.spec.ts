@@ -168,18 +168,16 @@ function runCli(
 function captureStderr(sink: string[] = []): {
   text(): string;
   reset(): void;
-  restore(): void;
 } {
-  const spy = vi
-    .spyOn(process.stderr, "write")
-    .mockImplementation((chunk: Uint8Array | string) => {
+  vi.spyOn(process.stderr, "write").mockImplementation(
+    (chunk: Uint8Array | string) => {
       sink.push(String(chunk));
       return true;
-    });
+    },
+  );
   return {
     text: () => sink.filter((value) => !value.startsWith("provider:")).join(""),
     reset: () => sink.splice(0),
-    restore: () => spy.mockRestore(),
   };
 }
 
@@ -196,7 +194,6 @@ async function waitFor(
 }
 
 afterEach(async () => {
-  vi.unstubAllGlobals();
   delete PROVIDER_REGISTRY["test-image-gen"];
   delete process.env.TEST_IMAGE_GEN_KEY;
   delete process.env.RECRAFT_API_TOKEN;
@@ -206,20 +203,12 @@ afterEach(async () => {
 });
 
 beforeEach(() => {
-  vi.stubGlobal("Bun", { sleep: async () => undefined });
-  sharpHarness.pipeline.resize
-    .mockReset()
-    .mockReturnValue(sharpHarness.pipeline);
-  sharpHarness.pipeline.flatten
-    .mockReset()
-    .mockReturnValue(sharpHarness.pipeline);
-  sharpHarness.pipeline.toFormat
-    .mockReset()
-    .mockReturnValue(sharpHarness.pipeline);
-  sharpHarness.pipeline.toBuffer
-    .mockReset()
-    .mockResolvedValue(Uint8Array.from([6, 5, 4]));
-  sharpHarness.entry.mockReset().mockReturnValue(sharpHarness.pipeline);
+  vi.spyOn(Bun, "sleep").mockResolvedValue(undefined);
+  sharpHarness.pipeline.resize.mockReturnValue(sharpHarness.pipeline);
+  sharpHarness.pipeline.flatten.mockReturnValue(sharpHarness.pipeline);
+  sharpHarness.pipeline.toFormat.mockReturnValue(sharpHarness.pipeline);
+  sharpHarness.pipeline.toBuffer.mockResolvedValue(Uint8Array.from([6, 5, 4]));
+  sharpHarness.entry.mockReturnValue(sharpHarness.pipeline);
 });
 
 describe("imagine CLI validation and dry-run contracts", () => {
@@ -353,31 +342,27 @@ describe("imagine CLI validation and dry-run contracts", () => {
     const stdout = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
-    try {
-      await expect(
-        main([
-          "--provider",
-          "recraft",
-          "generate-batch",
-          "--input",
-          input,
-          "--out-dir",
-          join(root, "outputs"),
-          "--model",
-          "recraftv4_vector",
-          "--downscale-max-dim",
-          "32",
-          "--dry-run",
-        ]),
-      ).resolves.toBe(0);
-      const payload = JSON.parse(
-        stdout.mock.calls.map(([value]) => String(value)).join(""),
-      ) as Args;
-      expect(payload.outputs).toEqual([expect.stringMatching(/\.svg$/)]);
-      expect(payload.outputs_downscaled).toBeNull();
-    } finally {
-      stdout.mockRestore();
-    }
+    await expect(
+      main([
+        "--provider",
+        "recraft",
+        "generate-batch",
+        "--input",
+        input,
+        "--out-dir",
+        join(root, "outputs"),
+        "--model",
+        "recraftv4_vector",
+        "--downscale-max-dim",
+        "32",
+        "--dry-run",
+      ]),
+    ).resolves.toBe(0);
+    const payload = JSON.parse(
+      stdout.mock.calls.map(([value]) => String(value)).join(""),
+    ) as Args;
+    expect(payload.outputs).toEqual([expect.stringMatching(/\.svg$/)]);
+    expect(payload.outputs_downscaled).toBeNull();
   });
 
   it("supports subprocess help, unknown flags, missing command, and provider selection", async () => {
@@ -541,28 +526,24 @@ describe("imagine CLI validation and dry-run contracts", () => {
     const write = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
-    try {
-      await expect(
-        main([
-          "--provider",
-          "test-image-gen",
-          "generate",
-          "--prompt",
-          "opaque prompt",
-          "--out",
-          out,
-          "--dry-run",
-        ]),
-      ).resolves.toBe(0);
-      const payload = JSON.parse(
-        write.mock.calls.map(([value]) => String(value)).join(""),
-      ) as Args;
-      expect(payload).toMatchObject({ provider: "test-image-gen" });
-      expect(payload.outputs).toEqual([out]);
-      await expect(stat(out)).rejects.toThrow();
-    } finally {
-      write.mockRestore();
-    }
+    await expect(
+      main([
+        "--provider",
+        "test-image-gen",
+        "generate",
+        "--prompt",
+        "opaque prompt",
+        "--out",
+        out,
+        "--dry-run",
+      ]),
+    ).resolves.toBe(0);
+    const payload = JSON.parse(
+      write.mock.calls.map(([value]) => String(value)).join(""),
+    ) as Args;
+    expect(payload).toMatchObject({ provider: "test-image-gen" });
+    expect(payload.outputs).toEqual([out]);
+    await expect(stat(out)).rejects.toThrow();
   });
 });
 
@@ -583,33 +564,29 @@ describe("imagine image generation execution", () => {
     const stdout = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
-    try {
-      await expect(
-        main([
-          "--provider",
-          "recraft",
-          "generate",
-          "--model",
-          "recraftv4_vector",
-          "--prompt",
-          "opaque vector",
-          "--out",
-          output,
-          "--downscale-max-dim",
-          "32",
-        ]),
-      ).resolves.toBe(0);
-      expect(await stat(`${output}.svg`)).toBeTruthy();
-      expect(client.images.generate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          model: "recraftv4_vector",
-          response_format: "b64_json",
-        }),
-      );
-      expect(sharpHarness.entry).not.toHaveBeenCalled();
-    } finally {
-      stdout.mockRestore();
-    }
+    await expect(
+      main([
+        "--provider",
+        "recraft",
+        "generate",
+        "--model",
+        "recraftv4_vector",
+        "--prompt",
+        "opaque vector",
+        "--out",
+        output,
+        "--downscale-max-dim",
+        "32",
+      ]),
+    ).resolves.toBe(0);
+    expect(await stat(`${output}.svg`)).toBeTruthy();
+    expect(client.images.generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "recraftv4_vector",
+        response_format: "b64_json",
+      }),
+    );
+    expect(sharpHarness.entry).not.toHaveBeenCalled();
   });
 
   it("uses SVG vector defaults and preserves explicit raster batch output", async () => {
@@ -640,27 +617,23 @@ describe("imagine image generation execution", () => {
     const stdout = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
-    try {
-      await expect(
-        main([
-          "--provider",
-          "recraft",
-          "generate-batch",
-          "--input",
-          input,
-          "--out-dir",
-          outDir,
-          "--downscale-max-dim",
-          "32",
-        ]),
-      ).resolves.toBe(0);
-      expect(await stat(join(outDir, "001-vector.svg"))).toBeTruthy();
-      expect(await stat(join(outDir, "002-raster.png"))).toBeTruthy();
-      expect(client.images.generate).toHaveBeenCalledTimes(2);
-      expect(sharpHarness.entry).toHaveBeenCalledTimes(1);
-    } finally {
-      stdout.mockRestore();
-    }
+    await expect(
+      main([
+        "--provider",
+        "recraft",
+        "generate-batch",
+        "--input",
+        input,
+        "--out-dir",
+        outDir,
+        "--downscale-max-dim",
+        "32",
+      ]),
+    ).resolves.toBe(0);
+    expect(await stat(join(outDir, "001-vector.svg"))).toBeTruthy();
+    expect(await stat(join(outDir, "002-raster.png"))).toBeTruthy();
+    expect(client.images.generate).toHaveBeenCalledTimes(2);
+    expect(sharpHarness.entry).toHaveBeenCalledTimes(1);
   });
 
   it("generates opaque output through an injected provider and isolates runs", async () => {
@@ -769,54 +742,50 @@ describe("imagine image generation execution", () => {
       "2",
     ]);
     outcome.catch(() => undefined);
-    try {
-      await waitFor(
-        () =>
-          timeline.some((event) => event.startsWith("[job 3/3] completed in")),
-        "job 3 to complete while job 1 is held",
-      );
-      const release = TestProvider.holdResolvers.get("Primary request: held");
-      expect(release).toBeDefined();
-      release?.();
-      await expect(outcome).resolves.toBe(0);
+    await waitFor(
+      () =>
+        timeline.some((event) => event.startsWith("[job 3/3] completed in")),
+      "job 3 to complete while job 1 is held",
+    );
+    const release = TestProvider.holdResolvers.get("Primary request: held");
+    expect(release).toBeDefined();
+    release?.();
+    await expect(outcome).resolves.toBe(0);
 
-      const stderrText = stderr.text();
-      expect(stderrText.match(/^\[job \d\/3\] starting$/gm)).toEqual([
-        "[job 1/3] starting",
-        "[job 2/3] starting",
-        "[job 3/3] starting",
-      ]);
-      expect(
-        [
-          ...stderrText.matchAll(/^\[job (\d)\/3\] completed in (\d+\.\d)s$/gm),
-        ].map(([, job]) => job),
-      ).toEqual(["2", "3", "1"]);
-      const events = timeline.flatMap((entry) =>
-        entry.startsWith("provider:")
-          ? [entry]
-          : entry.split("\n").filter(Boolean),
+    const stderrText = stderr.text();
+    expect(stderrText.match(/^\[job \d\/3\] starting$/gm)).toEqual([
+      "[job 1/3] starting",
+      "[job 2/3] starting",
+      "[job 3/3] starting",
+    ]);
+    expect(
+      [
+        ...stderrText.matchAll(/^\[job (\d)\/3\] completed in (\d+\.\d)s$/gm),
+      ].map(([, job]) => job),
+    ).toEqual(["2", "3", "1"]);
+    const events = timeline.flatMap((entry) =>
+      entry.startsWith("provider:")
+        ? [entry]
+        : entry.split("\n").filter(Boolean),
+    );
+    for (const [index, prompt] of [
+      ["1", "held"],
+      ["2", "quick-a"],
+      ["3", "quick-b"],
+    ] as const) {
+      const startAt = events.indexOf(`[job ${index}/3] starting`);
+      expect(startAt).toBeGreaterThanOrEqual(0);
+      expect(startAt).toBeLessThan(
+        events.indexOf(`provider:Primary request: ${prompt}`),
       );
-      for (const [index, prompt] of [
-        ["1", "held"],
-        ["2", "quick-a"],
-        ["3", "quick-b"],
-      ] as const) {
-        const startAt = events.indexOf(`[job ${index}/3] starting`);
-        expect(startAt).toBeGreaterThanOrEqual(0);
-        expect(startAt).toBeLessThan(
-          events.indexOf(`provider:Primary request: ${prompt}`),
-        );
-        expect(
-          events.findIndex((event) =>
-            event.startsWith(`[job ${index}/3] completed in `),
-          ),
-        ).toBeGreaterThan(startAt);
-      }
-      for (const name of ["001-held.png", "002-quick-a.png", "003-quick-b.png"])
-        expect((await stat(join(outDir, name))).size).toBeGreaterThan(0);
-    } finally {
-      stderr.restore();
+      expect(
+        events.findIndex((event) =>
+          event.startsWith(`[job ${index}/3] completed in `),
+        ),
+      ).toBeGreaterThan(startAt);
     }
+    for (const name of ["001-held.png", "002-quick-a.png", "003-quick-b.png"])
+      expect((await stat(join(outDir, name))).size).toBeGreaterThan(0);
   });
 
   it("reports seconds covering only the retry-wrapped provider call", async () => {
@@ -838,44 +807,39 @@ describe("imagine image generation execution", () => {
       return Uint8Array.from([6, 5, 4]);
     });
     const stderr = captureStderr();
-    try {
-      await expect(
-        main([
-          "--provider",
-          "test-image-gen",
-          "generate-batch",
-          "--input",
-          input,
-          "--out-dir",
-          outDir,
-          "--max-attempts",
-          "2",
-          "--downscale-max-dim",
-          "32",
-        ]),
-      ).resolves.toBe(0);
+    await expect(
+      main([
+        "--provider",
+        "test-image-gen",
+        "generate-batch",
+        "--input",
+        input,
+        "--out-dir",
+        outDir,
+        "--max-attempts",
+        "2",
+        "--downscale-max-dim",
+        "32",
+      ]),
+    ).resolves.toBe(0);
 
-      expect(TestProvider.calls).toEqual([
-        "async:Primary request: timed",
-        "async:Primary request: timed",
-      ]);
-      const stderrText = stderr.text();
-      expect(stderrText).toContain("[job 1/1] starting\n");
-      expect(stderrText).toContain(
-        "[job 1/1] attempt 1/2 failed (Error); retrying in 0.0s\n",
-      );
-      expect(stderrText).toContain("[job 1/1] completed in 0.5s\n");
-      expect(stderrText.match(/completed in /g) ?? []).toHaveLength(1);
-      expect((await stat(join(outDir, "001-timed.png"))).size).toBeGreaterThan(
-        0,
-      );
-      expect(
-        (await stat(join(outDir, "001-timed-web.png"))).size,
-      ).toBeGreaterThan(0);
-    } finally {
-      stderr.restore();
-      clock.mockRestore();
-    }
+    expect(TestProvider.calls).toEqual([
+      "async:Primary request: timed",
+      "async:Primary request: timed",
+    ]);
+    const stderrText = stderr.text();
+    expect(stderrText).toContain("[job 1/1] starting\n");
+    expect(stderrText).toContain(
+      "[job 1/1] attempt 1/2 failed (Error); retrying in 0.0s\n",
+    );
+    expect(stderrText).toContain("[job 1/1] completed in 0.5s\n");
+    expect(stderrText.match(/completed in /g) ?? []).toHaveLength(1);
+    expect((await stat(join(outDir, "001-timed.png"))).size).toBeGreaterThan(
+      0,
+    );
+    expect(
+      (await stat(join(outDir, "001-timed-web.png"))).size,
+    ).toBeGreaterThan(0);
   });
 
   it("waits for started work before cleanup and stops later dispatch on fail-fast", async () => {
@@ -901,47 +865,43 @@ describe("imagine image generation execution", () => {
       .mockImplementation(
         async () => new Response(Uint8Array.from([1, 2, 3]), { status: 200 }),
       );
-    try {
-      const outcome = main([
-        "--provider",
-        "test-image-gen",
-        "generate-batch",
-        "--input",
-        input,
-        "--out-dir",
-        outDir,
-        "--concurrency",
-        "3",
-        "--max-attempts",
-        "1",
-        "--fail-fast",
-      ]).catch((error: unknown) => error);
+    const outcome = main([
+      "--provider",
+      "test-image-gen",
+      "generate-batch",
+      "--input",
+      input,
+      "--out-dir",
+      outDir,
+      "--concurrency",
+      "3",
+      "--max-attempts",
+      "1",
+      "--fail-fast",
+    ]).catch((error: unknown) => error);
 
-      await Promise.race([
-        TestProvider.slowStarted,
-        outcome.then((result) => {
-          throw result instanceof Error
-            ? result
-            : new Error("batch ended before slow job started");
-        }),
-      ]);
-      await TestProvider.failureObserved;
-      TestProvider.releaseSlow?.();
-      const error = await outcome;
-      await TestProvider.slowSettled;
+    await Promise.race([
+      TestProvider.slowStarted,
+      outcome.then((result) => {
+        throw result instanceof Error
+          ? result
+          : new Error("batch ended before slow job started");
+      }),
+    ]);
+    await TestProvider.failureObserved;
+    TestProvider.releaseSlow?.();
+    const error = await outcome;
+    await TestProvider.slowSettled;
 
-      expect(error).toBeInstanceOf(Error);
-      expect(TestProvider.cleanupViolation).toBe(false);
-      expect(TestProvider.calls).toEqual(
-        expect.arrayContaining([
-          "async:Primary request: slow",
-          "async:Primary request: fail",
-        ]),
-      );
-      expect(TestProvider.calls).not.toContain("async:Primary request: later");
-    } finally {
-      fetchMock.mockRestore();
-    }
+    expect(error).toBeInstanceOf(Error);
+    expect(TestProvider.cleanupViolation).toBe(false);
+    expect(TestProvider.calls).toEqual(
+      expect.arrayContaining([
+        "async:Primary request: slow",
+        "async:Primary request: fail",
+      ]),
+    );
+    expect(TestProvider.calls).not.toContain("async:Primary request: later");
   });
 
   it("returns partial-failure status and honors fail-fast cancellation", async () => {
@@ -952,46 +912,42 @@ describe("imagine image generation execution", () => {
     TestProvider.failures.set("Primary request: bad", 3);
     const stderr = captureStderr();
 
-    try {
-      await expect(
-        main([
-          "--provider",
-          "test-image-gen",
-          "generate-batch",
-          "--input",
-          input,
-          "--out-dir",
-          join(root, "partial"),
-          "--max-attempts",
-          "1",
-        ]),
-      ).resolves.toBe(1);
-      const partialStderr = stderr.text();
-      expect(partialStderr).toContain("[job 1/2] failed: temporary failure\n");
-      expect(partialStderr).toContain("[job 2/2] starting\n");
-      expect(partialStderr).toMatch(/^\[job 2\/2\] completed in \d+\.\ds$/m);
-      expect(
-        (await stat(join(root, "partial", "002-good.png"))).size,
-      ).toBeGreaterThan(0);
+    await expect(
+      main([
+        "--provider",
+        "test-image-gen",
+        "generate-batch",
+        "--input",
+        input,
+        "--out-dir",
+        join(root, "partial"),
+        "--max-attempts",
+        "1",
+      ]),
+    ).resolves.toBe(1);
+    const partialStderr = stderr.text();
+    expect(partialStderr).toContain("[job 1/2] failed: temporary failure\n");
+    expect(partialStderr).toContain("[job 2/2] starting\n");
+    expect(partialStderr).toMatch(/^\[job 2\/2\] completed in \d+\.\ds$/m);
+    expect(
+      (await stat(join(root, "partial", "002-good.png"))).size,
+    ).toBeGreaterThan(0);
 
-      stderr.reset();
-      await expect(
-        main([
-          "--provider",
-          "test-image-gen",
-          "generate-batch",
-          "--input",
-          input,
-          "--out-dir",
-          join(root, "fail-fast"),
-          "--max-attempts",
-          "1",
-          "--fail-fast",
-        ]),
-      ).rejects.toThrow("temporary failure");
-      expect(stderr.text()).toContain("[job 1/2] failed: temporary failure\n");
-    } finally {
-      stderr.restore();
-    }
+    stderr.reset();
+    await expect(
+      main([
+        "--provider",
+        "test-image-gen",
+        "generate-batch",
+        "--input",
+        input,
+        "--out-dir",
+        join(root, "fail-fast"),
+        "--max-attempts",
+        "1",
+        "--fail-fast",
+      ]),
+    ).rejects.toThrow("temporary failure");
+    expect(stderr.text()).toContain("[job 1/2] failed: temporary failure\n");
   });
 });

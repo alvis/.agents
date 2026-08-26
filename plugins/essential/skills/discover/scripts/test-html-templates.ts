@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-import { spawnSync } from "node:child_process";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import {
@@ -8,8 +7,6 @@ import {
   DISCOVER_ROOT,
   resolveSource,
 } from "./build-artifact";
-
-import type { VendorRuntimeBundle } from "./build-artifact";
 
 const EXAMPLES_ROOT = join(DISCOVER_ROOT, "examples", "html");
 const EXAMPLES_SRC_ROOT = join(DISCOVER_ROOT, "examples", "src");
@@ -54,11 +51,6 @@ const CONVENTION_EXAMPLES = [
   "architecture-board",
   "triage-board",
 ] as const;
-const TEST_RUNTIME: VendorRuntimeBundle = {
-  includesMermaid: true,
-  script: "globalThis.__discoverValidationRuntime = true;",
-  versions: ["@tailwindcss/browser@test", "mermaid@test"],
-};
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -69,41 +61,68 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-async function validateRuntime(skipped: string[]): Promise<string[]> {
-  const syntax = spawnSync("node", ["--check", JAVASCRIPT], {
-    encoding: "utf8",
-  });
-  if (
-    syntax.error &&
-    "code" in syntax.error &&
-    syntax.error.code === "ENOENT"
-  ) {
-    skipped.push(`${JAVASCRIPT}: JavaScript syntax check (node not installed)`);
+async function validateRuntime(): Promise<string[]> {
+  try {
+    new Bun.Transpiler({ loader: "js" }).transformSync(
+      await readFile(JAVASCRIPT, "utf8"),
+    );
     return [];
+  } catch (error) {
+    return [
+      `${JAVASCRIPT}: JavaScript syntax check failed: ${String(error as Error)}`,
+    ];
   }
-  return syntax.status === 0
-    ? []
-    : [
-        `${JAVASCRIPT}: JavaScript syntax check failed: ${syntax.stderr.trim()}`,
-      ];
 }
 
-async function validateArtifactBuilder(): Promise<string[]> {
+async function validateArtifactBuilder(skipped: string[]): Promise<string[]> {
+  const tailwindCache = join(
+    DISCOVER_ROOT,
+    "assets",
+    "html",
+    "vendor",
+    "tailwind-browser.cache.js",
+  );
+  const mermaidCache = join(
+    DISCOVER_ROOT,
+    "assets",
+    "html",
+    "vendor",
+    "mermaid.cache.js",
+  );
   try {
+    const runtime = (await exists(tailwindCache))
+      ? await readFile(tailwindCache, "utf8")
+      : undefined;
     const source = await resolveSource("domain-explainer");
     await build(source, {
       artifact: false,
-      runtime: TEST_RUNTIME,
+      runtime,
+      offline: runtime !== undefined,
     });
     await build(source, {
       artifact: true,
-      runtime: TEST_RUNTIME,
+      runtime,
+      offline: runtime !== undefined,
     });
+    const hasMermaidCache = await exists(mermaidCache);
     await build(await resolveSource("architecture-board"), {
       artifact: false,
-      runtime: TEST_RUNTIME,
+      runtime,
+      mermaid: hasMermaidCache
+        ? await readFile(mermaidCache, "utf8")
+        : undefined,
+      offline: runtime !== undefined && hasMermaidCache,
     });
   } catch (error) {
+    if (
+      (!(await exists(tailwindCache)) || !(await exists(mermaidCache))) &&
+      String(error as Error).includes("could not fetch")
+    ) {
+      skipped.push(
+        "build-artifact.ts: network probe unavailable and required runtime cache set is incomplete",
+      );
+      return [];
+    }
     return [`build-artifact.ts validation failed: ${String(error as Error)}`];
   }
   return [];
@@ -156,7 +175,7 @@ export async function run(
     }
   }
   if (await exists(JAVASCRIPT)) {
-    errors.push(...(await validateRuntime(skipped)));
+    errors.push(...(await validateRuntime()));
   }
   for (const action of [...required, ...convention]) {
     const example = join(EXAMPLES_ROOT, `${action}.html`);
@@ -183,7 +202,7 @@ export async function run(
     }
   }
   if (stage === "complete" && includeBuilder) {
-    errors.push(...(await validateArtifactBuilder()));
+    errors.push(...(await validateArtifactBuilder(skipped)));
   }
   const examplesPresent = (await readdir(EXAMPLES_ROOT))
     .filter((path) => path.endsWith(".html"))

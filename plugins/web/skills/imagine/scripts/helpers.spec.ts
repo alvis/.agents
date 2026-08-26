@@ -3,6 +3,7 @@ import { mkdtemp, readFile, stat, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { BunFile } from "bun";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sharpHarness = vi.hoisted(() => {
@@ -52,23 +53,23 @@ function makeRoot(prefix: string): Promise<string> {
 }
 
 afterEach(async () => {
-  vi.unstubAllGlobals();
   for (const root of roots.splice(0))
     await rm(root, { recursive: true, force: true });
 });
 
+/** stands in for `Bun.file`, whose real reader is a Bun runtime handle. */
+function fakeFile(path: string): BunFile {
+  return new Blob([readFileSync(path)]) as Partial<BunFile> as BunFile;
+}
+
 beforeEach(() => {
-  vi.stubGlobal("Bun", {
-    sleep: async () => undefined,
-    file: (path: string) => new Blob([readFileSync(path)]),
-  });
-  sharpHarness.chain.resize.mockReset().mockReturnValue(sharpHarness.chain);
-  sharpHarness.chain.flatten.mockReset().mockReturnValue(sharpHarness.chain);
-  sharpHarness.chain.toFormat.mockReset().mockReturnValue(sharpHarness.chain);
-  sharpHarness.chain.toBuffer
-    .mockReset()
-    .mockResolvedValue(Uint8Array.from([9, 8]));
-  sharpHarness.entry.mockReset().mockReturnValue(sharpHarness.chain);
+  vi.spyOn(Bun, "sleep").mockResolvedValue(undefined);
+  vi.spyOn(Bun, "file").mockImplementation((path) => fakeFile(String(path)));
+  sharpHarness.chain.resize.mockReturnValue(sharpHarness.chain);
+  sharpHarness.chain.flatten.mockReturnValue(sharpHarness.chain);
+  sharpHarness.chain.toFormat.mockReturnValue(sharpHarness.chain);
+  sharpHarness.chain.toBuffer.mockResolvedValue(Uint8Array.from([9, 8]));
+  sharpHarness.entry.mockReturnValue(sharpHarness.chain);
 });
 
 describe("output path derivation", () => {
@@ -220,26 +221,22 @@ describe("external image acquisition", () => {
       .mockImplementation(
         async () => new Response(Uint8Array.from([7, 8]), { status: 200 }),
       );
-    try {
-      const first = await _download_to_temp(
-        "https://example.test/photo.png?x=1",
-        root,
-      );
-      const second = await _download_to_temp(
-        "https://example.test/photo.png",
-        root,
-      );
-      expect(await readFile(first)).toEqual(Buffer.from([7, 8]));
-      expect(second).toBe(join(root, "photo_1.png"));
-      expect(fetchMock).toHaveBeenCalledWith(
-        "https://example.test/photo.png?x=1",
-        expect.objectContaining({
-          headers: { "user-agent": "imagine-cli/1.0" },
-        }),
-      );
-    } finally {
-      fetchMock.mockRestore();
-    }
+    const first = await _download_to_temp(
+      "https://example.test/photo.png?x=1",
+      root,
+    );
+    const second = await _download_to_temp(
+      "https://example.test/photo.png",
+      root,
+    );
+    expect(await readFile(first)).toEqual(Buffer.from([7, 8]));
+    expect(second).toBe(join(root, "photo_1.png"));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.test/photo.png?x=1",
+      expect.objectContaining({
+        headers: { "user-agent": "imagine-cli/1.0" },
+      }),
+    );
 
     const context = _temp_download_context();
     expect((await stat(context.path)).isDirectory()).toBe(true);

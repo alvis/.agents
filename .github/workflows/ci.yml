@@ -1,6 +1,10 @@
 # repository quality gate — see AGENTS.md "Hard limits" for what it enforces.
-# every gate is a Vitest spec, so CI runs the one command a contributor runs.
-# `claude plugin validate` is deliberately not wired in.
+# every gate is a spec, so CI runs the one command a contributor runs. the
+# `--bun` flag is load-bearing rather than cosmetic: vitest's bin carries a
+# Node shebang, so plain `bunx vitest` launches under Bun but executes the
+# specs under Node, and the discover renderer bundles pages with Bun.build,
+# which Node does not provide. `claude plugin validate` is deliberately not
+# wired in.
 name: ci
 
 on:
@@ -21,4 +25,4 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - name: vitest
-        run: bunx vitest@^4.0.0 run
+        run: bunx --bun vitest@^4.0.0 run

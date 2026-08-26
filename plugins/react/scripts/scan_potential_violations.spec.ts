@@ -181,14 +181,10 @@ describe("react rule loading", () => {
     const write = vi
       .spyOn(process.stderr, "write")
       .mockImplementation(() => true);
-    try {
-      expect((await loadRules(directory)).map((rule) => rule.id)).toEqual([
-        "good",
-      ]);
-      expect(write).toHaveBeenCalledWith(expect.stringContaining("broken"));
-    } finally {
-      write.mockRestore();
-    }
+    expect((await loadRules(directory)).map((rule) => rule.id)).toEqual([
+      "good",
+    ]);
+    expect(write).toHaveBeenCalledWith(expect.stringContaining("broken"));
   });
 });
 

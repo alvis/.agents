@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { BrowserDriver } from "./browser";
 
@@ -9,8 +9,6 @@ const spawnSyncMock = vi.mocked(spawnSync);
 vi.mock("node:child_process", () => ({ spawnSync: vi.fn() }));
 
 describe("driver-owned versus external CDP sessions", () => {
-  beforeEach(() => spawnSyncMock.mockReset());
-
   it("opens and closes a driver-owned session", () => {
     spawnSyncMock.mockReturnValue({
       status: 0,

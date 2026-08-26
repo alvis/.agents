@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { DIAGRAM_CSS, renderDiagram } from "./page-diagram.ts";
-import { RenderError } from "./render-page.ts";
+import { renderDiagram } from "./diagram.ts";
+import { DIAGRAM_CSS } from "./diagram/style.ts";
+import { RenderError } from "./error.ts";
 
-import type { DiagramBlock } from "./page-diagram.ts";
+import type { DiagramBlock } from "./diagram/shape.ts";
 
 /** JSON path every refusal below is expected to name. */
 const at = "sections[0].blocks[1]";
@@ -291,5 +292,128 @@ describe("fn:renderDiagram refusals", () => {
         }),
       ),
     ).toBe(`${at}.nodes[0].label: required non-empty string, received 7`);
+  });
+});
+
+describe("fn:renderDiagram pins", () => {
+  it("should place the pins inside the scroller, against the drawing", () => {
+    const html = renderDiagram(
+      diagram({ pins: [{ x: 20, y: 40, text: "The seam" }] }),
+      at,
+    );
+
+    // the pin layer sits within the frame that scrolls, wrapped around the
+    // drawing alone, so a sideways scroll carries the pins with the graph
+    expect(html).toContain(
+      `<div class="diagram-frame"><div class="pin-frame"><svg`,
+    );
+    expect(html).toContain(`</svg><div class="pin-layer"`);
+    expect(html).toContain(`--pin-x:20%;--pin-y:40%`);
+  });
+
+  it("should give the frame a width the drawing sets, not the scroller", () => {
+    expect(DIAGRAM_CSS).toContain(".diagram-frame > .pin-frame{width:max-content}");
+  });
+
+  it("should tie each pin to its own card under the drawing", () => {
+    const html = renderDiagram(
+      diagram({
+        pins: [
+          { x: 10, y: 10, text: "First" },
+          { x: 90, y: 80, text: "Second" },
+        ],
+      }),
+      at,
+    );
+    const keys = [...html.matchAll(/data-sync="pin:([^"]+)"/g)].map(
+      (one) => one[1],
+    );
+
+    // two ends per pin, scoped by the figure so a second annotated graph on the
+    // same page cannot light this one's cards
+    expect(keys).toHaveLength(4);
+    expect(new Set(keys).size).toBe(2);
+    expect(keys[0]).toMatch(/:1$/);
+    expect(html.indexOf(`<ol class="pin-notes">`)).toBeGreaterThan(
+      html.indexOf(`</div>`),
+    );
+  });
+
+  it("should leave an unpinned graph exactly as it was", () => {
+    const html = renderDiagram(diagram(), at);
+
+    expect(html).toContain(`<div class="diagram-frame"><svg`);
+    expect(html).not.toContain("pin-frame");
+    expect(html).not.toContain("pin-notes");
+  });
+
+  it("should refuse a pin placed off the drawing, by its own path", () => {
+    expect(refusal(diagram({ pins: [{ x: 140, y: 10, text: "Off" }] }))).toBe(
+      `${at}.pins[0].x: required a percentage from 0 to 100, received 140`,
+    );
+  });
+});
+
+describe("fn:renderDiagram details", () => {
+  /** a graph whose middle node is the only one that explains itself. */
+  const detailed = () =>
+    diagram({
+      nodes: [
+        { id: "a", label: "Alpha", layer: 0 },
+        { id: "b", label: "Beta", layer: 1, detail: "What Beta holds" },
+        { id: "c", label: "Gamma", layer: 2 },
+      ],
+    });
+
+  it("should let exactly the boxes with a detail be chosen", () => {
+    const html = renderDiagram(detailed(), at);
+    const marked = [...html.matchAll(/data-diagram-node="([^"]+)"/g)].map(
+      (one) => one[1],
+    );
+
+    expect(marked).toStrictEqual(["b"]);
+  });
+
+  it("should mark the same nodes the templates were written for", () => {
+    const html = renderDiagram(
+      diagram({
+        nodes: [
+          { id: "a", label: "Alpha", layer: 0, detail: "Alpha holds" },
+          { id: "b", label: "Beta", layer: 1, detail: "Beta holds" },
+          { id: "c", label: "Gamma", layer: 2 },
+        ],
+      }),
+      at,
+    );
+    const pick = (attribute: string) =>
+      [...html.matchAll(new RegExp(`${attribute}="([^"]+)"`, "g"))].map(
+        (one) => one[1],
+      );
+
+    // the drawing and the templates each decide this from their own copy of
+    // the node; when they disagree the page invites a reader to choose a box
+    // that cannot be chosen, and nothing else on the page says so
+    expect(pick("data-diagram-node")).toStrictEqual(pick("data-diagram-detail"));
+  });
+
+  it("should offer no host when no node explains itself", () => {
+    const html = renderDiagram(diagram(), at);
+
+    expect(html).not.toContain("data-diagram-detail-host");
+    expect(html).not.toContain("data-diagram-node");
+  });
+
+  it("should refuse an unusable detail by the node's own path", () => {
+    expect(
+      refusal(
+        diagram({
+          nodes: [
+            { id: "a", label: "Alpha", layer: 0 },
+            { id: "b", label: "Beta", layer: 1, detail: 7 },
+            { id: "c", label: "Gamma", layer: 2 },
+          ],
+        }),
+      ),
+    ).toContain(`${at}.nodes[1].detail`);
   });
 });

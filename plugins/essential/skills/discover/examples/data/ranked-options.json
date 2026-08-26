@@ -8,10 +8,22 @@
     "headline": "Four complete migration shapes, one invariant.",
     "lede": "Every frame uses the same six consumers, forty-eight-hour overlap, v1-to-v2 contract change, and zero-drop objective. Only the compatibility mechanism changes.",
     "meta": [
-      { "label": "Invariant", "value": "No consumer breaks" },
-      { "label": "Constraint", "value": "Six independent deploys" },
-      { "label": "Ranking basis", "value": "Rollback, then ownership" },
-      { "label": "Next owner", "value": "Essential Decide" }
+      {
+        "label": "Invariant",
+        "value": "No consumer breaks"
+      },
+      {
+        "label": "Constraint",
+        "value": "Six independent deploys"
+      },
+      {
+        "label": "Ranking basis",
+        "value": "Rollback, then ownership"
+      },
+      {
+        "label": "Next owner",
+        "value": "Essential Decide"
+      }
     ]
   },
   "sections": [
@@ -24,10 +36,22 @@
         {
           "type": "metrics",
           "items": [
-            { "label": "Consumers", "value": "6 independent" },
-            { "label": "Overlap", "value": "48 hours" },
-            { "label": "Contract", "value": "order.v1 → v2" },
-            { "label": "Error budget", "value": "0 dropped" }
+            {
+              "label": "Consumers",
+              "value": "6 independent"
+            },
+            {
+              "label": "Overlap",
+              "value": "48 hours"
+            },
+            {
+              "label": "Contract",
+              "value": "order.v1 → v2"
+            },
+            {
+              "label": "Error budget",
+              "value": "0 dropped"
+            }
           ]
         },
         {
@@ -48,31 +72,80 @@
         },
         {
           "type": "table",
-          "columns": ["Approach", "Ownership", "Rollback", "Pressure case"],
+          "columns": [
+            "Approach",
+            "Ownership",
+            "Rollback",
+            "Pressure case"
+          ],
           "rows": [
             [
-              { "text": "Producer adapter" },
-              { "text": "One producer team", "verdict": "good" },
-              { "text": "One switch", "verdict": "good" },
-              { "text": "Legacy-only field returns", "verdict": "mixed" }
+              {
+                "text": "Producer adapter"
+              },
+              {
+                "text": "One producer team",
+                "verdict": "good"
+              },
+              {
+                "text": "One switch",
+                "verdict": "good"
+              },
+              {
+                "text": "Legacy-only field returns",
+                "verdict": "mixed"
+              }
             ],
             [
-              { "text": "Versioned topics" },
-              { "text": "Platform", "verdict": "mixed" },
-              { "text": "Repoint a route", "verdict": "good" },
-              { "text": "Third version multiplies routes", "verdict": "bad" }
+              {
+                "text": "Versioned topics"
+              },
+              {
+                "text": "Platform",
+                "verdict": "mixed"
+              },
+              {
+                "text": "Repoint a route",
+                "verdict": "good"
+              },
+              {
+                "text": "Third version multiplies routes",
+                "verdict": "bad"
+              }
             ],
             [
-              { "text": "Consumer translators" },
-              { "text": "Six teams, no single revert", "verdict": "bad" },
-              { "text": "Per consumer", "verdict": "bad" },
-              { "text": "One team blocks retirement", "verdict": "bad" }
+              {
+                "text": "Consumer translators"
+              },
+              {
+                "text": "Six teams, no single revert",
+                "verdict": "bad"
+              },
+              {
+                "text": "Per consumer",
+                "verdict": "bad"
+              },
+              {
+                "text": "One team blocks retirement",
+                "verdict": "bad"
+              }
             ],
             [
-              { "text": "Schema gateway" },
-              { "text": "Platform", "verdict": "mixed" },
-              { "text": "Policy revision", "verdict": "mixed" },
-              { "text": "Shared critical-path defect", "verdict": "bad" }
+              {
+                "text": "Schema gateway"
+              },
+              {
+                "text": "Platform",
+                "verdict": "mixed"
+              },
+              {
+                "text": "Policy revision",
+                "verdict": "mixed"
+              },
+              {
+                "text": "Shared critical-path defect",
+                "verdict": "bad"
+              }
             ]
           ]
         },
@@ -98,21 +171,78 @@
             {
               "value": "Producer adapter",
               "summary": "Preserve as the reversible baseline.",
-              "recommended": true
+              "tags": [
+                "Pragmatic",
+                "Recommended"
+              ],
+              "pros": [
+                "Reversible by one switch, inside a single sprint.",
+                "No new service for another team to own."
+              ],
+              "cons": [
+                "Leaves translation logic in the producer, which grows with each consumer."
+              ]
             },
             {
               "value": "Versioned topics",
-              "summary": "Keep when long overlap is material."
+              "summary": "Keep when long overlap is material.",
+              "tags": [
+                "Architectural"
+              ],
+              "pros": [
+                "Each consumer migrates on its own schedule."
+              ],
+              "cons": [
+                "Two live schemas to operate for as long as the overlap runs."
+              ]
             },
             {
               "value": "Consumer translators",
-              "summary": "Keep only when producer ownership is unavailable."
+              "summary": "Keep only when producer ownership is unavailable.",
+              "tags": [
+                "Workaround"
+              ],
+              "pros": [
+                "Needs no change from a producer team that will not prioritise one."
+              ],
+              "cons": [
+                "The same translation is written once per consumer, and drifts between them."
+              ]
             },
             {
               "value": "Schema gateway",
-              "summary": "Choose when contract negotiation deserves a platform owner."
+              "summary": "Choose when contract negotiation deserves a platform owner.",
+              "tags": [
+                "Architectural",
+                "Ideal"
+              ],
+              "pros": [
+                "One place where every contract change is reviewed."
+              ],
+              "cons": [
+                "A new service on the critical path, and a team to staff for it."
+              ]
             }
+          ],
+          "recommendation": "Take the producer adapter. It is the only one of the four that can be undone inside a single sprint, and nothing we know today tells us which of the other three is right — so the value of staying reversible is higher than the cost of translating in the producer for another quarter."
+        },
+        {
+          "type": "probe",
+          "id": "rollout-order",
+          "label": "Rank the steps in the order you would take them",
+          "items": [
+            "Stand the adapter up and prove it against one consumer",
+            "Open the forty-eight-hour overlap",
+            "Move the remaining five consumers across",
+            "Retire the v1 contract"
           ]
+        },
+        {
+          "type": "decision",
+          "id": "adapter-recommendation",
+          "label": "Recommended direction",
+          "ask": "Approve the producer adapter as the reversible baseline, with the forty-eight-hour overlap and a single-switch rollback, or ask for a change.",
+          "placeholder": "For example: hold the overlap open for a week."
         },
         {
           "type": "note",
@@ -133,6 +263,6 @@
   ],
   "reply": {
     "heading": "Generated reply",
-    "template": "Ranked options — outbound event compatibility\n\n{{answers}}"
+    "template": "Ranked options — outbound event compatibility\n\n{{summary}}\n\n{{answers}}"
   }
 }
