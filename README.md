@@ -186,7 +186,7 @@ supported. The adapter executes receipt-bound hooks with a child-only
 Codex, or Grok's native root-variable precedence. OpenCode's before/after tool
 events preserve supported denials, advice, diagnostics, and commit rewrite
 checks. The system-transform hook remains experimental, Stop is advisory, and
-V1 exposes no enforceable plan-transition event; the generated compatibility
+V1 exposes no enforceable plan-transition event; the compatibility
 matrix states these limits explicitly.
 
 The core lifecycle expects Claude Code, Codex, or Grok Build, Bash, `jq`, Git, and Bun,
@@ -197,7 +197,7 @@ Notion synchronization is optional — see
 [the specification plugin README](plugins/specification/README.md) for its
 transport-profile requirements.
 
-The source and projection boundaries are documented in
+The source and manually maintained projection boundaries are documented in
 [Harness projections](docs/architecture/harness-projections.md).
 
 ## The lifecycle, end to end
