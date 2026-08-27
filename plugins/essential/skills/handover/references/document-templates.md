@@ -32,6 +32,7 @@ handover-specific content; all timestamps are one real UTC ISO-8601 value.
 ## Specification provenance
 
 - Specification: [Exact document](<exact-document-link>)
+- Specification: [Related exact document](<related-exact-document-link>)
 ```
 
 The charter owns goal, scope, success criteria, and specification provenance;

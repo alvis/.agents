@@ -69,6 +69,7 @@ including a generic coding stream, carries this section.
 ## Specification provenance
 
 - Specification: [Exact document](<exact-document-link>)
+- Specification: [Related exact document](<related-exact-document-link>)
 ```
 
 When no specification exists, the section contains exactly `- Specification:

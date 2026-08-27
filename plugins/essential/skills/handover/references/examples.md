@@ -59,6 +59,25 @@ and rejects a missing or contradictory intent.
 
 ## Specifications and local-only changes
 
+A project or stream specification may have multiple source documents. Keep
+project-level entry points in the global overview and every exact stream
+document in that stream's charter:
+
+```markdown
+## Specifications
+
+- [Project hub](https://notion.so/acme/project-hub)
+- [Documentation index](https://notion.so/acme/documentation-index)
+
+## Specification provenance
+
+- Specification: [Authentication requirements](https://notion.so/acme/authentication-requirements)
+- Specification: [Authentication API contract](https://notion.so/acme/authentication-api)
+```
+
+The first two links are project entry points; the last two are exact links for
+one stream and must not be copied into the global overview.
+
 A stream whose relevant repository changes exist only in the working copy is
 still persisted and still resumable — the pause records exactly what is
 uncommitted, and never returns `handover: blocked`.
