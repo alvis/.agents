@@ -13,13 +13,17 @@ work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
 ## Goal
 ## Requirements
 
+## Specifications
+
+- None
+
 ## Awaiting you
 
 | Stream | Question | Waiting since |
 
 ## Streams
 
-| Work ID | Phase | Blocked on | Last progress | Headline | Next action | Location | Links |
+| Work ID | Phase | Blocked on | Last progress | Headline | Next action | Location | Documentations |
 
 ## Recently landed
 ```
@@ -28,6 +32,17 @@ work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
   rebuild preserves them byte-for-byte, as it does every unrefreshed row.
   Environment narrative is not preamble — it belongs in `environment.md` and
   `traps.md` ([work-memory-topology.md](work-memory-topology.md)).
+- `Specifications` is the project-level entry-point register. It is required
+  on every reconciled overview and contains exactly `- None` when the project
+  has no external specification store, or one or more Markdown links to the
+  store's project or documentation entry point. It never contains an exact
+  work-stream specification link. When the section is absent or empty, ask
+  whether an external store exists; a yes answer without supplied links stays
+  pending and must not be rewritten as `- None`.
+- During the lazy migration of an older overview, verify each legacy global
+  specification cell and preserve its exact stream provenance in that
+  stream's charter before removing the cell. Publish the overview rewrite
+  atomically; do not move an unverified stream link into this project section.
 - `Awaiting you` is derived from every stream's `state/unresolved.md`, so a
   question only the user can answer is not buried one file deep in a stream
   nobody is reading.
@@ -57,11 +72,11 @@ work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
   one: an inferred location manufactures a fact that reads exactly like a
   recorded one. Absolute paths are safe here because `.state/` is
   machine-local and ignored.
-- `Links` carries the stream's specification and durable `docs/` material
-  together — most rows have neither, and the width belongs to columns that
-  carry signal. A capability the stream holds accepted-but-unpushed deviations
-  against is suffixed `(pending-publication)`; resolve a sibling's pending
-  publication before planning new work against that capability.
+- `Documentations` carries durable `docs/` links and capability references.
+  Exact specification links belong in the stream's `goal.md` `## Specification
+  provenance`, never in this table. A capability the stream holds accepted-but-unpushed
+  deviations against is suffixed `(pending-publication)`; resolve a sibling's
+  pending publication before planning new work against that capability.
 - Qualify a cell in the cell. A `†`/`‡` glyph legend is a second vocabulary a
   reader must learn before reading the first.
 - Sort by phase, then `Last progress`. Ordering costs nothing and cannot go

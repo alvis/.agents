@@ -96,6 +96,10 @@ files. Never terminate the run before the overview upsert.
    working-copy status, staged and unstaged changes, untracked files, recent
    commits, and each specification's location: inline raw text, a
    repository-relative path, or a Notion reference with its captured revision.
+   Reconcile that source into the stream's `goal.md` `## Specification
+   provenance` as one or more exact Markdown links, or exactly
+   `- Specification: None`; a bootstrap-only `Pending user confirmation` value
+   must be resolved before the stream enters active execution.
    Classify changed and planned files with the substates in
    [references/document-templates.md](references/document-templates.md).
 4. For each selected stream, identify every material unresolved decision.
@@ -126,13 +130,24 @@ files. Never terminate the run before the overview upsert.
    canonical shape in
    [references/document-templates.md](references/document-templates.md).
    Immediately before writing, re-read the current `overview.md` so a concurrent
-   update from another session is not lost. Upsert one row per stream from
-   step 1 — work ID, phase, blocker, headline, next action, `Location` (the checkout
-   the stream is worked in: path plus kind and revision), and any `docs/` link
-   in `Documentations` — and preserve every other row, and the authored
-   `Goal` and `Requirements` sections, byte-for-byte. If no
-   `overview.md` exists yet, create it. After this write the pause is complete
-   and resumable from state files.
+   update from another session is not lost. If `## Specifications` is absent or
+   empty, ask the user whether an external specification store exists (for
+   example, Notion). A none response writes exactly `- None`. A yes response
+   writes one or more supplied project-level Markdown entry links only; yes
+   without links keeps `- Pending user confirmation` and the user question,
+   never `- None`, until links arrive. Do not derive this section from any
+   stream or copy an exact stream specification into it.
+
+   Before removing a legacy global `Spec` cell, verify and persist its exact
+   source in that stream's charter provenance. Then upsert one row per stream
+   from step 1 — work ID, phase, blocker, headline, next action, `Location`
+   (the checkout the stream is worked in: path plus kind and revision), and
+   any `docs/` link in `Documentations` — excluding all specification links.
+   Write the normalized overview once, atomically, and preserve every other
+   row plus the authored `Goal` and `Requirements` sections byte-for-byte. If
+   no `overview.md` exists yet, create it with the canonical
+   `Specifications` section. After this write the pause is complete and
+   resumable from state files.
 8. Return every created or materially rewritten path — including the updated
    `overview.md` — in `generated_files`. Do not run file sizing; after all
    artifact writers finish, the PM checks only eligible work Markdown inside the
@@ -145,9 +160,10 @@ files. Never terminate the run before the overview upsert.
 - Handover touched only `state_root/.state/works/` and
   `state_root/.state/overview.md`; no unselected stream's files were
   rewritten.
-- `overview.md` now carries one up-to-date row per stream — each with its
-  phase, blocker, `Location`, `Spec`, and `Documentations` — and every row it did not
-  own is unchanged.
+- `overview.md` now carries the canonical project-level `Specifications`
+  section and one up-to-date row per stream — each with its phase, blocker,
+  `Location`, and documentation-only `Documentations` — and every row it did
+  not own is unchanged.
 - A takeover could resume every continuable stream from the on-disk state alone —
   `## Continuation` names the current task, next owner, next action, and
   continuation intent.

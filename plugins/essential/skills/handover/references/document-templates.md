@@ -23,13 +23,27 @@ handover-specific content; all timestamps are one real UTC ISO-8601 value.
 |---|---|---|
 | `SC-1` | `<criterion>` | `<expected evidence>` |
 
+## Specification notes
+
+- Source kind: `<source-kind>`
+- Page ID: `<page-id>`
+- Base ID/revision: `<base-id>/<revision>`
+
 ## Specification provenance
+
+- Specification: [Exact document](<exact-document-link>)
 ```
 
 The charter owns goal, scope, success criteria, and specification provenance;
-`state.md` links to it and never restates them. For a Notion-backed contract,
-record the source kind, page id, and the base-id/revision the charter was
-authored against — the canonical specification stays the sole authority.
+`state.md` links to it and never restates them. `## Specification notes` is
+metadata-only: record the source kind, page id, and base-id/revision the
+charter was authored against there. The canonical specification stays the
+sole authority; `## Specification provenance` contains only exact document
+links or its explicit `None` marker.
+Record one line per exact specification document, or exactly
+`- Specification: None` when the stream has no specification. A newly
+bootstrapped stream may temporarily record exactly `- Specification: Pending
+user confirmation`, but it must resolve before active execution.
 `Charter revision` bumps only on explicit user approval, journaled in
 `state/journal.md` and `state/revisions.md`.
 
@@ -151,6 +165,10 @@ streams it refreshed and preserves every other row byte-for-byte. Follow this te
 
 - `<overall requirement the end result must satisfy>`
 
+## Specifications
+
+- `None` or one or more project-level external Markdown entry links
+
 ## Awaiting you
 
 | Stream | Question | Waiting since |
@@ -159,9 +177,9 @@ streams it refreshed and preserves every other row byte-for-byte. Follow this te
 
 ## Streams
 
-| Work ID | Phase | Blocked on | Last progress | Headline | Next action | Location | Links |
+| Work ID | Phase | Blocked on | Last progress | Headline | Next action | Location | Documentations |
 |---|---|---|---|---|---|---|---|
-| `<work-id>` | `<planned\|working\|reviewing\|completed>` | `<named blocker\|unknown\|->` | `<date> (<n>d)` | `<one line>` | `<one imperative sentence, ≤200 chars, or ->` | `<absolute checkout path> (<git-worktree\|jj-workspace>)` or `-` | `<capability>`, `<capability> (pending-publication)`, `[<title>](<promoted docs path>)`, or `-` |
+| `<work-id>` | `<planned\|working\|reviewing\|completed>` | `<named blocker\|unknown\|->` | `<date> (<n>d)` | `<one line>` | `<one imperative sentence, ≤200 chars, or ->` | `<absolute checkout path> (<git-worktree\|jj-workspace>)` or `-` | `[<title>](<promoted docs path>)`, `<capability>`, `<capability> (pending-publication)`, or `-` |
 
 ## Recently landed
 
@@ -175,6 +193,12 @@ shape. Handover fills `Goal` and `Requirements` from user intent when creating
 a brand-new overview, or leaves an explicit `-` for the PM to resolve — never
 inventing them from stream files — and preserves them byte-for-byte
 afterwards, exactly like unrefreshed rows.
+When creating or reconciling an absent or empty `Specifications` section, ask
+whether an external specification store exists. A none response writes
+exactly `- None`; a yes response writes only the supplied project entry links.
+If the user says yes but supplies no links, retain a pending marker and the
+user question rather than writing `- None`. Never derive this section from the
+Streams table or put an exact stream specification there.
 
 ## `state/working.md`
 
@@ -188,7 +212,7 @@ afterwards, exactly like unrefreshed rows.
 
 ## Fast paths
 - State: [state.md](../state.md)
-- Spec: [<relative path>](<relative path>)
+- Specification: [<exact relative path>](<exact relative path>)
 - Source/test: [<relative path>](<relative path>)
 - Active decision/design/review/evidence: [<relative path>](<relative path>)
 ```

@@ -5,7 +5,8 @@ A doctor, not a judge: this tool reports deterministic structural defects that
 machines detect better than readers — broken IDs, dangling dependencies,
 cycles, contradictory mark/status pairs, missing evidence annotations, broken
 file references, unsuperseded decisions, stale leases, overview drift, and ADR
-supersession/index/integrity violations. It never silently edits files and
+supersession/index/integrity violations, including project and stream
+specification provenance. It never silently edits files and
 never blocks by default; free-form Markdown it cannot parse is at most an
 `info` finding. ADR findings include a proposed repair for the doctor skill to
 offer for explicit user approval. `--strict` exits nonzero when error-severity
@@ -22,6 +23,7 @@ import re
 import sys
 import time
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 MARK_STATUS = {
     "-": "planned",
@@ -96,6 +98,7 @@ CANONICAL_OVERVIEW_SECTIONS = {
     "goal",
     "requirements",
     "awaiting you",
+    "specifications",
     "streams",
     "recently landed",
 }
@@ -159,6 +162,39 @@ UNOWNED_PROSE = re.compile(
     re.IGNORECASE,
 )
 CHARTER_PROVENANCE_VALUES = ("approved", "reconstructed", "absent")
+SPECIFICATION_PENDING = "pending user confirmation"
+SPECIFICATION_LINE = re.compile(
+    r"^-\s*Specification\s*:[^\S\n]*(.*)$"
+)
+STREAM_LOCAL_SPECIFICATION = re.compile(
+    r"(?:work[-_ ]?stream|stream|work)[-_ ]?(?:spec|specification)",
+    re.IGNORECASE,
+)
+LOCAL_STREAM_DOCUMENT = re.compile(
+    r"^(?:\.\.?/)*(?:\.state/)?(?:works|archive)/[^/#?]+/"
+    r"(?:goal|charter)\.md(?:[#?].*)?$",
+    re.IGNORECASE,
+)
+STREAM_DOCUMENT_FILE = re.compile(
+    r"(?:^|[/])(?:goal|charter)\.md(?:$|[#?])",
+    re.IGNORECASE,
+)
+SPECIFICATION_ONLY_LABEL = re.compile(
+    r"^(?:exact\s+)?(?:spec|specification)(?:\s+(?:document|doc|link))?$",
+    re.IGNORECASE,
+)
+SPECIFICATION_TOKEN = re.compile(
+    r"(?<![a-z0-9])(?:spec|specification)(?![a-z0-9])",
+    re.IGNORECASE,
+)
+SPECIFICATION_DOCUMENTATION_CONTEXT = re.compile(
+    r"\b(?:process|guide|guidance|workflow|method|policy|template|overview|index)\b",
+    re.IGNORECASE,
+)
+PROJECT_SPECIFICATION_SCHEME = re.compile(r"^https?://", re.IGNORECASE)
+SPECIFICATION_TARGET_SCHEME = re.compile(
+    r"^[A-Za-z][A-Za-z0-9+.-]*:",
+)
 # The flag exists so a reconstructed criterion is never read as an operator
 # commitment. At `planned` nothing is being built against the charter yet, so
 # `absent` is the honest state; the risk begins the moment work does.
@@ -179,10 +215,6 @@ ADR_REFERENCE_DEFINITION = re.compile(
     r"^[ \t]{0,3}\[([^\]]+)\]:\s*(?:<([^>\n]+)>|([^\s]+))"
     r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*$",
     re.MULTILINE,
-)
-ADR_LINK_DESTINATION = re.compile(
-    r"^\(\s*(?P<target>(?:<[^<>\s]+>)|(?:[^\s<>)]+))"
-    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*\)"
 )
 EXTERNAL_LINK = re.compile(r"^[a-z][a-z0-9+.-]*:")
 JOURNAL_EVENT = re.compile(
@@ -345,9 +377,9 @@ def adr_reference_definitions(text: str) -> dict[str, str]:
     return references
 
 
-def markdown_links_with_labels(text: str) -> list[tuple[str, str]]:
-    """Parse inline Markdown links whose labels may contain balanced brackets."""
-    links: list[tuple[str, str]] = []
+def markdown_link_spans(text: str) -> list[tuple[int, int, str, str]]:
+    """Parse inline links and retain their source spans."""
+    links: list[tuple[int, int, str, str]] = []
     index = 0
     while index < len(text):
         image_opener = (
@@ -373,16 +405,201 @@ def markdown_links_with_labels(text: str) -> list[tuple[str, str]]:
             index += 1
             continue
         label_end = position - 1
-        destination = ADR_LINK_DESTINATION.match(text[position:])
+        destination = markdown_link_destination(text[position:])
         if destination is None:
             index += 1
             continue
-        target = destination.group("target")
-        if target.startswith("<"):
-            target = target[1:-1]
-        links.append((text[index + 1 : label_end], target))
-        index = position + destination.end()
+        target, destination_end = destination
+        end = position + destination_end
+        links.append((index, end, text[index + 1 : label_end], target))
+        index = end
     return links
+
+
+def markdown_link_destination(text: str) -> tuple[str, int] | None:
+    """Parse a Markdown inline destination and return its target and end offset."""
+    if not text.startswith("("):
+        return None
+    position = 1
+    while position < len(text) and text[position].isspace():
+        position += 1
+    if position >= len(text):
+        return None
+
+    if text[position] == "<":
+        start = position + 1
+        position = start
+        while position < len(text):
+            if text[position] == "\\":
+                position += 2
+                continue
+            if text[position] == ">":
+                break
+            if text[position].isspace():
+                return None
+            position += 1
+        if position >= len(text) or position == start:
+            return None
+        target = text[start:position]
+        position += 1
+    else:
+        start = position
+        nesting = 0
+        while position < len(text):
+            character = text[position]
+            if character == "\\":
+                position += 2
+                continue
+            if character.isspace():
+                break
+            if character in "<>":
+                return None
+            if character == "(":
+                nesting += 1
+            elif character == ")":
+                if nesting == 0:
+                    break
+                nesting -= 1
+            position += 1
+        if position == start or nesting:
+            return None
+        target = text[start:position]
+
+    if position < len(text) and text[position] == ")":
+        return target, position + 1
+    if position >= len(text) or not text[position].isspace():
+        return None
+    while position < len(text) and text[position].isspace():
+        position += 1
+    if position >= len(text):
+        return None
+
+    title_start = position
+    if text[position] in {"\"", "'"}:
+        quote = text[position]
+        position += 1
+        while position < len(text):
+            if text[position] == "\\":
+                position += 2
+                continue
+            if text[position] == quote:
+                break
+            position += 1
+        if position >= len(text):
+            return None
+        position += 1
+    elif text[position] == "(":
+        nesting = 1
+        position += 1
+        while position < len(text) and nesting:
+            if text[position] == "\\":
+                position += 2
+                continue
+            if text[position] == "(":
+                nesting += 1
+            elif text[position] == ")":
+                nesting -= 1
+            position += 1
+        if nesting:
+            return None
+    else:
+        return None
+    if position == title_start:
+        return None
+    while position < len(text) and text[position].isspace():
+        position += 1
+    if position >= len(text) or text[position] != ")":
+        return None
+    return target, position + 1
+
+
+def markdown_links_with_labels(text: str) -> list[tuple[str, str]]:
+    """Parse inline Markdown links whose labels may contain balanced brackets."""
+    return [
+        (label, target)
+        for _, _, label, target in markdown_link_spans(text)
+    ]
+
+
+def markdown_reference_links(
+    text: str, references: dict[str, str]
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """Resolve reference-style links and return unresolved labels separately."""
+    resolved: list[tuple[str, str]] = []
+    unresolved: list[str] = []
+    for match in ADR_REFERENCE_LINK.finditer(text):
+        if is_escaped_markdown_character(text, match.start()):
+            continue
+        label, reference = match.groups()
+        key = reference or label
+        if key.strip().startswith("^"):
+            continue
+        target = references.get(" ".join(key.split()).casefold())
+        if target is None:
+            unresolved.append(label)
+        else:
+            resolved.append((label, target))
+    return resolved, unresolved
+
+
+def markdown_heading_name(line: str) -> str | None:
+    """Return the normalized name of a visible level-two ATX heading."""
+    match = re.match(r"^##(?!#)\s+(.+?)\s*$", line.strip())
+    if match is None:
+        return None
+    return re.sub(r"\s+#+$", "", match.group(1)).strip().casefold()
+
+
+def exact_specification_links(value: str) -> bool:
+    """Require link-only provenance with safe external or relative targets."""
+    spans = markdown_link_spans(value)
+    if not spans:
+        return False
+
+    residual: list[str] = []
+    cursor = 0
+    for start, end, label, target in spans:
+        residual.append(value[cursor:start])
+        target = target.strip()
+        if (
+            not label.strip()
+            or not safe_specification_target(target)
+        ):
+            return False
+        cursor = end
+    residual.append(value[cursor:])
+    return not "".join(residual).strip()
+
+
+def safe_specification_target(target: str) -> bool:
+    """Allow HTTP(S) or relative targets without traversal or network roots."""
+    if not target or target.startswith(("/", "\\")):
+        return False
+    if SPECIFICATION_TARGET_SCHEME.match(target) is not None:
+        try:
+            parsed = urlsplit(target)
+        except ValueError:
+            return False
+        if (
+            parsed.scheme.casefold() not in {"http", "https"}
+            or not parsed.netloc
+            or parsed.hostname is None
+        ):
+            return False
+        try:
+            parsed.port
+        except ValueError:
+            return False
+    path = unquote(re.split(r"[?#]", target, maxsplit=1)[0])
+    return not any(part == ".." for part in re.split(r"[/\\]+", path))
+
+
+def safe_external_specification_target(target: str) -> bool:
+    """Require a usable HTTP(S) authority for project entry-point links."""
+    return (
+        PROJECT_SPECIFICATION_SCHEME.match(target) is not None
+        and safe_specification_target(target)
+    )
 
 
 def parse_tasks(state_text: str) -> tuple[list[dict], int] | None:
@@ -456,6 +673,385 @@ def metadata_value(text: str, key: str) -> str | None:
         rf"^- {re.escape(key)}:[^\S\n]*`?([^`\n]*)`?[^\S\n]*$", text, re.MULTILINE
     )
     return match.group(1).strip() if match else None
+
+
+def visible_markdown_lines(text: str) -> list[str]:
+    """Return Markdown lines outside comments, quotes, and code blocks."""
+    text = without_html_comments(text)
+    lines: list[str] = []
+    fence: tuple[str, int] | None = None
+    for raw_line in text.splitlines():
+        leading_spaces = len(raw_line) - len(raw_line.lstrip(" "))
+        stripped = raw_line.lstrip()
+        marker = re.match(r"^(`{3,}|~{3,})", stripped)
+        if fence is not None:
+            if (
+                marker is not None
+                and leading_spaces < 4
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= fence[1]
+            ):
+                fence = None
+            continue
+        if raw_line.startswith("\t") or leading_spaces >= 4:
+            continue
+        if marker is not None:
+            fence = (marker.group(1)[0], len(marker.group(1)))
+            continue
+        if re.match(r"^>\s?", stripped):
+            continue
+        lines.append(raw_line)
+    return lines
+
+
+def markdown_sections(text: str, heading: str) -> list[str]:
+    """Return the bodies of all visible level-two sections with this heading."""
+    lines = visible_markdown_lines(text)
+    wanted = heading.casefold()
+    bodies: list[str] = []
+    for start, line in enumerate(lines):
+        if markdown_heading_name(line) != wanted:
+            continue
+        for end in range(start + 1, len(lines)):
+            if markdown_heading_name(lines[end]) is not None:
+                bodies.append("\n".join(lines[start + 1 : end]))
+                break
+        else:
+            bodies.append("\n".join(lines[start + 1 :]))
+    return bodies
+
+
+def stream_local_specification_link(
+    label: str, target: str, work_ids: set[str]
+) -> bool:
+    """Recognize links that clearly identify one work stream's contract."""
+    label_folded = label.casefold()
+    target_folded = target.strip().casefold()
+    if STREAM_LOCAL_SPECIFICATION.search(label_folded):
+        return True
+    if LOCAL_STREAM_DOCUMENT.fullmatch(target_folded):
+        return True
+    combined = f"{label} {target}".casefold()
+    for work_id in sorted(work_ids, key=len, reverse=True):
+        identity = re.compile(
+            rf"(?<![a-z0-9]){re.escape(work_id.casefold())}(?![a-z0-9])"
+        )
+        identity_match = identity.search(combined)
+        if identity_match is None:
+            continue
+        without_identity = (
+            combined[: identity_match.start()]
+            + " "
+            + combined[identity_match.end() :]
+        )
+        if (
+            SPECIFICATION_TOKEN.search(without_identity)
+            or STREAM_DOCUMENT_FILE.search(target_folded)
+        ):
+            return True
+    return False
+
+
+def stream_specification_targets(state_dir: Path) -> set[str]:
+    """Return every linked target recorded in stream provenance sections."""
+    targets: set[str] = set()
+    for root_name in ("works", "archive"):
+        streams = state_dir / root_name
+        if not streams.is_dir():
+            continue
+        for work_dir in streams.iterdir():
+            if not work_dir.is_dir():
+                continue
+            goal = work_dir / "goal.md"
+            if not goal.is_file():
+                continue
+            text = goal.read_text(encoding="utf-8", errors="replace")
+            for body in markdown_sections(text, "Specification provenance"):
+                for raw_line in body.splitlines():
+                    match = SPECIFICATION_LINE.fullmatch(raw_line.strip())
+                    if match is None:
+                        continue
+                    targets.update(
+                        target.strip()
+                        for _, target in markdown_links_with_labels(
+                            match.group(1)
+                        )
+                    )
+    return targets
+
+
+def check_project_specifications(
+    report: Report, state_dir: Path, overview_text: str
+) -> None:
+    """Require project entry links without allowing stream-local documents."""
+    sections = markdown_sections(overview_text, "Specifications")
+    if not sections:
+        report.error(
+            "overview.md",
+            "overview-specifications",
+            "overview.md has no required `## Specifications` section",
+            "Add `## Specifications` and ask whether an external specification "
+            "store exists; write exactly `- None` or project-level Markdown "
+            "entry links.",
+        )
+        return
+    if len(sections) > 1:
+        report.error(
+            "overview.md",
+            "overview-specifications",
+            "overview.md has duplicate visible `## Specifications` sections",
+            "Keep exactly one visible `## Specifications` section and put its "
+            "project-level entries there; keep exact stream specifications in "
+            "the stream charter provenance section.",
+        )
+        return
+    body = sections[0]
+
+    items = [line.strip() for line in body.splitlines() if line.strip()]
+    if not items:
+        report.error(
+            "overview.md",
+            "overview-specifications",
+            "`## Specifications` is empty, so the project's specification "
+            "store decision is not recorded",
+            "Ask whether an external specification store exists. Write exactly "
+            "`- None`, or record one or more project-level external Markdown "
+            "entry links; keep a yes-without-links answer pending.",
+        )
+        return
+
+    if items == ["- None"]:
+        return
+    if any(item.casefold() == "- none" for item in items):
+        report.error(
+            "overview.md",
+            "overview-specifications",
+            "`None` must be the only exact project specification entry: `- None`",
+            "Use exactly `- None` when no external store exists, or replace it "
+            "with project-level external Markdown entry links.",
+        )
+        return
+    if any(item.casefold() == "- pending user confirmation" for item in items):
+        if len(items) != 1:
+            report.error(
+                "overview.md",
+                "overview-specifications",
+                "pending project specification provenance cannot be mixed "
+                "with another entry",
+                "Keep only `- Pending user confirmation` until the user gives "
+                "project entry links, then replace it with those links or the "
+                "exact none marker.",
+            )
+            return
+        report.warning(
+            "overview.md",
+            "overview-specifications",
+            "project specification entry points are still pending user "
+            "confirmation; a yes answer without links must not become `- None`",
+            "Ask the user for one or more project-level external Markdown entry "
+            "links and replace the pending marker; use `- None` only after a "
+            "none response.",
+        )
+        return
+
+    work_ids: set[str] = set()
+    for root_name in ("works", "archive"):
+        work_root = state_dir / root_name
+        if work_root.is_dir():
+            work_ids.update(
+                path.name for path in work_root.iterdir() if path.is_dir()
+            )
+    exact_stream_targets = stream_specification_targets(state_dir)
+    malformed: list[str] = []
+    local: list[str] = []
+    for item in items:
+        match = LIST_ITEM.fullmatch(item)
+        if match is None or not item.startswith("- "):
+            malformed.append(item)
+            continue
+        value = match.group(2).strip()
+        spans = markdown_link_spans(value)
+        links = [(label, target) for _, _, label, target in spans]
+        unlinked = value
+        for start, end, _, _ in reversed(spans):
+            unlinked = unlinked[:start] + unlinked[end:]
+        if not spans or unlinked.strip(" \t,;|"):
+            malformed.append(item)
+            continue
+        for label, target in links:
+            if (
+                target.strip() in exact_stream_targets
+                or stream_local_specification_link(label, target, work_ids)
+            ):
+                local.append(item)
+                continue
+            if not label.strip() or not safe_external_specification_target(target):
+                malformed.append(item)
+    if local:
+        report.error(
+            "overview.md",
+            "overview-specifications",
+            "global `Specifications` contains an obviously stream-local "
+            f"specification link: {local[0]!r}",
+            "Remove the exact stream document from the global section and put "
+            "it in that stream's goal.md `## Specification provenance`; keep "
+            "only the project entry point here.",
+        )
+        return
+    if malformed:
+        report.error(
+            "overview.md",
+            "overview-specifications",
+            "global `Specifications` must contain `- None` or project-level "
+            f"external Markdown links; malformed entry: {malformed[0]!r}",
+            "Use one `- [Project entry](https://...)` line per project-level "
+            "entry point, or exactly `- None`.",
+        )
+
+
+def specification_issue(
+    report: Report,
+    work: str,
+    phase: str | None,
+    message: str,
+    fix: str,
+) -> None:
+    """Use errors once a stream is active; planned bootstrap drift is warning."""
+    if phase in CHARTERED_PHASES:
+        report.error(work, "specification-provenance", message, fix)
+    else:
+        report.warning(work, "specification-provenance", message, fix)
+
+
+def check_specification_provenance(
+    report: Report, work: str, work_dir: Path, phase: str | None
+) -> None:
+    """Require exact stream-local specification provenance by execution phase."""
+    goal = work_dir / "goal.md"
+    if not goal.is_file():
+        specification_issue(
+            report,
+            work,
+            phase,
+            "no goal.md: the stream has no local specification provenance",
+            "Reconstruct the charter, then record exact Markdown specification "
+            "links or exactly `- Specification: None` before active execution.",
+        )
+        return
+    text = goal.read_text(encoding="utf-8", errors="replace")
+    sections = markdown_sections(text, "Specification provenance")
+    if not sections:
+        specification_issue(
+            report,
+            work,
+            phase,
+            "goal.md has no `## Specification provenance` section",
+            "Add the section with one or more exact `- Specification: "
+            "[Document](...)` lines, or exactly `- Specification: None`.",
+        )
+        return
+    if len(sections) > 1:
+        specification_issue(
+            report,
+            work,
+            phase,
+            "goal.md has duplicate visible `## Specification provenance` "
+            "sections",
+            "Keep exactly one visible `## Specification provenance` section "
+            "with exact Markdown links or exactly `- Specification: None`.",
+        )
+        return
+    body = sections[0]
+
+    values: list[str] = []
+    malformed_lines: list[str] = []
+    for raw_line in body.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = SPECIFICATION_LINE.fullmatch(line)
+        if match:
+            values.append(match.group(1).strip())
+        else:
+            malformed_lines.append(line)
+
+    if not values:
+        specification_issue(
+            report,
+            work,
+            phase,
+            "goal.md's `## Specification provenance` has no `- Specification:` "
+            "value",
+            "Record exact Markdown document links, or exactly `- Specification: "
+            "None`; do not leave the source as prose such as `Not established`.",
+        )
+        return
+    if malformed_lines:
+        specification_issue(
+            report,
+            work,
+            phase,
+            f"goal.md has malformed specification metadata: {malformed_lines[0]!r}",
+            "Put each source on its own line as `- Specification: "
+            "[Exact document](...)` or use exactly `- Specification: None`.",
+        )
+        return
+
+    if any(value == "None" for value in values):
+        if len(values) != 1:
+            specification_issue(
+                report,
+                work,
+                phase,
+                "`- Specification: None` must be the only stream specification "
+                "provenance value",
+                "Remove the mixed entries and record exact links, or retain only "
+                "`- Specification: None`.",
+            )
+        return
+    if any(value.casefold() == SPECIFICATION_PENDING for value in values):
+        if len(values) != 1:
+            specification_issue(
+                report,
+                work,
+                phase,
+                "pending specification provenance is mixed with another value",
+                "Resolve the user question to exact links or `- Specification: "
+                "None`; do not mix pending and resolved entries.",
+            )
+        elif phase in CHARTERED_PHASES:
+            specification_issue(
+                report,
+                work,
+                phase,
+                f"phase {phase!r} still has `Specification: Pending user "
+                "confirmation`",
+                "Before active execution, ask for exact stream specification "
+                "links or confirm no specification and write `- Specification: "
+                "None`.",
+            )
+        else:
+            report.info(
+                work,
+                "specification-provenance",
+                "planned bootstrap stream has pending specification provenance; "
+                "resolve it before active execution",
+                "Ask for exact stream specification links or confirm no "
+                "specification and write `- Specification: None`.",
+            )
+        return
+
+    invalid = [value for value in values if not exact_specification_links(value)]
+    if invalid:
+        specification_issue(
+            report,
+            work,
+            phase,
+            f"goal.md has an unresolved stream specification value: {invalid[0]!r}",
+            "Use one or more exact Markdown document links in the form `- "
+            "Specification: [Exact document](...)`, or exactly `- Specification: "
+            "None`.",
+        )
 
 
 def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
@@ -2553,6 +3149,7 @@ def check_work_dir(report: Report, work_dir: Path) -> None:
     work = work_dir.name
     state_path = work_dir / "state.md"
     if not state_path.is_file():
+        check_specification_provenance(report, work, work_dir, None)
         report.info(work, "layout", "no state.md; nothing to check")
         return
     state_text = state_path.read_text(encoding="utf-8", errors="replace")
@@ -2584,6 +3181,7 @@ def check_work_dir(report: Report, work_dir: Path) -> None:
     phase = work_phase(state_text)
     check_work_id_naming(report, work)
     check_charter_provenance(report, work, work_dir, phase)
+    check_specification_provenance(report, work, work_dir, phase)
     check_journal_segments(report, work, work_dir)
     check_journal_freshness(report, work, work_dir, state_text)
     check_merge_evidence(report, work, state_text, phase)
@@ -2613,16 +3211,17 @@ def check_overview_layout(report: Report, state_dir: Path) -> None:
     seen_section = False
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith("##"):
+        heading = markdown_heading_name(stripped)
+        if heading is not None:
             seen_section = True
-            heading = stripped.lstrip("#").strip().casefold()
             if heading not in CANONICAL_OVERVIEW_SECTIONS:
                 report.warning(
                     "overview.md",
                     "overview-monolith",
-                    f"section {stripped.lstrip('#').strip()!r} is not one of "
-                    "the overview's sections (Goal, Requirements, Awaiting "
-                    "you, Streams, Recently landed): environment narrative "
+                    f"section {stripped[3:].strip()!r} is not one of "
+                    "the overview's sections (Goal, Requirements, "
+                    "Specifications, Awaiting you, Streams, Recently landed): "
+                    "environment narrative "
                     "belongs in environment.md and traps in traps.md",
                     "Move the section into .state/environment.md or "
                     ".state/traps.md as its content dictates, preserving "
@@ -2651,8 +3250,8 @@ def overview_column_map(cells: list[str]) -> dict[str, int]:
     return {normalize_index_cell(cell): index for index, cell in enumerate(cells)}
 
 
-def streams_section(text: str) -> str:
-    """Return the ``## Streams`` section, or the whole file if it has none.
+def streams_sections(text: str) -> list[str]:
+    """Return visible ``## Streams`` section bodies, preserving legacy fallback.
 
     The current overview carries three tables — Awaiting you, Streams, and
     Recently landed — and only the middle one indexes `works/`. Scanning all
@@ -2661,22 +3260,30 @@ def streams_section(text: str) -> str:
     pre-migration overview has no such heading and its whole body is the table,
     so falling back to the full text keeps that shape detectable.
     """
-    lines = text.splitlines()
-    for start, line in enumerate(lines):
-        if line.strip().lower() != "## streams":
-            continue
-        for end in range(start + 1, len(lines)):
-            if lines[end].startswith("## "):
-                return "\n".join(lines[start:end])
-        return "\n".join(lines[start:])
-    return text
+    sections = markdown_sections(text, "Streams")
+    return sections or [text]
 
 
 def check_overview(report: Report, state_dir: Path) -> None:
     overview = state_dir / "overview.md"
     if not overview.is_file():
         return
-    text = streams_section(overview.read_text(encoding="utf-8", errors="replace"))
+    overview_text = overview.read_text(encoding="utf-8", errors="replace")
+    stream_sections = streams_sections(overview_text)
+    if len(stream_sections) > 1:
+        report.error(
+            "overview.md",
+            "overview-streams",
+            "overview.md has duplicate visible `## Streams` sections",
+            "Keep exactly one visible `## Streams` section and remove any "
+            "duplicate table before reconciling the overview.",
+        )
+        return
+    text = stream_sections[0]
+    references = adr_reference_definitions(
+        "\n".join(visible_markdown_lines(overview_text))
+    )
+    exact_stream_targets = stream_specification_targets(state_dir)
     # Without a header row the first two columns are the historical shape.
     columns: dict[str, int] = {"work id": 0, "phase": 1}
     header_seen = False
@@ -2690,10 +3297,38 @@ def check_overview(report: Report, state_dir: Path) -> None:
         if normalize_index_cell(cells[0]) in {"work id", "id", "stream"}:
             columns = overview_column_map(cells)
             header_seen = True
+            legacy_columns = [
+                name for name in ("spec", "links") if name in columns
+            ]
+            if legacy_columns:
+                report.warning(
+                    "overview.md",
+                    "overview-legacy-specification",
+                    "the Streams table still has legacy "
+                    f"{', '.join(legacy_columns)!r} column(s); exact "
+                    "specification links must be stream-local",
+                    "During reconciliation, verify each legacy value against "
+                    "the stream charter, preserve exact provenance there, then "
+                    "rewrite the table atomically with documentation-only "
+                    "`Documentations`.",
+                )
             continue
         if set(cells[0]) <= {"-", " ", ":"}:
             continue
         work_id = cells[0].strip("`")
+        documentations_column = columns.get("documentations")
+        if (
+            header_seen
+            and documentations_column is not None
+            and len(cells) > documentations_column
+        ):
+            check_documentations_cell(
+                report,
+                work_id,
+                cells[documentations_column],
+                exact_stream_targets,
+                references,
+            )
         state_path = state_dir / "works" / work_id / "state.md"
         if not state_path.is_file():
             # Work state is centralized under the default source tree, so an
@@ -2772,6 +3407,53 @@ def check_overview_row(
     if progress < 0 or len(cells) <= progress:
         return
     check_last_progress(report, work_id, cells[progress], work_dir, state_text)
+
+
+def check_documentations_cell(
+    report: Report,
+    work_id: str,
+    cell: str,
+    exact_stream_targets: set[str] | None = None,
+    references: dict[str, str] | None = None,
+) -> None:
+    """Keep exact or obvious specification links out of the stream index."""
+    resolved_references, unresolved_references = markdown_reference_links(
+        cell, references or {}
+    )
+    if unresolved_references:
+        report.error(
+            work_id,
+            "overview-documentations",
+            "the Streams table's `Documentations` cell contains an unresolved "
+            f"Markdown reference link: {unresolved_references[0]!r}",
+            "Resolve the reference definition so its target can be checked, or "
+            "replace it with an inline durable documentation link.",
+        )
+        return
+    links = markdown_links_with_labels(cell) + resolved_references
+    for label, target in links:
+        combined = f"{label} {target}"
+        is_specification_link = (
+            target.strip() in (exact_stream_targets or set())
+            or stream_local_specification_link(label, target, {work_id})
+            or SPECIFICATION_ONLY_LABEL.fullmatch(label.strip())
+            or (
+                SPECIFICATION_TOKEN.search(combined) is not None
+                and SPECIFICATION_DOCUMENTATION_CONTEXT.search(combined) is None
+            )
+        )
+        if not is_specification_link:
+            continue
+        report.error(
+            work_id,
+            "overview-documentations",
+            "the Streams table's `Documentations` cell contains "
+            "an exact or obviously stream-local specification link",
+            "Remove the specification link from `Documentations` and record "
+            "it in the stream's goal.md `## Specification provenance`; keep "
+            "only durable documentation links in the table.",
+        )
+        return
 
 
 def check_overview_location(report: Report, work_id: str, cell: str) -> None:
@@ -2861,7 +3543,8 @@ def main() -> int:
     scope.add_argument(
         "--state-dir",
         type=Path,
-        help="a .state directory: checks every works/* stream plus overview.md",
+        help="a .state directory: checks every works/* and archive/* stream "
+        "plus overview.md",
     )
     parser.add_argument(
         "--repository-root",
@@ -2904,13 +3587,21 @@ def main() -> int:
             return 2
         durable_root = repository_root or root.parent
         if root.is_dir():
-            works = root / "works"
-            if works.is_dir():
-                for work_dir in sorted(
-                    path for path in works.iterdir() if path.is_dir()
-                ):
-                    check_work_dir(report, work_dir)
+            for root_name in ("works", "archive"):
+                streams = root / root_name
+                if streams.is_dir():
+                    for work_dir in sorted(
+                        path for path in streams.iterdir() if path.is_dir()
+                    ):
+                        check_work_dir(report, work_dir)
             check_overview_layout(report, root)
+            overview = root / "overview.md"
+            if overview.is_file():
+                check_project_specifications(
+                    report,
+                    root,
+                    overview.read_text(encoding="utf-8", errors="replace"),
+                )
             check_overview(report, root)
         check_adrs(report, durable_root)
 

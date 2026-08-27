@@ -28,7 +28,8 @@
 A `reviewing` or `completed` stream is **not** an error: it stays an awaiting
 or index-only row and gets no refresh. An archived stream lives outside
 `works/` and is not indexed. Invalid work IDs and a missing Essential contract path are
-explicit errors. A generic coding stream may omit a specification. There is no
+explicit errors. Every stream records exact specification links or `- Specification: None`; a
+generic coding stream cannot omit the provenance line. There is no
 prefix-based or root-file compatibility fallback.
 
 ## Two streams
