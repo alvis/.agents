@@ -65,16 +65,18 @@ JSON array
 - [ ] Data-driven rendering uses the `esc()` idiom; **no un-interpolated `${…}` literals** in emitted text
 - [ ] A11y: `:focus-visible` states, `aria-pressed`/`aria-live`/roles, dialog semantics, `prefers-reduced-motion`
 - [ ] Responsive: no horizontal body scroll; wide content scrolls in its own container; `tabular-nums` for aligned digits
-- [ ] Weight discipline: carry nothing the board does not use. A board without a Mermaid figure stays in the hundreds of KB the bundled Tailwind runtime already costs; one Mermaid figure adds Mermaid to the generated bundle and takes the board into megabytes. That is a deliberate, per-board trade — never include a runtime "in case"
+- [ ] Weight discipline: carry nothing the board does not use. A board without a Mermaid figure renders in the low hundreds of KB; one Mermaid figure inlines the Mermaid bundle and takes the board to several megabytes. That is a deliberate, per-board trade — never inline a runtime "in case"
 
 ## H. Validation mapping
 
 | Feature | Enforced by |
 |---|---|
-| Shell presence, single prompt host, annotatable sections | `scripts/test-html-templates.ts` (floor assertions) |
-| Token whitelist, dual-theme completeness, stray hex | This checklist at review; `scripts/build-artifact.ts` `build()` preserves the inspectable `data-board-theme` block |
-| `${…}` literal guard | This checklist at review and generated-artifact inspection |
-| Self-containment | This checklist at review and generated-artifact inspection |
-| Board-set block, selection annotation, density scale, Mermaid figure wiring | `scripts/test-html-templates.ts` (runtime/stylesheet/scaffold assertions) |
-| Mermaid runtime present when a board carries a diagram; no dynamic `import()` | `scripts/build-artifact.ts` `build()` and `bundleVendorRuntime()`; `scripts/build-artifact.spec.ts`; `scripts/test-html-templates.spec.ts` |
-| Per-card capture + live prompt rebuild | golden examples (`examples/reference/readiness-verdict-board.html`, `examples/reference/decision-browser.html`) + this checklist at review |
+| Shell presence, single prompt host, annotatable sections | structural: the renderer emits them for every board, so no board can omit one; `scripts/render-page.spec.ts` asserts they are there |
+| Board-set block, hidden below two entries, marking exactly the current board | `scripts/render-page/set.spec.ts` |
+| Every authored value escaped; no HTML pass-through | `scripts/render-page/escape.ts`, exercised by every block spec |
+| Unknown or malformed data refused by name, with its JSON path | `scripts/render-page/validate.ts` and `validate`'s callers, spec'd per block |
+| Dual-theme completeness | the author's: `theme` overrides no token by default, and nothing checks the contrast a board reaches once it does |
+| Self-containment — zero network subresources, in every board, including inside a packed `srcdoc` | `scripts/examples.spec.ts` |
+| Every block type and every inline run kind reaches a board | `scripts/examples.spec.ts`, which reads both vocabularies from source rather than from a list |
+| Mermaid bundle inlined only for a board carrying a `mermaid` block; bundle shape checked; no dynamic `import()` | `scripts/render-page/vendor.ts` `acceptMermaidRuntime`, spec'd in `vendor.spec.ts` |
+| Per-card capture + live prompt rebuild | `scripts/render-page/runtime/*.spec.ts` drive the emitted runtime directly; the reference boards (`examples/reference/`) remain the craft target |

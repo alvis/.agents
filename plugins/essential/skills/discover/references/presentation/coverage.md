@@ -120,8 +120,9 @@ When adding or replacing a page:
    owner; and
 6. keep the action-specific structural hooks aligned with the visible
    composition; and
-7. run `scripts/test-html-templates.ts --stage complete` before presenting the
-   examples, then inspect every page at desktop and narrow widths.
+7. run `bun test scripts/` before presenting the examples — `examples.spec.ts`
+   renders the whole run and fails if a block type reaches no board — then
+   inspect every page at desktop and narrow widths.
 
 The coverage suite is a demonstration library, not a requirement that generated
 user artifacts include every pattern. Executors should choose fewer or more

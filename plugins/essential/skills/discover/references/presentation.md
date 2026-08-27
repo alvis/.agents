@@ -42,10 +42,12 @@ across a spectrum, answer an ordered interview, inspect source-to-target
 semantics, evaluate risks, or reach a readiness verdict.
 
 The approved [domain explainer](presentation/actions/domain-explainer.md) and
-its [golden HTML example](../examples/html/domain-explainer.html) define the
-shared visual hierarchy, responsive shell, annotation flow, and folded
-single-prompt experience. Every action example follows that contract while
-changing its content density and optional components to fit the action.
+its data at `examples/data/domain-explainer.json` define the shared visual
+hierarchy, responsive shell, annotation flow, and folded single-prompt
+experience. Render it to see them: `examples/html/` is generated, not
+committed, so the data is what to read and one `--set` run is what to look at.
+Every action example follows that contract while changing its content density
+and its blocks to fit the action.
 
 Together, the eleven action examples and four convention boards (specimen-board,
 board-hub, architecture-board, triage-board) must cover the complete reusable
@@ -66,19 +68,16 @@ cards — and the only per-page singleton is the generated-brief prompt host. Th
 sidebar quick-links are not hand-authored; the runtime derives them at run time
 from the sections actually present.
 
-Every board — including a generated user artifact — is authored as modular
-sources: a `page.html` shell plus one file per section under `sections/`,
-composed with `scripts/build-artifact.ts`. Never author one giant HTML file, and
-never reinvent the shell markup from scratch. Always start from the committed
-starter scaffold `templates/src/page/` (its `page.html` shell plus starter
-`sections/`): copy the whole directory into the session workspace, then fill its
-`{{PLACEHOLDER}}` tokens and add, edit, reorder, or remove section files to fit
-the action. The scaffold already carries the mandatory page shell, the
-`@theme inline` block, the annotation hooks, and the single generated-prompt
-host, so copying and editing it — rather than hand-writing equivalents — is what
-keeps every board on the shared contract. An executor creating a temporary
-review surface copies the scaffold into the session workspace, edits its
-sources, composes it, then compiles the self-contained file.
+Every board — including a generated user artifact — is authored as one JSON
+data file and rendered by `scripts/render-page.ts`. Never write the page's
+markup, stylesheet, or script: the renderer owns every byte of the output, so
+the shell, the drawer, the annotation wiring, and the generated-prompt host are
+not yours to author, reproduce, or opt out of. What you author is the board's
+`kind`, `masthead`, `sections`, `sources`, and `reply`, and inside each section
+the ordered `blocks` that carry the content. That division is what keeps every
+board on the shared contract without a scaffold to copy or placeholders to
+fill. The fifteen boards under `examples/data/` are the working catalogue of
+what the format can be asked to do.
 
 ## Shared interaction contract
 
@@ -109,43 +108,37 @@ to in-memory state without preventing review.
 
 ## Shared theme contract
 
-Use Tailwind CSS utilities together with the shared `--ui-*` CSS variables.
-The variables in `assets/html/discovery.css` are the only theme-value source;
-the page's `@theme inline` block maps them into Tailwind names such as
-`bg-canvas`, `text-ink`, and `bg-accent-soft`. Do not redefine color values in
-an action page **outside the board-theme overlay**. Compose page-specific
-layout and states with utilities, then use the shared component classes for
-behavior-heavy patterns that would be noisy or fragile to repeat.
+The renderer emits its own stylesheet, and the `--ui-*` tokens it defines are
+the only theme-value source. Every colour on a board resolves through one of
+them, so a board is themed by re-pointing tokens rather than by writing rules.
 
-The board-theme overlay. Each page carries an optional `<style
-data-board-theme>` head block — the one sanctioned place to re-point color for
-the board at hand. Whitelisted tokens only: the `--ui-accent` set and the
-semantic ramps `--ui-verdict-*`, `--ui-status-*`, `--ui-k-*` (the builder
-rejects anything else, and rejects a redefinition that lacks either light or
-dark values). Use it to give each board of a companion set its own accent so
-the set reads as themed siblings, and to map the board's domain states —
-go/stop verdicts, work statuses, finding categories — onto the ramps. Prefer
+The `theme` key. A board carries an optional `theme` object — the one place
+colour is re-pointed for the board at hand. Its `accent` is a hue in degrees,
+which rotates `--ui-accent`, `--ui-accent-soft`, `--ui-accent-ink`, and
+`--ui-focus` in both schemes while keeping the built-ins' lightness and chroma;
+one number is enough to give each board of a companion set its own identity so
+the set reads as themed siblings. Its `light` and `dark` maps override any
+`--ui-*` token by name, including the semantic ramps `--ui-verdict-*`,
+`--ui-status-*`, and `--ui-k-*`, which is how a board's domain states — go/stop
+verdicts, work statuses, finding categories — are mapped onto the shell's
+vocabulary. Nothing is whitelisted and nothing checks the result, so the
+contrast a themed board reaches in both schemes is the author's to hold. Prefer
 aliasing the shell's own families (`--ui-positive`, `--ui-insight`,
-`--ui-provenance-amber`, `--ui-sev-critical`) over inventing hues; keep the
-contrast floor in both themes.
+`--ui-provenance-amber`, `--ui-sev-critical`) over inventing hues.
 
-The specimen exception. House `--ui-*` stays the default for page chrome, but
-an embedded specimen or mockup should read as the subject product, not the tool.
-Show its real palette in a scoped `[data-specimen]` container that re-points the
-`--ui-*` tokens locally — the one place a hex literal may appear in an action
-page — or expose parallel `--spec-*` tokens when the specimen must show house
-and brand side by side. Re-point only the tokens the specimen needs; its
-interior reuses the house component classes and renders brand-tinted. A
-page-level re-tint outside `[data-specimen]` is allowed only through token
-indirection (`--ui-accent: var(--ui-insight)`), never a hex literal. The tool's
-annotation pin layer and browser-frame chrome stay on house tokens, outside the
-specimen re-point, because they are the tool's layer rather than the product's.
+The specimen exception. House tokens stay the default for page chrome, but an
+embedded specimen or mockup should read as the subject product, not the tool.
+An `image` or `svg` block carries the product's own palette inside the picture
+itself, and an inlined SVG that draws with `var(--ui-*, …)` fallbacks inherits
+the board's tokens where it wants to and keeps its own where it does not. The
+annotation pins layered over a specimen stay on house tokens, because they are
+the tool's layer rather than the product's.
 
-These pages are temporary development artifacts, so the no-build Tailwind
-browser runtime is appropriate. The shared stylesheet must still provide a
-readable base when that runtime cannot load. Default to the light, daylight
-theme; use an explicit `data-theme="dark"` for dark review rather than following
-the host system automatically.
+The page follows the host system's scheme by default and carries one control
+that cycles auto, light, dark; the choice is saved across boards rather than
+per board, because a reader who picks dark on one wants dark on its companions.
+Both schemes are first-class — a token overridden in one and not the other is a
+board that only half works.
 
 The shared visual direction is an empowering developer workspace with liquid
 glass depth and the warm editorial grammar of the approved source reference:
@@ -183,26 +176,23 @@ response capture** (an option set with reasons and a badged recommendation
 wherever a card carries a real decision with alternatives — never a bare
 accept; an accept toggle for single-recommendation cards; a note affordance
 per card; every response reflected on the card, in the docnav counters, and in
-the live prompt), the single-prompt contract, the `--ui-*`/`@theme inline`
-theme plus board-theme overlay rules, and these provenance, trade-off, pin,
-and board conventions. `references/features.md` enumerates this floor as a
-checklist with its validation mapping.
+the live prompt), the single-prompt contract, the `--ui-*` tokens and the
+`theme` rules above, and these provenance, trade-off, pin, and board
+conventions. `references/features.md` enumerates this floor as a checklist
+with its validation mapping.
 
-**Above that floor, design freely.** The component catalog is a reference
-shelf of proven devices, not a completeness requirement, and the action
-recipes are starting points, not prescribed section lists. Layout, section
-shapes, devices, and interactions are the executor's design decisions, made
-for the content at hand — approach each board like a design lead giving this
-product its own treatment, not a form-filler. Bespoke section CSS and JS are
-welcome when they style through the tokens and honor the floor; markup that
-appears in no catalog entry is conforming as long as the floor holds. Guided,
-not rigid — and never omit ledger content because no catalog pattern fits it;
-give it a free-pattern section instead.
+**Above that floor, design freely.** The block catalog is a reference shelf of
+proven devices, not a completeness requirement, and the action recipes are
+starting points, not prescribed section lists. Section order, block choice, and
+the shape of each block are the executor's design decisions, made for the
+content at hand — approach each board like a design lead giving this product
+its own treatment, not a form-filler. Guided, not rigid — and never omit ledger
+content because no block fits it neatly; say it in prose rather than losing it.
 
 ## Temporary artifact lifecycle
 
-Always save generated, user-specific board sources before presenting them. Use
-the platform temp root through Python's `tempfile.mkdtemp` to open one session
+Always save generated, user-specific board data before presenting it. Use the
+platform temp root through Python's `tempfile.mkdtemp` to open one session
 workspace, with sanitized slugs and a unique suffix:
 
 ```python
@@ -215,57 +205,50 @@ One workspace holds every board produced during the session, so boards can
 cross-link with session-relative hrefs (`./sibling.html`). This resolves through <!-- doc-path-gate: ignore -->
 the operating system (`$TMPDIR` on macOS, the configured temp root such as
 `/tmp` on Linux, and `%TEMP%` on Windows) without a shared filename collision.
-Write each board's source directory and any captures inside that workspace, and
-link boards to one another with relative hrefs. Board sources carry no external
-or linked scripts and stylesheets — no CDN Tailwind tag, no `discovery.css` or
-`discovery.js` link, no `{{DISCOVERY_*_URL}}` placeholder — only inline markup
-and the inline `<style type="text/tailwindcss">` theme block; the builder
-injects every shared asset. Artifacts stay ephemeral — durable, bookmarkable,
-and cross-linked only within the session, never a permanent deliverable.
+Write each board's JSON and any assets it cites inside that workspace; asset
+paths resolve against the data file's own directory and may not escape it.
+Artifacts stay ephemeral — durable, bookmarkable, and cross-linked only within
+the session, never a permanent deliverable.
 
-The presentation flow is always the same: copy the `templates/src/page/` starter
-scaffold into the session workspace, edit its modular sources, compose them, and
-compile a self-contained file with the builder before presenting it.
+The presentation flow is always the same: write the data into the session
+workspace and render it.
 
 ```bash
-# self-contained full document (file:// viewing, any host)
-scripts/build-artifact.ts <board-source>
-# head-less fragment ready to hand straight to the claude.ai Artifact tool
-scripts/build-artifact.ts <board-source> --artifact
+# one board
+scripts/render-page.ts <board>.json -o <board>.html
+# a whole run, every board carrying the same set list
+scripts/render-page.ts --set <run>.json -o <dir>
 ```
 
-The builder composes the `page.html` shell with its `sections/` files, then
-inlines the Tailwind runtime plus `discovery.css` and `discovery.js`. Before
-presenting the generated artifact, inspect it for external `src`/`href`
-references, unfilled placeholders, and raw U+FFFD bytes, which the claude.ai
-Artifact deploy validator rejects. Every final build
-resolves the latest Tailwind release, downloads its browser runtime into a
-unique operating-system temporary directory, and asks Bun to bundle it with
-`discovery.js`. A board carrying a `[data-mermaid]` figure also resolves and
-downloads the latest Mermaid release into that workspace before the same
-bundle step. The generated HTML records the exact resolved versions; the
-builder removes the workspace on success or failure and fails when the network
-or bundle is unavailable rather than retaining a stale fallback. A board
-without a diagram therefore carries no Mermaid code; a board with one is
-knowingly much heavier, and that is the trade the figure buys. `--emit-page`
-only composes editable source and does not resolve runtimes. Never hand-edit the compiled output; it is generated and
-throwaway. To change styling or behaviour, edit the small sources and rebuild.
-`--artifact` mode omits `<!doctype>/<html>/<head>/<body>` because the Artifact
-tool supplies its own; the fragment restores only the source body's
-`::selection` colours, since `discovery.css` styles the `body` element (and
-`[data-theme="dark"]` on the root) directly.
+A run file names each board's data, its output, and the label and blurb the set
+list shows for it, so the cross-links are derived once rather than repeated in
+fifteen places. The set block appears in every board's drawer, not only on a
+hub, and stays hidden below two entries — so a single-board run shows nothing
+and the author does nothing differently.
 
-Present the compiled file in this order:
+The output is one self-contained document that makes no network request: the
+stylesheet and runtime are emitted inline, images arrive base64, SVG arrives as
+markup, and a prototype arrives packed into a sandboxed `srcdoc`. A remote URL
+is refused rather than fetched. Mermaid is the one heavy inclusion, and it is
+inlined **only** into a board that carries a `mermaid` block, because the bundle
+is several megabytes; a board without one weighs a few hundred kilobytes. That
+is the trade the figure buys, taken per board.
+
+Never hand-edit the rendered HTML — it is generated, and the next render
+discards the edit. To change anything about a board, change its data and render
+again.
+
+Present the rendered file in this order:
 
 1. the LLM coder's built-in local browser or HTML viewer;
 2. a cloud artifact viewer/store only when a suitable tool exists and the
-   content is safe to externalize (hand it the `--artifact` fragment);
+   content is safe to externalize;
 3. a local browser such as Chrome.
 
 Never externalize sensitive discovery content merely to satisfy the preference
 order. After the user's decisions and annotations are captured in the one
 generated prompt and transferred to the ledger, discard the whole session
-workspace and any compiled artifacts.
+workspace and every board rendered from it.
 
 ## Golden-example confirmation
 
