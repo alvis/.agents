@@ -18,6 +18,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const here = import.meta.dirname;
 const resolver = resolve(here, "resolve-state-workspace");
+const doctor = resolve(here, "../skills/doctor/scripts/state-doctor");
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -329,6 +330,25 @@ describe("work state workspace resolution", () => {
     expect(state).not.toContain("Motion");
     expect(state).not.toContain(" · ");
     expect(goal).toContain("- Charter: `absent`");
+
+    writeFileSync(
+      resolve(work, "state.md"),
+      state.replace("- Phase: `planned`", "- Phase: `working`"),
+    );
+    const diagnostic = spawnSync(
+      doctor,
+      ["--work-dir", work, "--json", "--strict"],
+      {
+        encoding: "utf8",
+      },
+    );
+    expect(diagnostic.status).toBe(1);
+    const findings = (
+      JSON.parse(diagnostic.stdout) as {
+        findings: Array<{ check: string }>;
+      }
+    ).findings.filter(({ check }) => check === "specification-provenance");
+    expect(findings).toHaveLength(1);
   });
 
   it("cannot bootstrap past identity or ignore gates", () => {
@@ -509,5 +529,4 @@ describe("work state workspace resolution", () => {
       },
     });
   });
-
 });

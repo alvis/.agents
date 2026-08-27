@@ -12,7 +12,7 @@ semantics.
 ├── notion                              # default-source-tree Notion mirror
 ├── archive/<work-id>                   # completed or parked stream; never enumerated by the resolver
 └── works/<work-id>                     # one live stream, phase planned, working, or reviewing
-    ├── goal.md                         # approved charter, scope, and success criteria
+    ├── goal.md                         # approved charter, exact spec provenance, scope, and success criteria
     ├── state.md                        # complete resumable context and canonical task graph
     ├── lease.json                      # coordinator ownership and expiry record
     ├── state                           # focused execution views and append-only history

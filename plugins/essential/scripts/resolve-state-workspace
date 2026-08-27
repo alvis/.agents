@@ -513,6 +513,7 @@ if [[ $bootstrap -eq 1 ]]; then
 ## Fast paths
 
 - Charter: [goal.md](../goal.md)
+- Specification: [goal.md#specification-provenance](../goal.md#specification-provenance)
 - State: [state.md](../state.md)
 "
   state_contents="# Work state
@@ -580,12 +581,16 @@ Pending confirmation with the user.
 | --- | --- | --- |
 | SC-1 | Pending confirmation with the user. | Pending. |
 
-## Specification provenance
+## Specification notes
 
-Not established. For a Notion-backed contract, record the source kind, page
-id, and the base-id/revision this charter was authored against. The canonical
+For a Notion-backed contract, record the source kind, page id, and the
+base-id/revision this charter was authored against. The canonical
 specification remains the sole authority; a conflict with it marks this work
 stream for revalidation, never the reverse.
+
+## Specification provenance
+
+- Specification: Pending user confirmation
 
 ## Workspace anchors
 

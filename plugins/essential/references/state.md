@@ -124,7 +124,8 @@ is never renamed or reused.
 
 The default source tree carries `.state/`, and with it the single global
 `overview.md`: an authored `Goal` and `Requirements` preamble, the questions
-waiting on the user, then one row per work stream. Every stream's state sits
+waiting on the user, the project-level `Specifications` entry-point section,
+then one row per work stream. Every stream's state sits
 under the same `works/`, so this is an index over local state, not a
 cross-tree aggregator; its `Location` column records **which checkout each
 stream is worked in**, one tree per stream. Every table cell derives from each
@@ -135,6 +136,23 @@ change when the repository does, not when a stream advances. The
 PM/coordinator updates the overview whenever a stream's phase changes or it
 becomes blocked or unblocked — in particular at handover. Sections, columns,
 and each cell's derivation live in [overviews.md](overviews.md).
+
+`Specifications` is the only project-level specification state in the global
+overview. It contains exactly `- None` or one or more external Markdown links
+to project-wide specification-store entry points. It never carries an exact
+work-stream document. When the section is missing or empty during creation or
+reconciliation, ask whether an external store exists; a yes answer without
+links remains pending until the user supplies entry points. Each stream's
+exact specification links or explicit `None` live in its `goal.md` under
+`## Specification provenance`.
+
+The Streams table is documentation-only: its column is `Documentations` and
+may contain durable `docs/` links and capability references, but never
+specification links. When a
+legacy `Spec` cell is encountered, the coordinator verifies and preserves its
+stream-local provenance before removing the cell in the same atomic overview
+publication. Unverified legacy values stay pending rather than becoming
+project links or `None`.
 
 ### One stream at a time
 

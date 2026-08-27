@@ -55,7 +55,10 @@ class Workspace {
   async remove(): Promise<void> {
     await rm(this.root, { force: true, recursive: true });
   }
-  async writeCharter(provenance = "approved"): Promise<void> {
+  async writeCharter(
+    provenance = "approved",
+    specification = "None",
+  ): Promise<void> {
     const path = join(this.workDir, "goal.md");
     if (provenance === "-") {
       await unlink(path).catch(() => undefined);
@@ -63,7 +66,7 @@ class Workspace {
     }
     await writeFile(
       path,
-      `# Charter\n\n- Charter: \`${provenance}\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n`,
+      `# Charter\n\n- Charter: \`${provenance}\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Specification: ${specification}\n`,
     );
   }
   async writeState(
@@ -616,7 +619,11 @@ describe("bootstrap contract", () => {
       expect(checks(findings)).not.toContain("state-metadata");
       expect(
         [...checks(findings)].every((check) =>
-          ["lifecycle-vocabulary", "charter-provenance"].includes(check),
+          [
+            "lifecycle-vocabulary",
+            "charter-provenance",
+            "specification-provenance",
+          ].includes(check),
         ),
       ).toBe(true);
     } finally {

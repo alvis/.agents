@@ -59,6 +59,27 @@ under X, current is Y" and order migrations by staleness. All three fields
 apply to new and coordinator-rewritten files only — an older file gains them
 at its next explicit rewrite under the lazy-migration rule, never on read.
 
+## Specification provenance
+
+The stream charter owns the exact specification source. Its `## Specification
+provenance` section contains one or more lines in this form. Every stream,
+including a generic coding stream, carries this section.
+
+```markdown
+## Specification provenance
+
+- Specification: [Exact document](<exact-document-link>)
+- Specification: [Related exact document](<related-exact-document-link>)
+```
+
+When no specification exists, the section contains exactly `- Specification:
+None`. A newly bootstrapped stream may temporarily use exactly `- Specification:
+Pending user confirmation`; it must resolve to exact links or `None` before the
+stream enters active execution. “Yes” to an external-store question without a
+supplied entry point remains pending and is never silently normalized to
+`None`. The global overview stores only project-level entry points; it never
+replaces this stream-local provenance.
+
 ## Phase and blockers
 
 Where a stream sits in the pipeline and what is stopping it are independent

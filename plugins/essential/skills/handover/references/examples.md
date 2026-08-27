@@ -28,7 +28,8 @@
 A `reviewing` or `completed` stream is **not** an error: it stays an awaiting
 or index-only row and gets no refresh. An archived stream lives outside
 `works/` and is not indexed. Invalid work IDs and a missing Essential contract path are
-explicit errors. A generic coding stream may omit a specification. There is no
+explicit errors. Every stream records exact specification links or `- Specification: None`; a
+generic coding stream cannot omit the provenance line. There is no
 prefix-based or root-file compatibility fallback.
 
 ## Two streams
@@ -57,6 +58,25 @@ never a fixed skill name; takeover maps it to the relevant implementation skill
 and rejects a missing or contradictory intent.
 
 ## Specifications and local-only changes
+
+A project or stream specification may have multiple source documents. Keep
+project-level entry points in the global overview and every exact stream
+document in that stream's charter:
+
+```markdown
+## Specifications
+
+- [Project hub](https://notion.so/acme/project-hub)
+- [Documentation index](https://notion.so/acme/documentation-index)
+
+## Specification provenance
+
+- Specification: [Authentication requirements](https://notion.so/acme/authentication-requirements)
+- Specification: [Authentication API contract](https://notion.so/acme/authentication-api)
+```
+
+The first two links are project entry points; the last two are exact links for
+one stream and must not be copied into the global overview.
 
 A stream whose relevant repository changes exist only in the working copy is
 still persisted and still resumable — the pause records exactly what is

@@ -62,6 +62,13 @@ continuously by the state contract.
   source (such as a Notion-backed spec) is refreshed through the relevant
   specification-sync skill.
 
+A bootstrap charter may carry `- Specification: Pending user confirmation`,
+but that is not an executable provenance value. Resolve the external-store
+question and record exact stream-local links or `- Specification: None` before
+handing a stream to active execution. The global overview's
+`## Specifications` section is only a project entry-point index; never use it
+as a substitute for the stream's exact specification.
+
 ## State gate
 
 Before creating or materially rewriting a target-project artifact, read the
@@ -141,13 +148,16 @@ L4. For each selected stream, read its on-disk
     state directly: `state/working.md` first when present, then `state.md`
     (including its `## Continuation` section: current task, next owner, next
     action, and continuation intent), its linked detail files, decisions, and the
-    materialized specification. From the `state.md` task table (and any
-    `state/*.md` children), determine which tasks are runnable, which are blocked,
-    the current owner, and the next action; there is no separate validation step.
-    Treat repository and runtime evidence as authoritative over stale local
-    memory. No anchor application, disposable tree, or bootstrap is needed — the
-    work state is already present under the default source tree; the recorded
-    `Location` affects only which source checkout is used for implementation.
+    materialized specification. Read `goal.md`'s `## Specification provenance`
+    and verify it contains exact links or explicit `None` before active
+    execution; a pending value remains a user question. From the `state.md`
+    task table (and any `state/*.md` children), determine which tasks are
+    runnable, which are blocked, the current owner, and the next action; there
+    is no separate validation step. Treat repository and runtime evidence as
+    authoritative over stale local memory. No anchor application, disposable
+    tree, or bootstrap is needed — the work state is already present under the
+    default source tree; the recorded `Location` affects only which source
+    checkout is used for implementation.
 
 L5. Verify each selected stream's **source anchor** against the current checkout
     before handing work off. Read the anchor from that stream's `## Continuation`
