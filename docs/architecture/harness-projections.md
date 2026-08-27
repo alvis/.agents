@@ -16,6 +16,21 @@ from this marketplace, so `scripts/install_opencode.ts` produces a managed
 directory projection and installs `scripts/opencode_adapter.js` as a local
 plugin. OpenCode V2 and `opencode2` are outside this contract.
 
+## Native plan validation
+
+Claude Code supplies plan prose to Essential's plan-transition `PreToolUse`
+validator. T3-hosted Codex Plan Mode instead emits a plan response without that
+tool call. Essential's Codex-only Stop adapter reads the newest assistant
+response for the current `turn_id` from `transcript_path`, requires one complete
+`<proposed_plan>` block, and delegates its body to the same heading validator.
+The first failure blocks for one corrective continuation; a second failure
+stops visibly. Because Stop follows response emission, it cannot retract a
+malformed plan already rendered by T3.
+
+Grok Build's plan tool supplies no plan body and ignores blocking Stop output.
+OpenCode V1 exposes neither a native plan-transition event nor cancellable Stop,
+so their receipts remain adapted and unavailable respectively.
+
 ## OpenCode projection flow
 
 ```text

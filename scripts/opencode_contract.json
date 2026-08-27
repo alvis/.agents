@@ -64,6 +64,13 @@
         "matcher": "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode",
         "supporting_resource": "hooks/scripts/context.sh"
       },
+      "validate-plan-stop": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "unavailable",
+        "event": "Stop",
+        "matcher": null,
+        "supporting_resource": "hooks/scripts/validate-plan"
+      },
       "validate-question": {
         "audiences": ["root", "child"],
         "enforcement_mode": "before",

@@ -633,6 +633,25 @@ describe("project-scope installation", () => {
           name: "essential",
         }),
       ]);
+      const essentialPlugin = (
+        manifest.plugins as readonly {
+          readonly hooks: readonly Record<string, unknown>[];
+        }[]
+      )[0]!;
+      expect(
+        essentialPlugin.hooks.find(
+          ({ managed_resource: resource }) =>
+            resource ===
+            "alvis/plugins/essential/hooks/scripts/validate-plan-stop",
+        ),
+      ).toMatchObject({
+        enforcement_mode: "unavailable",
+        requirements: {
+          supporting_resource:
+            "alvis/plugins/essential/hooks/scripts/validate-plan",
+        },
+        source_event: "Stop",
+      });
       const source = manifest.source as Record<string, unknown>;
       expect(source.marketplace_sha256).toBe(
         sha256(
