@@ -130,9 +130,13 @@ these sources, and each is the rule a locally sensible change breaks first.
 - **Status is not validity.** `done` is terminal history; whether its result still holds
   is a separate question with a separate answer. A skill choosing what to recompute reads
   validity, never status, and never flips a completed row back.
-- **Bind evidence to its exact inputs.** A recorded result names the revision and inputs
-  that produced it. "Passed" alone carries no truth, and must not survive a change to
-  what it was measured against.
+- **Tie evidence to the state it verifies.** Every recorded result names the exact
+  revision and inputs checked. A bare "passed" is not evidence; it is invalid after
+  any checked input changes.
+- **Never test prose by string presence.** Do not add a test that asserts a phrase,
+  sentence, heading, or other prose fragment exists anywhere in repository content.
+  Test executable behavior or machine-checkable structure; review prose against its
+  owning contract.
 - **Supersede, never rewrite.** An accepted decision or shipped contract is replaced
   without rewriting its historical body. ADRs move to their owning
   `decisions/superseded/` folder, gain the standard forward header, and leave the
