@@ -129,6 +129,32 @@ describe("fn:renderInline", () => {
       );
   });
 
+  it("should refuse a scheme obfuscated by what a browser strips", () => {
+    // E-112 — the pattern is anchored at the first character, so any leading
+    // whitespace made it miss entirely and the href was returned untouched.
+    // A browser drops these before it parses a URL, so all four of these run
+    for (const href of [
+      " javascript:alert(1)",
+      "\tjavascript:alert(1)",
+      "\njavascript:alert(1)",
+      "jav\tascript:alert(1)",
+      "jav\nascript:alert(1)",
+      "java\u0000script:alert(1)",
+      " \t data:text/html,<script>x</script>",
+    ])
+      expect(() => html([{ kind: "link", text: "t", href }])).toThrow(
+        "text[0].href: link scheme",
+      );
+  });
+
+  it("should keep an authored href byte-exact once its scheme is allowed", () => {
+    // stripping decides what the href means, never what it is: a space in a
+    // path is part of the URL, and removing it would silently link elsewhere
+    expect(html([{ kind: "link", text: "t", href: "https://x.test/a b" }])).toBe(
+      '<a href="https://x.test/a b">t</a>',
+    );
+  });
+
   it("should accept a relative, fragment, or mailto link", () => {
     for (const href of ["#s-risk", "/board.html", "./sibling.html", "mailto:a@b.test"])
       expect(html([{ kind: "link", text: "t", href }])).toContain(

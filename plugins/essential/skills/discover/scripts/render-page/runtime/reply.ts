@@ -67,6 +67,15 @@ export type Response = "decision" | "follow-up";
 
 /** one question's label and the answer it currently carries. */
 export interface AnswerLine {
+  /**
+   * the citation code drawn beside the question.
+   *
+   * it rides on the answer rather than being looked up beside it, because
+   * every place that prints an answer — the drawer row, the copied reply —
+   * has to print the same code, and one of them fetching it separately is how
+   * they drift apart.
+   */
+  ref: string;
   /** the question's label, as the drawer lists it */
   label: string;
   /** the answer, or the empty string when the question is unanswered */

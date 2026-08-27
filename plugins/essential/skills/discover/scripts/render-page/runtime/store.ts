@@ -1,89 +1,7 @@
 import { parseState } from "./store-read.ts";
+import { PROBE_KEY, SCHEMA, emptyState, storageKey } from "./store-state.ts";
 
-/**
- * a question's saved control state.
- *
- * this keeps what the controls hold, not the sentence the reply prints. A
- * checklist round-tripped through its rendered `"a, b"` answer would lose any
- * option whose own text contains the separator, and a decision would lose the
- * boundary between its verdict and its note.
- */
-export type SavedAnswer =
-  | { kind: "choice" | "scale" | "note"; value: string }
-  | { kind: "checklist"; values: string[] }
-  | { kind: "decision"; verdict: string; note: string };
-
-/**
- * one selection-scoped note.
- *
- * the quote is what the note is about and the note is what the reader said, so
- * both are kept: a quote alone is a highlight, and a note alone has lost what
- * it referred to.
- */
-export interface SavedExcerpt {
-  /** stable within its section, so an edit or a remove can name one */
-  id: string;
-  /** the passage this note is about, already truncated */
-  quote: string;
-  /** what the reader wrote */
-  note: string;
-}
-
-/** the shape a page keeps in storage. */
-export interface SavedState {
-  /** the control state each question holds, keyed by question id */
-  answers: Record<string, SavedAnswer>;
-  /** every question id the reader has touched, whatever it now answers */
-  touched: string[];
-  /**
-   * one whole-section note per section, keyed by section id.
-   *
-   * separate from `excerpts` rather than one list with a null quote: a section
-   * note is a singleton the trigger toggles, and modelling it as a list would
-   * put "which of these is the section one" into every read.
-   */
-  annotations: Record<string, string>;
-  /** the selection-scoped notes, keyed by the same section id */
-  excerpts: Record<string, SavedExcerpt[]>;
-  /**
-   * the order a reader put each probe's items in, keyed by probe id.
-   *
-   * kept as item ids rather than positions, so a probe whose authored list
-   * changed restores every item it still recognises instead of shuffling the
-   * new list into the old list's shape.
-   */
-  orders: Record<string, string[]>;
-}
-
-/** the storage surface this module needs, so a test can supply its own. */
-export interface Store {
-  /** reads a raw entry, or null when the key was never written */
-  getItem(key: string): string | null;
-  /** writes a raw entry */
-  setItem(key: string, value: string): void;
-  /** drops an entry */
-  removeItem(key: string): void;
-}
-
-/** bumped only when a saved shape stops being readable by `parseState`. */
-export const SCHEMA = "v1";
-
-/**
- * builds a state holding nothing
- * @returns a state with every field present and empty
- */
-export function emptyState(): SavedState {
-  return { answers: {}, touched: [], annotations: {}, excerpts: {}, orders: {} };
-}
-
-/**
- * builds the storage key a page saves under
- * @param pageId the page's `data-page-id`
- * @returns a key namespaced by skill and schema, so pages never collide
- */
-export function storageKey(pageId: string): string {
-  return `essential.discover.${SCHEMA}:${pageId}`;
-}
+import type { SavedAnswer, SavedState, Store } from "./store-state.ts";
 
 /**
  * tells whether a saved answer holds anything worth keeping.
@@ -185,19 +103,46 @@ export function saveState(
  * @returns the browser's store, or a session-lived stand-in
  */
 export function safeStore(): Store {
+  // whatever the browser will not keep is held here for the rest of the visit,
+  // so a refused write costs the reader the memory between visits and nothing
+  // in front of them right now
+  const kept = new Map<string, string>();
+  let live = true;
+
   try {
-    const probe = `${storageKey("")}probe`;
-    localStorage.setItem(probe, "1");
-    localStorage.removeItem(probe);
-
-    return localStorage;
+    localStorage.setItem(PROBE_KEY, "1");
+    localStorage.removeItem(PROBE_KEY);
   } catch {
-    const kept = new Map<string, string>();
-
-    return {
-      getItem: (key) => kept.get(key) ?? null,
-      setItem: (key, value) => void kept.set(key, value),
-      removeItem: (key) => void kept.delete(key),
-    };
+    live = false;
   }
+
+  // answering the probe does not promise the next write will be accepted — a
+  // full quota is the ordinary way it is not — and an unguarded write throws
+  // out of the module body, taking every install after it down with it
+  const keep = (act: () => void): boolean => {
+    if (!live) return false;
+    try {
+      act();
+
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  return {
+    // memory holds only what the browser refused, so it is the newer of the two
+    getItem: (key) => kept.get(key) ?? (live ? localStorage.getItem(key) : null),
+    setItem: (key, value) => {
+      if (keep(() => localStorage.setItem(key, value))) kept.delete(key);
+      else kept.set(key, value);
+    },
+    removeItem: (key) => {
+      kept.delete(key);
+      keep(() => localStorage.removeItem(key));
+    },
+  };
 }
+
+export { SCHEMA, emptyState, storageKey } from "./store-state.ts";
+export type { SavedAnswer, SavedExcerpt, SavedState, Store } from "./store-state.ts";

@@ -85,6 +85,8 @@ export type Block =
       type: "choice";
       response?: Response;
       id: string;
+      /** the citation code drawn on its chip and beside it, e.g. `D4` */
+      ref: string;
       label: string;
       ask: string;
       choices: Choice[];
@@ -98,6 +100,8 @@ export type Block =
       type: "decision";
       response?: Response;
       id: string;
+      /** the citation code drawn on its chip and beside it, e.g. `D4` */
+      ref: string;
       label: string;
       ask: string;
       placeholder?: string;
@@ -107,6 +111,8 @@ export type Block =
       type: "note";
       response?: Response;
       id: string;
+      /** the citation code drawn on its chip and beside it, e.g. `D4` */
+      ref: string;
       label: string;
       ask: string;
       placeholder?: string;
@@ -126,6 +132,8 @@ export type Block =
       type: "checklist";
       response?: Response;
       id: string;
+      /** the citation code drawn on its chip and beside it, e.g. `D4` */
+      ref: string;
       label: string;
       ask: string;
       options: Option[];
@@ -261,6 +269,13 @@ export type Block =
    */
   | { type: "disclosure"; summary: string; open?: boolean; blocks: Block[] }
   /**
+   * the hub's index of every board the run produced.
+   *
+   * it carries no fields: the boards come from the run's set file, which
+   * is the same list every board's sidebar is drawn from.
+   */
+  | { type: "boards" }
+  /**
    * a list the reader ranks, by dragging or by key.
    *
    * the authored order is the page's own proposal; the reply reports the
@@ -273,6 +288,8 @@ export type Block =
       type: "scale";
       response?: Response;
       id: string;
+      /** the citation code drawn on its chip and beside it, e.g. `D4` */
+      ref: string;
       label: string;
       ask: string;
       points: ScalePoint[];

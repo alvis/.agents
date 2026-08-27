@@ -1,5 +1,6 @@
 import { escapeHtml } from "./escape.ts";
 import { RenderError } from "./error.ts";
+import { SCHEMES, schemeOf } from "./href.ts";
 import { syncAttribute, termKey } from "./sync.ts";
 import { optionalString, requireObject, requireOneOf, requireString } from "./validate.ts";
 import { PROVENANCE } from "./vocabulary.ts";
@@ -30,22 +31,18 @@ const RUN_FIELDS = {
 const RUN_KINDS = Object.keys(RUN_FIELDS) as (keyof typeof RUN_FIELDS)[];
 
 /**
- * the schemes a link may use.
+ * reads a link target, refusing a scheme that could execute.
  *
- * a relative or fragment href is always fine; a scheme is not, because
- * `javascript:` and `data:` both turn a link into a way to run code in a page
- * that is otherwise only ever given data.
- */
-const SCHEMES = ["http:", "https:", "mailto:"];
-
-/**
- * reads a link target, refusing a scheme that could execute
+ * the scheme is read from the normalised href and the authored one is what is
+ * returned, because stripping is the right model for deciding what the href
+ * *means* and the wrong one for deciding what it *is* — `http://x/a b` and
+ * `http://x/ab` are different URLs.
  * @param href the author-supplied href
  * @param path JSON path of the value, named verbatim by the refusal
  * @returns the href unchanged
  */
 function readHref(href: string, path: string): string {
-  const scheme = /^[a-z][a-z0-9+.-]*:/i.exec(href)?.[0].toLowerCase();
+  const scheme = schemeOf(href);
   if (scheme && !SCHEMES.includes(scheme))
     throw new RenderError(
       `${path}: link scheme ${JSON.stringify(scheme)} is not one of ${SCHEMES.map(

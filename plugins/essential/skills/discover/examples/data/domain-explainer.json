@@ -1,0 +1,249 @@
+{
+  "kind": "domain-explainer",
+  "id": "domain-explainer-live-migration-v1",
+  "action": "Domain explainer",
+  "title": "Changing a live database without a hard cutover",
+  "masthead": {
+    "eyebrow": "Domain explainer · schema evolution",
+    "headline": "The hard part is not the new shape. It is the window where both shapes are true.",
+    "lede": "This board settles the vocabulary before anyone proposes a plan. Every term below has a specific meaning in this work, and two of them are routinely used to mean each other.",
+    "meta": [
+      {
+        "label": "Audience",
+        "value": "Anyone joining mid-migration"
+      },
+      {
+        "label": "Assumes",
+        "value": "SQL, deploys, replicas"
+      },
+      {
+        "label": "Does not assume",
+        "value": "This system"
+      },
+      {
+        "label": "Reading time",
+        "value": "About 8 minutes"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "shape",
+      "label": "The shape",
+      "eyebrow": "Orientation",
+      "title": "Why a schema change is not a deploy.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "If you read nothing else",
+          "points": [
+            {
+              "lead": "Code and data deploy at different speeds.",
+              "text": "A release rolls out over minutes; a backfill of 40 million rows runs for hours. For that whole window, some readers see the old shape and some the new one."
+            },
+            {
+              "lead": "So every step must be safe in both directions.",
+              "text": "A step that only works once every reader has upgraded is a step that cannot be rolled back, and a migration you cannot roll back is one you will finish under pressure."
+            },
+            {
+              "lead": "The cost is a longer sequence, not more risk.",
+              "text": "Expand, migrate, contract takes three releases where a hard cutover takes one. Each of the three is individually boring, which is the point."
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            {
+              "lead": "Expand",
+              "text": "add the new column, index or table. Nothing reads it yet. This release is reversible by dropping what it added."
+            },
+            {
+              "lead": "Migrate",
+              "text": [
+                "write to both shapes, backfill the old rows, and read from the new shape only once the ",
+                { "kind": "term", "text": "backfill", "definition": "the batch job that fills the new shape for rows written before the change." },
+                " has caught up."
+              ]
+            },
+            {
+              "lead": "Contract",
+              "text": "stop writing the old shape, then drop it. This is the only irreversible step, and it is deliberately last and deliberately separate."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terms",
+      "label": "Terms",
+      "eyebrow": "Vocabulary",
+      "title": "What these words mean here.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": [
+            "Two of these — ",
+            { "kind": "term", "text": "dual write", "definition": "writing the same fact to both the old and the new shape in the same transaction, so neither can fall behind the other." },
+            " and ",
+            { "kind": "term", "text": "shadow read", "definition": "reading from the new shape alongside the old one and comparing, without letting the new result reach the user." },
+            " — are frequently used to mean each other in review, and they are not the same thing at all."
+          ]
+        },
+        {
+          "type": "glossary",
+          "entries": [
+            {
+              "term": "dual write",
+              "detail": "Writing the same fact to both shapes inside one transaction. If either write fails, both fail. It is what keeps the two shapes from diverging while both exist; it is not a safety net, because it does nothing for rows written before it was switched on."
+            },
+            {
+              "term": "shadow read",
+              "detail": [
+                "Reading the new shape alongside the old, comparing the two, and discarding the new result. It measures whether the new shape is right; ",
+                { "kind": "mark", "text": "it changes nothing a user sees" },
+                ", which is why it can run for weeks."
+              ]
+            },
+            {
+              "term": "backfill",
+              "detail": [
+                "The batch job that fills the new shape for rows that predate the dual write. Ours is estimated at ",
+                { "kind": "provenance", "text": "9 to 14 hours", "level": "estimated" },
+                " against the replica."
+              ]
+            },
+            {
+              "term": "expand and contract",
+              "detail": [
+                "The three-release sequence above. Also written ",
+                { "kind": "code", "text": "parallel change" },
+                " in older material — the same idea, older name."
+              ]
+            },
+            {
+              "term": "hard cutover",
+              "detail": "Stopping writes, transforming the data, and starting again on the new shape. Simple, correct, and requires a maintenance window nobody will approve for this system."
+            },
+            {
+              "term": "online DDL",
+              "detail": [
+                { "kind": "text", "text": "A schema change the engine applies without holding an exclusive lock for its duration. What counts as online is engine-specific and version-specific: see " },
+                { "kind": "link", "text": "the engine's own table of which ALTERs are online", "href": "https://www.postgresql.org/docs/16/sql-altertable.html" },
+                ", and check it against the version you are actually running rather than the one the docs default to. ",
+                { "kind": "source", "text": "Checked for 16.3", "ref": "postgres 16 \u00b7 ALTER TABLE" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "where",
+      "label": "Where it lives",
+      "eyebrow": "Map",
+      "title": "The files a migration touches.",
+      "blocks": [
+        {
+          "type": "tree",
+          "title": "One expand-migrate-contract change, laid out",
+          "root": "services/orders",
+          "items": [
+            {
+              "name": "migrations/",
+              "note": "one file per release, never edited after merge",
+              "children": [
+                { "name": "0184-add-fulfilment-state.sql", "note": "expand" },
+                { "name": "0185-backfill-fulfilment-state.sql", "note": "migrate, runs out of band" },
+                { "name": "0186-drop-legacy-status.sql", "note": "contract — the only irreversible one" }
+              ]
+            },
+            {
+              "name": "src/",
+              "children": [
+                {
+                  "name": "store/",
+                  "children": [
+                    { "name": "order.write.ts", "note": "where the dual write lives" },
+                    { "name": "order.read.ts", "note": "reads old, then new, behind a flag" }
+                  ]
+                },
+                { "name": "jobs/backfill.ts", "note": "resumable, checkpoints every 10k rows" }
+              ]
+            },
+            { "name": "docs/migration-0184.md", "note": "the rollback procedure, written before the expand" }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "The rollback document comes first",
+          "tone": "bad",
+          "lead": "Before the expand, not after the contract.",
+          "text": "A rollback written after the fact is a description of what you happened to do. Written first, it is a constraint on what the migration is allowed to be — and it is what catches an irreversible step hiding in a release that looked reversible."
+        }
+      ]
+    },
+    {
+      "id": "questions",
+      "label": "Asked already",
+      "eyebrow": "FAQ",
+      "title": "Questions this has already drawn.",
+      "blocks": [
+        {
+          "type": "faq",
+          "items": [
+            {
+              "term": "Can we skip the shadow read if the dual write is correct?",
+              "detail": "Only if you already know it is correct, which is what the shadow read is for. It is the cheapest way to find the rows where the two shapes disagree, and in the last two migrations it found some."
+            },
+            {
+              "term": "How long can the two shapes coexist?",
+              "detail": [
+                "Indefinitely, technically. In practice the contract step slips and the codebase carries both paths for a year. Put a date on the contract release when you write the expand, and treat it as ",
+                { "kind": "mark", "text": "work already scheduled" },
+                " rather than cleanup."
+              ]
+            },
+            {
+              "term": "Does the backfill need a maintenance window?",
+              "detail": [
+                "No. It runs in batches against the primary with a rate limit, and it is resumable. Measured at ",
+                { "kind": "provenance", "text": "4% additional CPU", "level": "measured" },
+                " on the last comparable run."
+              ]
+            },
+            {
+              "term": "What if a row changes while the backfill is reading it?",
+              "detail": "The dual write wins. The backfill only fills rows whose new shape is still empty, so a row the application has already written is never overwritten by the batch."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "explainer-gap",
+          "ref": "N1",
+          "label": "Unfamiliar term",
+          "ask": "Which term above is still doing more work than its definition explains?",
+          "placeholder": "Name the term and what is still unclear about it."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Backfill duration, extrapolated from migration 0171 on the same table",
+      "ref": "jobs/backfill.ts · run 2026-05-02",
+      "level": "estimated"
+    },
+    {
+      "label": "Additional CPU during backfill, measured on the 0171 run",
+      "ref": "grafana · orders-primary · 2026-05-02",
+      "level": "measured"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Live schema change — vocabulary\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}"
+  }
+}

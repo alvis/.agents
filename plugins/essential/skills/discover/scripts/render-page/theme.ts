@@ -1,3 +1,4 @@
+import { readCssValue } from "./css-value.ts";
 import { RenderError } from "./error.ts";
 import { requireObject } from "./validate.ts";
 
@@ -29,18 +30,6 @@ const RAMP = {
 
 /** a token name this page will accept an override for. */
 const TOKEN_NAME = /^--ui-[a-z0-9-]+$/;
-
-/**
- * what a token value may never contain.
- *
- * the value is written into the page verbatim, so this is to a stylesheet what
- * `escapeHtml` is to markup. `}` and `;` would end the declaration and let the
- * next one be authored freely, `<` would close the `<style>` element, `@` would
- * open an at-rule, `/*` would comment out what follows, and `url(` would make
- * the page fetch something — which is the one thing a self-contained page
- * cannot do.
- */
-const FORBIDDEN = /[{};<>@\\]|\/\*|\*\/|url\s*\(/i;
 
 /**
  * reads the accent hue, refusing anything outside a full turn
@@ -81,13 +70,7 @@ function readTokens(overrides: unknown, path: string): [string, string][] {
           `${path}.${name}: required non-empty string, received ${JSON.stringify(value)}`,
         );
 
-      const forbidden = FORBIDDEN.exec(value);
-      if (forbidden)
-        throw new RenderError(
-          `${path}.${name}: value may not contain ${JSON.stringify(forbidden[0])}`,
-        );
-
-      return [name, value.trim()];
+      return [name, readCssValue(value, `${path}.${name}`)];
     },
   );
 }

@@ -1,0 +1,172 @@
+{
+  "kind": "interactive-prototype",
+  "id": "interactive-prototype-review-flow-v1",
+  "action": "Interactive prototype",
+  "title": "Disposable review-flow prototype",
+  "masthead": {
+    "eyebrow": "Prototype · feedback threads",
+    "headline": "Drive it before you read about it.",
+    "lede": "The prototype below is the real thing, packed into this page and running in a sandbox. It is disposable: it exists to settle two questions about the merge interaction, and it will not become the implementation.",
+    "meta": [
+      {
+        "label": "Settles",
+        "value": "2 questions"
+      },
+      {
+        "label": "Fidelity",
+        "value": "Interaction only"
+      },
+      {
+        "label": "Data",
+        "value": "Four fixed threads"
+      },
+      {
+        "label": "Lifespan",
+        "value": "Until the merge plan is approved"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "drive",
+      "label": "Drive it",
+      "eyebrow": "The prototype",
+      "title": "Merge the two cursor threads and watch what happens.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Press Merge on the first thread. Two things are worth watching: what happens to the count, and what the hint underneath changes to. Both are the subject of the questions further down."
+        },
+        {
+          "type": "embed",
+          "title": "Feedback queue — merge interaction",
+          "src": "./assets/review-flow/index.html",
+          "alt": "A feedback queue of four threads. The first two are about the same cursor bug; the first carries a Merge 2 alike button. Pressing it folds the second thread away, drops the open count from four to three, and replaces the hint with a line saying folded threads are kept rather than deleted.",
+          "chrome": "meridian.app/feedback",
+          "viewports": [
+            { "name": "Phone", "width": 390, "height": 620 },
+            { "name": "Tablet", "width": 768, "height": 620 },
+            { "name": "Desktop", "width": 1200, "height": 620 }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "It cannot see this page",
+          "tone": "neutral",
+          "lead": "Sandboxed without same-origin.",
+          "text": "The prototype runs its own script — that is what makes it drivable — but it is denied access to this document, its storage, and every answer you type below. It behaves like itself while being unable to read anything around it."
+        }
+      ]
+    },
+    {
+      "id": "reference",
+      "label": "For contrast",
+      "eyebrow": "Today",
+      "title": "What the same queue looks like now.",
+      "blocks": [
+        {
+          "type": "image",
+          "title": "Today's queue, for comparison",
+          "src": "./assets/orders-console.png",
+          "alt": "The current console: a table of rows with status pills and no grouping, so duplicate threads appear as unrelated rows.",
+          "caption": "Duplicates appear as ordinary, unrelated rows. Nothing on this screen says that two of them are the same complaint.",
+          "pins": [
+            {
+              "x": 45,
+              "y": 45,
+              "text": "These two rows are the same report. Nothing distinguishes that pair from any other adjacent pair, which is the problem the prototype is testing a fix for."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "questions",
+      "label": "What it settles",
+      "eyebrow": "Questions",
+      "title": "The two things the prototype exists to answer.",
+      "blocks": [
+        {
+          "type": "choice",
+          "id": "prototype-fold",
+          "ref": "C1",
+          "label": "Folded threads",
+          "ask": "When threads merge, what should happen to the folded ones on screen?",
+          "recommendation": "Collapse them under the survivor. Hiding them entirely is what the prototype does and it reads as deletion — three of four testers asked whether the thread was gone, which is exactly the doubt the merge feature cannot afford.",
+          "choices": [
+            {
+              "value": "Collapse under the survivor, expandable",
+              "summary": "The folded threads stay visible as a count the reader can open.",
+              "tags": ["Recommended"],
+              "pros": ["Merging never looks like deletion", "Unmerge is discoverable from where the merge happened"],
+              "cons": ["A second state to design and to test at narrow widths"]
+            },
+            {
+              "value": "Hide entirely, as the prototype does",
+              "summary": "The queue simply gets shorter.",
+              "tags": ["Pragmatic"],
+              "pros": ["Simplest possible result", "The count change is unambiguous"],
+              "cons": ["Reads as deletion", "Unmerge has to live somewhere the reader has no reason to look"]
+            },
+            {
+              "value": "Keep them in place, dimmed",
+              "summary": "Nothing moves; folded threads dim and lose their actions.",
+              "tags": ["Workaround"],
+              "pros": ["No layout shift at all"],
+              "cons": ["The queue does not get shorter, which is the point of merging"]
+            }
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "prototype-observed",
+          "ref": "K2",
+          "label": "What you noticed",
+          "ask": "Which of these did you notice while driving it?",
+          "options": [
+            {
+              "value": "The count dropped from 4 to 3",
+              "summary": "The open-thread count is the primary feedback that something happened."
+            },
+            {
+              "value": "The hint changed",
+              "summary": "The line about folded threads being kept is the only reassurance on screen."
+            },
+            {
+              "value": "The merge button became a label",
+              "summary": "It stays visible as 'Merged 2' rather than disappearing."
+            },
+            {
+              "value": "I could not tell where the second thread went",
+              "summary": "The failure mode this prototype was built to expose."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "prototype-narrow",
+          "ref": "N3",
+          "label": "At phone width",
+          "ask": "Switch the prototype to Phone and merge again. Does anything read differently?",
+          "placeholder": "Particularly whether the hint is still visible when the merge happens."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Tester reactions to the hidden-thread behaviour, four sessions",
+      "ref": "research/2026-08-21-merge-proto.md",
+      "level": "measured"
+    },
+    {
+      "label": "The prototype's data is fixed and invented for the test",
+      "ref": "assets/review-flow/index.html",
+      "level": "invented"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Review-flow prototype\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{caveats}}"
+  }
+}

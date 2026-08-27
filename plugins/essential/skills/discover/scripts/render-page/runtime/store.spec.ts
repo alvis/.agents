@@ -291,6 +291,44 @@ describe("fn:safeStore", () => {
     expect(store.getItem("k")).toBe("v");
   });
 
+  it("should probe under a key no page could ever be given", () => {
+    // E-115 — the probe was `storageKey("")` plus "probe", which spells
+    // `storageKey("probe")` exactly, so a board with that id had its whole
+    // saved state removed by the probe's own cleanup on every single load
+    const removed: string[] = [];
+    Reflect.set(globalThis, "localStorage", {
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: (key: string) => void removed.push(key),
+    });
+    safeStore();
+
+    expect(removed).not.toContain(storageKey("probe"));
+    expect(removed).toHaveLength(1);
+  });
+
+  it("should survive a store that only refuses once it is full", () => {
+    // E-116 — the probe passes on an empty quota and says nothing about the
+    // write that fills it; unguarded, that write throws out of the module body
+    // and every install after it never runs
+    const kept = new Map<string, string>();
+    let accepting = true;
+    Reflect.set(globalThis, "localStorage", {
+      getItem: (key: string) => kept.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        if (!accepting) throw new Error("QuotaExceededError");
+        kept.set(key, value);
+      },
+      removeItem: (key: string) => void kept.delete(key),
+    });
+    const store = safeStore();
+    accepting = false;
+
+    expect(() => store.setItem("k", "v")).not.toThrow();
+    // and the reader still sees what they just did, for this visit at least
+    expect(store.getItem("k")).toBe("v");
+  });
+
   it("should forget everything the stand-in was told to drop", () => {
     Reflect.deleteProperty(globalThis, "localStorage");
     const store = safeStore();

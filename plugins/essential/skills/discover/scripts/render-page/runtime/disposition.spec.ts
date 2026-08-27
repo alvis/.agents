@@ -11,6 +11,7 @@ import type { AnswerLine } from "./reply.ts";
  */
 function line(over: Partial<AnswerLine> = {}): AnswerLine {
   return {
+    ref: "D1",
     label: "Rollout",
     value: "",
     response: "decision",
@@ -62,10 +63,10 @@ describe("fn:dispositionOf", () => {
 describe("fn:formatAnswers", () => {
   it("should group decisions under the heading each answer earns", () => {
     const out = formatAnswers([
-      line({ label: "Keep", value: "Approve", recommended: ["Approve"], touched: true }),
-      line({ label: "Drop", value: "Change", recommended: ["Approve"], touched: true }),
-      line({ label: "Owner", value: "Ada", touched: true }),
-      line({ label: "Later", recommended: ["Approve"] }),
+      line({ ref: "D1", label: "Keep", value: "Approve", recommended: ["Approve"], touched: true }),
+      line({ ref: "D2", label: "Drop", value: "Change", recommended: ["Approve"], touched: true }),
+      line({ ref: "N3", label: "Owner", value: "Ada", touched: true }),
+      line({ ref: "D4", label: "Later", recommended: ["Approve"] }),
     ]);
 
     expect(out).toBe(
@@ -73,16 +74,16 @@ describe("fn:formatAnswers", () => {
         "## Decisions",
         "",
         "### Changed",
-        "- **Drop:** Change _(recommended: Approve)_",
+        "- **D2 · Drop:** Change _(recommended: Approve)_",
         "",
         "### Confirmed",
-        "- **Keep:** Approve",
+        "- **D1 · Keep:** Approve",
         "",
         "### Answered",
-        "- **Owner:** Ada",
+        "- **N3 · Owner:** Ada",
         "",
         "### Not yet marked",
-        "- **Later:** recommended Approve; not yet confirmed",
+        "- **D4 · Later:** recommended Approve; not yet confirmed",
       ].join("\n"),
     );
   });
@@ -99,10 +100,10 @@ describe("fn:formatAnswers", () => {
   it("should keep follow-ups out of the decisions section", () => {
     const out = formatAnswers([
       line({ label: "Keep", value: "Approve", recommended: ["Approve"], touched: true }),
-      line({ label: "Chase", value: "Yes", response: "follow-up", touched: true }),
+      line({ ref: "F2", label: "Chase", value: "Yes", response: "follow-up", touched: true }),
     ]);
 
-    expect(out).toContain("## Follow-ups\n\n### Requested\n- **Chase:** Yes");
+    expect(out).toContain("## Follow-ups\n\n### Requested\n- **F2 · Chase:** Yes");
     expect(out.split("## Follow-ups")[0]).not.toContain("Chase");
   });
 

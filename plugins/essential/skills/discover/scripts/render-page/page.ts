@@ -3,20 +3,22 @@ import { renderMetrics } from "./block/metric.ts";
 import { COPY_ICONS } from "./copy.ts";
 import { RenderError } from "./error.ts";
 import { escapeHtml } from "./escape.ts";
+import { freshIds } from "./id.ts";
 import { questionsOf, renderReply, replyTemplate } from "./reply.ts";
 import { SCHEME_ICONS } from "./scheme.ts";
 import { renderSection } from "./section.ts";
+import { renderBoardSet } from "./set.ts";
 import { renderSources } from "./source.ts";
 import { renderTheme } from "./theme.ts";
+import { PAGE_KINDS } from "./types/page.ts";
 import {
   requireArray,
   requireObject,
   requireOneOf,
   requireString,
 } from "./validate.ts";
-import { PAGE_KINDS } from "./vocabulary.ts";
 
-import type { PageAssets } from "./assets.ts";
+import type { PageAssets } from "./bundle.ts";
 import type { PageContext } from "./context.ts";
 import type { PageData, Section } from "./types.ts";
 
@@ -32,24 +34,42 @@ export function renderPage(data: PageData, assets: PageAssets): string {
   const title = requireString(data.title, "title");
   const action = requireString(data.action, "action");
   requireObject<PageData["masthead"]>(data.masthead, "masthead");
-  requireObject<PageData["reply"]>(data.reply, "reply");
   // one page-wide set per kind: a duplicate id is refused wherever the second
   // one sits, and a section may still share an authored name with a question
+  const id = requireString(data.id, "id");
   const page: PageContext = {
-    ids: {
-      finding: new Set<string>(),
-      probe: new Set<string>(),
-      question: new Set<string>(),
-      section: new Set<string>(),
-    },
+    ids: freshIds(),
     files: assets.files ?? {},
+    id,
+    set: assets.set,
   };
   const sections = requireArray<Section>(data.sections, "sections")
     .map((section, index) => renderSection(section, index, page))
     .join("");
   const sources = renderSources(data.sources, "sources");
+  // a board that asks nothing carries no reply, and so no count to announce,
+  // no reply to show, and nothing to copy. Drawing those controls anyway would
+  // offer a reader an empty message to send back
+  const asks = questionsOf(data.sections).length;
+  if (asks) requireObject<PageData["reply"]>(data.reply, "reply");
   const mermaid = mermaidScript(data, assets);
   const theme = renderTheme(data.theme, "theme");
+  // drawn last inside the sheet, below the three columns. The grid is what a
+  // reader opens the drawer for; the run's other boards are where they go once
+  // they are finished with this one, so they read as a footer rather than as
+  // the first thing between the reader and the sections they came for
+  const boardSet = renderBoardSet(assets.set, id);
+  // the chip strip is painted by the runtime, because a chip's colour is the
+  // answer behind it; the renderer ships the rail it paints into
+  const chips = asks
+    ? '<div class="chip-strip" data-chip-strip role="group" aria-label="Question status"></div>'
+    : "";
+  const counters = asks
+    ? `<span class="drawer-count" id="drawer-count" data-unanswered-count aria-live="polite">${asks} unanswered</span>
+<button type="button" class="reply-show" data-reply-open hidden>Show reply</button>
+<button type="button" class="copy" data-copy><span class="sr-only">Copy reply</span>${COPY_ICONS}<span class="copy-state" data-copy-status role="status"></span></button>`
+    : "";
+  const reply = asks ? replyDialog(data) : "";
   const nav = data.sections
     .map(
       (section) =>
@@ -71,7 +91,7 @@ ${assets.css}${theme && `\n${theme}`}
 ${assets.boot}
 </script>
 </head>
-<body data-page-id="${escapeHtml(requireString(data.id, "id"))}" data-kind="${escapeHtml(data.kind)}">
+<body data-page-id="${escapeHtml(id)}" data-kind="${escapeHtml(data.kind)}">
 <main class="page">
 <header class="masthead">
 <p class="eyebrow">${escapeHtml(requireString(data.masthead.eyebrow, "masthead.eyebrow"))}</p>
@@ -84,20 +104,19 @@ ${sources}
 </main>
 <div class="drawer" data-drawer>
 <div class="drawer-bar" data-drawer-bar>
-<button type="button" class="drawer-toggle" data-drawer-toggle aria-expanded="false" aria-controls="drawer-panel" aria-describedby="drawer-count">
-<span class="drawer-action">${escapeHtml(action)}</span>
-<span class="drawer-hint" data-drawer-hint>Expand</span>
-</button>
-<span class="drawer-count" id="drawer-count" data-unanswered-count aria-live="polite">${questionsOf(data.sections).length} unanswered</span>
-<button type="button" class="reply-show" data-reply-open hidden>Show reply</button>
-<button type="button" class="copy" data-copy><span class="sr-only">Copy reply</span>${COPY_ICONS}<span class="copy-state" data-copy-status role="status"></span></button>
+<span class="drawer-action">${escapeHtml(action)}</span>${chips}
+<div class="drawer-controls">${counters}
 <button type="button" class="scheme" data-scheme-toggle data-scheme="auto">${SCHEME_ICONS}<span class="sr-only">Colour scheme: <span data-scheme-state>Auto</span></span></button>
+<button type="button" class="drawer-toggle" data-drawer-toggle aria-expanded="false" aria-controls="drawer-panel"${asks ? ' aria-describedby="drawer-count"' : ""}><span class="sr-only">${escapeHtml(action)}: </span><span class="drawer-hint" data-drawer-hint>Expand</span></button>
 </div>
-<div class="drawer-panel" id="drawer-panel" hidden>
+</div>
+<div class="drawer-panel" id="drawer-panel" inert aria-hidden="true">
+<div class="drawer-sheet">
 <div class="drawer-grid">
 <nav class="drawer-nav" aria-label="Sections"><h3>Sections</h3>${nav}</nav>
 <div><h3>Decisions</h3><ul class="summaries" data-summaries></ul><button type="button" class="approve-rest" data-approve-rest hidden>Approve the unmarked questions</button></div>
 <div class="drawer-notes"><h3>Notes <span class="note-count" data-note-count>0 notes</span></h3><ul class="note-list" data-notes></ul><button type="button" class="note-clear" data-note-clear hidden>Clear all notes</button></div>
+</div>${boardSet}
 </div>
 </div>
 </div>
@@ -115,18 +134,36 @@ ${sources}
 </div>
 </form>
 </dialog>
-<dialog class="reply-dialog" data-reply-dialog open aria-labelledby="reply-dialog-title">
-<form method="dialog" class="reply-head">
-<h3 id="reply-dialog-title">${escapeHtml(requireString(data.reply.heading, "reply.heading"))}</h3>
-<button type="submit" class="reply-close" data-reply-close>Close</button>
-</form>
-<pre class="reply" data-reply data-template="${escapeHtml(replyTemplate(data))}">${escapeHtml(renderReply(data))}</pre>
-</dialog>
-${mermaid}<script>
+${reply}${mermaid}<script>
 ${assets.runtime}
 </script>
 </body>
 </html>
+`;
+}
+
+/**
+ * draws the dialog holding the reply, for a board that asks something.
+ *
+ * it is a dialog rather than a panel because the reply is the end of the
+ * reader's work with the board, not another thing to read past on the way
+ * through it.
+ * @param data the parsed presentation data
+ * @returns the dialog as HTML
+ */
+function replyDialog(data: PageData): string {
+  const reply = requireObject<NonNullable<PageData["reply"]>>(
+    data.reply,
+    "reply",
+  );
+
+  return `<dialog class="reply-dialog" data-reply-dialog open aria-labelledby="reply-dialog-title">
+<form method="dialog" class="reply-head">
+<h3 id="reply-dialog-title">${escapeHtml(requireString(reply.heading, "reply.heading"))}</h3>
+<button type="submit" class="reply-close" data-reply-close>Close</button>
+</form>
+<pre class="reply" data-reply data-template="${escapeHtml(replyTemplate(data))}">${escapeHtml(renderReply(data))}</pre>
+</dialog>
 `;
 }
 

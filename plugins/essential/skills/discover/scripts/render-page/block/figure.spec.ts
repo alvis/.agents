@@ -35,7 +35,7 @@ describe("fn:renderBlock tree", () => {
     items: [
       { name: "render-page.ts", note: "the entry" },
       { name: "render-page/", children: [{ name: "block.ts" }, { name: "page.ts" }] },
-      { name: "build-artifact.ts" },
+      { name: "test-support.ts" },
     ],
   };
 
@@ -43,7 +43,7 @@ describe("fn:renderBlock tree", () => {
     const drawn = html(tree);
 
     expect(drawn).toContain("├── render-page.ts");
-    expect(drawn).toContain("└── build-artifact.ts");
+    expect(drawn).toContain("└── test-support.ts");
     expect(drawn).toContain("│   ├── block.ts");
     expect(drawn).toContain("│   └── page.ts");
   });
@@ -147,6 +147,18 @@ describe("fn:renderBlock svg", () => {
     );
   });
 
+  // only what a browser would actually fetch is read as a reference. Checking
+  // every attribute for a scheme made prose refuse the whole board, because a
+  // sentence opening "Note:" reads as one
+  it.each([
+    ["prose that opens with a word and a colon", 'aria-label="Note: an order row"'],
+    ["a font stack naming a family with a colon", 'font-family="Note:Serif, serif"'],
+  ])("should render a drawing carrying %s", (_, attribute) => {
+    const carried = `<svg ${attribute}><rect x="1" y="1" width="8" height="8" /></svg>`;
+
+    expect(() => html(block, withFile("mark.svg", carried))).not.toThrow();
+  });
+
   it("should allow a declaration or comment before the root element", () => {
     const declared = `<?xml version="1.0"?>\n<!-- drawn by hand -->\n${drawing}`;
 
@@ -154,13 +166,43 @@ describe("fn:renderBlock svg", () => {
   });
 
   // inlined SVG is same-origin markup, not an isolated image, so anything
-  // executable in it would run as the page
+  // executable in it would run as the page. The drawing is parsed and rebuilt
+  // from an allowed vocabulary, so each of these is refused by being absent
+  // from it rather than by matching a pattern someone remembered to write
   it.each([
     ['<svg><script>alert(1)</script></svg>', /carries a <script>/],
     ['<svg onload="alert(1)"></svg>', /carries an inline event handler/],
     ['<svg><foreignObject><b>x</b></foreignObject></svg>', /carries a <foreignObject>/],
-    ['<svg><image href="https://example.test/x.png" /></svg>', /references something over the network/],
-    ['<svg><use href="//example.test/x#a" /></svg>', /references something over the network/],
+    ['<svg><image href="https://example.test/x.png" /></svg>', /carries an <image>/],
+    ['<svg><use href="//example.test/x#a" /></svg>', /may only point within the page/],
+    ['<svg><a href="https://example.test/"><text>x</text></a></svg>', /carries an <a>/],
+    ['<svg><g\u002fonclick="alert(1)"><text>x</text></g></svg>', /carries an inline event handler/],
+    ['<svg><style>@import url(https://evil.test/x.css);</style></svg>', /carries a <style>/],
+    ['<svg><set attributeName="href" to="javascript:alert(1)" /></svg>', /carries an SVG animation element/],
+    ['<svg><rect fill="url(https://evil.test/p.png)" /></svg>', /may only point within the page/],
+    ['<svg><rect data-track="x" /></svg>', /is not one an inlined drawing may carry/],
+    ['<svg><rect style="fill:red" /></svg>', /painted with presentation attributes/],
+    ['<svg><marquee>x</marquee></svg>', /is not one an inlined drawing may hold/],
+    // R2-INL-02: a closing quote separates two attributes, so a pattern that
+    // demands whitespace before the handler never sees this one
+    ['<svg><g id="a"onclick="alert(1)"><text>x</text></g></svg>', /carries an inline event handler/],
+    // R2-INL-03: the parser resolves the reference and a check on the raw bytes
+    // does not, so the scheme reaching the browser is not the one that was read
+    ['<svg><use href="&#104;ttps://evil.test/p#a" /></svg>', /may only point within the page/],
+    ['<svg><use href="&#106;avascript:alert(1)" /></svg>', /may only point within the page/],
+    ['<svg><text>R&D</text></svg>', /character reference this does not resolve/],
+    // R2-INL-04: the check asked only what the file began with, so anything
+    // after the drawing was inlined without ever being looked at
+    [
+      '<svg></svg><iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
+      /carries an <iframe> element after its <\/svg>/,
+    ],
+    ['<svg></svg><script>alert(1)</script>', /carries a <script> element after its <\/svg>/],
+    ['<svg></svg>trailing words', /carries the text "trailing words" after its <\/svg>/],
+    ['<svg><g><rect /></svg>', /closes <\/svg> where <g> is open/],
+    ['<svg><g><rect /></g>', /leaves <svg> open/],
+    ['<svg><g><rect /></b></g></svg>', /closes <\/b> where <g> is open/],
+    ['<!DOCTYPE svg [<!ENTITY x "y">]><svg />', /declares entities of its own/],
   ])("should refuse markup that %s", (markup, complaint) => {
     expect(() => html(block, withFile("mark.svg", markup))).toThrow(complaint);
   });

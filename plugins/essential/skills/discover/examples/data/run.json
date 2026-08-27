@@ -1,0 +1,110 @@
+{
+  "label": "Discover example boards",
+  "boards": [
+    {
+      "id": "board-hub-examples-v1",
+      "label": "Board hub",
+      "data": "board-hub.json",
+      "out": "board-hub.html",
+      "blurb": "The index for a run that produced several boards. Start here."
+    },
+    {
+      "id": "ranked-options-event-compatibility-v2",
+      "label": "Ranked options",
+      "data": "ranked-options.json",
+      "out": "ranked-options.html",
+      "blurb": "Complete alternatives, ranked, each with what it costs — for a decision with more than one defensible answer."
+    },
+    {
+      "id": "guided-interview-invoice-finalization-v1",
+      "label": "Guided interview",
+      "data": "guided-interview.json",
+      "out": "guided-interview.html",
+      "blurb": "A run of questions that settles a contract, asked in the order the answers depend on each other."
+    },
+    {
+      "id": "risk-context-report-case-summary-v1",
+      "label": "Risk context report",
+      "data": "risk-context-report.json",
+      "out": "risk-context-report.html",
+      "blurb": "Severity-ranked findings and the context around them, for work whose risk is the thing being decided."
+    },
+    {
+      "id": "architecture-board-conflux-sync-v1",
+      "label": "Architecture board",
+      "data": "architecture-board.json",
+      "out": "architecture-board.html",
+      "blurb": "One layered picture of a system, with the decisions worth defending pinned onto it."
+    },
+    {
+      "id": "specimen-board-meridian-orders-v1",
+      "label": "Brand specimen",
+      "data": "specimen-board.json",
+      "out": "specimen-board.html",
+      "blurb": "A product's own palette, type and components, shown rather than described."
+    },
+    {
+      "id": "domain-explainer-live-migration-v1",
+      "label": "Domain explainer",
+      "data": "domain-explainer.json",
+      "out": "domain-explainer.html",
+      "blurb": "The vocabulary and shape of an unfamiliar problem, before any option is on the table."
+    },
+    {
+      "id": "readiness-check-notification-service-v1",
+      "label": "Readiness check",
+      "data": "readiness-check.json",
+      "out": "readiness-check.html",
+      "blurb": "Whether a piece of work is ready to start, measured against what it would need."
+    },
+    {
+      "id": "triage-board-beacon-r7-v1",
+      "label": "Triage board",
+      "data": "triage-board.json",
+      "out": "triage-board.html",
+      "blurb": "A backlog sorted into what gets done, what waits, and what is being dropped on purpose."
+    },
+    {
+      "id": "plan-review-feedback-threads-v1",
+      "label": "Plan review",
+      "data": "plan-review.json",
+      "out": "plan-review.html",
+      "blurb": "A plan laid out for challenge: the sequence, the owners, and the risks each step carries."
+    },
+    {
+      "id": "change-walkthrough-alert-dedup-v1",
+      "label": "Change walkthrough",
+      "data": "change-walkthrough.json",
+      "out": "change-walkthrough.html",
+      "blurb": "A diff read in the order it makes sense, with the reviewer's notes under the lines they are about."
+    },
+    {
+      "id": "build-journal-geofence-alerts-v1",
+      "label": "Build journal",
+      "data": "build-journal.json",
+      "out": "build-journal.html",
+      "blurb": "What was built, in what order, and what each step turned out to cost."
+    },
+    {
+      "id": "brainstorm-spectrum-onboarding-v1",
+      "label": "Brainstorm spectrum",
+      "data": "brainstorm-spectrum.json",
+      "out": "brainstorm-spectrum.html",
+      "blurb": "The range of interventions available, from cheapest to most invasive, before anything is chosen."
+    },
+    {
+      "id": "semantics-map-stream-cursor-v1",
+      "label": "Semantics map",
+      "data": "semantics-map.json",
+      "out": "semantics-map.html",
+      "blurb": "What each term means on both sides of a port, and where the two vocabularies fail to line up."
+    },
+    {
+      "id": "interactive-prototype-review-flow-v1",
+      "label": "Interactive prototype",
+      "data": "interactive-prototype.json",
+      "out": "interactive-prototype.html",
+      "blurb": "A working screen embedded in the board, driveable at the widths it was designed for."
+    }
+  ]
+}

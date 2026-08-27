@@ -447,6 +447,7 @@
         {
           "type": "choice",
           "id": "architecture-readiness",
+          "ref": "C1",
           "label": "Architecture readiness for build",
           "ask": "Choose how much of this architecture the implementer should treat as fixed.",
           "choices": [
@@ -497,6 +498,7 @@
         {
           "type": "note",
           "id": "architecture-constraint",
+          "ref": "N2",
           "label": "Constraint that changes the architecture",
           "ask": "What constraint should change one of these decisions?",
           "placeholder": "For example: the CRDT memory footprint per document exceeds the per-instance budget at our largest tenants."

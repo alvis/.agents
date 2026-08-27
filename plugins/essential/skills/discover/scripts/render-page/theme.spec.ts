@@ -116,25 +116,25 @@ describe("fn:renderTheme", () => {
     );
   });
 
-  it("should refuse a value that could break out of its declaration", () => {
-    // this is what escapeHtml is to markup: the value is written verbatim, so
-    // anything that can end the declaration, the rule, or the <style> element
-    // is refused by the character that would have done it
-    for (const [value, shown] of [
-      ["#fff}", "}"],
-      ["#fff;color:red", ";"],
-      ["</style><script>", "<"],
-      ["#fff @import x", "@"],
-      ["#fff/*", "/*"],
-      ["url(https://x/y.png)", "url("],
-      ["url\t(https://x/y.png)", "url\t("],
-      // an escape spells the same function without the letters, so the
-      // backslash has to go whether or not it currently spells anything
-      ["u\\72 l(https://x/y.png)", "\\"],
-    ] as const)
-      expect(() => css({ light: { "--ui-canvas": value } })).toThrow(
-        `theme.light.--ui-canvas: value may not contain ${JSON.stringify(shown)}`,
-      );
+  it("should read a token value by grammar, naming the token that failed", () => {
+    // D-63 — the value is written into the page verbatim, and no encoding of
+    // `url(https://…)` stops it fetching, so the value is read rather than
+    // filtered. The grammar itself is covered in css-value.spec.ts; what
+    // matters here is that a token goes through it under its own JSON path
+    expect(() => css({ light: { "--ui-canvas": "#fff;color:red" } })).toThrow(
+      'theme.light.--ui-canvas: ";" is not part of a colour, length, keyword, or permitted function',
+    );
+    expect(() => css({ dark: { "--ui-canvas": "url(https://x/y.png)" } })).toThrow(
+      'theme.dark.--ui-canvas: "url(" is not a permitted function',
+    );
+  });
+
+  it("should refuse a token value that fetches through a function url( never named", () => {
+    // E-114 — the denylist this replaced blocked `url(` and nothing else, so a
+    // board broke R6 with a token value and the suite had nothing to say
+    expect(() =>
+      css({ light: { "--ui-canvas": 'image-set("https://evil.example/bg.png" 1x)' } }),
+    ).toThrow('theme.light.--ui-canvas: "image-set(" is not a permitted function');
   });
 
   it("should refuse a scheme map that is not an object", () => {

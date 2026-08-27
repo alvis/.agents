@@ -1,13 +1,5 @@
 import type { Block } from "./types.ts";
 
-/** every presentation kind the renderer accepts. */
-export const PAGE_KINDS = [
-  "ranked-options",
-  "guided-interview",
-  "risk-context-report",
-  "architecture-board",
-] as const;
-
 /** the judgements a table cell may carry. */
 export const VERDICTS = ["good", "mixed", "bad"] as const;
 

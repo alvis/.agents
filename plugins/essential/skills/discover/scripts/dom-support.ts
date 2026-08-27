@@ -1,19 +1,40 @@
 /**
  * a stand-in for `Element.classList`, holding the four calls the runtime makes.
  *
- * a set rather than a string, because every caller here asks whether a class is
- * present or toggles one; none of them reads the attribute back as text.
+ * a view over the `class` attribute rather than a set beside it, because the
+ * DOM keeps the two in step: an element built with `class="diagram"` is one a
+ * `.diagram` query finds, and a class added at runtime is one a later query
+ * has to see.
  */
 export class StubTokenList {
-  /** the classes currently on the element */
-  private readonly held = new Set<string>();
+  /**
+   * builds the list over an element's attributes
+   * @param attributes the attributes carrying the `class` this list presents
+   */
+  constructor(private readonly attributes: Record<string, string>) {}
+
+  /**
+   * the classes currently on the element
+   * @returns the class names, in attribute order
+   */
+  private get held(): string[] {
+    return (this.attributes.class ?? "").split(/\s+/).filter(Boolean);
+  }
+
+  /**
+   * writes the classes back to the attribute a query reads them from
+   * @param names the class names to hold
+   */
+  private hold(names: string[]): void {
+    this.attributes.class = names.join(" ");
+  }
 
   /**
    * adds a class
    * @param name the class to add
    */
   add(name: string): void {
-    this.held.add(name);
+    if (!this.contains(name)) this.hold([...this.held, name]);
   }
 
   /**
@@ -21,7 +42,7 @@ export class StubTokenList {
    * @param name the class to remove
    */
   remove(name: string): void {
-    this.held.delete(name);
+    this.hold(this.held.filter((held) => held !== name));
   }
 
   /**
@@ -30,7 +51,7 @@ export class StubTokenList {
    * @returns whether the element carries it
    */
   contains(name: string): boolean {
-    return this.held.has(name);
+    return this.held.includes(name);
   }
 
   /**
@@ -40,9 +61,9 @@ export class StubTokenList {
    * @returns whether the class is present afterwards
    */
   toggle(name: string, force?: boolean): boolean {
-    const wanted = force ?? !this.held.has(name);
-    if (wanted) this.held.add(name);
-    else this.held.delete(name);
+    const wanted = force ?? !this.contains(name);
+    if (wanted) this.add(name);
+    else this.remove(name);
 
     return wanted;
   }
@@ -68,12 +89,76 @@ function detach(node: StubElement): void {
  * those modules use. It proves the branching, not the browser — layout,
  * cascade, and focus order are proven by driving a rendered page instead.
  */
+/**
+ * names the attribute a dataset key stands for
+ * @param key the camel-cased dataset key
+ * @returns the `data-*` attribute name
+ */
+function attributeOf(key: string): string {
+  return `data-${key.replaceAll(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+}
+
+/**
+ * names the dataset key an attribute presents as
+ * @param name the `data-*` attribute name
+ * @returns the camel-cased key
+ */
+function keyOf(name: string): string {
+  return name
+    .slice("data-".length)
+    .replaceAll(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
+/**
+ * builds the `dataset` view over an element's attributes
+ * @param attributes the attributes to present, and to write through to
+ * @returns the dataset, live in both directions
+ */
+function datasetOf(attributes: Record<string, string>): Record<string, string> {
+  const held = (key: string | symbol): string =>
+    typeof key === "string" ? attributeOf(key) : "";
+
+  return new Proxy({} as Record<string, string>, {
+    get: (_, key) => attributes[held(key)],
+    set: (_, key, value: string) => {
+      attributes[held(key)] = value;
+
+      return true;
+    },
+    deleteProperty: (_, key) => {
+      delete attributes[held(key)];
+
+      return true;
+    },
+    has: (_, key) => held(key) in attributes,
+    ownKeys: () =>
+      Object.keys(attributes)
+        .filter((name) => name.startsWith("data-"))
+        .map(keyOf),
+    getOwnPropertyDescriptor: (_, key) =>
+      held(key) in attributes
+        ? {
+            configurable: true,
+            enumerable: true,
+            value: attributes[held(key)],
+          }
+        : undefined,
+  });
+}
+
 export class StubElement {
   /** the element's tag name, lowercased */
   readonly tag: string;
   /** every attribute, including the `data-*` ones `dataset` mirrors */
   readonly attributes: Record<string, string>;
-  /** the `data-*` attributes, camel-cased as the DOM presents them */
+  /**
+   * the `data-*` attributes, camel-cased as the DOM presents them.
+   *
+   * a view over `attributes` rather than a copy of it, because the DOM keeps
+   * the two in step both ways: code that writes `dataset.noteEdit` expects a
+   * later `[data-note-edit]` selector to find the element, and a snapshot
+   * would leave that write invisible to every query.
+   */
   readonly dataset: Record<string, string>;
   /** children, in document order; the stub has no deeper tree than this */
   readonly children: StubElement[];
@@ -85,6 +170,15 @@ export class StubElement {
   hidden = false;
   /** whether `focus()` has been called on this element */
   focused = false;
+
+  /**
+   * whether the last `focus()` let the browser scroll to this element.
+   *
+   * a real browser reveals whatever it focuses, which inside a collapsed
+   * scroller means scrolling it — so a caller focusing something mid-animation
+   * has to say it does not want that, and a test has to be able to read it.
+   */
+  focusScrolled = false;
   /** whether `scrollIntoView()` has been called on this element */
   scrolled = false;
   /** the element that holds this one, set as the tree is built */
@@ -99,9 +193,55 @@ export class StubElement {
   open: boolean;
 
   /** the element's classes, as the DOM's token list presents them */
-  readonly classList = new StubTokenList();
+  readonly classList: StubTokenList;
+
+  /**
+   * the `class` attribute as text, which is the other name the DOM gives it
+   * @returns the class attribute, or empty where the element carries none
+   */
+  get className(): string {
+    return this.attributes.class ?? "";
+  }
+
+  /**
+   * sets the whole `class` attribute
+   * @param held the classes to hold, space-separated
+   */
+  set className(held: string) {
+    this.attributes.class = held;
+  }
   /** the element's keyboard order, defaulting to unreachable as a div is */
   tabIndex = -1;
+
+  /**
+   * the inline styles the runtime writes, by property name.
+   *
+   * a plain record rather than a declaration: nothing here reads a style back
+   * as the browser computes it, so what a test needs is the value the runtime
+   * wrote, under the name it wrote it as.
+   */
+  readonly style: Record<string, string> = {};
+
+  /** the element's laid-out width, which a test sets to the column it is read in */
+  clientWidth = 0;
+
+  /**
+   * how wide the element's content is, which a test sets to overflow it.
+   *
+   * zero by default, matching `clientWidth`, so an element no test has laid out
+   * reports a scroller with nothing hidden rather than one hiding its content.
+   */
+  scrollWidth = 0;
+
+  /** how far a scroller has been scrolled sideways, as the runtime moves it */
+  scrollLeft = 0;
+
+  /**
+   * where the element sits, which a test sets before driving a pointer.
+   *
+   * zeroed by default, as an element that has never been laid out reports.
+   */
+  box = { top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0 };
 
   /** every handler registered here, by event type */
   private readonly handlers: Record<string, ((event: unknown) => void)[]> = {};
@@ -130,18 +270,8 @@ export class StubElement {
     this.children = children;
     this.open = "open" in attributes;
     for (const child of children) child.parent = this;
-    this.dataset = Object.fromEntries(
-      Object.entries(attributes)
-        .filter(([name]) => name.startsWith("data-"))
-        .map(([name, held]) => [
-          name
-            .slice("data-".length)
-            .replaceAll(/-([a-z])/g, (_, letter: string) =>
-              letter.toUpperCase(),
-            ),
-          held,
-        ]),
-    );
+    this.classList = new StubTokenList(this.attributes);
+    this.dataset = datasetOf(this.attributes);
   }
 
   /** the element that holds this one, under the name the DOM gives it */
@@ -150,15 +280,58 @@ export class StubElement {
   }
 
   /**
-   * tests one compound selector against this element
-   * @param selector a tag, `:checked`, or `[name]`/`[name="value"]` clauses
-   * @returns whether every clause holds
+   * tests a selector against this element.
+   *
+   * commas are alternatives and spaces are descendant steps, because reading
+   * either as one compound is how a stub silently agrees with a query the
+   * browser would refuse: `"a,button,[tabindex]"` would demand all three of a
+   * single element, and `".drawer-nav a"` — parsing to nothing — would match
+   * every element there is.
+   * @param selector one or more comma-separated descendant selectors
+   * @returns whether any alternative holds
    */
   matches(selector: string): boolean {
-    const clauses = selector.match(/^[a-z]+|:checked|\[[^\]]+\]/g) ?? [];
+    return selector.split(",").some((group) => this.descends(group.trim()));
+  }
+
+  /**
+   * tests one descendant selector, rightmost part first
+   * @param group a selector with no commas, such as `".drawer-nav a"`
+   * @returns whether this element ends a matching chain
+   */
+  private descends(group: string): boolean {
+    const parts = group.split(/\s+/).filter(Boolean);
+    const own = parts.pop();
+    if (!own || !this.fits(own)) return false;
+
+    // nearest-ancestor-first is complete for descendant steps: taking the
+    // closer match only widens what remains available to the parts left of it
+    let node = this.parent;
+    for (const part of parts.reverse()) {
+      while (node && !node.fits(part)) node = node.parent;
+      if (!node) return false;
+      node = node.parent;
+    }
+
+    return true;
+  }
+
+  /**
+   * tests one compound selector against this element alone
+   * @param compound a tag, `.class`, `#id`, `:checked`, or `[name]`/`[name="value"]` clauses
+   * @returns whether every clause holds
+   */
+  private fits(compound: string): boolean {
+    const clauses =
+      compound.match(/^[a-z][a-z0-9-]*|\.[\w-]+|#[\w-]+|:checked|\[[^\]]+\]/g) ?? [];
+    // an unparsed selector matches nothing, rather than everything an empty
+    // clause list would agree with
+    if (!clauses.length) return false;
 
     return clauses.every((clause) => {
       if (clause === ":checked") return this.checked;
+      if (clause.startsWith(".")) return this.classList.contains(clause.slice(1));
+      if (clause.startsWith("#")) return this.attributes.id === clause.slice(1);
       if (!clause.startsWith("[")) return this.tag === clause;
 
       const [, name, held] =
@@ -266,13 +439,25 @@ export class StubElement {
   }
 
   /**
-   * moves a node to the end of this element's children
-   * @param node the node to move
+   * moves nodes to the end of this element's children
+   * @param nodes the nodes to move, in the order they should land
    */
-  append(node: StubElement): void {
-    detach(node);
-    node.parent = this;
-    this.children.push(node);
+  append(...nodes: StubElement[]): void {
+    for (const node of nodes) {
+      detach(node);
+      node.parent = this;
+      this.children.push(node);
+    }
+  }
+
+  /**
+   * drops every child and puts these in their place
+   * @param nodes the nodes to hold, in document order
+   */
+  replaceChildren(...nodes: StubElement[]): void {
+    for (const child of this.children) child.parent = null;
+    this.children.length = 0;
+    this.append(...nodes);
   }
 
   /**
@@ -311,6 +496,14 @@ export class StubElement {
   }
 
   /**
+   * reports where the element sits
+   * @returns the box a test set, or a zeroed one where it set none
+   */
+  getBoundingClientRect(): StubElement["box"] {
+    return this.box;
+  }
+
+  /**
    * runs every handler registered for an event type
    * @param type the event type to raise
    * @param event the event handed to each handler
@@ -339,9 +532,13 @@ export class StubElement {
     this.dispatch("close");
   }
 
-  /** records that the element was focused. */
-  focus(): void {
+  /**
+   * records that the element was focused.
+   * @param options how the browser should scroll to the newly focused element
+   */
+  focus(options?: { preventScroll?: boolean }): void {
     this.focused = true;
+    this.focusScrolled = !options?.preventScroll;
   }
 
   /** records that the element was scrolled to. */

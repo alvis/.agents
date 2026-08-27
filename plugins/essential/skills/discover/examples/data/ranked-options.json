@@ -165,6 +165,7 @@
         {
           "type": "choice",
           "id": "final-direction",
+          "ref": "C1",
           "label": "Final ranked direction",
           "ask": "Select one direction after reviewing all four frames.",
           "choices": [
@@ -240,6 +241,7 @@
         {
           "type": "decision",
           "id": "adapter-recommendation",
+          "ref": "D2",
           "label": "Recommended direction",
           "ask": "Approve the producer adapter as the reversible baseline, with the forty-eight-hour overlap and a single-switch rollback, or ask for a change.",
           "placeholder": "For example: hold the overlap open for a week."
@@ -247,6 +249,7 @@
         {
           "type": "note",
           "id": "dominant-tradeoff",
+          "ref": "N3",
           "label": "Dominant comparison tradeoff",
           "ask": "Which tradeoff should dominate the eventual decision?",
           "placeholder": "For example: support a twelve-month consumer migration window."
@@ -254,6 +257,7 @@
         {
           "type": "note",
           "id": "unranked-shape",
+          "ref": "N4",
           "label": "Missing shape",
           "ask": "Which migration shape is missing from the ranked set?",
           "placeholder": "For example: dual-write with a reconciliation job."

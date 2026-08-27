@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { renderProbe } from "./probe.ts";
+import { freshIds } from "../id.ts";
 
 import type { PageIds } from "../id.ts";
 import type { Block } from "../types.ts";
@@ -10,12 +11,7 @@ import type { Block } from "../types.ts";
  * @returns the ledger
  */
 function ids(): PageIds {
-  return {
-    finding: new Set(),
-    probe: new Set(),
-    question: new Set(),
-    section: new Set(),
-  };
+  return freshIds();
 }
 
 /**

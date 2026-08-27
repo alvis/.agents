@@ -1,0 +1,265 @@
+{
+  "kind": "specimen-board",
+  "id": "specimen-board-meridian-orders-v1",
+  "action": "Brand specimen",
+  "title": "Meridian orders console — brand specimen",
+  "theme": {
+    "accent": 22,
+    "light": {
+      "--ui-paper": "oklch(0.982 0.006 76)",
+      "--ui-raised": "oklch(0.995 0.004 76)"
+    },
+    "dark": {
+      "--ui-paper": "oklch(0.19 0.012 76)"
+    }
+  },
+  "masthead": {
+    "eyebrow": "Brand specimen · Meridian",
+    "headline": "The console's own palette, type and components, shown rather than described.",
+    "lede": "Everything below is drawn with the tokens it documents, so a value that has drifted shows up as a drawing that looks wrong rather than as a table that reads right.",
+    "meta": [
+      {
+        "label": "Surface",
+        "value": "Warehouse floor, 24in"
+      },
+      {
+        "label": "Ambient",
+        "value": "Bright, mixed"
+      },
+      {
+        "label": "Contrast floor",
+        "value": "4.5:1 body, 3:1 UI"
+      },
+      {
+        "label": "Owner",
+        "value": "Meridian design"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "surface",
+      "label": "The surface",
+      "eyebrow": "Context",
+      "title": "What the console actually looks like in use.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Meridian is read standing up, on a wall-mounted screen, by someone holding a scanner. That is the whole justification for the density below: a row is 72 pixels tall because a glove-width tap target is, not because the grid said so."
+        },
+        {
+          "type": "image",
+          "title": "Orders console, default view",
+          "src": "./assets/orders-console.png",
+          "alt": "The orders console: a dark left rail, a filter row, and a table of seven orders each ending in a coloured status pill.",
+          "caption": "Captured at 800 by 500. The three status colours are the only hues in the interface that are not the accent.",
+          "pins": [
+            {
+              "x": 10,
+              "y": 30,
+              "text": "The rail is the one dark surface. It never holds content the reader has to read closely — only where they are."
+            },
+            {
+              "x": 33,
+              "y": 19,
+              "text": "Filters are chips, not a dropdown: the current filter has to be visible from three metres away."
+            },
+            {
+              "x": 84,
+              "y": 55,
+              "text": [
+                "Status is a filled pill, and the word inside it is the status. Colour is the ",
+                { "kind": "mark", "text": "second" },
+                " channel, never the first."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "anatomy",
+      "label": "Anatomy",
+      "eyebrow": "Components",
+      "title": "One row, measured.",
+      "blocks": [
+        {
+          "type": "svg",
+          "title": "Order row: resting and focused",
+          "src": "./assets/component-anatomy.svg",
+          "alt": "An order row at 72 pixels tall with an accent bar, an order number, a status pill and an open button; below it the same row with a three-pixel focus ring drawn four pixels outside its border.",
+          "pins": [
+            {
+              "x": 8,
+              "y": 35,
+              "text": "The accent bar is 4 pixels and load-bearing: it is what distinguishes an order that needs attention from one that does not, at a distance where the pill is unreadable."
+            },
+            {
+              "x": 50,
+              "y": 88,
+              "text": "The focus ring sits outside the row rather than inside it, so focus never changes the row's own geometry and nothing shifts as the reader tabs."
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "The drawing above is inlined as markup, not as a picture, which is why its ",
+            { "kind": "code", "text": "fill" },
+            " values are the page's own tokens — switch the scheme and the specimen follows, because there is no second copy of the palette to keep in step."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tokens",
+      "label": "Tokens",
+      "eyebrow": "Palette",
+      "title": "Every value the console is allowed to use.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            { "label": "Token", "width": "26%" },
+            { "label": "Light", "width": "20%" },
+            { "label": "Dark", "width": "20%" },
+            { "label": "Where it is allowed", "width": "34%" }
+          ],
+          "rows": [
+            {
+              "cells": [
+                { "text": [{ "kind": "code", "text": "--ui-accent" }] },
+                { "text": "oklch(0.55 0.16 22)" },
+                { "text": "oklch(0.72 0.14 22)" },
+                {
+                  "text": [
+                    "Primary action, the row's attention bar, the chosen filter chip. ",
+                    { "kind": "dim", "text": "Never behind body text." }
+                  ]
+                }
+              ],
+              "provenance": { "level": "measured", "text": "sampled from the build" }
+            },
+            {
+              "cells": [
+                { "text": [{ "kind": "code", "text": "--ui-amber" }] },
+                { "text": "oklch(0.66 0.13 78)" },
+                { "text": "oklch(0.79 0.12 78)" },
+                { "text": "Part-picked and awaiting-stock states only.", "verdict": "mixed" }
+              ],
+              "provenance": { "level": "measured" }
+            },
+            {
+              "cells": [
+                { "text": [{ "kind": "code", "text": "--ui-critical" }] },
+                { "text": "oklch(0.52 0.19 27)" },
+                { "text": "oklch(0.70 0.16 27)" },
+                { "text": "Held and cancelled orders. Sits 5 degrees off the accent and is the one pair a colour-blind reader reported confusing.", "verdict": "bad" }
+              ],
+              "provenance": { "level": "measured" }
+            },
+            {
+              "cells": [
+                { "text": [{ "kind": "code", "text": "--ui-border" }] },
+                { "text": "oklch(0.90 0.006 76)" },
+                { "text": "oklch(0.34 0.010 76)" },
+                { "text": "Every separator. Not a text colour at any size.", "verdict": "good" }
+              ],
+              "provenance": { "level": "measured" }
+            },
+            {
+              "cells": [
+                { "text": [{ "kind": "code", "text": "--ui-rail" }] },
+                { "text": "oklch(0.28 0.018 262)" },
+                { "text": "oklch(0.24 0.018 262)" },
+                {
+                  "text": [
+                    "The left rail, and nothing else. ",
+                    { "kind": "provenance", "text": "hue not yet ratified", "level": "assumed" }
+                  ]
+                }
+              ],
+              "provenance": { "level": "assumed", "text": "proposed, not signed off" }
+            }
+          ]
+        },
+        {
+          "type": "disclosure",
+          "summary": "Why the accent is stated as a hue rather than as a hex value",
+          "blocks": [
+            {
+              "type": "prose",
+              "text": "A board declares one number — the accent hue — and the light and dark ramps are derived from it at the lightness and chroma the built-in tokens already use. Two hex values would have to be chosen, checked for contrast, and then kept in step by hand forever."
+            },
+            {
+              "type": "code",
+              "language": "json",
+              "caption": "What this board declares",
+              "code": "{\n  \"theme\": {\n    \"accent\": 22,\n    \"light\": { \"--ui-paper\": \"oklch(0.982 0.006 76)\" },\n    \"dark\":  { \"--ui-paper\": \"oklch(0.19 0.012 76)\" }\n  }\n}",
+              "highlight": [3]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "owners",
+      "label": "Owners",
+      "eyebrow": "Routing",
+      "title": "Who holds each part of this.",
+      "blocks": [
+        {
+          "type": "owners",
+          "people": [
+            {
+              "name": "Meridian design",
+              "initials": "MD",
+              "role": "Palette and type scale",
+              "due": "Ratifies the rail hue by 12 Sep"
+            },
+            {
+              "name": "Console web",
+              "role": "Component implementation",
+              "due": "Ships the focus-ring change with 4.3"
+            },
+            {
+              "name": "Accessibility review",
+              "initials": "AR",
+              "role": "Contrast and colour-blind pass",
+              "due": "Blocked on the rail hue"
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "id": "specimen-critical-hue",
+          "ref": "D1",
+          "label": "Critical hue",
+          "ask": "Move --ui-critical from 27 to 12 degrees so it separates from the accent for a deuteranopic reader, accepting that held orders will read slightly pinker?",
+          "placeholder": "If you would rather change the accent instead, say which way."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Console build 4.2.1, tokens sampled from the shipped stylesheet",
+      "ref": "meridian-console@4.2.1",
+      "level": "measured"
+    },
+    {
+      "label": "Warehouse floor observation, two shifts, Ridgeline site",
+      "ref": "notes/2026-08-14-floor.md",
+      "level": "measured"
+    },
+    {
+      "label": "Rail hue, proposed in review and not yet ratified",
+      "ref": "design-review 2026-08-19",
+      "level": "assumed"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Meridian orders console — brand specimen\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{provenance}}\n\n{{caveats}}"
+  }
+}

@@ -84,8 +84,8 @@ describe("fn:renderReply", () => {
             id: "s",
             title: "T",
             blocks: [
-              { type: "note", id: "q1", label: "Owner", ask: "Who?" },
-              { type: "note", id: "q2", label: "Date", ask: "When?" },
+              { type: "note", id: "q1", ref: "Q1", label: "Owner", ask: "Who?" },
+              { type: "note", id: "q2", ref: "Q2", label: "Date", ask: "When?" },
             ],
           },
         ],
@@ -97,8 +97,8 @@ describe("fn:renderReply", () => {
         "## Decisions",
         "",
         "### Not yet marked",
-        "- **Owner:** unanswered",
-        "- **Date:** unanswered",
+        "- **Q1 · Owner:** unanswered",
+        "- **Q2 · Date:** unanswered",
       ].join("\n"),
     );
   });

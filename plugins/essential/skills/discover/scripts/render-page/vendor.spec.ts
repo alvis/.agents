@@ -66,25 +66,13 @@ describe("fn:acceptMermaidRuntime", () => {
 });
 
 describe("fn:getVendorRuntime", () => {
-  it("should read the cache and skip the network when offline", async () => {
+  it("should return the cached copy without reaching the network", async () => {
     const cache = join(await scratch(), "runtime.cache.js");
     await writeFile(cache, "cached body", "utf8");
 
     expect(
-      await getVendorRuntime("Test", "https://invalid.test/none.js", cache, {
-        offline: true,
-      }),
+      await getVendorRuntime("Test", "https://invalid.test/none.js", cache),
     ).toEqual("cached body");
-  });
-
-  it("should refuse offline when nothing is cached", async () => {
-    const cache = join(await scratch(), "absent.cache.js");
-
-    await expect(
-      getVendorRuntime("Test", "https://invalid.test/none.js", cache, {
-        offline: true,
-      }),
-    ).rejects.toThrow(/no cached Test runtime; run once with network or without --offline/);
   });
 
   it("should validate the cached copy it returns", async () => {
@@ -96,39 +84,42 @@ describe("fn:getVendorRuntime", () => {
         "Mermaid",
         "https://invalid.test/none.js",
         cache,
-        { offline: true },
         acceptMermaidRuntime,
       ),
     ).rejects.toBeInstanceOf(RenderError);
   });
 
-  it("should fall back to the cache when the network fails", async () => {
+  // a corrupt cache is fatal rather than silently re-downloaded, so the
+  // refusal has to name the file whose deletion is the whole remedy
+  it("should name the cache file when the cached copy is refused", async () => {
     const cache = join(await scratch(), "runtime.cache.js");
-    await writeFile(cache, "stale but usable", "utf8");
-
-    expect(
-      await getVendorRuntime("Test", "https://invalid.test/none.js", cache, {}),
-    ).toEqual("stale but usable");
-  });
-
-  // --refresh exists to get a *new* copy; silently handing back the old one
-  // would make the flag a lie precisely when someone is trying to fix a bundle
-  it("should refuse rather than fall back when refreshing", async () => {
-    const cache = join(await scratch(), "runtime.cache.js");
-    await writeFile(cache, "stale", "utf8");
+    await writeFile(cache, "too short to be a bundle", "utf8");
 
     await expect(
-      getVendorRuntime("Test", "https://invalid.test/none.js", cache, {
-        refresh: true,
-      }),
-    ).rejects.toThrow(/could not fetch Test runtime from https:\/\/invalid.test\/none.js/);
+      getVendorRuntime(
+        "Mermaid",
+        "https://invalid.test/none.js",
+        cache,
+        acceptMermaidRuntime,
+      ),
+    ).rejects.toThrow(/delete .*mermaid\.cache\.js so the next run downloads a fresh copy/);
   });
 
-  it("should write what it downloads so the next run can work offline", async () => {
+  it("should download only when nothing is cached", async () => {
     const cache = join(await scratch(), "nested", "runtime.cache.js");
     const url = "data:text/javascript,downloaded%20body";
 
-    expect(await getVendorRuntime("Test", url, cache, {})).toEqual("downloaded body");
+    expect(await getVendorRuntime("Test", url, cache)).toEqual("downloaded body");
     expect(await readFile(cache, "utf8")).toEqual("downloaded body");
+  });
+
+  it("should name both the missing cache and the failed download", async () => {
+    const cache = join(await scratch(), "absent.cache.js");
+
+    await expect(
+      getVendorRuntime("Test", "https://invalid.test/none.js", cache),
+    ).rejects.toThrow(
+      /no cached Test runtime at .*absent\.cache\.js, and it could not be downloaded from https:\/\/invalid\.test\/none\.js/,
+    );
   });
 });

@@ -1,0 +1,255 @@
+{
+  "kind": "readiness-check",
+  "id": "readiness-check-notification-service-v1",
+  "action": "Readiness check",
+  "title": "Is extracting the notification service ready to start?",
+  "masthead": {
+    "eyebrow": "Readiness check · service extraction",
+    "headline": "The direction is settled. This board is only about whether to start now.",
+    "lede": "Nothing here argues for or against extracting notifications. It measures the six things the extraction would need and reports which of them exist today.",
+    "meta": [
+      {
+        "label": "Verdict",
+        "value": "Not yet — two gaps"
+      },
+      {
+        "label": "Blocking",
+        "value": "Ownership, contract tests"
+      },
+      {
+        "label": "Earliest start",
+        "value": "Week of 14 Sep"
+      },
+      {
+        "label": "Decision owner",
+        "value": "Platform lead"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "verdict",
+      "label": "Verdict",
+      "eyebrow": "Summary",
+      "title": "Four of six ready; the two that are not are the expensive ones.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "points": [
+            {
+              "lead": "The technical ground is prepared.",
+              "text": "The send path is already behind an interface, the queue exists, and templates were moved out of the monolith in July. None of that is the problem."
+            },
+            {
+              "lead": "Nobody owns the result.",
+              "text": "Three teams send notifications and none is willing to be paged for delivery failures. An extraction that lands without an owner produces a service that decays."
+            },
+            {
+              "lead": "There are no contract tests.",
+              "text": "Six callers use the interface and only its happy path is covered, so the extraction would be a rewrite with no way to tell whether behaviour changed."
+            }
+          ]
+        },
+        {
+          "type": "readiness",
+          "items": [
+            {
+              "label": "Interface stability",
+              "value": 5,
+              "of": 5,
+              "note": "Unchanged for four months across six callers."
+            },
+            {
+              "label": "Test coverage of the seam",
+              "value": 2,
+              "of": 5,
+              "note": "Happy path only. No test asserts what happens when a provider rejects."
+            },
+            {
+              "label": "Operational ownership",
+              "value": 1,
+              "of": 5,
+              "note": "No team has accepted the pager. This is the gap that blocks a start date."
+            },
+            {
+              "label": "Data separation",
+              "value": 4,
+              "of": 5,
+              "note": "One remaining join against the user table, in the digest builder."
+            },
+            {
+              "label": "Deploy independence",
+              "value": 4,
+              "of": 5,
+              "note": "Pipeline exists; the shared config package still forces a lockstep release."
+            },
+            {
+              "label": "Rollback path",
+              "value": 3,
+              "of": 5,
+              "note": "Reversible by flag for the first two weeks, then not."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "label": "Evidence",
+      "eyebrow": "What the readings rest on",
+      "title": "Where each number came from.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            { "label": "Reading", "width": "26%" },
+            { "label": "Basis", "width": "48%" },
+            { "label": "Confidence", "width": "26%" }
+          ],
+          "rows": [
+            {
+              "cells": [
+                { "text": "Interface stability" },
+                { "text": [{ "kind": "code", "text": "git log --follow src/notify/port.ts" }, " — no signature change since 12 Apr."] },
+                { "text": "High", "verdict": "good" }
+              ],
+              "provenance": { "level": "measured" }
+            },
+            {
+              "cells": [
+                { "text": "Test coverage of the seam" },
+                { "text": "Twelve tests touch the port; all twelve assert a successful send." },
+                { "text": "High", "verdict": "bad" }
+              ],
+              "provenance": { "level": "measured" }
+            },
+            {
+              "cells": [
+                { "text": "Operational ownership" },
+                { "text": "Asked all three sending teams in the 19 Aug platform sync. None accepted." },
+                { "text": "High", "verdict": "bad" }
+              ],
+              "provenance": { "level": "measured", "text": "asked directly" }
+            },
+            {
+              "cells": [
+                { "text": "Deploy independence" },
+                { "text": [{ "kind": "code", "text": "@meridian/config" }, " is a compile-time dependency of both sides."] },
+                { "text": "Medium — not attempted", "verdict": "mixed" }
+              ],
+              "provenance": { "level": "assumed" }
+            },
+            {
+              "cells": [
+                { "text": "Rollback path" },
+                { "text": "The flag works until the first schema divergence, which the plan puts in week three." },
+                { "text": "Low — estimate only", "verdict": "mixed" }
+              ],
+              "provenance": { "level": "estimated" }
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Two readings are the author's judgement, not a measurement",
+          "tone": "neutral",
+          "lead": "Deploy independence and rollback.",
+          "text": "Neither has been tried. They are marked assumed and estimated rather than dressed as findings, and either could move a point in each direction once someone attempts it."
+        }
+      ]
+    },
+    {
+      "id": "gaps",
+      "label": "The gaps",
+      "eyebrow": "What would close them",
+      "title": "What has to be true before this starts.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Name the owning team",
+              "text": "One team accepts the pager for delivery failures and the on-call rotation absorbs it. Without this the rest is wasted motion.",
+              "state": "todo"
+            },
+            {
+              "title": "Write the contract tests against the current implementation",
+              "text": "Six callers, every failure mode the providers actually return. These are written before extraction so they describe today's behaviour rather than the new service's.",
+              "state": "todo"
+            },
+            {
+              "title": "Break the shared config dependency",
+              "text": "Already scoped; two days, no design decisions left in it.",
+              "state": "current"
+            },
+            {
+              "title": "Remove the digest builder's join against the user table",
+              "text": "Replaced by the identity read model, which shipped in July.",
+              "state": "done"
+            }
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "readiness-blockers",
+          "ref": "K1",
+          "label": "Accepted blockers",
+          "ask": "Which of these do you agree must be closed before the extraction starts, rather than during it?",
+          "options": [
+            {
+              "value": "A named owning team",
+              "summary": "No extraction begins until one team has accepted the pager."
+            },
+            {
+              "value": "Contract tests for every caller",
+              "summary": "Written against the current implementation, before any code moves."
+            },
+            {
+              "value": "Independent deploys",
+              "summary": "The shared config dependency is broken first rather than carried."
+            },
+            {
+              "value": "A rollback that survives week three",
+              "summary": "Either the schema divergence moves later or the flag is replaced by something durable."
+            }
+          ]
+        },
+        {
+          "type": "scale",
+          "id": "readiness-confidence",
+          "ref": "S2",
+          "label": "Start confidence",
+          "ask": "If the two blocking gaps were closed tomorrow, how confident would you be starting the week after?",
+          "points": [
+            { "value": "1", "label": "1 — I would still say no" },
+            { "value": "2", "label": "2 — Only with a smaller first slice" },
+            { "value": "3", "label": "3 — Comfortable" },
+            { "value": "4", "label": "4 — Confident" },
+            { "value": "5", "label": "5 — We are late already" }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Port signature history",
+      "ref": "git log --follow src/notify/port.ts",
+      "level": "measured"
+    },
+    {
+      "label": "Ownership question, platform sync",
+      "ref": "notes/2026-08-19-platform-sync.md",
+      "level": "measured"
+    },
+    {
+      "label": "Rollback durability past week three",
+      "ref": "author's reading of the extraction plan",
+      "level": "estimated"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Notification service extraction — readiness\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{caveats}}"
+  }
+}

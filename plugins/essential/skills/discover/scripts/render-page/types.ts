@@ -7,6 +7,7 @@
  */
 
 export { CHOICE_TAGS } from "./types/content.ts";
+export { PAGE_KINDS } from "./types/page.ts";
 
 export type { Block, CodeComment, CodeTie, Response } from "./types/block.ts";
 export type {
@@ -25,4 +26,5 @@ export type {
   Viewport,
 } from "./types/content.ts";
 export type { Rich, Run } from "./types/inline.ts";
-export type { PageData, Section, Theme } from "./types/page.ts";
+export type { BoardEntry, BoardSet } from "./types/set.ts";
+export type { PageData, PageKind, Section, Theme } from "./types/page.ts";

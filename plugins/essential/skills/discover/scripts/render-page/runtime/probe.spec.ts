@@ -79,6 +79,45 @@ function arrow(one: StubElement, index: number, key: string): void {
 }
 
 /**
+ * lays a probe's items out as a column of equal rows.
+ *
+ * the drag path decides which side of a neighbour an item lands on from that
+ * neighbour's midpoint, so without geometry every drop reads as the same drop.
+ * @param one the probe
+ */
+function layout(one: StubElement): void {
+  for (const [index, item] of one
+    .querySelectorAll("[data-probe-item]")
+    .entries()) {
+    const top = index * 100;
+    item.box = { top, left: 0, bottom: top + 100, right: 200, width: 200, height: 100 };
+  }
+}
+
+/**
+ * drags one item over another and releases it
+ * @param one the probe
+ * @param from which item is picked up
+ * @param over which item it is released over
+ * @param clientY where in that item the pointer sits
+ * @returns how many times the drag asked the browser to stand aside
+ */
+function drag(one: StubElement, from: number, over: number, clientY: number): number {
+  const items = one.querySelectorAll("[data-probe-item]");
+  let prevented = 0;
+  const preventDefault = (): void => {
+    prevented += 1;
+  };
+
+  one.dispatch("dragstart", { target: items[from] });
+  one.dispatch("dragover", { target: items[over], clientY, preventDefault });
+  one.dispatch("drop", { target: items[over], preventDefault });
+  one.dispatch("dragend", { target: items[from] });
+
+  return prevented;
+}
+
+/**
  * reads a probe's items by label, in order
  * @param one the probe
  * @returns the labels
@@ -207,5 +246,121 @@ describe("fn:installProbes", () => {
     arrow(one, 0, "ArrowDown");
 
     expect(changes()).toBe(2);
+  });
+});
+
+describe("fn:installProbes dragging", () => {
+  it("should drop an item below the neighbour whose lower half it was released over", () => {
+    const one = probe();
+    layout(one);
+    install([one]);
+
+    drag(one, 0, 1, 160);
+
+    expect(order(one)).toEqual(["Cache", "Index", "Shard"]);
+  });
+
+  it("should drop it above when released over the upper half", () => {
+    const one = probe();
+    layout(one);
+    install([one]);
+
+    drag(one, 2, 1, 140);
+
+    expect(order(one)).toEqual(["Index", "Shard", "Cache"]);
+  });
+
+  it("should ask the browser to stand aside, or the item springs back", () => {
+    // a dragover the page does not refuse is a drop the browser rejects, and
+    // the reader watches the item they moved return to where it was
+    const one = probe();
+    layout(one);
+    install([one]);
+
+    expect(drag(one, 0, 1, 160)).toBe(2);
+  });
+
+  it("should mark the item under the pointer and clear it once released", () => {
+    const one = probe();
+    layout(one);
+    install([one]);
+    const first = one.querySelectorAll("[data-probe-item]")[0]!;
+
+    one.dispatch("dragstart", { target: first });
+    const held = first.classList.contains("is-dragging");
+    one.dispatch("dragend", { target: first });
+
+    expect(held).toBe(true);
+    expect(first.classList.contains("is-dragging")).toBe(false);
+  });
+
+  it("should tell the page once a drag settles", () => {
+    const one = probe();
+    layout(one);
+    const { changes, read } = install([one]);
+
+    drag(one, 0, 1, 160);
+
+    expect(changes()).toBe(1);
+    expect(read()[0]).toMatchObject({ moved: true, order: ["Cache", "Index", "Shard"] });
+  });
+
+  it.each([
+    ["a dragover before anything was picked up", "dragover"],
+    ["a dragend that follows no drag", "dragend"],
+  ])("should ignore %s", (_, type) => {
+    const one = probe();
+    layout(one);
+    const { changes } = install([one]);
+    let prevented = 0;
+
+    one.dispatch(type, {
+      target: one.querySelectorAll("[data-probe-item]")[1],
+      clientY: 160,
+      preventDefault: () => {
+        prevented += 1;
+      },
+    });
+
+    expect(order(one)).toEqual(["Index", "Cache", "Shard"]);
+    expect(prevented).toBe(0);
+    expect(changes()).toBe(0);
+  });
+
+  it("should ignore an item dragged over itself", () => {
+    const one = probe();
+    layout(one);
+    install([one]);
+    const first = one.querySelectorAll("[data-probe-item]")[0]!;
+    let prevented = 0;
+
+    one.dispatch("dragstart", { target: first });
+    one.dispatch("dragover", {
+      target: first,
+      clientY: 60,
+      preventDefault: () => {
+        prevented += 1;
+      },
+    });
+
+    expect(prevented).toBe(0);
+    expect(order(one)).toEqual(["Index", "Cache", "Shard"]);
+  });
+
+  it("should ignore a drag that started outside every item", () => {
+    const one = probe();
+    layout(one);
+    const { changes } = install([one]);
+
+    one.dispatch("dragstart", { target: one });
+    one.dispatch("dragover", {
+      target: one.querySelectorAll("[data-probe-item]")[1],
+      clientY: 160,
+      preventDefault: () => undefined,
+    });
+    one.dispatch("dragend", { target: one });
+
+    expect(order(one)).toEqual(["Index", "Cache", "Shard"]);
+    expect(changes()).toBe(0);
   });
 });

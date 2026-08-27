@@ -1,0 +1,231 @@
+{
+  "kind": "semantics-map",
+  "id": "semantics-map-stream-cursor-v1",
+  "action": "Semantics map",
+  "title": "Semantics map — a stream cursor port",
+  "masthead": {
+    "eyebrow": "Semantics map · integration",
+    "headline": "Both sides say \"offset\". They mean two different things by it.",
+    "lede": "This board maps each term on one side of the port to what it means on the other, and marks the three places where no honest mapping exists.",
+    "meta": [
+      {
+        "label": "Terms mapped",
+        "value": "9"
+      },
+      {
+        "label": "Clean matches",
+        "value": "6"
+      },
+      {
+        "label": "Mismatches",
+        "value": "3"
+      },
+      {
+        "label": "Blocking",
+        "value": "1 of the 3"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "flow",
+      "label": "The port",
+      "eyebrow": "Shape",
+      "title": "Where the two vocabularies meet.",
+      "blocks": [
+        {
+          "type": "mermaid",
+          "title": "The cursor's journey across the port",
+          "source": "flowchart LR\n  P[Producer\\nlog append] -->|record + log offset| B[(Broker\\npartitioned log)]\n  B -->|batch| A[Adapter\\nour port]\n  A -->|event + stream position| C[Consumer\\ndomain handler]\n  C -->|ack position| A\n  A -->|commit offset| B\n  A -.->|on rebalance| A2[Adapter\\nnew owner]\n  A2 -->|resume from committed offset| B",
+          "alt": "A producer appends records to a partitioned broker log. An adapter reads batches from the broker and hands events to a consumer as stream positions; the consumer acknowledges a position and the adapter commits an offset back to the broker. On rebalance, a new adapter instance resumes from the last committed offset."
+        },
+        {
+          "type": "prose",
+          "text": [
+            "The adapter is the whole subject of this board. On its left, an ",
+            { "kind": "term", "text": "offset", "definition": "the broker's per-partition sequence number. Monotonic within a partition, meaningless across partitions, and assigned by the broker at append time." },
+            " is a broker coordinate. On its right, a ",
+            { "kind": "term", "text": "stream position", "definition": "the consumer's opaque resume token. Comparable only for equality, and valid only for the stream that issued it." },
+            " is an opaque token. The adapter is where one becomes the other, and it is where the mismatches live."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terms",
+      "label": "Vocabulary",
+      "eyebrow": "Both sides",
+      "title": "What each side means by each word.",
+      "blocks": [
+        {
+          "type": "glossary",
+          "entries": [
+            {
+              "term": "offset",
+              "detail": "Broker side: a per-partition sequence number, monotonic, assigned at append. Comparable with < and >. Consumer side: not a concept at all — the domain handler never sees one."
+            },
+            {
+              "term": "stream position",
+              "detail": [
+                "Consumer side: an opaque resume token, comparable only for equality. Broker side: not a concept — the adapter manufactures it from ",
+                { "kind": "code", "text": "(partition, offset)" },
+                " and must be able to take it apart again."
+              ]
+            },
+            {
+              "term": "ack",
+              "detail": "Consumer side: \"I have durably handled this event.\" Broker side: \"you may advance my committed offset past this record.\" These coincide only if the adapter commits nothing the consumer has not acked, which is the invariant the whole port rests on."
+            },
+            {
+              "term": "batch",
+              "detail": "Broker side: a fetch unit, sized in bytes. Consumer side: a transaction boundary, sized in events. The adapter's batch is the broker's, and the consumer's handler is called once per event inside it."
+            },
+            {
+              "term": "rebalance",
+              "detail": "Broker side: reassigning partitions between adapter instances. Consumer side: nothing — the handler is not told. This is deliberate, and it is also mismatch M-2 below."
+            },
+            {
+              "term": "at-least-once",
+              "detail": [
+                "Both sides use this phrase and both mean it. It is one of the six clean matches, and it is worth stating explicitly because a reader who has found three mismatches starts to distrust the matches too. ",
+                { "kind": "source", "text": "Confirmed against the consumer contract", "ref": "docs/consumer-contract.md §4" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "label": "The mapping",
+      "eyebrow": "Term by term",
+      "title": "Nine terms, and where three of them break.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            { "label": "Broker side", "width": "24%" },
+            { "label": "Consumer side", "width": "24%" },
+            { "label": "Maps how", "width": "38%" },
+            { "label": "State", "width": "14%", "align": "center" }
+          ],
+          "rows": [
+            [
+              { "text": [{ "kind": "code", "text": "offset" }] },
+              { "text": [{ "kind": "code", "text": "position" }, { "kind": "sub", "text": "opaque token" }] },
+              { "text": "Adapter encodes (partition, offset) and decodes it back. Lossless." },
+              { "text": "Clean", "verdict": "good" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "record" }] },
+              { "text": [{ "kind": "code", "text": "event" }] },
+              { "text": "One to one. Headers become metadata; the key is carried through unchanged." },
+              { "text": "Clean", "verdict": "good" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "partition" }] },
+              { "text": "—", "verdict": "mixed" },
+              { "text": "M-1. The consumer has no partition concept, so per-partition ordering cannot be expressed in its contract. Handlers that assume global ordering are silently wrong." },
+              { "text": "Mismatch", "verdict": "bad" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "rebalance" }] },
+              { "text": "—", "verdict": "mixed" },
+              { "text": "M-2. The handler is not told it lost a partition, so in-flight work continues against a partition another instance now owns." },
+              { "text": "Mismatch", "verdict": "bad" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "commit" }] },
+              { "text": [{ "kind": "code", "text": "ack" }] },
+              { "text": "Adapter commits the lowest un-acked offset minus one. Correct, and the reason the port cannot commit out of order." },
+              { "text": "Clean", "verdict": "good" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "retention" }] },
+              { "text": "—", "verdict": "mixed" },
+              { "text": "M-3. A position older than retention decodes to an offset the broker has dropped. The consumer's contract has no way to say \"your resume token has expired\"." },
+              { "text": "Mismatch", "verdict": "bad" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "at-least-once" }] },
+              { "text": [{ "kind": "code", "text": "at-least-once" }] },
+              { "text": "Same guarantee, same words, verified against both contracts." },
+              { "text": "Clean", "verdict": "good" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "batch" }] },
+              { "text": [{ "kind": "code", "text": "transaction" }] },
+              { "text": "Broker batch becomes one consumer transaction; a handler failure rolls the whole batch back and it is redelivered." },
+              { "text": "Clean", "verdict": "good" }
+            ],
+            [
+              { "text": [{ "kind": "code", "text": "key" }] },
+              { "text": [{ "kind": "code", "text": "streamId" }] },
+              { "text": "Same bytes, different name. Renamed in the adapter and nowhere else." },
+              { "text": "Clean", "verdict": "good" }
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "M-3 is the one that blocks",
+          "tone": "bad",
+          "lead": "An expired position has no representation.",
+          "text": "M-1 and M-2 are documentation problems — real, fixable by stating the ordering guarantee and adding a revocation callback. M-3 is a hole in the consumer's contract: a resume token that no longer resolves has no error the handler is allowed to receive, so the adapter's only options today are to silently skip to the earliest available offset or to crash."
+        },
+        {
+          "type": "choice",
+          "id": "semantics-expired",
+          "ref": "C1",
+          "label": "Expired positions",
+          "ask": "What should the adapter do when a stream position decodes to an offset the broker has already dropped?",
+          "recommendation": "Extend the contract with an explicit expired-position error. Both silent options make a data-loss decision on the consumer's behalf, and the consumer is the only party that knows whether skipping ahead is acceptable for its domain.",
+          "choices": [
+            {
+              "value": "Add an expired-position error to the contract",
+              "summary": "The handler is told, and decides for itself.",
+              "tags": ["Recommended", "Architectural"],
+              "pros": ["The decision sits with the party that can make it", "Makes the gap visible rather than absorbed"],
+              "cons": ["A contract change, so every existing consumer must handle it"]
+            },
+            {
+              "value": "Skip to the earliest available offset and log",
+              "summary": "The adapter absorbs it; the consumer never knows.",
+              "tags": ["Pragmatic", "Workaround"],
+              "pros": ["No contract change", "The stream keeps moving"],
+              "cons": ["Silent data loss, discovered later and attributed elsewhere"]
+            },
+            {
+              "value": "Fail the instance and page",
+              "summary": "Refuse to guess; a human decides each time.",
+              "tags": ["Hotfix"],
+              "pros": ["Never loses data quietly"],
+              "cons": ["Turns a retention boundary into an outage", "Will be worked around under pressure"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Consumer contract, sections 3 and 4",
+      "ref": "docs/consumer-contract.md",
+      "level": "measured"
+    },
+    {
+      "label": "Broker retention setting on the orders topic",
+      "ref": "broker · topics/orders · retention.ms",
+      "level": "measured"
+    },
+    {
+      "label": "Handlers assuming global ordering",
+      "ref": "read of four handlers; not exhaustive",
+      "level": "assumed"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Stream cursor port — semantics\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{caveats}}"
+  }
+}

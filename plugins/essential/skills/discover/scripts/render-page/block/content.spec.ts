@@ -308,6 +308,24 @@ describe("fn:renderBlock table columns", () => {
     expect(drawn).toContain('<th scope="col">Evidence</th>');
   });
 
+  it("should read a column width as a CSS value, not merely escape it", () => {
+    // E-113 — a width lands inside a `style` attribute, so escaping made it a
+    // safe attribute and said nothing about the declaration within it: this
+    // width emitted a live remote fetch out of a page that promises none
+    expect(() =>
+      html({
+        type: "table",
+        columns: [
+          "Claim",
+          { label: "Evidence", width: "1px;background-image:url(https://evil.example/p.png)" },
+        ],
+        rows: [[{ text: "1" }, { text: "2" }]],
+      }),
+    ).toThrow(
+      'b.columns[1].width: ";" is not part of a colour, length, keyword, or permitted function',
+    );
+  });
+
   it("should name both accepted column shapes when refusing", () => {
     expect(() => html({ type: "table", columns: ["A", 2], rows: [] })).toThrow(
       new RenderError("b.columns[1]: required a non-empty string or a column object, received 2"),

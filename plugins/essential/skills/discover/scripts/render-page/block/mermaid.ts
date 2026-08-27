@@ -1,6 +1,7 @@
 import { escapeHtml } from "../escape.ts";
 import { slugOf } from "../id.ts";
 import { optionalString, requireString } from "../validate.ts";
+import { pageBlocks } from "../walk.ts";
 
 import type { Block, PageData } from "../types.ts";
 
@@ -51,16 +52,13 @@ export function renderMermaid(
  * asked of the data rather than of the rendered HTML, because the answer
  * decides whether 3.5 MB of runtime is fetched at all — and that decision has
  * to be made before rendering, not discovered after it.
+ *
+ * Asked through the same walk that resolves a board's files, so a graph behind
+ * a disclosure is one this sees: read flat, it was a board that carried the
+ * marker the loader matches on, no library to draw it, and no refusal either.
  * @param data the board's data, as read from disk
- * @returns true when any section holds a mermaid block
+ * @returns true where the board holds a mermaid block at any depth
  */
 export function usesMermaid(data: PageData): boolean {
-  return (
-    Array.isArray(data?.sections) &&
-    data.sections.some(
-      (section) =>
-        Array.isArray(section?.blocks) &&
-        section.blocks.some((block) => block?.type === "mermaid"),
-    )
-  );
+  return pageBlocks(data).some((placed) => placed.block?.type === "mermaid");
 }

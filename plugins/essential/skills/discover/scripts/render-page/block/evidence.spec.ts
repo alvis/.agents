@@ -200,7 +200,7 @@ describe("fn:renderBlock finding citation anchors", () => {
     // they sit in different peer groups because the f- and q- prefixes keep
     // them apart in the DOM, so refusing this would be a false collision
     const page = emptyContext();
-    html({ type: "note", id: "alpha", label: "L", ask: "A" }, page);
+    html({ type: "note", id: "alpha", ref: "Q1", label: "L", ask: "A" }, page);
 
     expect(() =>
       html({ type: "findings", items: [{ ...item, id: "alpha" }] }, page),

@@ -1,0 +1,230 @@
+{
+  "kind": "brainstorm-spectrum",
+  "id": "brainstorm-spectrum-onboarding-v1",
+  "action": "Brainstorm spectrum",
+  "title": "A spectrum of onboarding interventions",
+  "masthead": {
+    "eyebrow": "Spectrum · activation",
+    "headline": "Seven interventions, ordered by how much they change about the product.",
+    "lede": "Nothing here is recommended yet. The point of a spectrum is to see the cheap end before arguing about the expensive end, and to notice which interventions are actually the same idea at different sizes.",
+    "meta": [
+      {
+        "label": "Problem",
+        "value": "38% never reach first value"
+      },
+      {
+        "label": "Interventions",
+        "value": "7"
+      },
+      {
+        "label": "Committed",
+        "value": "None"
+      },
+      {
+        "label": "Next",
+        "value": "Pick a band, not an item"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "spectrum",
+      "label": "The spectrum",
+      "eyebrow": "Cheapest first",
+      "title": "From a copy change to a different product.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": [
+            "The ordering is by ",
+            { "kind": "mark", "text": "how much of the product changes" },
+            ", not by effort and not by expected impact. Those are different orderings and conflating them is how a spectrum turns into a ranked list before anyone has decided what they are optimising."
+          ]
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            {
+              "lead": "Rewrite the empty state",
+              "text": "One screen, one paragraph. Says what the first useful action is instead of describing what the page will eventually contain."
+            },
+            {
+              "lead": "Seed a sample project",
+              "text": "A new account starts with a realistic project already in it, marked as a sample and deletable. Nothing else changes."
+            },
+            {
+              "lead": "Defer the setup wizard",
+              "text": "Move team, billing and integrations out of the first session entirely; ask for each at the moment it is first needed."
+            },
+            {
+              "lead": "A guided first task",
+              "text": "A three-step overlay that walks through creating the first real thing, skippable and never shown twice."
+            },
+            {
+              "lead": "Import from what they already use",
+              "text": "Read an existing spreadsheet or a competitor's export, so the first session starts with the user's own data rather than ours."
+            },
+            {
+              "lead": "A different first-week product",
+              "text": "A simplified surface for the first seven days that hides everything not needed to reach first value, then unfolds."
+            },
+            {
+              "lead": "Onboard the team, not the user",
+              "text": "Treat activation as a group event: the first user invites before they configure, and the product's first value is collaborative rather than individual."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Two of these are the same intervention",
+          "tone": "neutral",
+          "lead": "Seed a sample project and import their data.",
+          "text": "Both answer \"the first screen is empty and an empty screen teaches nothing\". One fills it with ours, the other with theirs. Deciding between them is a smaller and more useful argument than deciding between seven things."
+        }
+      ]
+    },
+    {
+      "id": "bands",
+      "label": "Three bands",
+      "eyebrow": "Grouped",
+      "title": "What each band buys, costs, and fails at.",
+      "blocks": [
+        {
+          "type": "tradeoffs",
+          "title": "Band A · Change what the first screen says (items 1–2)",
+          "wins": [
+            "Ships in a week, by one person, with no coordination.",
+            "Reversible entirely — a copy change and a seeded row.",
+            "Measurable in isolation: nothing else moves at the same time."
+          ],
+          "costs": [
+            "Addresses the first thirty seconds and nothing after them.",
+            "A sample project needs upkeep, or it drifts from what the product actually does."
+          ],
+          "failsWhen": [
+            "The drop-off is not on the first screen. Our funnel says most of it is at the setup wizard, three screens later.",
+            "The user arrived without a job to do, in which case a better empty state gives them a better view of nothing."
+          ]
+        },
+        {
+          "type": "tradeoffs",
+          "title": "Band B · Change when we ask for things (items 3–5)",
+          "wins": [
+            "Directly targets where the funnel actually loses people.",
+            [
+              "Deferring setup is ",
+              { "kind": "mark", "text": "removal" },
+              ", so it makes the product smaller rather than larger."
+            ],
+            "Import turns the first session into the user's own data, which no amount of copy can imitate."
+          ],
+          "costs": [
+            "Every deferred question has to be asked somewhere else, and \"somewhere else\" is a design problem per question.",
+            "Import is a maintenance commitment: formats change and a broken importer is worse than none.",
+            "Three to eight weeks depending on the item, across two teams."
+          ],
+          "failsWhen": [
+            "Billing genuinely must be collected up front, which is a commercial decision this board cannot make.",
+            "The user has nothing to import, which is most self-serve signups."
+          ]
+        },
+        {
+          "type": "tradeoffs",
+          "title": "Band C · Change what the product is at first (items 6–7)",
+          "wins": [
+            "The only band that could move activation by a large multiple rather than a few points.",
+            "Team-first onboarding matches how the product is actually adopted, which every interview says and no screen reflects."
+          ],
+          "costs": [
+            "A second surface to design, build, and keep in step with the first, indefinitely.",
+            "Unfolding is its own problem: a user who liked the simple version experiences the full product as a regression.",
+            "A quarter, minimum, and it is not reversible by a flag once people have onboarded through it."
+          ],
+          "failsWhen": [
+            "The simplified surface hides the feature that a given user came for, which for a horizontal product is a real fraction of them.",
+            "The organisation cannot sustain two surfaces, which is a question about us rather than about the idea."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "input",
+      "label": "Your input",
+      "eyebrow": "Questions",
+      "title": "Two things before this becomes a plan.",
+      "blocks": [
+        {
+          "type": "probe",
+          "id": "spectrum-order",
+          "label": "Band priority",
+          "items": [
+            "Band A — change what the first screen says",
+            "Band B — change when we ask for things",
+            "Band C — change what the product is at first"
+          ]
+        },
+        {
+          "type": "choice",
+          "id": "spectrum-band",
+          "ref": "C1",
+          "label": "Where to spend",
+          "ask": "Which band should the next four weeks go into?",
+          "recommendation": "Band B, because the funnel puts the loss at the setup wizard rather than the first screen, and Band B is the only band that both targets it and remains reversible. Band A is cheap enough to run alongside rather than instead.",
+          "choices": [
+            {
+              "value": "Band B, with Band A alongside",
+              "summary": "Defer the wizard, and rewrite the empty state while that is in flight.",
+              "tags": ["Recommended", "Pragmatic"],
+              "pros": ["Targets the measured drop-off", "Both halves are individually reversible"],
+              "cons": ["Two workstreams at once makes the measurement harder to attribute"]
+            },
+            {
+              "value": "Band A only, and measure",
+              "summary": "Spend one week, learn where people actually stop, then choose.",
+              "tags": ["Pragmatic", "Workaround"],
+              "pros": ["Almost free", "Produces evidence for the next decision"],
+              "cons": ["The funnel already tells us where they stop", "Four weeks of the quarter spent confirming it"]
+            },
+            {
+              "value": "Band C, starting now",
+              "summary": "Commit the quarter to a first-week product.",
+              "tags": ["Architectural", "Ideal"],
+              "pros": ["The only option that could change the number rather than nudge it"],
+              "cons": ["Not reversible", "Commits a quarter against a hypothesis nothing here has tested"]
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "spectrum-missing",
+          "ref": "N2",
+          "label": "Missing intervention",
+          "ask": "What is not on this spectrum that should be?",
+          "placeholder": "Especially anything cheaper than item 1 or more radical than item 7."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Activation funnel, self-serve signups, last 90 days",
+      "ref": "product-analytics · activation_v3",
+      "level": "measured"
+    },
+    {
+      "label": "Adoption is team-led — from 14 onboarding interviews",
+      "ref": "research/2026-07-onboarding.md",
+      "level": "measured"
+    },
+    {
+      "label": "Effort ranges per band",
+      "ref": "author's estimate, not scoped with the teams",
+      "level": "estimated"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Onboarding spectrum\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}"
+  }
+}

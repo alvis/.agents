@@ -25,11 +25,28 @@ export function installDrawer(root: HTMLElement): Drawer {
 
   const setExpanded = (next: boolean): void => {
     toggle.setAttribute("aria-expanded", String(next));
-    panel.hidden = !next;
+    // the open state rides on the root because the transition is a CSS one:
+    // the panel's grid row grows from nothing to its content height, and an
+    // element removed from layout has no height to grow from. The two
+    // attributes below do what removing it did for a closed panel — out of the
+    // tab order, off the accessibility tree — while leaving the box in place
+    // for the animation to run on. Written as attributes rather than the
+    // matching properties, so a query and a test read the same element state
+    root.dataset.open = String(next);
+    if (next) panel.removeAttribute("inert");
+    else panel.setAttribute("inert", "");
+    panel.setAttribute("aria-hidden", String(!next));
     hint.textContent = next ? "Collapse" : "Expand";
     if (next) {
       opener = document.activeElement as HTMLElement | null;
-      panel.querySelector<HTMLElement>("a,button,[tabindex]")?.focus();
+      // focus lands while the panel is still growing out of a zero-height row,
+      // so the browser scrolls the sheet to reveal a target that is about to
+      // be in view anyway, and the drawer settles 40-odd pixels down its own
+      // content. The first focusable sits at the top of the sheet, so there is
+      // nothing the scroll was needed for
+      panel
+        .querySelector<HTMLElement>("a,button,[tabindex]")
+        ?.focus({ preventScroll: true });
     } else if (opener) {
       opener.focus();
       opener = null;
