@@ -4,7 +4,7 @@ This matrix covers the 53 skills and 22 agents currently shipped by this reposit
 
 Claude Code, Codex, and Grok Build are native targets. OpenCode support targets stable V1 through `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
 
-Reviewed against current harness documentation on 2026-08-25.
+Reviewed against current harness documentation on 2026-08-27.
 
 ## Legend
 
@@ -29,7 +29,7 @@ Reviewed against current harness documentation on 2026-08-25.
 | Skill-scoped hooks | ✅ Native | ✅ Native | ❌ Unavailable | 🟡 Adapted | Grok Build ignores skill-frontmatter hooks. OpenCode runs the command-filtered commit guards from resolved receipts because its plugin API exposes no skill-scope event. |
 | Question guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | The adapter runs the receipt-bound Essential validator before OpenCode `question` execution and retains allow advice for the matching result. |
 | Subagent dispatch guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode validates `task` prompts through the receipt alias; the host has no persistent teammate identity. |
-| Plan-exit guard | ✅ Native | ✅ Native | 🟡 Adapted | ❌ Unavailable | The adapter registers every receipt alias, but OpenCode 1.18.x exposes no native plan-transition tool event. |
+| Plan-exit guard | ✅ Native | ✅ Native | 🟡 Adapted | ❌ Unavailable | Claude validates plan-tool input. Codex/T3 validates direct plan output from the current turn transcript at Stop, after its first rendering. Grok sends no plan body; OpenCode V1 has no plan-transition or cancellable Stop event. |
 | Stop state reminder | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | Grok ignores the blocking Stop envelope. OpenCode exposes no cancellable Stop event, so the receipt is labelled advisory system context and creates no synthetic turn. |
 | MCP servers | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | The adapter maps HTTP to remote and command definitions to local MCP servers. |
 | Specialist agents | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode Markdown agents inherit the active provider and model. |

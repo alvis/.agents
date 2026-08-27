@@ -7,7 +7,7 @@ import { join, relative, resolve } from "node:path";
 const ROOT = resolve(import.meta.dirname, "..");
 const TARGET = join(ROOT, "COMPATIBILITY.md");
 const CONTRACT_PATH = join(ROOT, "scripts", "opencode_contract.json");
-const REVIEWED_DATE = "2026-08-25";
+const REVIEWED_DATE = "2026-08-27";
 const FULL = "✅ Native";
 const ADAPTED = "🟡 Adapted";
 const EXTERNAL = "🔌 Integration";
@@ -149,7 +149,7 @@ const CROSS_CUTTING_FEATURES: readonly Feature[] = [
     FULL,
     ADAPTED,
     UNAVAILABLE,
-    "The adapter registers every receipt alias, but OpenCode 1.18.x exposes no native plan-transition tool event.",
+    "Claude validates plan-tool input. Codex/T3 validates direct plan output from the current turn transcript at Stop, after its first rendering. Grok sends no plan body; OpenCode V1 has no plan-transition or cancellable Stop event.",
   ),
   feature(
     "Stop state reminder",
@@ -275,6 +275,7 @@ function validateCompatibilityHookAuthority(): void {
     "scripts/subagent-start": "context",
     "scripts/validate-dispatch": "before",
     "scripts/validate-plan": "before",
+    "scripts/validate-plan-stop": "unavailable",
     "scripts/validate-question": "before",
     "skill_scripts/coding/skills/commit/scripts/post-rewrite-hook.sh": "after",
     "skill_scripts/coding/skills/commit/scripts/pre-commit-hook.sh": "before",

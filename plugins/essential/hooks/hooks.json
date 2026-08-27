@@ -63,6 +63,14 @@
             "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/stop-first\" \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/STOP.md\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; \"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-}}}/hooks/scripts/validate-plan-stop\""
+          }
+        ]
       }
     ],
     "SubagentStart": [
