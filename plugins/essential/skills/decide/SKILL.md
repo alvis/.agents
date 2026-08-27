@@ -87,9 +87,9 @@ writes and report the missing contract. No artifact is written before approval.
    `decision-causality.md` (`supersedes`/`affects`/`invalidates`/`preserves`,
    each named by id and exact revision; omit empty fields). Never edit a
    previously accepted decision into the new one — supersede it. Return the
-   path to the PM for reconciliation into `decisions.md`, together with the
+   path to the main agent for reconciliation into `decisions.md`, together with the
    acceptance's obligation: the blast-radius sweep over `affects`/
-   `invalidates`, which the PM runs and journals under the coordinator
+   `invalidates`, which the main agent runs and journals under the main-agent
    lease; do not edit the overview as a worker. Discover the one
    or two most relevant available skills by frontmatter, select the owner of the
    approved outcome, and invoke it with the decision, observed constraints,
@@ -113,5 +113,5 @@ Report the recommendation, user decision, deferred decisions, and—after an
 approved handoff—the invoked skill and context passed. When no option survives,
 name the eliminating constraint rather than forcing a recommendation. Return
 explicit final paths generated or materially rewritten as `generated_files`;
-the PM size-checks only eligible work Markdown inside the target
+the main agent size-checks only eligible work Markdown inside the target
 `.state/`.

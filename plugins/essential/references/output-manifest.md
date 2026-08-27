@@ -16,7 +16,7 @@ generated_files:
 </report>
 
 Writers finish all files and links before returning the manifest and never
-measure or split independently. The coordinator combines and deduplicates
+measure or split independently. The main agent combines and deduplicates
 manifests, selects only absolute `.md` paths inside the resolved target
 workspace's `.state/` (excluding any `working.md`), and runs exactly
 one pass when eligible paths remain:

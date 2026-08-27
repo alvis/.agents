@@ -27,7 +27,7 @@ Embed this policy in every coding dispatch:
 ## Deviation policy
 
 The work plan may be invalidated by repository/runtime evidence. Report a
-material departure to the orchestrator; do not edit PM-owned indexes.
+material departure to the main agent; do not edit main-agent-owned indexes.
 
 Material: missing/wrong dependency, integration or schema mismatch, standard
 violation, architecture conflict, stale symbol, or changed acceptance behavior.
@@ -36,9 +36,9 @@ convention-only casing need no entry.
 
 Return for each material departure: headline, full task ID, plan expectation,
 evidence, chosen/required alternative, reason, impact, severity, disposition,
-invalidated downstream task IDs, and recheck trigger. The orchestrator writes a
-lowercase `.state/works/<work-id>/changes/<slug>.md` child and asks
-the PM to reconcile `changes.md` and `state.md`.
+invalidated downstream task IDs, and recheck trigger. The main agent writes a
+lowercase `.state/works/<work-id>/changes/<slug>.md` child and reconciles
+`changes.md` and `state.md`.
 
 Proceed only when reversible and low impact. For architecture, public API,
 data, security/privacy, destructive migration, user semantics, or acceptance

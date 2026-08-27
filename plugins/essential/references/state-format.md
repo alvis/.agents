@@ -1,6 +1,6 @@
 # State-file format
 
-Use this convention for every new or coordinator-migrated `state.md` and every
+Use this convention for every new or main-agent-migrated `state.md` and every
 resumable `state/*.md` child. A work item is free-form, LLM-readable Markdown:
 nothing is machine-validated and any layout a reader can follow works. This
 document describes the shared shape that keeps state files easy to resume from;
@@ -12,14 +12,14 @@ Essential owns the convention, domain skills own task definitions and evidence.
   contains every parent and numbered subtask in the work item, even when a
   `state/*.md` child mirrors a subset for detailed resumption.
 - A child state declares `State role: child` and `Parent task: ABC`. It cannot
-  introduce an ID absent from the root registry. The coordinator reconciles
+  introduce an ID absent from the root registry. The main agent reconciles
   its mutable fields with the root before dispatch or handover.
 - Root state uses `Plan source: state.md`: the complete root task registry is
   the approved definition source and consumers never guess among planning
   files. `state/plan.md` may hold ID-keyed semantic detail, but it is
   non-authoritative and cannot introduce or redefine tasks.
 - There is no required header token. Preserve any existing state file
-  byte-for-byte until the coordinator performs an explicit rewrite; the resolver
+  byte-for-byte until the main agent performs an explicit rewrite; the resolver
   never rewrites it.
 
 Root state metadata contains at least:
@@ -48,37 +48,42 @@ get the charter approved first. `absent` is a defect to repair, never a shape
 to run under: a stream with no charter has no success criteria to demonstrate,
 so nothing can show it is done. Write the charter and get it approved.
 `Plan revision` counts approved definition changes, starting at
-`1`. `State revision` is a monotonic counter bumped on every coordinator write
+`1`. `State revision` is a monotonic counter bumped on every main-agent write
 of `state.md` (progress and definition alike), starting at `1`; it orders
 journal lines and lets the lease and doctor detect a stale writer.
 `Written under` records the short hash of the state contract this
-file was bootstrapped or last coordinator-rewritten against — provenance
+file was bootstrapped or last main-agent-rewritten against — provenance
 only, stamped by the resolver and rewrites; it confers no authority (the
 current contracts always judge) but lets the doctor report drift as "written
 under X, current is Y" and order migrations by staleness. All three fields
-apply to new and coordinator-rewritten files only — an older file gains them
+apply to new and main-agent-rewritten files only — an older file gains them
 at its next explicit rewrite under the lazy-migration rule, never on read.
 
 ## Specification provenance
 
-The stream charter owns the exact specification source. Its `## Specification
-provenance` section contains one or more lines in this form. Every stream,
-including a generic coding stream, carries this section.
+The stream charter owns every specification anchor. Every stream, including a
+generic coding stream, carries this exact field set.
 
 ```markdown
 ## Specification provenance
 
-- Specification: [Exact document](<exact-document-link>)
-- Specification: [Related exact document](<related-exact-document-link>)
+- Source kind: `<external|repo|inline|none|pending>`
+- Canonical specification: `<canonical external URL|portable repo identity|None|Pending user confirmation>`
+- Accepted revision/base: `<revision-or-base-id|None|Pending user confirmation>`
+- Local materialization: `[spec/](spec/)|None|Pending user confirmation`
+- Materialization receipt: `[receipt](artifacts/spec-sync/materializations/<base-id>.json)|None|Pending user confirmation`
+- Last verification status: `<verified|stale|missing|not-applicable|pending>`
+- Last verified at: `<ISO-8601|None|Pending user confirmation>`
 ```
 
-When no specification exists, the section contains exactly `- Specification:
-None`. A newly bootstrapped stream may temporarily use exactly `- Specification:
-Pending user confirmation`; it must resolve to exact links or `None` before the
-stream enters active execution. “Yes” to an external-store question without a
-supplied entry point remains pending and is never silently normalized to
-`None`. The global overview stores only project-level entry points; it never
-replaces this stream-local provenance.
+For an external source, `Canonical specification` is the stable external URL.
+`Local materialization` and `Materialization receipt` are both `None` or both
+relative links, and the receipt's base must match `Accepted revision/base`
+before agents consume `spec/`. When no specification exists, use source kind
+`none`, `None` anchors, verification `not-applicable`, and verified-at `None`.
+A new stream may use the `pending` values until the user decides, but not after
+active execution begins. The global overview records only whether the optional
+external system exists; it never duplicates these anchors.
 
 ## Phase and blockers
 
@@ -136,7 +141,7 @@ field exists without.
 `Blocked on: <who or what>` at whatever phase the stream actually sits in, and
 `retiring` is phase `completed` with no retention blocker; archival readiness
 derives from landing evidence and elapsed time. A file written
-under the single `Lifecycle status` field keeps it until the coordinator's next
+under the single `Lifecycle status` field keeps it until the main agent's next
 explicit rewrite, which maps it through that list under the lazy-migration
 rule, never on read.
 
@@ -216,7 +221,7 @@ Derive a parent with children as follows:
   plan revision.
 
 A failed leaf blocks only its downstream closure. Independent siblings remain
-runnable. The coordinator alone changes task status after reconciling a result
+runnable. The main agent alone changes task status after reconciling a result
 that carries `task_id`, attempt outcome, and evidence.
 Any dependency edge that still names a cancelled predecessor is also blocked;
 an approved plan revision must remove that obsolete edge before execution.

@@ -25,6 +25,13 @@ author product specifications, Notion pages, or implementation changes.
 - Do not use for: product specifications or Notion documentation (specification skills), implementation changes, or documenting a package other than the resolved selector.
 - Never invent API behavior: every claim must trace to package metadata, exports, entry points, scripts, configuration, or relevant source/tests.
 - Reject a missing project root, unreadable source, or a request to document a different package without changing the selector.
+- Only the main agent writes root `README.md` or `docs/**`. A delegated run
+  returns a source-backed patch proposal and verification evidence without
+  editing tracked documentation.
+- When `goal.md` selects an external specification authority, tracked
+  documentation cites only its canonical external URL. Reject `.state`,
+  `spec/`, transport-mirror, absolute-path, and `file://` references to that
+  specification. Ordinary links among tracked documents remain allowed.
 
 ## Inputs
 
@@ -40,7 +47,7 @@ writes and report the missing contract. Use the resolver and ask only on
 `work_id_required`. When delegated, start from the mission capsule's exact source,
 specification, and design paths. Read `state/working.md` only when navigation is
 missing, and `state.md` only for resume, cross-slice dependency, or alignment
-work. Never write PM-owned work pointers or overview files.
+work. Never write main-agent-owned work pointers or overview files.
 
 ## Workflow
 
@@ -88,7 +95,11 @@ independent-review audit checklist, and the retry/rollback criteria.
    indexed directly under `decisions/`, superseded ADRs move under
    `decisions/superseded/`, and a new successor stands alone without naming the
    old ADR.
-8. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping. Decide review outcomes per the criteria in references/authoring-rules.md (proceed, targeted retry with at most two attempts per issue, or rollback).
+8. The main agent applies the coherent documentation patch. A delegated run
+   returns the patch for it to apply. Run the verification below; when a check
+   fails, fix the cause and re-run that check. Repeat until every check passes
+   or a concrete blocker remains, then report the blocker instead of looping.
+   Decide review outcomes per the criteria in references/authoring-rules.md.
 
 ## Verification
 
@@ -103,9 +114,10 @@ independent-review audit checklist, and the retry/rollback criteria.
 
 Report project path and archetype, anchors/templates/examples used, evidence-map
 coverage, architecture create/skip decision, commands/examples verified,
-independent-review verdict, stale claims removed, and unresolved gaps. Return
-every created or materially rewritten final path as `generated_files`. Do not
+independent-review verdict, stale claims removed, and unresolved gaps. The main
+agent returns created or materially rewritten final paths as `generated_files`;
+a delegated run returns proposed paths and patch content. Do not
 measure or split `docs/**` or project README files: durable documentation has no
 mechanical size limit, but it is still length-calibrated — see
-`essential:references/output-manifest.md`. The PM size-checks only eligible work
+`essential:references/output-manifest.md`. The main agent size-checks only eligible work
 Markdown inside the target `.state/` after all artifact writers finish.

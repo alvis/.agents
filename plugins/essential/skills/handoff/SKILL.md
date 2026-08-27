@@ -84,18 +84,21 @@ that contract.
    the noun is named in the same sentence. Prefer absolute paths plus
    repo-relative paths for handoff-critical files. When the plan must persist,
    write it to a lowercase `proposals/<plan-slug>.md` child with status `open`;
-   the PM reconciles the lazy `proposals.md` overview. Update the child to
+   the main agent reconciles the lazy `proposals.md` overview. Update the child to
    `accepted` only after user approval.
 3. **Execute as orchestrator** (when execution is requested). Run a
    multi-phase plan through deterministic scripted execution — one phase per stage, fanning out to
    subagents where a phase allows — instead of doing the work inline. Act as
    the orchestrator and decision maker only: route each phase to the right
    agent with complete context, synthesize the results, and make the calls.
-   Delegate all execution — reading, writing, running, testing — to
-   subagents, so this session keeps its context for the decisions; the one
-   exception is a step you would finish in a handful of tool calls, where
-   dispatching costs more than it isolates. To pause a coding session rather
-   than hand a plan off, use `essential:handover`. Compose each phase's first
+   Delegate reading, commands, tests, and assigned production-source or
+   test-file edits to subagents, so this session keeps its context for the
+   decisions. Subagents return proposed root `README.md`, `docs/**`,
+   `.state/**`, and external-specification deltas; the main agent alone writes
+   those systems. The one exception is a step you would finish in a handful
+   of tool calls, where dispatching costs more than it isolates. To pause a
+   coding session rather than hand a plan off, use `essential:handover`.
+   Compose each phase's first
    task handover from
    [subagent-handover.md](../../references/directions/subagent-handover.md),
    placing the approved plan and phase inputs in its extensible Context.
@@ -129,5 +132,5 @@ Report the plan's location and its Goal block, the decisions made while
 planning, and — when executed — each phase's outcome and any open questions
 or deviations from the plan. A blocked execution names the phase, what was
 attempted, and what decision or input is needed to continue. Return explicit
-final paths generated or materially rewritten as `generated_files`; the PM
+final paths generated or materially rewritten as `generated_files`; the main agent
 size-checks only eligible work Markdown inside the target `.state/`.

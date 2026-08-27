@@ -123,15 +123,14 @@ not the PR archetype selected from
 
 Naming the branch this way is what lets the workspace resolution step select
 the stream from whichever branch is checked out. Only these two shapes
-resolve; anything else means the PM is asked instead — which is the intended
+resolve; anything else means the main agent asks instead — which is the intended
 outcome, not a failure.
 
 ## Documents
 
 - A durable directory entrypoint is the fixed uppercase filename `README.md`;
   operational indexes and semantic documents keep descriptive lowercase names.
-- `docs/specs/<capability>/` takes the owning capability, never the task
-  title.
+- Work-local specification files use `.state/works/<work-id>/spec/` and take the owning capability, never the task title.
 - ADRs alone carry a zero-padded monotonic numeric prefix
   (`docs/architecture/decisions/0007-<decision-slug>.md`) and are never
   renumbered. Superseded ADRs keep that filename under

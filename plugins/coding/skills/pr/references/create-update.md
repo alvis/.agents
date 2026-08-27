@@ -160,7 +160,7 @@ writes and report the missing contract. Publication-only runs may proceed
 without creating work artifacts; before any red-CI repair, run the resolver,
 ask only on `work_id_required`, and use the resolved work root. Give each fixer
 a mission capsule with only the relevant contract/evidence paths. Fixers never
-write PM-owned pointers or overview files.
+write main-agent-owned pointers or overview files.
 
 ## Workflow
 
@@ -834,6 +834,7 @@ passes its base; text-only callers default to the first parent. Never invoke `gh
    - `{{specification_body}}` — content under `## Spec` / `Spec:` /
      `Specification:`; a canonical committed-doc path or external page such
      as Notion. Stop when absent rather than inventing a link.
+     Before rendering, read the active work's `goal.md`. When source kind is `external`, require its canonical specification to be one HTTP(S) link and use only that URL in the PR. Reject a body that cites `.state`, `spec/`, a transport mirror, an absolute local path, or `file://` for the specification. Do not substitute the readable copy or receipt. For local or inline authority, ordinary committed-document links remain allowed.
    - `{{implementation_body}}` — content under `## Implementation` / `What:`
      / `How:`, if present.
    - `{{breaking_changes_body}}` — `BREAKING CHANGE:` footers; "None." when
@@ -946,5 +947,5 @@ passes its base; text-only callers default to the first parent. Never invoke `gh
   bundled default), local results, review passes, replies, repair commits,
   push/restack actions, per-PR check states, CI wall times, and any blocker
   (with its authoring exit code where relevant). Return every local project path
-  created or materially rewritten during repair as `generated_files`. The PM
+  created or materially rewritten during repair as `generated_files`. The main agent
   applies the shared size pass only to eligible `.state` work Markdown.

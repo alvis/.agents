@@ -28,7 +28,7 @@ block tree, annotations, refs, closing markers, and YAML frontmatter.
   Local read, edit, and author flows never add, stamp, or rewrite it. Record a
   local edit time in work evidence or a receipt, not in MDC frontmatter.
 - Do not derive or rename notion-sync paths, sync to Notion, or promote durable
-  `docs/specs/` content here.
+  project documentation or work-state content here.
 - Refuse a non-`.mdc` target, ambiguous edit location, or operation requiring
   the parser runtime rather than safe text editing.
 

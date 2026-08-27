@@ -18,7 +18,7 @@ For every externally observable usage/example/scenario/verification case:
 
 Return `works`, `broken`, or `unclear` per usage with concise reasoning and a
 code citation for breakage. Overall status is `pass`, `fail`, or `partial`.
-A failure becomes a work-local change child with blocking disposition and PM
+A failure becomes a work-local change child with blocking disposition and main-agent
 state/index reconciliation; it never appends a root deviations log.
 
 ```yaml

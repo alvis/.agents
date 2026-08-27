@@ -44,6 +44,18 @@ function memory(name: string): string {
   return `\n## Memory\n\nI retain durable repository knowledge in \`.claude/agent-memory/${name}/MEMORY.md\`. I follow \`essential:templates/memory.md\`. Current facts carry evidence and a last-verified date. Sources override memory; I archive old claims before 150 lines or 20KB. I move detail to \`topics/<stable-area>/<specific-subject>.md\`.\n`;
 }
 
+function stateSystemAccess(document: string): Record<string, string> {
+  const marker = /<project-state-system-access\s+([^>]+)\s*\/>/.exec(document);
+  if (marker === null) throw new Error("missing state-system access marker");
+  const attributes = marker[1]!.replaceAll('\\"', '"');
+  return Object.fromEntries(
+    [...attributes.matchAll(/([a-z-]+)="([^"]+)"/g)].map((match) => [
+      match[1]!,
+      match[2]!,
+    ]),
+  );
+}
+
 function writeTemplate(
   pluginRoot: string,
   name = "test-agent",
@@ -123,6 +135,12 @@ describe("agent stitching", () => {
     });
     expect(projected).not.toHaveProperty("intelligence");
     expect(claude).toContain("# Test agent\n\nIntelligence level: high.");
+    const access = {
+      read: "all-agents",
+      write: "main-agent",
+      protected: "README.md,docs/**,.state/**,external-specification",
+    };
+    expect(stateSystemAccess(claude)).toEqual(access);
     expect(stitchAgentDefinition(template)).toBe(claude);
 
     const codex = stitchCodexAgentDefinition(template);
@@ -130,6 +148,7 @@ describe("agent stitching", () => {
     expect(codex).toContain('nickname_candidates = ["Ava", "Kit", "June"]');
     expect(codex).toContain('sandbox_mode = "workspace-write"');
     expect(codex).not.toContain("## Memory");
+    expect(stateSystemAccess(codex)).toEqual(access);
     expect(stitchCodexAgentDefinition(template)).toBe(codex);
 
     const grok = stitchGrokAgentDefinition(template);
@@ -145,6 +164,7 @@ describe("agent stitching", () => {
     });
     expect(grokProjected).not.toHaveProperty("intelligence");
     expect(grok).toContain("# Test agent\n\nIntelligence level: high.");
+    expect(stateSystemAccess(grok)).toEqual(access);
     expect(grok).not.toContain("## Memory");
     expect(stitchGrokAgentDefinition(template)).toBe(grok);
   });
@@ -152,18 +172,15 @@ describe("agent stitching", () => {
   it.each([
     ["a memory path", "\nSee also `.claude/agent-memory/test-agent/EXTRA.md`."],
     ["a worktree", "\nFirst. A worktree survives this sentence."],
-  ])(
-    "hard-fails when a Grok body retains %s",
-    (_label, extra) => {
-      const root = temporaryRoot();
-      const template = writeTemplate(root, "test-agent", {
-        body: `# Test agent${extra}\n`,
-      });
-      expect(() => stitchGrokAgentDefinition(template)).toThrow(
-        /retains Claude-only behavior/,
-      );
-    },
-  );
+  ])("hard-fails when a Grok body retains %s", (_label, extra) => {
+    const root = temporaryRoot();
+    const template = writeTemplate(root, "test-agent", {
+      body: `# Test agent${extra}\n`,
+    });
+    expect(() => stitchGrokAgentDefinition(template)).toThrow(
+      /retains Claude-only behavior/,
+    );
+  });
 
   it("preserves plugin namespaces while removing Claude-only delegation", () => {
     const root = temporaryRoot();

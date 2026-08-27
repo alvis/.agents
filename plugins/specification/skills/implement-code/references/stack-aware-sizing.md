@@ -2,7 +2,7 @@
 
 Load only after execution has relevant dirty changes or saved unpushed changes,
 the full review and usage trace pass against the current specification content,
-durable derivation is current, and any completion-sync/revalidation loop is
+work-local specification and provenance are current, and any completion-sync/revalidation loop is
 stable. This is the first point at which final history work or publication is
 allowed.
 
@@ -31,7 +31,7 @@ than capturing unrelated work.
 
 When state is `dirty`, require the parent-provided immutable
 `scoped_save_manifest` path and SHA-256. Its full publication scope includes all
-lifecycle-generated source, test, project-documentation, durable
+lifecycle-generated source, test, project-documentation, active-work
 specification/provenance, and deletion paths intended for publication; its
 selected set is exactly the currently dirty subset. It excludes ignored work
 state and inventories every unrelated dirty path for before/after preservation.

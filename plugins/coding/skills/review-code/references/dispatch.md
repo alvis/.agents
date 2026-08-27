@@ -3,16 +3,17 @@
 Dispatch selected areas in one parallel batch, at most seven reviewers. Each
 reviewer receives only file paths and these common inputs:
 
-- absolute active work root and assigned lowercase output path;
+- absolute active work root and assigned lowercase proposed-output identity;
 - exact relevant spec/design/review paths from the mission capsule;
 - canonical `plan_source: state.md` and applicable full `task_id` values read
   directly from `state.md`;
 - discovered source/test/doc paths for the area;
 - advisory mechanical-scan slice;
 - [review.template.md](review.template.md) and [mandates.md](mandates.md);
-- instruction to modify no reviewed code, delegate no further, preserve stable
-  finding IDs/statuses, and return path, counts, `context_level`, and
-  `generated_files` plus the unchanged plan source and reviewed full task IDs.
+- instruction to modify no file, delegate no further, preserve stable finding
+  IDs/statuses, and return complete proposed area content, counts,
+  `context_level`, evidence, the unchanged plan source, and reviewed full task
+  IDs for main-agent reconciliation.
 
 The capsule is sufficient by default. Give `state.md` to alignment reviewers,
 or when resume/cross-slice evidence requires it; give `state/working.md` only when
@@ -44,7 +45,7 @@ finding until the assigned reviewer validates it.
 - Follow an explicit implementation-detail link only for procedure keyed by
   existing IDs; reject it if it restates/changes IDs, edges, requiredness,
   targets, or acceptance mappings.
-- Output `reviews/alignment.md`, prefix `ALIGN`.
+- Return proposed `reviews/alignment.md` content, prefix `ALIGN`.
 
 ### correctness
 
@@ -52,14 +53,14 @@ finding until the assigned reviewer validates it.
 - Trace control flow, boundaries, async/resource behavior, errors, operators,
   arguments, invariants, and plausible failure paths. Do not duplicate
   alignment, quality, or mechanical findings.
-- Output `reviews/correctness.md`, prefix `CORR`.
+- Return proposed `reviews/correctness.md` content, prefix `CORR`.
 
 ### security
 
 - Security champion.
 - Check injection, authentication/authorization, validation, data/secrets,
   dependency exposure, CORS/headers, cryptography, and trust boundaries.
-- Output `reviews/security.md`, prefix `SEC`.
+- Return proposed `reviews/security.md` content, prefix `SEC`.
 
 ### quality
 
@@ -67,7 +68,7 @@ finding until the assigned reviewer validates it.
   redundancy, structure, naming posture, complexity, DRY, error-handling
   posture, performance, accessibility, and architecture. Route semantic bugs
   to correctness and plan drift to alignment.
-- Output `reviews/quality.md`, prefix `QUAL`.
+- Return proposed `reviews/quality.md` content, prefix `QUAL`.
 
 ### testing
 
@@ -75,21 +76,21 @@ finding until the assigned reviewer validates it.
 - Check meaningful behavior/edge/failure/integration coverage, assertion
   strength, per-source coverage, isolation, determinism, fixture/mock ownership,
   complexity, and redundancy.
-- Output `reviews/testing.md`, prefix `TEST`.
+- Return proposed `reviews/testing.md` content, prefix `TEST`.
 
 ### docs
 
 - General-purpose documentation analyst.
 - Check exported API docs, complex-logic explanation, README/API/example/type
   accuracy, and whether durable architecture/design/spec promotion is required.
-- Output `reviews/docs.md`, prefix `DOCS`.
+- Return proposed `reviews/docs.md` content, prefix `DOCS`.
 
 ### style
 
 - General-purpose style analyst.
 - Discover and run repository lint/format/naming checks, capture exact
   diagnostics, and report naming-policy gaps not already owned by tooling.
-- Output `reviews/style.md`, prefix `STYL`.
+- Return proposed `reviews/style.md` content, prefix `STYL`.
 
 ## Reruns
 

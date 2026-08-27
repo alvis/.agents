@@ -74,8 +74,8 @@ class Harness {
       ".gitignore": ".state/\n",
       "src.txt": "source base\n",
       "tests.txt": "test base\n",
-      "docs/specs/capability/README.md": "spec base\n",
-      "docs/specs/capability/provenance.json": "{}\n",
+      "docs/architecture/README.md": "architecture base\n",
+      "docs/design/README.md": "design base\n",
       "developer.txt": "developer base\n",
     };
     for (const [relative, content] of Object.entries(files)) {
@@ -248,8 +248,8 @@ describe("path-scoped lifecycle saving", () => {
     const selected = [
       "src.txt",
       "tests.txt",
-      "docs/specs/capability/README.md",
-      "docs/specs/capability/provenance.json",
+      "docs/architecture/README.md",
+      "docs/design/README.md",
     ];
     for (const path of selected)
       writeFileSync(

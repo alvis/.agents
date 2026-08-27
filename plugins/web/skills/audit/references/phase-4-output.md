@@ -22,7 +22,7 @@ Before rendering:
    existing canonical `<PREFIX>-P<n>-<seq>` ID; it is not itself the Markdown
    finding ID.
 
-## Classification and writing
+## Classification and reconciliation
 
 Apply `review-template.md` and classify each finding exactly once. Map
 `critical|high|medium|low` to `P0|P1|P2|P3`; retain `info` as advisory raw
@@ -33,7 +33,8 @@ existing area file and reuse the canonical ID already paired with that source
 key. Allocate only genuinely new IDs using the area's canonical prefix and its
 next unused sequence. Never renumber old IDs or use raw CLI IDs as headings.
 
-Write only applicable `reviews/<area>.md` files. Each written file must retain
+Return complete proposed content only for applicable `reviews/<area>.md` files.
+The main agent writes them. Each proposal must retain
 the canonical frontmatter, verdict line, required finding fields, and existing
 findings not owned by this Web run. Merge by source key so a rerun updates
 evidence without erasing dispositions, owners, recheck conditions, risk
@@ -54,9 +55,9 @@ Recurring visual issues are one `quality.md` finding with all affected routes,
 not duplicate per-page prose. Cross-origin candidates declined by the user are
 recorded as scope evidence, not defects.
 
-## PM roll-up handoff
+## Main-agent roll-up handoff
 
-Validate every written area against `review-template.md`, then return its
+Validate every proposed area against `review-template.md`, then return its
 reconciliation payload. For each area, report all five dispositions, derived
 closed/outstanding counts, P0-P3 counts, verdict, and path. An absent area is
 `not_run` with zeroes unless an existing canonical area file supplies current
@@ -73,9 +74,9 @@ audit_summary:
   raw_evidence: [<absolute final paths>]
 ```
 
-This payload is for PM reconciliation into `review.md`; a worker does not write
-the roll-up. Conversation output is a concise status, top open findings, exact
-review/evidence paths, and coverage limitations rather than a competing report.
+This payload is for main-agent reconciliation into area files and `review.md`;
+a worker writes neither. Conversation output is a concise status, top open
+findings, temporary evidence paths, and coverage limitations.
 
 ## Multi-page audits
 

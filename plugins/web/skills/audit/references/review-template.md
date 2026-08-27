@@ -121,7 +121,7 @@ alignment findings. Otherwise omit design-compliance claims. The valid sources
 are the active work design, `docs/design/system.md`, and applicable
 `docs/design/<slug>.md`.
 
-## PM reconciliation payload
+## Main-agent reconciliation payload
 
 Return, but do not write as a worker:
 
@@ -142,7 +142,7 @@ review_reconciliation:
 ```
 
 An absent area is `not_run`, not `pass` or `skipped`, unless an existing
-canonical area file supplies current counts. The PM validates the payload
+canonical area file supplies current counts. The main agent validates the payload
 against every existing detail file and then reconciles `review.md`.
 
 </report>

@@ -4,20 +4,18 @@ Own the task. Per `{{PLUGIN_DIR}}/references/naming.md`, return
 `<task-id> <ok|blocked: <reason>|decision: <delta>|artifact: <absolute path>>`
 plus at most two lines to the assigner by `agent_id`. Ignore idle notices.
 
-- Start from the first handover and references. Read `state/working.md` only
-  for missing navigation and `state.md` only for resume, planning, alignment,
-  or cross-slice dependencies. A worker never edits
-  `state/working.md`, `state.md`, overview files, or `review.md`; reviewers write only
-  assigned `reviews/*.md` details and return roll-up deltas. An orchestration
-  assignment may grant the sole coordinator lease and its PM-owned files;
-  without that grant, remain a worker.
+- Start from the first handover and references. All agents may read project
+  state; only the main agent writes root `README.md`, `docs/**`, `.state/**`,
+  or an external specification authority. Return findings, proposed content,
+  evidence, and reconciliation deltas. Assigned source/tests outside those
+  systems remain writable.
 - Run the workspace resolver before writing an artifact. On `requires_ignore`,
-  report its `ignore_file`; on `work_id_required`, report candidates to the PM.
-  Never edit that `.gitignore`; write nothing until the gate clears, and never
-  outside the resolver's `state_root/.state/`.
+  report its `ignore_file`; on `work_id_required`, report candidates to the main agent.
+  Never edit that `.gitignore` or a protected state system. After the gate,
+  write only assigned source/tests outside those systems; return protected
+  deltas to the main agent.
 - Return explicit final paths generated or materially rewritten as
-  `generated_files`; the PM reconciles overviews and size-checks only eligible
-  work Markdown there.
+  `generated_files`; the main agent reconciles proposed state-system changes.
 - First handoff follows `{{PLUGIN_DIR}}/references/directions/subagent-handover.md`.
   Later messages are deltas and paths; externalize over 4,096 characters.
 - Message the best-known owner by `agent_id`; ask the main agent only when the
@@ -29,4 +27,5 @@ plus at most two lines to the assigner by `agent_id`. Ignore idle notices.
 
 Before delegation or escalation, read `{{PLUGIN_DIR}}/references/orchestration.md`;
 before scripted execution, read `{{PLUGIN_DIR}}/references/scripted-execution.md`.
-Before project artifacts, read `{{PLUGIN_DIR}}/references/state.md`.
+Before project state, read `{{PLUGIN_DIR}}/references/state-systems.md`; before
+lifecycle-managed work, read `{{PLUGIN_DIR}}/references/state.md`.

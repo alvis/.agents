@@ -45,8 +45,8 @@ writes and report the missing contract. Resolve the workspace-local work root
 and artifact paths before drafting. When delegated, start from the mission
 capsule's exact work root and relevant design/spec files. Read `state/working.md`
 only when navigation is missing, and `state.md` only for resume, cross-slice
-dependency, or alignment work. Never write PM-owned pointers or overviews.
-The caller/PM uses the resolver, asks only on `work_id_required`, and gives a
+dependency, or alignment work. Never write main-agent-owned pointers or overviews.
+The main-agent caller uses the resolver, asks only on `work_id_required`, and gives a
 delegated run the explicit resolved work ID/root.
 
 Apply these constitution standards while drafting:
@@ -105,6 +105,6 @@ one-line purpose each; counts of types defined, functions drafted, and markers
 placed; verification commands with results; and next steps — complete
 production stubs with `coding:complete-code`, then route pending test markers
 to `coding:complete-test`. Return every created or materially rewritten path as
-`generated_files` to the PM. Do not run file sizing; after all artifact writers
-finish, the PM checks only eligible work Markdown inside the target
+`generated_files` to the main agent. Do not run file sizing; after all artifact writers
+finish, the main agent checks only eligible work Markdown inside the target
 `.state/`.

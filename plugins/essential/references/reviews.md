@@ -35,9 +35,7 @@ counts using exactly this mapping.
 Contract/completeness audit findings belong to `alignment.md`; semantic bugs
 belong to `correctness.md`. Plan deviations belong in `state.md` and also in
 `alignment.md` only when they cause contract drift. Work closes only when
-`review.md` agrees with every detail. Reviewers own only assigned area
-details and return roll-up deltas; the coordinator-lease holder alone
-reconciles `review.md` after all review writers finish. A nested review
-workflow without that lease returns a summary delta instead of touching the
-roll-up. Every approval recorded in a review carries the binding tuple from
+`review.md` agrees with every detail. Reviewers return bounded area reports
+and roll-up deltas; the main agent alone writes `reviews/*.md` and reconciles
+`review.md`. Every approval recorded in a review carries the binding tuple from
 [approvals.md](approvals.md).

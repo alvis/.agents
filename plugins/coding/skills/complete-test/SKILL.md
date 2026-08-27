@@ -33,8 +33,8 @@ writes and report the missing contract. Resolve the active work root first.
 When delegated, start from the mission capsule's exact work root and relevant
 specification, review, and evidence paths. Read `state/working.md` only when the
 capsule lacks current navigation; read `state.md` only for resume, cross-slice
-dependency, or alignment work. Never write PM-owned work pointers or overviews.
-The caller/PM uses the resolver, asks only on `work_id_required`, and gives a
+dependency, or alignment work. Never write main-agent-owned work pointers or overviews.
+The main-agent caller uses the resolver, asks only on `work_id_required`, and gives a
 delegated run the explicit resolved work ID/root.
 
 ## Workflow
@@ -63,5 +63,5 @@ claim completion.
 
 Return a concise test report. Do not claim production implementation, bug fixes, or coverage for code outside the selected scope.
 Return every created or materially rewritten path as `generated_files` to the
-PM. Do not run file sizing; after all artifact writers finish, the PM checks
+main agent. Do not run file sizing; after all artifact writers finish, the main agent checks
 only eligible work Markdown inside the target `.state/`.

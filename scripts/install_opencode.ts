@@ -25,7 +25,14 @@ import {
   writeSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 
 import { resolveHookReceipts } from "./opencode_hook_receipts.ts";
 
@@ -64,21 +71,20 @@ const OPEN_CODE_COLOR_BY_CLAUDE_COLOR: Readonly<Record<string, string>> = {
   yellow: "warning",
 };
 const READ_ONLY_AGENT_POLICIES: Readonly<
-  Record<string, { readonly hook_sha256: string; readonly edit_patterns: readonly string[] }>
+  Record<
+    string,
+    { readonly hook_sha256: string; readonly edit_patterns: readonly string[] }
+  >
 > = {
   "aesthetic-evaluator": {
     hook_sha256:
-      "414bbacc6a15d74542fd7517d4ae8015189ee5e36b75df19775e99456310d399",
+      "8af8edfdebade1440ac05b22cc6a06214b97e242313430ed306f1bd55a3dcfd0",
     edit_patterns: [".claude/agent-memory/aesthetic-evaluator/*"],
   },
   "code-quality-critic": {
     hook_sha256:
-      "8507c30596582bd84059f1b80a7cc60a537cc1ef914fab0e4ed02c8712e270c8",
-    edit_patterns: [
-      ".claude/agent-memory/code-quality-critic/*",
-      ".state/works/*/reviews/correctness.md",
-      ".state/works/*/reviews/quality.md",
-    ],
+      "02b9715be978c366c6ff8d0aa11304a3a25c35cbfdba44325d45fd29a5389a73",
+    edit_patterns: [".claude/agent-memory/code-quality-critic/*"],
   },
 };
 
@@ -90,7 +96,9 @@ function readJsonObject(path: string): JsonObject {
   try {
     value = JSON.parse(readFileSync(path, "utf8"));
   } catch (error) {
-    throw new ProjectionError(`cannot read JSON object ${path}: ${String(error)}`);
+    throw new ProjectionError(
+      `cannot read JSON object ${path}: ${String(error)}`,
+    );
   }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new ProjectionError(`expected JSON object in ${path}`);
@@ -113,7 +121,9 @@ function projectionContract(): JsonObject {
     throw new ProjectionError(`invalid schema version in ${CONTRACT_PATH}`);
   }
   if (separator !== "-") {
-    throw new ProjectionError(`unsupported skill separator in ${CONTRACT_PATH}`);
+    throw new ProjectionError(
+      `unsupported skill separator in ${CONTRACT_PATH}`,
+    );
   }
   cachedContract = contract;
   return contract;
@@ -213,7 +223,10 @@ function fsyncDirectory(directory: string): void {
 
 function writeDurableJson(path: string, value: JsonObject): void {
   mkdirSync(dirname(path), { mode: 0o700, recursive: true });
-  const temporary = join(dirname(path), `.${basename(path)}.${process.pid}.tmp`);
+  const temporary = join(
+    dirname(path),
+    `.${basename(path)}.${process.pid}.tmp`,
+  );
   try {
     const descriptor = openSync(temporary, "wx");
     try {
@@ -306,12 +319,17 @@ function readValidOwnership(
   const record = readJsonObject(recordPath);
   const expected = ownershipRecord(target, manifestPath, schemaVersion);
   if (canonicalJson(record) !== canonicalJson(expected)) {
-    throw new ProjectionError(`managed manifest ownership does not match ${recordPath}`);
+    throw new ProjectionError(
+      `managed manifest ownership does not match ${recordPath}`,
+    );
   }
   return record;
 }
 
-function rejectSourceSymlinkComponents(sourcePath: string, pluginName: string): void {
+function rejectSourceSymlinkComponents(
+  sourcePath: string,
+  pluginName: string,
+): void {
   const pathFromRoot = relative(ROOT, sourcePath);
   if (
     pathFromRoot === "" ||
@@ -319,7 +337,9 @@ function rejectSourceSymlinkComponents(sourcePath: string, pluginName: string): 
     pathFromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) ||
     isAbsolute(pathFromRoot)
   ) {
-    throw new ProjectionError(`invalid plugin source for ${pluginName}: ${sourcePath}`);
+    throw new ProjectionError(
+      `invalid plugin source for ${pluginName}: ${sourcePath}`,
+    );
   }
   let currentPath = ROOT;
   for (const component of pathFromRoot.split(/[\\/]/).filter(Boolean)) {
@@ -349,7 +369,9 @@ function marketplacePlugins(): Record<string, string> {
     const name = record.name;
     const source = record.source;
     if (typeof name !== "string" || typeof source !== "string") {
-      throw new ProjectionError("marketplace plugins require string name and source");
+      throw new ProjectionError(
+        "marketplace plugins require string name and source",
+      );
     }
     const sourcePath = resolve(ROOT, source);
     rejectSourceSymlinkComponents(sourcePath, name);
@@ -368,7 +390,10 @@ function marketplacePlugins(): Record<string, string> {
   return pluginsByName;
 }
 
-function pluginDependencies(pluginRoot: string, expectedName: string): readonly string[] {
+function pluginDependencies(
+  pluginRoot: string,
+  expectedName: string,
+): readonly string[] {
   const manifestPath = join(pluginRoot, ".claude-plugin", "plugin.json");
   const manifest = readJsonObject(manifestPath);
   if (manifest.name !== expectedName) {
@@ -379,7 +404,9 @@ function pluginDependencies(pluginRoot: string, expectedName: string): readonly 
     !Array.isArray(dependencies) ||
     !dependencies.every((dependency) => typeof dependency === "string")
   ) {
-    throw new ProjectionError(`dependencies must be strings in ${manifestPath}`);
+    throw new ProjectionError(
+      `dependencies must be strings in ${manifestPath}`,
+    );
   }
   return dependencies as readonly string[];
 }
@@ -403,7 +430,8 @@ function resolvePlugins(
       throw new ProjectionError(`unknown plugin ${name}`);
     }
     visiting.push(name);
-    for (const dependency of pluginDependencies(pluginRoot, name)) visit(dependency);
+    for (const dependency of pluginDependencies(pluginRoot, name))
+      visit(dependency);
     visiting.pop();
     resolved.push(name);
   }
@@ -412,10 +440,15 @@ function resolvePlugins(
   return resolved;
 }
 
-function projectTarget(scope: "project" | "user", projectRoot?: string): string {
+function projectTarget(
+  scope: "project" | "user",
+  projectRoot?: string,
+): string {
   if (scope === "user") {
     if (projectRoot !== undefined) {
-      throw new ProjectionError("--project-root is valid only with --scope project");
+      throw new ProjectionError(
+        "--project-root is valid only with --scope project",
+      );
     }
     const configHome =
       process.env.XDG_CONFIG_HOME ?? join(homeDirectory(), ".config");
@@ -438,22 +471,30 @@ function projectTarget(scope: "project" | "user", projectRoot?: string): string 
   try {
     rootInfo = statSync(resolvedRoot);
   } catch {
-    throw new ProjectionError(`project root is not a directory: ${resolvedRoot}`);
+    throw new ProjectionError(
+      `project root is not a directory: ${resolvedRoot}`,
+    );
   }
   if (!rootInfo.isDirectory()) {
-    throw new ProjectionError(`project root is not a directory: ${resolvedRoot}`);
+    throw new ProjectionError(
+      `project root is not a directory: ${resolvedRoot}`,
+    );
   }
   return join(resolvedRoot, ".opencode");
 }
 
 function worktreeFiles(sourceRoot: string): readonly string[] {
-  const repositoryRelativeRoot = relative(ROOT, sourceRoot).split("\\").join("/");
+  const repositoryRelativeRoot = relative(ROOT, sourceRoot)
+    .split("\\")
+    .join("/");
   if (
     repositoryRelativeRoot === "" ||
     repositoryRelativeRoot === ".." ||
     repositoryRelativeRoot.startsWith("../")
   ) {
-    throw new ProjectionError(`source root is outside the repository: ${sourceRoot}`);
+    throw new ProjectionError(
+      `source root is outside the repository: ${sourceRoot}`,
+    );
   }
   const gitDirectoryResult = spawnSync(
     "git",
@@ -496,15 +537,21 @@ function worktreeFiles(sourceRoot: string): readonly string[] {
     throw new ProjectionError(`cannot enumerate source files: ${detail}`);
   }
   const files: string[] = [];
-  for (const repositoryRelativePath of result.stdout.split("\0").filter(Boolean)) {
+  for (const repositoryRelativePath of result.stdout
+    .split("\0")
+    .filter(Boolean)) {
     const sourcePath = join(ROOT, repositoryRelativePath);
     const info = lstatSync(sourcePath, { throwIfNoEntry: false });
     if (!info) continue;
     if (info.isSymbolicLink() || !info.isFile()) {
-      throw new ProjectionError(`source path is not a regular file: ${sourcePath}`);
+      throw new ProjectionError(
+        `source path is not a regular file: ${sourcePath}`,
+      );
     }
     if (!isInside(sourceRoot, sourcePath)) {
-      throw new ProjectionError(`source inventory escapes plugin root: ${sourcePath}`);
+      throw new ProjectionError(
+        `source inventory escapes plugin root: ${sourcePath}`,
+      );
     }
     files.push(relative(sourceRoot, sourcePath).split("\\").join("/"));
   }
@@ -520,7 +567,9 @@ interface CopyRegularFilesParams {
 function copyRegularFile(sourcePath: string, destinationPath: string): void {
   const info = lstatSync(sourcePath, { throwIfNoEntry: false });
   if (!info || info.isSymbolicLink() || !info.isFile()) {
-    throw new ProjectionError(`source path is not a regular file: ${sourcePath}`);
+    throw new ProjectionError(
+      `source path is not a regular file: ${sourcePath}`,
+    );
   }
   mkdirSync(dirname(destinationPath), { recursive: true });
   cpSync(sourcePath, destinationPath, { preserveTimestamps: true });
@@ -539,7 +588,11 @@ function splitLinesKeepingEndings(text: string): readonly string[] {
   return text.match(/[^\n]*\n|[^\n]+$/g) ?? [];
 }
 
-function rewriteSkillName(text: string, projectedName: string, source: string): string {
+function rewriteSkillName(
+  text: string,
+  projectedName: string,
+  source: string,
+): string {
   if (projectedName.length > 64) {
     throw new ProjectionError(
       `OpenCode skill name exceeds 64 characters: ${projectedName}`,
@@ -564,7 +617,9 @@ function rewriteSkillName(text: string, projectedName: string, source: string): 
     if (/^name\s*:/.test(lines[index]!)) nameIndexes.push(index);
   }
   if (nameIndexes.length !== 1) {
-    throw new ProjectionError(`skill requires exactly one frontmatter name: ${source}`);
+    throw new ProjectionError(
+      `skill requires exactly one frontmatter name: ${source}`,
+    );
   }
   const newline = lines[nameIndexes[0]!]!.endsWith("\r\n") ? "\r\n" : "\n";
   lines[nameIndexes[0]!] = `name: ${projectedName}${newline}`;
@@ -596,17 +651,29 @@ function rewriteMarkdownLinks(
     const fragmentIndex = target.indexOf("#");
     const pathText =
       fragmentIndex === -1 ? target : target.slice(0, fragmentIndex);
-    const fragment = fragmentIndex === -1 ? undefined : target.slice(fragmentIndex + 1);
+    const fragment =
+      fragmentIndex === -1 ? undefined : target.slice(fragmentIndex + 1);
     const sourceTarget = resolvePath(resolve(dirname(sourceFile), pathText));
-    if (!existsFollowing(sourceTarget) || !isInside(pluginsRoot, sourceTarget)) {
+    if (
+      !existsFollowing(sourceTarget) ||
+      !isInside(pluginsRoot, sourceTarget)
+    ) {
       return `${prefix}${target}${suffix}`;
     }
     if (isInside(context.sourceSkillRoot, sourceTarget)) {
       return `${prefix}${target}${suffix}`;
     }
     const relativeSource = relative(pluginsRoot, sourceTarget);
-    const destinationTarget = join(context.stagedRoot, "alvis", "plugins", relativeSource);
-    const relativeTarget = relative(dirname(context.destinationFile), destinationTarget);
+    const destinationTarget = join(
+      context.stagedRoot,
+      "alvis",
+      "plugins",
+      relativeSource,
+    );
+    const relativeTarget = relative(
+      dirname(context.destinationFile),
+      destinationTarget,
+    );
     let projectedTarget = relativeTarget.split("\\").join("/");
     if (fragment !== undefined) projectedTarget += `#${fragment}`;
     return `${prefix}${projectedTarget}${suffix}`;
@@ -629,8 +696,16 @@ function rewriteJsonResourcePaths(
       return `"${target}"`;
     }
     const relativeSource = relative(pluginsRoot, sourceTarget);
-    const destinationTarget = join(context.stagedRoot, "alvis", "plugins", relativeSource);
-    const relativeTarget = relative(dirname(context.destinationFile), destinationTarget);
+    const destinationTarget = join(
+      context.stagedRoot,
+      "alvis",
+      "plugins",
+      relativeSource,
+    );
+    const relativeTarget = relative(
+      dirname(context.destinationFile),
+      destinationTarget,
+    );
     return ensureAscii(JSON.stringify(relativeTarget.split("\\").join("/")));
   });
 }
@@ -651,7 +726,10 @@ function rewriteSkillRuntimePaths(
   return rewritten;
 }
 
-function walkRelativeFiles(root: string, directory: string = root): readonly string[] {
+function walkRelativeFiles(
+  root: string,
+  directory: string = root,
+): readonly string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const entryPath = join(directory, entry.name);
@@ -659,7 +737,9 @@ function walkRelativeFiles(root: string, directory: string = root): readonly str
     else if (entry.isFile()) {
       found.push(relative(root, entryPath).split("\\").join("/"));
     } else {
-      throw new ProjectionError(`staged path is not a regular file: ${entryPath}`);
+      throw new ProjectionError(
+        `staged path is not a regular file: ${entryPath}`,
+      );
     }
   }
   return found.sort();
@@ -677,7 +757,11 @@ function projectSkill(params: ProjectSkillParams): string {
   const separator = contractString("skill_separator");
   const projectedName = [pluginName, basename(sourceSkillRoot)].join(separator);
   const destinationRoot = join(stagedRoot, "skills", projectedName);
-  copyRegularFiles({ destinationRoot, files: sourceFiles, sourceRoot: sourceSkillRoot });
+  copyRegularFiles({
+    destinationRoot,
+    files: sourceFiles,
+    sourceRoot: sourceSkillRoot,
+  });
   for (const relativePath of sourceFiles) {
     const extension = relativePath.slice(relativePath.lastIndexOf("."));
     if (!PROJECTED_TEXT_SUFFIXES.has(extension)) continue;
@@ -692,9 +776,15 @@ function projectSkill(params: ProjectSkillParams): string {
     if (relativePath === "SKILL.md") {
       text = rewriteSkillName(text, projectedName, sourceFile);
     }
-    if (extension === ".md") text = rewriteMarkdownLinks(text, sourceFile, context);
-    if (extension === ".json") text = rewriteJsonResourcePaths(text, sourceFile, context);
-    text = rewriteSkillRuntimePaths(text, pluginName, relativePath === "SKILL.md");
+    if (extension === ".md")
+      text = rewriteMarkdownLinks(text, sourceFile, context);
+    if (extension === ".json")
+      text = rewriteJsonResourcePaths(text, sourceFile, context);
+    text = rewriteSkillRuntimePaths(
+      text,
+      pluginName,
+      relativePath === "SKILL.md",
+    );
     writeFileSync(destinationFile, text, "utf8");
   }
   return projectedName;
@@ -751,13 +841,17 @@ function agentPermissions(name: string, claude: JsonObject): readonly string[] {
     typeof hooks !== "object" ||
     Array.isArray(hooks)
   ) {
-    throw new ProjectionError(`unsupported security-sensitive hooks for agent ${name}`);
+    throw new ProjectionError(
+      `unsupported security-sensitive hooks for agent ${name}`,
+    );
   }
   if (
     createHash("sha256").update(canonicalJson(hooks), "utf8").digest("hex") !==
     policy.hook_sha256
   ) {
-    throw new ProjectionError(`changed security-sensitive hooks for agent ${name}`);
+    throw new ProjectionError(
+      `changed security-sensitive hooks for agent ${name}`,
+    );
   }
   return policy.edit_patterns;
 }
@@ -772,7 +866,9 @@ function writeAgent(agentRoot: string, destination: string): string {
     name !== basename(agentRoot) ||
     typeof description !== "string"
   ) {
-    throw new ProjectionError(`invalid canonical metadata for agent ${basename(agentRoot)}`);
+    throw new ProjectionError(
+      `invalid canonical metadata for agent ${basename(agentRoot)}`,
+    );
   }
   const steps = claude.maxTurns;
   if (!Number.isInteger(steps) || (steps as number) < 1) {
@@ -784,7 +880,9 @@ function writeAgent(agentRoot: string, destination: string): string {
   }
   const color = claude.color;
   const projectedColor =
-    typeof color === "string" ? OPEN_CODE_COLOR_BY_CLAUDE_COLOR[color] : undefined;
+    typeof color === "string"
+      ? OPEN_CODE_COLOR_BY_CLAUDE_COLOR[color]
+      : undefined;
   const permissions = agentPermissions(name, claude);
 
   const frontmatter = [
@@ -793,7 +891,8 @@ function writeAgent(agentRoot: string, destination: string): string {
     "mode: subagent",
     `steps: ${steps}`,
   ];
-  if (projectedColor !== undefined) frontmatter.push(`color: ${projectedColor}`);
+  if (projectedColor !== undefined)
+    frontmatter.push(`color: ${projectedColor}`);
   if (permissions.length > 0) {
     frontmatter.push("permission:", "  edit:", '    "*": deny');
     for (const pattern of permissions) {
@@ -918,7 +1017,9 @@ function buildProjection(
         stagedRoot,
       });
       if (skillNames.has(projectedName)) {
-        throw new ProjectionError(`projected skill collision: ${projectedName}`);
+        throw new ProjectionError(
+          `projected skill collision: ${projectedName}`,
+        );
       }
       skillNames.add(projectedName);
       writeCommand(
@@ -986,7 +1087,10 @@ function normalizedParts(pathText: string): readonly string[] {
   return pathText.split("/").filter((part) => part !== "" && part !== ".");
 }
 
-function isCanonicalManagedPath(parts: readonly string[], pluginNames: ReadonlySet<string>): boolean {
+function isCanonicalManagedPath(
+  parts: readonly string[],
+  pluginNames: ReadonlySet<string>,
+): boolean {
   const joined = parts.join("/");
   if (
     joined === MANIFEST_RELATIVE_PATH ||
@@ -1019,9 +1123,7 @@ function isCanonicalManagedPath(parts: readonly string[], pluginNames: ReadonlyS
 }
 
 type ExistingProjectionClassification =
-  | "authenticated-schema-v1"
-  | "fresh"
-  | "managed-schema-v2";
+  "authenticated-schema-v1" | "fresh" | "managed-schema-v2";
 
 interface PreviousProjection {
   readonly classification: ExistingProjectionClassification;
@@ -1051,7 +1153,9 @@ function validateManagedPathState(
     throw new ProjectionError(`managed path is missing: ${destination}`);
   }
   if (info.isSymbolicLink() || !info.isFile()) {
-    throw new ProjectionError(`managed path is not a regular file: ${destination}`);
+    throw new ProjectionError(
+      `managed path is not a regular file: ${destination}`,
+    );
   }
   if (fileDigest(destination) !== expectedDigest) {
     throw new ProjectionError(`managed path was modified: ${destination}`);
@@ -1072,7 +1176,9 @@ function loadPreviousProjection(
     };
   }
   if (info.isSymbolicLink()) {
-    throw new ProjectionError(`managed manifest must not be a symlink: ${manifestPath}`);
+    throw new ProjectionError(
+      `managed manifest must not be a symlink: ${manifestPath}`,
+    );
   }
   const manifest = readJsonObject(manifestPath);
   const schemaVersion = manifest.schema_version;
@@ -1080,7 +1186,9 @@ function loadPreviousProjection(
     manifest.manager !== contractString("manager") ||
     (schemaVersion !== 1 && schemaVersion !== contractSchemaVersion())
   ) {
-    throw new ProjectionError(`unmanaged or incompatible manifest: ${manifestPath}`);
+    throw new ProjectionError(
+      `unmanaged or incompatible manifest: ${manifestPath}`,
+    );
   }
   readValidOwnership(target, manifestPath, schemaVersion);
   const paths = manifest.managed_paths;
@@ -1107,7 +1215,11 @@ function loadPreviousProjection(
   }
   const pluginNames = new Set<string>();
   for (const plugin of plugins) {
-    if (plugin === null || typeof plugin !== "object" || Array.isArray(plugin)) {
+    if (
+      plugin === null ||
+      typeof plugin !== "object" ||
+      Array.isArray(plugin)
+    ) {
       throw new ProjectionError(`invalid plugin receipt in ${manifestPath}`);
     }
     const receipt = plugin as JsonObject;
@@ -1132,7 +1244,9 @@ function loadPreviousProjection(
       pathText.split("/").includes("..") ||
       !isCanonicalManagedPath(parts, pluginNames)
     ) {
-      throw new ProjectionError(`unsafe managed path in ${manifestPath}: ${pathText}`);
+      throw new ProjectionError(
+        `unsafe managed path in ${manifestPath}: ${pathText}`,
+      );
     }
     managedPaths.add(parts.join("/"));
   }
@@ -1140,14 +1254,14 @@ function loadPreviousProjection(
   const expectedDigestPaths = new Set(
     [...managedPaths].filter((path) => path !== MANIFEST_RELATIVE_PATH),
   );
-  const expectedKeys = new Set(
-    [...expectedDigestPaths].map((path) => path),
-  );
+  const expectedKeys = new Set([...expectedDigestPaths].map((path) => path));
   if (
     digestKeys.size !== expectedKeys.size ||
     [...expectedKeys].some((key) => !digestKeys.has(key))
   ) {
-    throw new ProjectionError(`managed paths and digests differ in ${manifestPath}`);
+    throw new ProjectionError(
+      `managed paths and digests differ in ${manifestPath}`,
+    );
   }
   const orderedPaths = [...managedPaths].sort();
   for (let index = 0; index < orderedPaths.length; index += 1) {
@@ -1157,7 +1271,9 @@ function loadPreviousProjection(
         .slice(index + 1)
         .some((other) => other.startsWith(`${path}/`))
     ) {
-      throw new ProjectionError(`overlapping managed paths in ${manifestPath}: ${path}`);
+      throw new ProjectionError(
+        `overlapping managed paths in ${manifestPath}: ${path}`,
+      );
     }
   }
   const legacySymlinkPaths = new Set<string>();
@@ -1174,7 +1290,11 @@ function loadPreviousProjection(
       legacySymlinkPaths.add(path);
       continue;
     }
-    validateManagedPathState(target, path, (digests as Record<string, string>)[path]!);
+    validateManagedPathState(
+      target,
+      path,
+      (digests as Record<string, string>)[path]!,
+    );
   }
   return {
     classification:
@@ -1186,7 +1306,10 @@ function loadPreviousProjection(
 
 function journalPaths(journal: JsonObject, key: string): Set<string> {
   const values = journal[key];
-  if (!Array.isArray(values) || !values.every((value) => typeof value === "string")) {
+  if (
+    !Array.isArray(values) ||
+    !values.every((value) => typeof value === "string")
+  ) {
     throw new ProjectionError(`invalid ${key} in transaction journal`);
   }
   const paths = new Set<string>();
@@ -1208,7 +1331,10 @@ function journalPaths(journal: JsonObject, key: string): Set<string> {
   return paths;
 }
 
-function journalDigests(journal: JsonObject, key: string): Record<string, string> {
+function journalDigests(
+  journal: JsonObject,
+  key: string,
+): Record<string, string> {
   const values = journal[key];
   if (
     values === null ||
@@ -1216,7 +1342,9 @@ function journalDigests(journal: JsonObject, key: string): Record<string, string
     Array.isArray(values) ||
     !Object.entries(values).every(
       ([path, digest]) =>
-        typeof path === "string" && typeof digest === "string" && isHexDigest64(digest),
+        typeof path === "string" &&
+        typeof digest === "string" &&
+        isHexDigest64(digest),
     )
   ) {
     throw new ProjectionError(`invalid ${key} in transaction journal`);
@@ -1227,16 +1355,22 @@ function journalDigests(journal: JsonObject, key: string): Record<string, string
 function validateRecoveryFile(path: string, expectedDigest: string): void {
   const info = lstatSync(path, { throwIfNoEntry: false });
   if (!info || info.isSymbolicLink() || !info.isFile()) {
-    throw new ProjectionError(`transaction recovery path is not a file: ${path}`);
+    throw new ProjectionError(
+      `transaction recovery path is not a file: ${path}`,
+    );
   }
   if (fileDigest(path) !== expectedDigest) {
-    throw new ProjectionError(`transaction recovery path was modified: ${path}`);
+    throw new ProjectionError(
+      `transaction recovery path was modified: ${path}`,
+    );
   }
 }
 
 function validateRecoverySymlink(path: string): void {
   if (!lstatSync(path, { throwIfNoEntry: false })?.isSymbolicLink()) {
-    throw new ProjectionError(`transaction recovery path is not a symlink: ${path}`);
+    throw new ProjectionError(
+      `transaction recovery path is not a symlink: ${path}`,
+    );
   }
 }
 
@@ -1260,7 +1394,10 @@ function restorePreparedTransaction(target: string, journal: JsonObject): void {
   const desiredPaths = journalPaths(journal, "desired_paths");
   const previousDigests = journalDigests(journal, "previous_file_digests");
   const desiredDigests = journalDigests(journal, "desired_file_digests");
-  const sameMembers = (keys: ReadonlySet<string>, digests: Record<string, string>) =>
+  const sameMembers = (
+    keys: ReadonlySet<string>,
+    digests: Record<string, string>,
+  ) =>
     keys.size === Object.keys(digests).length &&
     Object.keys(digests).every((key) => keys.has(key));
   const previousRegularPaths = new Set(
@@ -1273,7 +1410,9 @@ function restorePreparedTransaction(target: string, journal: JsonObject): void {
     !sameMembers(previousRegularPaths, previousDigests) ||
     !sameMembers(desiredPaths, desiredDigests)
   ) {
-    throw new ProjectionError("transaction journal path and digest sets differ");
+    throw new ProjectionError(
+      "transaction journal path and digest sets differ",
+    );
   }
   const backupRoot = join(stateDirectory(target), "backup");
 
@@ -1286,7 +1425,9 @@ function restorePreparedTransaction(target: string, journal: JsonObject): void {
       else validateRecoveryFile(backup, previousDigests[relativePath]!);
       if (pathExists(destination)) {
         if (!desiredPaths.has(relativePath)) {
-          throw new ProjectionError(`unexpected recovery collision: ${destination}`);
+          throw new ProjectionError(
+            `unexpected recovery collision: ${destination}`,
+          );
         }
         validateRecoveryFile(destination, desiredDigests[relativePath]!);
         unlinkSync(destination);
@@ -1322,7 +1463,9 @@ function restorePreparedTransaction(target: string, journal: JsonObject): void {
   ) {
     writeDurableJson(recordPath, previousOwnership as JsonObject);
   } else {
-    throw new ProjectionError("invalid previous_ownership in transaction journal");
+    throw new ProjectionError(
+      "invalid previous_ownership in transaction journal",
+    );
   }
   cleanupTransaction(target);
 }
@@ -1365,7 +1508,9 @@ function validateCollisions(
   if (pathExists(target)) {
     const targetInfo = lstatSync(target, { throwIfNoEntry: false })!;
     if (targetInfo.isSymbolicLink() || !targetInfo.isDirectory()) {
-      throw new ProjectionError(`OpenCode config target must be a directory: ${target}`);
+      throw new ProjectionError(
+        `OpenCode config target must be a directory: ${target}`,
+      );
     }
   }
   for (const relativePath of desiredPaths) {
@@ -1383,7 +1528,9 @@ function validateCollisions(
           throw new ProjectionError(`symlink blocks projection: ${parent}`);
         }
         if (!parentInfo.isDirectory()) {
-          throw new ProjectionError(`non-directory blocks projection: ${parent}`);
+          throw new ProjectionError(
+            `non-directory blocks projection: ${parent}`,
+          );
         }
       }
       parent = dirname(parent);
@@ -1411,7 +1558,9 @@ function installStagedProjection(
   const previousProjection = loadPreviousProjection(target, desiredPaths);
   const previousPaths = previousProjection.managedPaths;
   validateCollisions(target, desiredPaths, previousPaths);
-  const affectedPaths = [...new Set([...previousPaths, ...desiredPaths])].sort();
+  const affectedPaths = [
+    ...new Set([...previousPaths, ...desiredPaths]),
+  ].sort();
 
   mkdirSync(dirname(target), { recursive: true });
   mkdirSync(target, { recursive: true });
@@ -1427,7 +1576,9 @@ function installStagedProjection(
     [...previousPaths].filter((path) => pathExists(join(target, path))),
   );
   const previousOwnershipPath = ownershipPath(target);
-  const ownershipInfo = lstatSync(previousOwnershipPath, { throwIfNoEntry: false });
+  const ownershipInfo = lstatSync(previousOwnershipPath, {
+    throwIfNoEntry: false,
+  });
   const previousOwnership =
     ownershipInfo && ownershipInfo.isFile()
       ? readJsonObject(previousOwnershipPath)
@@ -1447,10 +1598,9 @@ function installStagedProjection(
         .map((path) => [path, fileDigest(join(target, path))]),
     ),
     desired_file_digests: Object.fromEntries(
-      [...desiredPaths].sort().map((path) => [
-        path,
-        fileDigest(join(stagedRoot, path)),
-      ]),
+      [...desiredPaths]
+        .sort()
+        .map((path) => [path, fileDigest(join(stagedRoot, path))]),
     ),
     previous_ownership: previousOwnership,
   };
@@ -1468,7 +1618,11 @@ function installStagedProjection(
 
     const installOrder = [...desiredPaths]
       .sort()
-      .sort((a, b) => Number(a === MANIFEST_RELATIVE_PATH) - Number(b === MANIFEST_RELATIVE_PATH));
+      .sort(
+        (a, b) =>
+          Number(a === MANIFEST_RELATIVE_PATH) -
+          Number(b === MANIFEST_RELATIVE_PATH),
+      );
     for (const relativePath of installOrder) {
       const source = join(stagedRoot, relativePath);
       const destination = join(target, relativePath);
@@ -1512,7 +1666,9 @@ function ensurePrivateStateDirectory(target: string): string {
   }
   mkdirSync(directory, { mode: 0o700, recursive: true });
   if (!statSync(directory).isDirectory()) {
-    throw new ProjectionError(`installer state path is not a directory: ${directory}`);
+    throw new ProjectionError(
+      `installer state path is not a directory: ${directory}`,
+    );
   }
   chmodSync(directory, 0o700);
   return directory;
@@ -1586,25 +1742,32 @@ export function parseArgs(argv: readonly string[]): ParsedArguments {
       else if (argument === "--scope") {
         const value = optionValue("--scope");
         if (value !== "user" && value !== "project") {
-          fail(`argument --scope: invalid choice: '${value}' (choose from user, project)`);
+          fail(
+            `argument --scope: invalid choice: '${value}' (choose from user, project)`,
+          );
         }
         scope = value;
       } else if (argument.startsWith("--scope=")) {
         const value = argument.slice("--scope=".length);
         if (value !== "user" && value !== "project") {
-          fail(`argument --scope: invalid choice: '${value}' (choose from user, project)`);
+          fail(
+            `argument --scope: invalid choice: '${value}' (choose from user, project)`,
+          );
         }
         scope = value;
       } else if (argument === "--plugin") {
-        if (installAll) fail("argument --plugin: not allowed with argument --all");
+        if (installAll)
+          fail("argument --plugin: not allowed with argument --all");
         plugins.push(optionValue("--plugin"));
         sawPlugin = true;
       } else if (argument.startsWith("--plugin=")) {
-        if (installAll) fail("argument --plugin: not allowed with argument --all");
+        if (installAll)
+          fail("argument --plugin: not allowed with argument --all");
         plugins.push(argument.slice("--plugin=".length));
         sawPlugin = true;
       } else if (argument === "--all") {
-        if (sawPlugin) fail("argument --all: not allowed with argument --plugin");
+        if (sawPlugin)
+          fail("argument --all: not allowed with argument --plugin");
         installAll = true;
       } else if (argument === "--project-root") {
         projectRoot = optionValue("--project-root");
@@ -1621,7 +1784,10 @@ export function parseArgs(argv: readonly string[]): ParsedArguments {
     throw error;
   }
   if (scope === undefined) {
-    return { kind: "error", message: "the following arguments are required: --scope" };
+    return {
+      kind: "error",
+      message: "the following arguments are required: --scope",
+    };
   }
   if (!sawPlugin && !installAll) {
     return {
@@ -1710,20 +1876,22 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
       throw new ProjectionError("generated manifest has no managed paths");
     }
     process.stdout.write(
-      `${ensureAscii(JSON.stringify(
-        {
-          status: args.dryRun ? "dry-run" : "installed",
-          target,
-          selected_plugins: selectedPlugins,
-          resolved_plugins: resolvedPlugins,
-          existing_projection: previousProjection.classification,
-          retired_legacy_symlink_count:
-            previousProjection.legacySymlinkPaths.size,
-          managed_file_count: managedPaths.length,
-        },
-        null,
-        2,
-      ))}\n`,
+      `${ensureAscii(
+        JSON.stringify(
+          {
+            status: args.dryRun ? "dry-run" : "installed",
+            target,
+            selected_plugins: selectedPlugins,
+            resolved_plugins: resolvedPlugins,
+            existing_projection: previousProjection.classification,
+            retired_legacy_symlink_count:
+              previousProjection.legacySymlinkPaths.size,
+            managed_file_count: managedPaths.length,
+          },
+          null,
+          2,
+        ),
+      )}\n`,
     );
     return 0;
   } catch (error) {

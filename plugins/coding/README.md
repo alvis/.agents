@@ -3,7 +3,7 @@
 General code production: writing, fixing, refactoring, testing, linting,
 documenting, and publishing code with history you can trust. Depends on
 `essential`. Every workflow follows the state contract — worker
-skills return evidence and manifests; the coordinator reconciles state.
+skills return evidence and manifests; the main agent reconciles state.
 
 ## History safety
 

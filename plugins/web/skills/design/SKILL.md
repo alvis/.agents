@@ -67,8 +67,13 @@ Use `references/design-workspace.md` to derive:
   visual-choice log;
 - `<work-dir>/artifacts/design/<design-slug>/` — boards, previews, captures,
   diffs, and inventories;
-- `<work-dir>/design.md` — the lazy PM-owned overview. A worker returns its
-  design child path and never reconciles this overview.
+- `<work-dir>/design.md` — the lazy main-agent-owned overview. A subagent returns its
+  bounded proposed child content and evidence; it never writes a work-local
+  path or reconciles this overview.
+
+Only the main agent writes the design child, its evidence tree, the overview,
+or promoted `docs/**`. Every delegated design, implementation, or evaluation
+run returns bounded proposed content and evidence for main-agent reconciliation.
 
 `state.md` owns the complete work context and plan. Do not create parallel
 context or decision-log files. Legacy root design files and `.design-*`
@@ -91,26 +96,27 @@ Only the main agent assigns names and every direct message uses the returned `ag
 
 1. Capture source structure, desktop/mobile renders, computed tokens, states,
    content hierarchy, and any applicable durable design.
-2. Write the design child metadata required by the shared contract and a
+2. Prepare the design child metadata required by the shared contract and a
    three-part direction summary: visual thesis, content plan, interaction
    thesis. Load every child in the ordered
    [design-reference manifest](references/design-reference.md), then apply
    `design-psychology.md` and relevant `component-patterns.md` guidance.
 3. Unless skipping is valid, generate and inspect a 3–5 candidate direction
    board using `design-boards.md`, send the rendered board, capture the choice,
-   and append presented/rejected/chosen details to the design child's decision
-   log.
+   and return presented/rejected/chosen details for the main agent to append to
+   the design child's decision log.
 4. Generate `N` materially distinct alternatives for each page area under the
    evidence `boards/` directory. Select one area at a time so later boards use
    earlier decisions. Quick mode records provisional top-ranked choices.
-5. Complete the design child from every ordered child in the
+5. Return the complete proposed design child from every ordered child in the
    [design template manifest](references/design.template.md), covering its applicable
    visual system, layout, states, accessibility, implementation mapping,
    evidence, and resumption sections plus every applicable
    `world-class-checklist.md` row.
-6. When needed, create `previews/tokens/preview.html` from
+6. When needed, prepare `previews/tokens/preview.html` from
    `preview.template.html`, render desktop/mobile, and obtain sign-off before
-   implementation.
+   implementation. A delegated run returns the preview bytes and renders; the
+   main agent stores them under the evidence path.
 
 ## Authorized implementation loop
 
@@ -121,14 +127,15 @@ Only the main agent assigns names and every direct message uses the returned `ag
    interactions, and states without replacing working logic with preview markup.
 3. Have the implementer run formatter, typecheck, and focused tests; start or reuse the documented
    server.
-4. Capture light/dark desktop and 375px renders under evidence `captures/`.
+4. Capture light/dark desktop and 375px renders. The main agent stores them
+   under evidence `captures/`.
 5. Have the independent evaluator cite design-to-build divergences, measured
    contrast, readability, checklist coverage, and token discipline. Route
    rework to `frontend-implementer` for at most three evaluation rounds; carry
    residual gaps to confirmation.
-6. Build light/dark area and full-page comparisons under evidence `diffs/`,
-   present them, obtain final confirmation, and append its disposition to the
-   design child.
+6. Build light/dark area and full-page comparisons, present them, and obtain
+   final confirmation. Return comparisons and disposition; the main agent
+   stores them under evidence `diffs/` and updates the design child.
 
 The skill retains the visual contract and orchestration; `frontend-implementer`
 retains production-edit ownership. The skill must inspect the integrated render.
@@ -136,7 +143,7 @@ Do not claim completion from source inspection alone.
 
 ## Durable promotion and verification
 
-Promote only reviewed, reusable knowledge after sign-off:
+The main agent promotes only reviewed, reusable knowledge after sign-off:
 
 - system-wide tokens, components, states, accessibility, and motion rules go to
   `docs/design/system.md`, with `docs/design/system/*.md` only when logical
@@ -166,16 +173,17 @@ condition.
 
 Stop before unapproved mutation or when ownership cannot be resolved. Missing
 browser, failed build, inaccessible inputs, or unresolved choices yield
-`partial` or `blocked`. Record continuation context in `state.md` and design
-detail/evidence in their owned paths; use `essential:handover` to pause a coding
-session and `essential:handoff` for a context-complete cross-domain plan.
+`partial` or `blocked`. Return continuation context plus proposed design
+detail/evidence to the main agent for their owned paths; use
+`essential:handover` to pause a coding session and `essential:handoff` for a
+context-complete cross-domain plan.
 
 ## Completion
 
 Return status, target, authorization mode, direction, work/design/evidence
 paths, changed source, render evidence, gates, evaluator verdict, promotions,
 and blockers. Return explicit final paths generated or materially rewritten as
-`generated_files`. Do not run `wc -c` or split while writers are active; the PM
+`generated_files`. Do not run `wc -c` or split while writers are active; the main agent
 reconciles `design.md`, combines manifests after all writers finish, and runs
 the single final size pass only for eligible work Markdown inside the target
 `.state/`, as defined by the Essential contract.

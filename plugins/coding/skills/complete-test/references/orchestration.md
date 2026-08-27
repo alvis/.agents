@@ -1,6 +1,6 @@
 # Complete-Test Orchestration — batches, dispatch prompts, and reports
 
-Referenced from SKILL.md. You are the orchestrator: drive the workflow end-to-end through fire-and-forget subagent dispatch with structured task-tracking status, dispatching a maximum of **8 parallel subagents** at any time. After each sub-step, aggregate the returned reports before moving on. Every dispatch is a mission capsule naming the exact scope, expected result, standards to read (`testing/meta.md` + `testing/write.md`, `typescript/write.md`, `documentation/write.md`), active work root, and only the relevant contract/evidence paths. Children do not reread broad work journals unless the assignment is a resume or cross-slice alignment task; they never write PM-owned pointers/overviews or delegate further. Every writer returns explicit `generated_files` to the PM.
+Referenced from SKILL.md. You are the orchestrator: drive the workflow end-to-end through fire-and-forget subagent dispatch with structured task-tracking status, dispatching a maximum of **8 parallel subagents** at any time. After each sub-step, aggregate the returned reports before moving on. Every dispatch is a mission capsule naming the exact scope, expected result, standards to read (`testing/meta.md` + `testing/write.md`, `typescript/write.md`, `documentation/write.md`), active work root, and only the relevant contract/evidence paths. Children do not reread broad work journals unless the assignment is a resume or cross-slice alignment task; they never write main-agent-owned pointers/overviews or delegate further. Every writer returns explicit `generated_files` to the main agent.
 
 ## Sub-step 1 — Initial coverage analysis (single subagent)
 
@@ -100,5 +100,5 @@ All green → hand off to the independent final test review. Every test-only cor
 Aggregate into one report covering: baseline coverage → batches executed, tests created/kept/deleted → redundancy candidates, removed, kept-essential → issues fixed → fixtures consolidated, unused files deleted → final verified coverage, all-passing status, efficiency metrics, and per-source statements/branches/functions/lines. If any metric remains below 100%, name its concrete blocker and report the run incomplete.
 
 Include the deduplicated `generated_files` from all subtasks. No child runs file
-sizing; after every artifact writer returns, the PM checks only eligible work
+sizing; after every artifact writer returns, the main agent checks only eligible work
 Markdown inside the target `.state/`.

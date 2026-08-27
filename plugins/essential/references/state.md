@@ -1,6 +1,7 @@
 # State lifecycle
 
-Read this contract before working on any project. Local state is the working
+Read [state-systems.md](state-systems.md) before working on any project, then
+read this contract before lifecycle-managed work. Local state is the working
 memory and project-management record throughout the work lifecycle. This
 contract defines its paths, ownership, promotion, and final size check.
 Domain skills own artifact content; Essential owns this cross-plugin lifecycle.
@@ -22,14 +23,14 @@ ESSENTIAL_ROOT="$(cd "$(dirname "$STATE_REFERENCE")/.." && pwd)"
 "$ESSENTIAL_ROOT/scripts/resolve-state-workspace"
 ```
 
-A normal invocation is read-only; `--bootstrap` is the explicit PM-only
+A normal invocation is read-only; `--bootstrap` is the explicit main-agent-only
 creation mode below. The resolver chooses identity in this order: explicit
 `--work-id`, `STATE_WORK_ID`, a work directory matching the Git
 branch/jj workspace label, then a sole existing workspace-local work
 directory only when the workspace label is generic or unavailable. Branch and
 workspace names may identify existing work but never create a new identity;
 `work_id_source` records the choice. On `work_id_required`, no work path is
-selected — the PM asks the user, a worker reports the ambiguity, and nobody
+selected — the main agent asks the user, a subagent reports the ambiguity, and nobody
 guesses through candidates, a detached checkout, or a generic `main`,
 `master`, `trunk`, or `default` label. The resolver's `--help` enumerates
 every output field; the essentials:
@@ -43,13 +44,13 @@ every output field; the essentials:
   discoverable. `work_dir` is always
   `state_root/.state/works/<work-id>/`, whichever tree the caller is in.
 - Work state is centralized, never per-tree, and never committed: every tree
-  reads and writes the same `.state/`. Two trees must not run the same
-  stream concurrently — that is what the coordinator lease enforces.
+  reads the same `.state/`. Two trees must not run the same stream
+  concurrently — that is what the main-agent lease enforces.
 
 `resolved` with `state_ignored: true` is a hard bootstrap gate before
 any work artifact or probe is written. On `requires_ignore`, every worker
 stops and reports the returned `ignore_file` — the **default source tree's**
-`.gitignore`, the tree that carries `.state/`. The PM alone adds the
+`.gitignore`, the tree that carries `.state/`. The main agent alone adds the
 exact `.state/` rule there, includes that path in `generated_files`, and
 reruns the resolver. A sync-only or ad hoc `git check-ignore` probe does not
 replace this bootstrap contract.
@@ -66,50 +67,11 @@ paths that enter `generated_files`.
 
 ## Canonical topology
 
-Versioned `docs/` follows the active working tree; ignored `.state/`
-lives only in the default source tree (`state_root`).
-
-```text
-docs                                       # versioned docs in the active working tree
-├── README.md                              # reader entrypoint and durable-domain map
-├── architecture                           # structural rules, boundaries, topology, protocols, and flows
-│   ├── README.md                              # architecture entrypoint and authority map
-│   ├── <architecture-slug>.md                 # authoritative document for one structural concern
-│   ├── <architecture-slug>/*.md               # supporting detail owned by that structural concern
-│   └── decisions/<nnnn>-<decision-slug>.md    # accepted choice, alternatives, and consequences
-├── design                                 # durable system-wide and feature design
-│   ├── README.md                          # design entrypoint and status map
-│   ├── system.md                          # authoritative system-wide design
-│   ├── system/*.md                        # supporting system-design detail
-│   ├── <design-slug>.md                   # authoritative feature or subsystem design
-│   └── <design-slug>/*.md                 # supporting detail owned by that design
-├── specs                                  # approved capability contracts
-│   ├── README.md                          # capability catalog and specification rules
-│   └── <capability>                       # one approved capability contract
-│       ├── README.md                      # authoritative contract plus reader orientation and usage
-│       ├── reference.md                   # optional intended consumer API reference
-│       ├── provenance.json                # source, approval, template, and output lineage
-│       └── <contract-unit>.md             # optional subordinate contract unit linked by README.md
-└── <domain>                               # plugin-owned durable document family
-    ├── README.md                          # domain scope, lifecycle, and item catalog
-    └── <slug>                             # one durable domain item
-        ├── README.md                      # item orientation and semantic authority map
-        ├── provenance.json                # optional lineage when the semantic document is derived
-        └── <semantic-document>.md         # plugin-owned authority such as manifest.md or assets.md
-```
-
-Generated semantic and operational project Markdown filenames are lowercase.
-Durable directory entrypoints use the fixed runtime name `README.md`; plugin
-control files with fixed runtime names (`SKILL.md`, `hooks/ALLAGENT.md`, …) keep
-them.
-
-Before writing versioned docs, read
-[durable-documentation.md](durable-documentation.md) for authority, content,
-template ownership, terminology, and lazy atomic migration. Before creating
-or migrating ignored work files, read
-[work-memory-topology.md](work-memory-topology.md) for the commented `.state`
-map; state semantics remain in
-[state-format.md](state-format.md).
+Version-controlled documentation follows the active working tree; ignored
+`.state/` lives only in the default source tree (`state_root`). Their complete
+trees have one owner each: [durable-documentation.md](durable-documentation.md)
+and [work-memory-topology.md](work-memory-topology.md). This lifecycle links to
+them and does not repeat either tree.
 
 ## Deterministic names
 
@@ -124,7 +86,7 @@ is never renamed or reused.
 
 The default source tree carries `.state/`, and with it the single global
 `overview.md`: an authored `Goal` and `Requirements` preamble, the questions
-waiting on the user, the project-level `Specifications` entry-point section,
+waiting on the user, the project-level `State systems` presence section,
 then one row per work stream. Every stream's state sits
 under the same `works/`, so this is an index over local state, not a
 cross-tree aggregator; its `Location` column records **which checkout each
@@ -133,23 +95,20 @@ stream's own files, so a stale table is rebuilt by re-reading them; the
 preamble is not. Environment narrative and known traps are not preamble —
 they live beside the overview in `environment.md` and `traps.md`, because they
 change when the repository does, not when a stream advances. The
-PM/coordinator updates the overview whenever a stream's phase changes or it
+main agent updates the overview whenever a stream's phase changes or it
 becomes blocked or unblocked — in particular at handover. Sections, columns,
 and each cell's derivation live in [overviews.md](overviews.md).
 
-`Specifications` is the only project-level specification state in the global
-overview. It contains exactly `- None` or one or more external Markdown links
-to project-wide specification-store entry points. It never carries an exact
-work-stream document. When the section is missing or empty during creation or
-reconciliation, ask whether an external store exists; a yes answer without
-links remains pending until the user supplies entry points. Each stream's
-exact specification links or explicit `None` live in its `goal.md` under
+`State systems` records that version-controlled documentation and local
+operational state are available and whether an external specification
+authority is `configured`, `none`, or `pending`. It contains no specification
+URL or revision; each stream's exact anchors live only in its `goal.md` under
 `## Specification provenance`.
 
 The Streams table is documentation-only: its column is `Documentations` and
 may contain durable `docs/` links and capability references, but never
 specification links. When a
-legacy `Spec` cell is encountered, the coordinator verifies and preserves its
+legacy `Spec` cell is encountered, the main agent verifies and preserves its
 stream-local provenance before removing the cell in the same atomic overview
 publication. Unverified legacy values stay pending rather than becoming
 project links or `None`.
@@ -187,11 +146,11 @@ checkable.
 ### `state/working.md` and `state.md`
 
 `state/working.md` is a temporary, narrow lens on what is being worked on
-now — current focus, handback point, and fast paths only; the PM/coordinator
+now — current focus, handback point, and fast paths only; the main agent
 is its only writer; aim for ~4,096 bytes editorially, with no mechanical
 gate. A subagent reads it only for current-work navigation and reads
 `state.md` for resume, planning, alignment, or when explicitly assigned; it
-reports paths, evidence, and state deltas to the PM and never edits PM-owned
+reports paths, evidence, and state deltas to the main agent and never edits main-agent-owned
 work memory.
 
 `state.md` is the complete resumable execution context: full plan, the
@@ -208,9 +167,9 @@ state file follows [the work-state contract](state-format.md);
 state is free-form, LLM-readable Markdown with no separate validation step —
 read it directly and judge. Preserve any existing state file byte-for-byte
 until an explicit rewrite; older shapes migrate lazily at the next explicit
-coordinator rewrite, journaled, never on read.
+main-agent rewrite, journaled, never on read.
 
-### Persistence and the coordinator lease
+### Persistence and the main-agent lease
 
 Persist state immediately, never lazily — append first, reconcile second.
 The moment a task changes status, a decision is made, a revision is
@@ -229,16 +188,14 @@ discipline bounds crash loss to one journal line. A worker without the lease
 returns its status change and evidence in its output manifest immediately;
 the lease holder reconciles it at once.
 
-One actor holds the work item's coordinator lease and is the sole writer of
-`goal.md`, `state/working.md`, `state.md`, `state/journal.md`,
-`state/revisions.md`, the four lazy overview files, and `review.md`. The PM
-holds it by default and may explicitly grant it to one orchestration skill,
-naming the files covered. Every other subagent is a worker: it writes only
-assigned children and returns paths plus reconciliation deltas. The lease is
-on disk, not just convention — never write under a live foreign lease, and
-claim an expired lease only through the explicit takeover verb, journaled as
-a `lease` event. Verbs, the write protocol, and the `State revision` bump
-live in [lease.md](lease.md); read it before any coordinator write.
+The main agent holds the work item's lease and is the sole writer anywhere
+under `.state/`. It never grants this authority to a reviewer or other
+subagent. Subagents return proposed child content, paths, evidence,
+and reconciliation deltas; the main agent applies them. The lease is on disk,
+not just convention — never write under a live foreign lease, and claim an
+expired lease only through the explicit takeover verb, journaled as a `lease`
+event. Verbs, the write protocol, and the `State revision` bump live in
+[lease.md](lease.md); read it before any main-agent state write.
 
 ### Overviews, decisions, and reviews
 
@@ -254,10 +211,7 @@ when the roll-up agrees with every detail.
 
 ## Specification lifecycle
 
-An explicit local path, approved inline candidate, or selected Notion
-identity may supply a specification; inline prompt text is evidence only
-until it becomes an approved candidate with a durable carrier. Neither path
-claims a Notion round trip. Spec freshness is checked
+An explicit local path, approved inline candidate, or selected Notion identity may supply a specification; inline prompt text is evidence only until it becomes an approved candidate in the active work's `spec/`. Neither path claims a Notion round trip. Spec freshness is checked
 at named moments — materialize before planning, before each dispatch
 batch, before review, and at completion — and a changed base triggers the
 revalidation sweep (non-done dependents `! blocked`; done rows keep `✓ done`
@@ -281,7 +235,7 @@ whichever tree the reader is in, since every tree resolves to the same state.
 Nothing else is needed — the directory holds state,
 decisions, specification, and `artifacts/` together, and each stream records
 the source anchor that names the revision its work assumes. Handover scopes to
-the stream being paused and releases the coordinator lease.
+the stream being paused and releases the main-agent lease.
 
 Remember that `.state/` is ignored: one reflexive `git clean -fdx`
 deletes every stream on the machine, silently. A copy of `.state/`
@@ -297,14 +251,15 @@ archive is permanent; this lifecycle does not delete archived streams.
 
 ## Write boundary
 
-Work state has exactly two homes: the **default source tree's**
-`.state/` (the resolver's `state_root`) and the **active** tree's
-versioned `docs/`. Every write a lifecycle skill makes lands in
-`state_root/.state/works/<work-id>/**`,
-`state_root/.state/overview.md`, or the active tree's `docs/` at promotion
-([retirement.md](retirement.md)). Any other destination is
-a contract violation. A skill that
-believes it needs one has misread this contract; stop and report instead.
+[state-systems.md](state-systems.md) owns the complete boundary: all agents
+may read the configured systems, but only the main agent writes them. A local
+lifecycle write lands under the **default source tree's** `.state/` (the
+resolver's `state_root`); durable promotion lands in root `README.md` or
+`docs/**` in the active tree; an external specification write goes through its
+owning specification workflow. A subagent never receives a lease or direct
+write grant for any of these systems and instead returns a reconciliation
+payload. Assigned production source and test files outside these systems are
+unaffected.
 
 **Output volume is never a reason to create a file.** A report that would be
 long is shortened editorially or degraded to pointers into
@@ -313,7 +268,7 @@ Where a generated carrier genuinely must exist as a file — a
 `git format-patch` patch, a bundle, a captured log — its only legal home is
 `.state/works/<work-id>/artifacts/`, so it travels with the work
 directory. This is also the destination for the general instruction to
-externalize long detail to a task-owned artifact. A worker that has not
+externalize long detail to a task-owned artifact. A main agent that has not
 cleared the `requires_ignore` gate writes nothing at all and reports.
 
 ## Structural doctor
@@ -323,7 +278,7 @@ cleared the `requires_ignore` gate writes nothing at all and reports.
 read-only structural checker (broken IDs, cycles, contradictory statuses,
 missing evidence annotations, dead links, unsuperseded decisions, lease
 conflicts, overview drift). It never judges prose or blocks by default —
-findings inform the coordinator's own reading. Run it before large dispatch
+findings inform the main agent's own reading. Run it before large dispatch
 batches, handover, and retirement; pass `--strict` (nonzero exit on errors)
 when work is irreversible or release-critical and treat failure as
 stop-and-report.
@@ -331,7 +286,7 @@ stop-and-report.
 ## Output manifest and final size loop
 
 Every artifact-writing skill returns the explicit final paths it generated or
-materially rewrote, and the coordinator runs exactly one batch size pass over
+materially rewrote, and the main agent runs exactly one batch size pass over
 them at the end of a run. Read
 [output-manifest.md](output-manifest.md) for the manifest shape, the checker
 invocation, and the split round it can demand.

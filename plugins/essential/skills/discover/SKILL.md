@@ -38,13 +38,13 @@ Before creating or materially rewriting a project artifact, read the absolute
 writes and report the missing contract. Resolve the active work directory from
 that contract. A direct persistent run passes `--work-id` to the resolver only
 when the user supplied that explicit override; otherwise accept automatic
-existing-work selection and ask only on `work_id_required`. The PM performs the
+existing-work selection and ask only on `work_id_required`. The main agent performs the
 contract's ignore gate and no-clobber bootstrap before the first persistent
 artifact.
 
 Default to a conversational result. With `--persist` or a long-lived task,
 write the ledger to `state/discovery.md`; each material finding also earns one
-appended `state/journal.md` line from the coordinator-lease holder (a worker
+appended `state/journal.md` line from the main agent (a subagent
 returns the line as a reconciliation delta instead of appending it). Keep requested disposable prototypes
 under `artifacts/prototypes/<semantic-slug>/` and copied or summarized source
 material under `artifacts/discovery/`. Never modify application source.
@@ -69,8 +69,8 @@ each status transition, update the child, reconcile the complete root registry,
 re-read the root task definitions when immutable definition fields changed,
 and read `state.md` and `state/discovery.md` directly to determine runnable/
 blocked tasks, owner, and next action from the task table; proceed on that
-reading — there is no separate validation step. Only the coordinator-lease
-holder edits root state.
+reading — there is no separate validation step. Only the main agent edits
+root state.
 
 When structured comparison, explanation, or preference capture would be easier
 to understand interactively, follow [presentation](references/presentation.md).
@@ -190,7 +190,7 @@ Report the selected mode, starting point, material unknowns found or resolved,
 accepted assumptions, decisions and rejected alternatives, persistent workspace
 when any, readiness verdict (`ready`, `more-discovery`, or `blocked`), and the
 single recommended next owner. Return explicit final paths generated or
-materially rewritten as `generated_files`; the PM reconciles overviews and runs
+materially rewritten as `generated_files`; the main agent reconciles overviews and runs
 the size pass only for eligible work Markdown inside the target
 `.state/`. Runtime trigger behavior is reported as exercised only when an
 executable evaluation actually ran.

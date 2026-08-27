@@ -527,6 +527,25 @@ function injectIntelligenceLine(body: string, intelligence: string): string {
   return `${title}\n\n${statement}\n${remainder}`;
 }
 
+/** Derive the cross-harness subagent access projection from its one authority. */
+function injectStateSystemAccess(body: string): string {
+  const source = resolve(
+    scriptDirectory,
+    "../../../references/state-systems.md",
+  );
+  const section = markdownSection(readFileSync(source, "utf8"), "Access boundary")[0];
+  if (section === undefined)
+    throw new AgentTemplateError(
+      `state-system authority has no Access boundary section: ${source}`,
+    );
+  const projection = `## Project state-system access\n\nSource: @essential:references/state-systems.md\n\n${section[1]!.trim()}\n`;
+  const memory = markdownSection(body, "Memory")[0];
+  if (memory === undefined) return `${body.trimEnd()}\n\n${projection}`;
+  const before = body.slice(0, memory.index).trimEnd();
+  const after = body.slice(memory.index).replace(/^\n+/, "");
+  return `${before}\n\n${projection}\n${after}`;
+}
+
 function template(
   templateDirectory: string,
   options: {
@@ -544,6 +563,7 @@ function template(
   ).replace(/^\n+/, "");
   validateAgentContract(sources, body);
   body = injectIntelligenceLine(body, String(sources.metadata.intelligence));
+  body = injectStateSystemAccess(body);
   return { sources, body };
 }
 

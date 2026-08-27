@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   mkdir,
   mkdtemp,
@@ -16,6 +17,14 @@ const scripts = import.meta.dirname;
 const doctor = join(scripts, "state-doctor");
 const header =
   "| ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n";
+
+function specificationProvenance(specification = "None"): string {
+  if (specification === "None")
+    return "- Source kind: `none`\n- Canonical specification: None\n- Accepted revision/base: None\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `not-applicable`\n- Last verified at: None";
+  if (specification === "Pending user confirmation")
+    return "- Source kind: `pending`\n- Canonical specification: Pending user confirmation\n- Accepted revision/base: Pending user confirmation\n- Local materialization: Pending user confirmation\n- Materialization receipt: Pending user confirmation\n- Last verification status: `pending`\n- Last verified at: Pending user confirmation";
+  return `- Source kind: \`external\`\n- Canonical specification: ${specification}\n- Accepted revision/base: \`base-1\`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: \`missing\`\n- Last verified at: None`;
+}
 
 type Finding = {
   check: string;
@@ -73,7 +82,7 @@ class Workspace {
     }
     await writeFile(
       path,
-      `# Charter\n\n- Charter: \`${provenance}\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Specification: ${specification}\n`,
+      `# Charter\n\n- Charter: \`${provenance}\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n${specificationProvenance(specification)}\n`,
     );
   }
   async writeState(
@@ -131,6 +140,57 @@ async function writeJournal(
     `# Journal\n\n${lines.join("\n")}\n`,
   );
 }
+
+async function writeVerifiedExternalMaterialization(
+  workspace: Workspace,
+): Promise<{ receipt: string; spec: string; base: string }> {
+  const spec = join(workspace.workDir, "spec/README.md");
+  const base = join(
+    workspace.workDir,
+    "artifacts/spec-sync/bases/base-1/README.md",
+  );
+  const receipt = join(
+    workspace.workDir,
+    "artifacts/spec-sync/materializations/base-1.json",
+  );
+  const content = "# Verified specification\n";
+  await mkdir(join(workspace.workDir, "spec"), { recursive: true });
+  await mkdir(join(workspace.workDir, "artifacts/spec-sync/bases/base-1"), {
+    recursive: true,
+  });
+  await mkdir(join(workspace.workDir, "artifacts/spec-sync/materializations"), {
+    recursive: true,
+  });
+  await writeFile(spec, content);
+  await writeFile(base, content);
+  await writeFile(
+    receipt,
+    JSON.stringify({
+      base_id: "base-1",
+      canonical_url: "https://example.com/specification/demo",
+      observed_external_revisions: { demo: "revision-1" },
+      created_at: "2026-08-27T12:00:00Z",
+      content_manifest: [
+        {
+          path: "README.md",
+          sha256: createHash("sha256").update(content).digest("hex"),
+          bytes: Buffer.byteLength(content),
+        },
+      ],
+    }),
+  );
+  return { receipt, spec, base };
+}
+
+async function writeVerifiedExternalGoal(
+  workspace: Workspace,
+  receiptBase = "base-1",
+): Promise<void> {
+  await writeFile(
+    join(workspace.workDir, "goal.md"),
+    `# Charter\n\n- Charter: \`approved\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: \`external\`\n- Canonical specification: [Exact document](https://example.com/specification/demo)\n- Accepted revision/base: \`base-1\`\n- Local materialization: [spec](spec/)\n- Materialization receipt: [receipt](artifacts/spec-sync/materializations/${receiptBase}.json)\n- Last verification status: \`verified\`\n- Last verified at: \`2026-08-27T12:00:00Z\`\n`,
+  );
+}
 function overviewRow({
   workId = "demo",
   phase = "working",
@@ -143,10 +203,10 @@ function overviewRow({
   return `| Work ID | Phase | Blocked on | Last progress | Headline | Next action | Location | Documentations |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| ${workId} | ${phase} | ${blockedOn} | ${progress} | Demo. | ${nextAction} | ${location} | ${documentation} |\n`;
 }
 function canonicalOverview(
-  specifications = "- None",
+  externalAuthority = "none",
   documentation = "-",
 ): string {
-  return `# State overview\n\n- Updated: \`2026-08-06\`\n\n## Goal\n\nShip.\n\n## Requirements\n\nNone.\n\n## Specifications\n\n${specifications}\n\n## Awaiting you\n\n## Streams\n\n${overviewRow({ documentation })}\n## Recently landed\n`;
+  return `# State overview\n\n- Updated: \`2026-08-06\`\n\n## Goal\n\nShip.\n\n## Requirements\n\nNone.\n\n## State systems\n\n- Version-controlled documentation: configured\n- Local operational state: configured\n- External specification authority: ${externalAuthority}\n\n## Awaiting you\n\n## Streams\n\n${overviewRow({ documentation })}\n## Recently landed\n`;
 }
 async function writeOverview(
   root: string,
@@ -419,7 +479,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       "overview-monolith",
     );
   });
-  it("requires a populated project Specifications section", async () => {
+  it("requires the three-row project State systems section", async () => {
     await workspace.writeState(row("AAA"));
     await writeOverview(
       workspace.root,
@@ -427,7 +487,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     );
     let findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "error" });
@@ -436,18 +496,18 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeOverview(workspace.root, canonicalOverview(""));
     findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0]?.message).toContain("is empty");
+    expect(findings[0]?.message).toContain("three canonical rows");
   });
-  it("ignores fenced and quoted specification sections", async () => {
+  it("ignores fenced and quoted state-system sections", async () => {
     await workspace.writeState(row("AAA"));
     for (const decoy of [
-      "```md\n## Specifications\n\n- [Project](https://example.com/project)\n```",
-      "> ## Specifications\n>\n> - [Project](https://example.com/project)",
-      "    ## Specifications\n\n    - [Project](https://example.com/project)",
-      "<!--\n## Specifications\n\n- [Project](https://example.com/project)\n-->",
+      "```md\n## State systems\n\n- External specification authority: configured\n```",
+      "> ## State systems\n>\n> - External specification authority: configured",
+      "    ## State systems\n\n    - External specification authority: configured",
+      "<!--\n## State systems\n\n- External specification authority: configured\n-->",
     ]) {
       await writeOverview(
         workspace.root,
@@ -455,7 +515,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       );
       const findings = selected(
         runStateDir(workspace.root).findings,
-        "overview-specifications",
+        "overview-state-systems",
       );
       expect(findings).toHaveLength(1);
       expect(findings[0]?.message).toContain("no required");
@@ -480,15 +540,15 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       );
     }
   });
-  it("rejects duplicate visible project and stream specification sections", async () => {
+  it("rejects duplicate visible state-system and stream provenance sections", async () => {
     await workspace.writeState(row("AAA"));
     await writeOverview(
       workspace.root,
-      `${canonicalOverview("- [Project](https://example.com/project)\n")}\n## Specifications\n\nnot metadata\n`,
+      `${canonicalOverview("configured")}\n## State systems\n\nnot metadata\n`,
     );
     let findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "error" });
@@ -498,29 +558,19 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       join(workspace.workDir, "goal.md"),
       `# Charter\n\n## Specification provenance\n\n- Specification: [Exact](https://example.com/specification)\n\n## Specification provenance\n\nnot metadata\n`,
     );
-    findings = selected(
-      workspace.run().findings,
-      "specification-provenance",
-    );
+    findings = selected(workspace.run().findings, "specification-provenance");
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "error" });
     expect(findings[0]?.message).toContain("duplicate visible");
   });
-  it("accepts None and project-level specification entry links", async () => {
+  it("accepts each external-authority presence value without locators", async () => {
     await workspace.writeState(row("AAA"));
-    for (const specifications of [
-      "- None",
-      "- [Project docs](https://notion.so/project)",
-      "- [Project](https://example.com/project)\n- [Docs](https://example.com/docs)",
-      "- [Work stream overview](https://example.com/project)",
-      "- [Project [API]](https://example.com/project)",
-      "- [Project](https://example.com/project(v2))",
-    ]) {
-      await writeOverview(workspace.root, canonicalOverview(specifications));
+    for (const presence of ["none", "configured", "pending"]) {
+      await writeOverview(workspace.root, canonicalOverview(presence));
       expect(
         selected(
           runStateDir(workspace.root).findings,
-          "overview-specifications",
+          "overview-state-systems",
         ),
       ).toEqual([]);
     }
@@ -530,14 +580,11 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeOverview(
       workspace.root,
       canonicalOverview()
-        .replace("## Specifications", "## Specifications ##")
+        .replace("## State systems", "## State systems ##")
         .replace("## Streams", "## Streams ##"),
     );
     expect(
-      selected(
-        runStateDir(workspace.root).findings,
-        "overview-specifications",
-      ),
+      selected(runStateDir(workspace.root).findings, "overview-state-systems"),
     ).toEqual([]);
 
     await workspace.writeCharter(
@@ -556,55 +603,44 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       selected(workspace.run().findings, "specification-provenance"),
     ).toEqual([]);
   });
-  it("rejects unusable project specification URLs", async () => {
+  it("rejects project locators in the presence-only register", async () => {
     await workspace.writeState(row("AAA"));
-    for (const specifications of [
-      "- [Project](https://)",
-      "- [Project](https:///specification)",
-      "- [Project](https://example.com:bad)",
-      "- [Project](https://example.com:99999)",
+    for (const presence of [
+      "https://example.com/specification",
+      ".state/notion/project",
+      "file:///tmp/specification",
     ]) {
-      await writeOverview(workspace.root, canonicalOverview(specifications));
+      await writeOverview(workspace.root, canonicalOverview(presence));
       const findings = selected(
         runStateDir(workspace.root).findings,
-        "overview-specifications",
+        "overview-state-systems",
       );
       expect(findings).toHaveLength(1);
-      expect(findings[0]?.message).toContain("malformed entry");
+      expect(findings[0]?.message).toMatch(/locator|three canonical rows/);
     }
   });
-  it("keeps an unanswered project-store question pending", async () => {
+  it("keeps an unanswered project-store question as presence-only pending", async () => {
     await workspace.writeState(row("AAA"));
-    await writeOverview(
-      workspace.root,
-      canonicalOverview("- Pending user confirmation"),
-    );
+    await writeOverview(workspace.root, canonicalOverview("pending"));
     const findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
-    expect(findings).toMatchObject([
-      {
-        severity: "warning",
-        message: expect.stringContaining("still pending"),
-      },
-    ]);
+    expect(findings).toEqual([]);
   });
-  it("rejects stream-local specification links in the global section", async () => {
+  it("rejects stream-local specification links in the presence register", async () => {
     await workspace.writeState(row("AAA"));
     await writeOverview(
       workspace.root,
-      canonicalOverview(
-        "- [Demo stream spec](https://notion.so/demo/contract)",
-      ),
+      canonicalOverview("https://notion.so/demo/contract"),
     );
     const findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "error" });
-    expect(findings[0]?.message).toContain("stream-local");
+    expect(findings[0]?.message).toMatch(/locator|three canonical rows/);
     expect(findings[0]?.fix).toContain("goal.md");
   });
   it("rejects exact stream provenance links in global index sections", async () => {
@@ -615,19 +651,19 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     );
     await writeOverview(
       workspace.root,
-      canonicalOverview("- [Project entry](https://notion.so/demo/contract)"),
+      canonicalOverview("https://notion.so/demo/contract"),
     );
     let findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0]?.message).toContain("stream-local");
+    expect(findings[0]?.message).toMatch(/locator|three canonical rows/);
 
     await writeOverview(
       workspace.root,
       canonicalOverview(
-        "- None",
+        "none",
         "[Project docs](https://notion.so/demo/contract)",
       ),
     );
@@ -646,7 +682,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     );
     await writeOverview(
       workspace.root,
-      `${canonicalOverview("- None", "[Contract][stream-spec]")}\n[stream-spec]: https://notion.so/demo/contract\n`,
+      `${canonicalOverview("none", "[Contract][stream-spec]")}\n[stream-spec]: https://notion.so/demo/contract\n`,
     );
     let findings = selected(
       runStateDir(workspace.root).findings,
@@ -657,7 +693,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
 
     await writeOverview(
       workspace.root,
-      canonicalOverview("- None", "[Documentation][missing-reference]"),
+      canonicalOverview("none", "[Documentation][missing-reference]"),
     );
     findings = selected(
       runStateDir(workspace.root).findings,
@@ -672,7 +708,9 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       workspace.root,
       `\`\`\`md\n## Streams\n\n| Work ID | Documentations |\n| --- | --- |\n| demo | [Exact specification](https://notion.so/demo/contract) |\n\`\`\`\n\n${canonicalOverview()}`,
     );
-    expect(selected(runStateDir(workspace.root).findings, "overview-streams")).toEqual([]);
+    expect(
+      selected(runStateDir(workspace.root).findings, "overview-streams"),
+    ).toEqual([]);
 
     await writeOverview(
       workspace.root,
@@ -685,13 +723,13 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     expect(findings).toHaveLength(1);
     expect(findings[0]?.message).toContain("duplicate visible");
   });
-  it("rejects specification-looking links in Documentations", async () => {
+  it("rejects external specification links in Documentations", async () => {
     await workspace.writeState(row("AAA"));
     await writeOverview(
       workspace.root,
       canonicalOverview(
-        "- None",
-        "[Specification process](docs/specification-process.md)",
+        "none",
+        "[Project documentation](docs/README.md)",
       ),
     );
     expect(
@@ -701,7 +739,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeOverview(
       workspace.root,
       canonicalOverview(
-        "- None",
+        "none",
         "[Exact specification](https://example.com/demo-specification)",
       ),
     );
@@ -716,7 +754,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeOverview(
       workspace.root,
       canonicalOverview(
-        "- None",
+        "none",
         "[Project specification](https://example.com/project-specification)",
       ),
     );
@@ -732,7 +770,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeOverview(
       workspace.root,
       canonicalOverview(
-        "- None",
+        "none",
         "[Project docs](https://example.com/works/goal.md)",
       ),
     );
@@ -740,24 +778,24 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       selected(runStateDir(workspace.root).findings, "overview-documentations"),
     ).toEqual([]);
   });
-  it("rejects prose mixed with a project entry link", async () => {
+  it("rejects prose mixed into an external-authority presence value", async () => {
     await workspace.writeState(row("AAA"));
     await writeOverview(
       workspace.root,
-      canonicalOverview("- [Project](https://example.com/project) and more"),
+      canonicalOverview("configured and linked"),
     );
     const findings = selected(
       runStateDir(workspace.root).findings,
-      "overview-specifications",
+      "overview-state-systems",
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0]?.message).toContain("malformed entry");
+    expect(findings[0]?.message).toContain("three canonical rows");
   });
   it("flags legacy global specification columns for lazy normalization", async () => {
     await workspace.writeState(row("AAA"));
     await writeOverview(
       workspace.root,
-      `# State overview\n\n## Specifications\n\n- None\n\n## Streams\n\n| Work ID | Phase | Spec | Links |\n| --- | --- | --- | --- |\n| demo | working | [Exact](https://example.com/demo-spec) | [Docs](docs/demo.md) |\n`,
+      `# State overview\n\n## State systems\n\n- Version-controlled documentation: configured\n- Local operational state: configured\n- External specification authority: none\n\n## Streams\n\n| Work ID | Phase | Spec | Links |\n| --- | --- | --- | --- |\n| demo | working | [Exact](https://example.com/demo-spec) | [Docs](docs/demo.md) |\n`,
     );
     const findings = selected(
       runStateDir(workspace.root).findings,
@@ -767,23 +805,14 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     expect(findings[0]).toMatchObject({ severity: "warning" });
     expect(findings[0]?.fix).toContain("preserve exact provenance");
   });
-  it("recognizes archived stream specification links as stream-local", async () => {
+  it("checks archived stream provenance without duplicating its URL globally", async () => {
     await mkdir(join(workspace.root, ".state/archive/archived"), {
       recursive: true,
     });
-    await writeOverview(
-      workspace.root,
-      canonicalOverview(
-        "- [Archived specification](https://example.com/archived-specification)",
-      ),
-    );
-    const findings = selected(
-      runStateDir(workspace.root).findings,
-      "overview-specifications",
-    );
-    expect(findings).toHaveLength(1);
-    expect(findings[0]).toMatchObject({ severity: "error" });
-    expect(findings[0]?.message).toContain("stream-local");
+    await writeOverview(workspace.root, canonicalOverview("configured"));
+    expect(
+      selected(runStateDir(workspace.root).findings, "overview-state-systems"),
+    ).toEqual([]);
 
     const archivedFindings = selected(
       runStateDir(workspace.root).findings,
@@ -810,9 +839,9 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       selected(workspace.run().findings, "specification-provenance"),
     ).toEqual([]);
 
-    await workspace.writeCharter(
-      "approved",
-      "[Exact document](docs/specification/demo.md)",
+    await writeFile(
+      join(workspace.workDir, "goal.md"),
+      "# Charter\n\n- Charter: `approved`\n- Charter revision: `1`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: `repo`\n- Canonical specification: `repo:requirements/demo.md`\n- Accepted revision/base: `blob-123`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`\n",
     );
     expect(
       selected(workspace.run().findings, "specification-provenance"),
@@ -825,7 +854,68 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "error" });
-    expect(findings[0]?.message).toContain("unresolved");
+    expect(findings[0]?.message).toContain("canonical HTTP(S)");
+  });
+  it("accepts only a verified external copy whose receipt matches goal.md", async () => {
+    const materialization =
+      await writeVerifiedExternalMaterialization(workspace);
+    await writeVerifiedExternalGoal(workspace);
+    expect(
+      selected(workspace.run().findings, "specification-provenance"),
+    ).toEqual([]);
+
+    await writeVerifiedExternalGoal(workspace, "base-2");
+    expect(
+      selected(workspace.run().findings, "specification-provenance")[0]
+        ?.message,
+    ).toContain("do not match the accepted base");
+
+    await writeVerifiedExternalGoal(workspace);
+    await writeFile(
+      materialization.receipt,
+      JSON.stringify({ base_id: "other-base" }),
+    );
+    expect(
+      selected(workspace.run().findings, "specification-provenance")[0]
+        ?.message,
+    ).toContain("does not identify the accepted base");
+  });
+  it("rejects incomplete or byte-divergent verified external evidence", async () => {
+    let materialization = await writeVerifiedExternalMaterialization(workspace);
+    await writeVerifiedExternalGoal(workspace);
+    await rm(join(workspace.workDir, "artifacts/spec-sync/bases/base-1"), {
+      recursive: true,
+    });
+    expect(
+      selected(workspace.run().findings, "specification-provenance")[0]
+        ?.message,
+    ).toContain("immutable base snapshot is invalid");
+
+    materialization = await writeVerifiedExternalMaterialization(workspace);
+    await writeFile(
+      materialization.receipt,
+      JSON.stringify({ base_id: "base-1" }),
+    );
+    expect(
+      selected(workspace.run().findings, "specification-provenance")[0]
+        ?.message,
+    ).toContain("receipt is missing field");
+
+    materialization = await writeVerifiedExternalMaterialization(workspace);
+    await writeFile(materialization.spec, "# Locally changed specification\n");
+    expect(
+      selected(workspace.run().findings, "specification-provenance")[0]
+        ?.message,
+    ).toContain("local specification copy bytes do not match");
+  });
+  it("accepts inline authority without external materialization anchors", async () => {
+    await writeFile(
+      join(workspace.workDir, "goal.md"),
+      "# Charter\n\n- Charter: `approved`\n- Charter revision: `1`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: `inline`\n- Canonical specification: `inline-approved:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n- Accepted revision/base: `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`\n",
+    );
+    expect(
+      selected(workspace.run().findings, "specification-provenance"),
+    ).toEqual([]);
   });
   it("rejects trailing prose and unsafe stream specification targets", async () => {
     await workspace.writeState(row("AAA"));
@@ -848,7 +938,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       );
       expect(findings).toHaveLength(1);
       expect(findings[0]).toMatchObject({ severity: "error" });
-      expect(findings[0]?.message).toContain("unresolved");
+      expect(findings[0]?.message).toContain("canonical HTTP(S)");
     }
   });
   it("rejects non-metadata prose in stream specification provenance", async () => {
@@ -869,7 +959,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "warning" });
-    expect(findings[0]?.message).toContain("unresolved");
+    expect(findings[0]?.message).toContain("canonical HTTP(S)");
   });
   it("keeps bootstrap-pending provenance informational until active", async () => {
     await workspace.writeCharter("approved", "Pending user confirmation");

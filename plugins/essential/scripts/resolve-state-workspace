@@ -581,16 +581,15 @@ Pending confirmation with the user.
 | --- | --- | --- |
 | SC-1 | Pending confirmation with the user. | Pending. |
 
-## Specification notes
-
-For a Notion-backed contract, record the source kind, page id, and the
-base-id/revision this charter was authored against. The canonical
-specification remains the sole authority; a conflict with it marks this work
-stream for revalidation, never the reverse.
-
 ## Specification provenance
 
-- Specification: Pending user confirmation
+- Source kind: \`pending\`
+- Canonical specification: Pending user confirmation
+- Accepted revision/base: Pending user confirmation
+- Local materialization: Pending user confirmation
+- Materialization receipt: Pending user confirmation
+- Last verification status: \`pending\`
+- Last verified at: Pending user confirmation
 
 ## Workspace anchors
 

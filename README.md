@@ -251,7 +251,7 @@ discipline:
 | 6. Implement | Run `/specification:implement-code --defer-publication` when you want the manual save/finalize/publish stops shown below; use `/coding:write-code` directly only for a non-specification coding task. | Execute only dependency-ready leaf task IDs using target-native tests. Child writers return status evidence; the coordinator alone reconciles work state. |
 | 7. Document | Let implementation invoke `/coding:document` when public behavior, configuration, operations, or developer workflow changed. | Documentation finishes before review and save-manifest sealing. |
 | 8. Review, lint, and repair | Let implementation run review, fixes, touched-scope lint, and final target-native checks. | All findings block closure. A correction reruns affected tests/reviews. |
-| 9. Reconcile the spec | Let implementation run the applicable Notion completion gate or local source/carrier recheck. | A change in specification content invalidates plan/code/review evidence; done tasks keep their status and gain stale validity with remediation tasks. |
+| 9. Reconcile the spec | Let implementation run the applicable Notion completion gate or local source/work-local-specification recheck. | A change in specification content invalidates plan/code/review evidence; done tasks keep their status and gain stale validity with remediation tasks. |
 | 10. Save and finalize | On deferred `needs_save`, run the exact returned `/coding:commit --paths-from=... --manifest-sha256=...`; on `ready_for_finalization`, skip save; on `no_change`, stop. Then `/coding:finalize-commits` once. | The closed-set save preserves unrelated staged and dirty developer work. |
 | 11. Publish | If no PR was already published, run `/coding:pr create` only when the GitHub and `gh` prerequisites are satisfied; use `/coding:pr update` for an existing PR. | It creates or updates draft PRs and monitors CI. A human decides when a green draft becomes ready. |
 | 12. Close or pause | After execution, review, and decision dispositions, set the work `reviewing` with its external landing or acceptance wait as a blocker. Coding work becomes `completed` on merge/default-branch evidence; non-coding work becomes `completed` on explicit acceptance plus a promotion receipt listing durable paths or evidenced `not required`. `/essential:takeover` checks the applicable landing evidence on a later run. Or run `/essential:handover`. | Every required executable leaf must be done. Coding work records its pull request(s); non-coding work records its reviewed deliverables and required accepter. Completion clears the resolved submission blocker and retains only independently unresolved blockers. A pause leaves the whole stream in `.state/works/<work-id>/`, ready for `/essential:takeover`. |
@@ -267,12 +267,12 @@ Use a lowercase tracker-derived ID that will remain stable, such as
 ```text
 /essential:discover "Find delivery blind spots for checkout refunds" --work-id=eng-421-checkout-refunds --mode=blindspots --persist
 /specification:spec-code "Design idempotent checkout refunds from these requirements" --work-id=eng-421-checkout-refunds --capability=checkout-refunds
-/specification:plan-code --work-id=eng-421-checkout-refunds --spec=docs/specs/checkout-refunds/README.md
-/specification:implement-code docs/specs/checkout-refunds/README.md --work-id=eng-421-checkout-refunds --repo=/absolute/path/to/target-project --defer-publication
+/specification:plan-code --work-id=eng-421-checkout-refunds
+/specification:implement-code --work-id=eng-421-checkout-refunds --repo=/absolute/path/to/target-project --defer-publication
 ```
 
 This path avoids Notion and remote publication entirely. It leaves verified
-code, work-local evidence and reviews, and durable specification documents.
+code, work-local evidence, reviews, and the approved specification source.
 The deferred result tells you what remains (`needs_save`,
 `ready_for_finalization`, or `no_change`); follow stage 10 above. Add Notion
 or PR publication only after the local flow is understood.

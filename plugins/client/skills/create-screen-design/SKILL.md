@@ -18,7 +18,7 @@ task-specific design exploration, and durable versioned design knowledge.
   `update-screen-design`; implementation/rendered review stays with Web owners.
 - Temporary detail lives in
   `.state/works/<work-id>/design/<slug>.md`; `design.md` is the
-  PM-owned overview. Do not create an independent design artifact elsewhere.
+  main-agent-owned overview. Do not create an independent design artifact elsewhere.
 - Notion transport bodies are opaque here. This plugin ships no body grammar or
   body-authoring skill. Before semantic body creation or change, require the
   exact external `--body-author=<plugin:skill>` selected by the caller and pass
@@ -27,6 +27,9 @@ task-specific design exploration, and durable versioned design knowledge.
 - Durable feature/screen design promotes to `docs/design/<slug>.md`; only truly
   system-wide tokens/components/states/motion/accessibility update
   `docs/design/system.md` or its children.
+- Only the main agent writes work state, durable documents, or the external
+  design authority. A delegated run may read sources and return proposed child,
+  body, document, and reconciliation content; it stops before mutation.
 
 ## Inputs
 
@@ -64,14 +67,13 @@ invent an id. A delegated run receives the explicit work id and root.
    template into the explicitly selected transport root. Search for
    collisions; existing screens route to update.
 3. Map each requested screen to product relation, source refs, constraints, and
-   platform coverage. Create a lowercase work-local design child with purpose,
+   platform coverage. Prepare a lowercase work-local design child with purpose,
    audience/task, hierarchy/navigation, responsive behavior, loading/empty/
    error states, accessibility, distinct alternatives/rationale, decisions,
    implementation notes, and provenance.
-4. Present alternatives and obtain approval. Return the child row/status to the
-   PM for `design.md`/`state.md` reconciliation; do not edit those overview
-   files directly.
-5. For each approved screen, require an explicit local unsynced transport path
+4. Present alternatives and obtain approval. Return the child and row/status to
+   the main agent, which alone writes it and reconciles `design.md`/`state.md`.
+5. The main agent alone performs this step. For each approved screen, require an explicit local unsynced transport path
    from the caller or selected transport; never synthesize it from the title or
    id. Resolve and validate `body_author` once, record
    `selection_source: explicit_argument|delegated_caller`, and invoke that exact
@@ -85,7 +87,7 @@ invent an id. A delegated run receives the explicit work id and root.
    canonical local metadata and receipt. Never expect an external executable to
    rewrite the source file in place. Verify the unchanged selector before
    attempting another screen.
-6. Promote stable non-system design to `docs/design/<screen-slug>.md` with
+6. The main agent promotes stable non-system design to `docs/design/<screen-slug>.md` with
    Notion ids, source revision/hash, approved decision links, and supersession
    metadata. Route any system-wide rules to `docs/design/system.md` without
    duplicating them in the screen doc. Read
@@ -98,8 +100,8 @@ invent an id. A delegated run receives the explicit work id and root.
    derivation against that source. Stop on uncertain creation to avoid
    duplicates.
 8. Return explicit final paths generated or materially rewritten as
-`generated_files`, plus PM reconciliation. Do not run file sizing; after all
-writers finish, the PM checks only eligible work Markdown inside the target
+`generated_files`, plus main-agent reconciliation. Do not run file sizing; after all
+writers finish, the main agent checks only eligible work Markdown inside the target
 `.state/`.
 
 ## Verification
@@ -109,12 +111,12 @@ writers finish, the PM checks only eligible work Markdown inside the target
 - Work design remains temporary and lower-case; durable promotion is approved,
   versioned, linked, and provenance-backed.
 - No transport path was invented or body-edited outside the explicitly selected
-  body-author capability; no worker edited PM-owned files.
+  body-author capability; no subagent edited main-agent-owned files.
 - `generated_files` includes every work/durable/transport path changed.
 
 ## Completion
 
 Return status, caller-supplied template/parent/collection refs, body-author
 capability and selection source, work/spec sources, per-screen temporary
-design, remote ref/verification, durable promotion/system-rule routing, PM
+design, remote ref/verification, durable promotion/system-rule routing, main-agent
 reconciliation, unattempted recovery, and `generated_files`.

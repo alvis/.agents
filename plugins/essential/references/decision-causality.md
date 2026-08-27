@@ -24,7 +24,7 @@ Empty fields are omitted, not written as placeholders.
 
 ## Blast-radius sweep on acceptance
 
-When the user accepts a decision, the coordinator runs one sweep before any
+When the user accepts a decision, the main agent runs one sweep before any
 further dispatch:
 
 1. Walk `affects` and `invalidates`. On each `✓ done` task row or recorded

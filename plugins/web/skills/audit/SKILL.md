@@ -29,11 +29,11 @@ start from the exact target/design/review paths in the request or mission
 capsule. Read `state/working.md` only when navigation is missing and `state.md` only
 for resume, alignment, or cross-slice dependencies.
 
-Raw audit output lives only under
-`<work-dir>/artifacts/web-audit/<audit-slug>/`. Findings live in the canonical
-`reviews/*.md` areas from the shared contract. `review.md` is PM-owned: a worker
-returns its finding paths and reconciliation counts; only a PM invocation may
-update the roll-up after all reviewers finish.
+The main agent stores raw audit output under
+`<work-dir>/artifacts/web-audit/<audit-slug>/` and writes canonical
+`reviews/*.md` areas. A delegated auditor writes only to an assigned temporary
+directory outside `.state` and returns evidence plus complete proposed review
+content; the main agent imports it and reconciles `review.md`.
 
 ## Inputs
 
@@ -60,7 +60,8 @@ discovery.
    HTML from marker files and use the project's actual command. Reuse an
    existing ready server when appropriate; record process ownership. Stop on a
    missing browser, target, or dependency.
-3. **Run the installed CLI into work artifacts.** Use paths from the installed
+3. **Run the installed CLI into the authorized output.** A main-agent run uses
+   work artifacts; a delegated run uses its assigned temporary directory. Use paths from the installed
    skill, never a source checkout:
 
    ```bash
@@ -80,7 +81,7 @@ discovery.
    `$OUT/evidence/` when missing. Record grounded `{passed, confidence,
 rationale}` or explicit `missing_section_crop`, then write
    `report-final.json` without changing deterministic fields or scores.
-5. **Classify once and write canonical reviews.** Render from the final report
+5. **Classify once and propose canonical reviews.** Render from the final report
    when available, otherwise clearly partial deterministic data. Use
    `review-template.md` and `phase-4-output.md` to map every finding into exactly
    one of:
@@ -97,10 +98,11 @@ rationale}` or explicit `missing_section_crop`, then write
    - `style.md`: mechanical token or repository-style violations.
 
    Map `critical|high|medium|low` to `P0|P1|P2|P3`; keep `info` advisory.
-   Write/update only applicable detail files. Preserve rule IDs, severity,
+   Return complete proposed content only for applicable detail files. Preserve rule IDs, severity,
    route, viewport, selector, evidence paths, score, recommendation, acceptance
-   check, and canonical finding disposition. Return zero counts for absent
-   areas so the PM can reconcile `review.md` without creating empty files.
+   check, and canonical finding disposition. The main agent writes validated
+   proposals. Return zero counts for absent areas so it can reconcile
+   `review.md` without creating empty files.
 
 6. **Verify and finish.** Ensure claimed pages/viewports have data, each AI
    verdict cites a real crop or explicit coverage defect, JSON remains contract
@@ -114,13 +116,13 @@ For alignment, discover active work design paths first, then read
 ## Completion
 
 Deliver raw `report.json`, `action-log.jsonl`, optional `report-final.json`,
-cited evidence, applicable canonical review detail files, and the PM
+cited evidence, applicable proposed canonical review content, and the main-agent
 reconciliation summary. Return `success` only when deterministic and required
 manual review are complete; `partial` for coverage defects or warnings;
 `blocked` when the CLI or target cannot run.
 
-Return explicit final paths generated or materially rewritten as
-`generated_files`. Do not run `wc -c`, split files, or reconcile `review.md`
-while writers are active; the PM combines manifests, reconciles the roll-up,
+Only the main agent reports imported final paths in `generated_files`; a
+delegated auditor reports temporary evidence separately. Do not run `wc -c`,
+split files, or reconcile `review.md` while writers are active; the main agent combines manifests, reconciles the roll-up,
 and size-checks only eligible work Markdown inside the target `.state/`,
 as defined by the Essential contract.

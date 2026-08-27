@@ -32,7 +32,7 @@ gate.
 4. Reconcile child results by exact task ID, never completion order. Require the
    unchanged task definitions, `pass|fail|partial` attempt outcome, evidence,
    generated files, and requested status delta. Requeue a refuted task with
-   evidence. For a failed leaf, the coordinator marks every downstream
+   evidence. For a failed leaf, the main agent marks every downstream
    executable leaf `! blocked` with an `unblock:` action tied to that failure's
    retry/disposition; independent branches retain their current/runnable state.
    Re-read root state directly before each dispatch
@@ -64,5 +64,5 @@ Notion completion/revalidation loop, and only then final history/publication.
 
 Run the selected chain from `modes.md` in the live session. Apply the same
 decision stop, deferred-publication rule, deviation reporting, three-pass slice
-review bound, and manifest collection. Do not write PM-owned overview/state
+review bound, and manifest collection. Do not write main-agent-owned overview/state
 files or invoke a publication path.

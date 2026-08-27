@@ -1,6 +1,6 @@
 ---
 name: review-code
-description: Review alignment, semantic correctness, security, test intent, documentation, quality, and style after code changes. Use for explicit post-implementation or pre-merge review; write canonical work-local review artifacts without editing the reviewed code.
+description: Review alignment, semantic correctness, security, test intent, documentation, quality, and style after code changes. Use for explicit post-implementation or pre-merge review; return canonical area reports for main-agent reconciliation without editing the reviewed code.
 requirements:
   intelligence: high
 argument-hint: "[specifier] [--area=alignment|correctness|security|quality|testing|docs|style|all] [--work-id=<id>] [--plan=<path>] [--explain]"
@@ -11,8 +11,9 @@ argument-hint: "[specifier] [--area=alignment|correctness|security|quality|testi
 Before any `jj` decision or command, follow
 `coding:references/jj.md`.
 
-Orchestrate a read-only code review and write seven canonical, lowercase review
-areas beneath the active work root. Remediation belongs to
+Orchestrate a read-only code review. Area reviewers return seven canonical
+reports; the main agent writes the lowercase review areas beneath the active
+work root. Remediation belongs to
 `coding:fix`; mechanical enforcement belongs to `coding:lint`.
 
 ## Boundaries
@@ -38,10 +39,11 @@ Before creating or materially rewriting a project artifact, read the absolute
 `state.md` path injected by Essential. If unavailable, stop artifact
 writes and report the missing contract. Resolve the work root before review.
 Run Essential's resolver with `--work-id` only for an explicit override; accept
-its deterministic match and ask only on `work_id_required`. A coordinator run
+its deterministic match and ask only on `work_id_required`. A main-agent run
 may use `state/working.md` and `state.md` to locate the plan/spec/design/review paths.
 A nested run starts from its mission capsule and reads broad work memory only
-for resume or cross-slice alignment. Never write work pointers or overviews.
+for resume or cross-slice alignment. Subagents never write `.state`; they
+return proposed area content and roll-up deltas for the main agent to apply.
 Read the work item's `state.md` (and any `state/*.md` children) directly
 before dispatch. From the task table, determine `plan_source: state.md` and
 the applicable full task IDs (`task_id`); proceed on that reading — there is
@@ -56,7 +58,7 @@ directory contents.
 - Summary: `.state/works/<work-id>/review.md`.
 - Areas under `.state/works/<work-id>/reviews/`:
 
-  | Prefix | File | Ownership |
+  | Prefix | File | Question |
   |---|---|---|
   | `ALIGN` | `alignment.md` | approved state/spec/design adherence and drift |
   | `CORR` | `correctness.md` | semantic behavior and failure paths |
@@ -73,13 +75,13 @@ directory contents.
   accountable owner, and explicit recheck condition; P0/P1 also require
   explicit risk-acceptance authority and durable evidence. `open`, `deferred`,
   and malformed risk dispositions remain outstanding and block review closure.
-- The coordinator-lease holder rewrites `review.md` from every existing area
+- The main agent rewrites `review.md` from every existing area
   file after writers finish. It contains overall status, all five
   disposition counts, derived `closed` and `outstanding` counts, priority
   counts for outstanding findings, one-line area headlines, paths, systemic
-  patterns, and PM handback—not duplicated findings.
+  patterns, and main-agent handback—not duplicated findings.
 - With `--explain`, write a lowercase child under `changes/` using
-  [references/explainer.md](references/explainer.md); return it for PM
+  [references/explainer.md](references/explainer.md); return it for main-agent
   reconciliation of `changes.md`.
 
 </report>
@@ -98,9 +100,9 @@ directory contents.
 3. Dispatch one read-only reviewer per selected area in one parallel batch,
    following [references/dispatch.md](references/dispatch.md) and
    [references/mandates.md](references/mandates.md). Pass the canonical plan
-   source (`state.md`) and applicable full task IDs. Each writes only its
-   assigned lowercase area file and returns path, counts, context level, and
-   `generated_files`.
+   source (`state.md`) and applicable full task IDs. Each returns its assigned
+   area's complete proposed content, counts, context level, and evidence. The
+   main agent validates and writes the lowercase area file.
 4. Re-read `state.md` before aggregation and reject plan-definition
    drift. Validate every expected selected file, then aggregate every existing
    canonical area so a partial rerun cannot hide unselected findings; reject
@@ -115,16 +117,15 @@ directory contents.
    `fail`; outstanding P1 is `requires_changes`; only outstanding P2/P3 is
    `pass_with_suggestions`; zero outstanding findings is `pass`. Every
    outstanding finding blocks review closure regardless of displayed verdict.
-   If this invocation was explicitly granted the coordinator lease, rewrite
-   `review.md` entirely; otherwise return the complete roll-up delta to its
-   holder without writing the summary.
+   The main agent rewrites `review.md` entirely from the validated areas.
 5. With `--explain`, generate the evidence-backed change child after review.
 6. Render the final summary through
    [references/output-formats.md](references/output-formats.md). On malformed
    output, redispatch only the owning area until valid or blocked.
-7. Return all changed area and optional explainer paths in `generated_files`;
-   include `review.md` only when this invocation held the lease and wrote it.
-Do not run file sizing; after every artifact writer returns, the PM checks only
+7. The main agent returns all changed area, summary, and optional explainer
+   paths in `generated_files`. A delegated reviewer returns no `.state` path as
+   a file it wrote.
+Do not run file sizing; after every artifact writer returns, the main agent checks only
 eligible work Markdown inside the target `.state/` and coordinates a
 complete split round if required.
 
@@ -142,7 +143,7 @@ complete split round if required.
 ## Completion
 
 Report area verdicts, aggregate priorities/dispositions, overall status,
-`review.md` as `written` or `reconciliation_returned`, optional explainer
+`review.md` as `written_by_main` or `reconciliation_returned`, optional explainer
 child, `plan_source: state.md`, reviewed task IDs, and
 `generated_files`. Detailed findings remain in
 area files.

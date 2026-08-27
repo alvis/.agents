@@ -40,7 +40,7 @@ local state into the plugin repository.
    decides, write a lowercase decision child under the target repository's
    active `.state/works/<work-id>/decisions/` with canonical metadata,
    PR/evidence, chosen direction, alternatives, affected scope, and date. The
-   main agent/PM reconciles `decisions.md` and the affected plan/lifecycle in
+   main agent reconciles `decisions.md` and the affected plan/lifecycle in
    `state.md`; the poller/fixer never edits `state/working.md` or an overview. The
    target repository is the repository containing the PR, not the repository
    that provides this skill. If the user has not decided, record the blocker
@@ -96,7 +96,7 @@ local state into the plugin repository.
    permission to weaken checks.
 
 The parent deduplicates `generated_files` from every accepted repair and
-returns them to the owning PM. No poller or fixer runs file sizing; the PM runs
+returns them to the owning main agent. No poller or fixer runs file sizing; the main agent runs
 the single final check only for eligible work Markdown inside the target
 `.state/` after all repair artifacts are complete.
 

@@ -110,7 +110,7 @@ describe("work markdown size budgeting", () => {
     const measured = harness.bytes(".state/works/eng-421/normal.md", 100);
     const excluded = [
       harness.bytes(".state/works/eng-421/state/working.md", 30_000),
-      harness.bytes("docs/specs/payments/README.md", 30_000),
+      harness.bytes("docs/README.md", 30_000),
       harness.bytes("plugins/example/SKILL.md", 30_000),
     ];
     const result = harness.run(measured, measured, ...excluded);

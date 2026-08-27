@@ -11,8 +11,8 @@ argument-hint: "<instruction> [--resume]"
 Before any `jj` decision or command, follow
 `coding:references/jj.md`.
 
-Composite orchestrator for the complete TDD lifecycle. It owns phase order,
-interactive gates, state reconciliation under an explicit coordinator lease,
+Composite orchestrator for the complete TDD lifecycle. The main agent owns
+phase order, interactive gates, state-system reconciliation under its lease,
 and final artifact batching; atomic children own implementation phases. Remove
 superseded scaffolding rather than leaving parallel paths or addenda.
 
@@ -48,15 +48,11 @@ Before creating or materially rewriting a project artifact, read the absolute
 `state.md` path injected by Essential. If unavailable, stop artifact
 writes and report the missing contract. Resolve the workspace-local work root,
 schemas, lifecycle, and final batch interface before dispatching children.
-The caller runs Essential's resolver, asks only on `work_id_required`, handles
-`requires_ignore`, and passes the resolved work ID/root with the coordinator
-lease. Every delegated child receives that exact ID/root.
-
-This composite requires the caller to grant the sole coordinator lease for
-`state/working.md`, `state.md`, and changed lazy overviews. Refuse to start if another
-writer retains that lease. Give each child a mission capsule with exact paths;
-children read broad work memory only for resume or cross-slice alignment. They
-never write leased files and return `generated_files` plus state deltas.
+The main agent runs Essential's resolver, asks only on `work_id_required`,
+handles `requires_ignore`, and retains the lease. It never grants that lease or
+any state-system write authority to a child. Every delegated child receives
+the exact ID/root for reading and returns `generated_files`, proposed state
+deltas, and any proposed tracked-document content.
 
 ## Composition
 
@@ -89,7 +85,7 @@ Pass `--from-composite` only to children that declare it (`setup-project`,
 
 ## Workflow
 
-1. Confirm the coordinator lease, then parse the instruction. Separate user intent, observed facts, inferences,
+1. Confirm the main-agent lease, then parse the instruction. Separate user intent, observed facts, inferences,
    accepted reversible assumptions, and unresolved decisions. Resolve material
    unknowns before dependent work. Dependency discovery is part of that
    resolution: before scheduling any implementation child, investigate whether
@@ -109,7 +105,7 @@ Pass `--from-composite` only to children that declare it (`setup-project`,
    `state/*.md` children) directly; from the task table determine which
    tasks are runnable, which are blocked, the current owner, and the next
    action, and proceed on that reading — there is no separate validation
-   step. A delegated identity must match exactly. Refresh PM-owned `state/working.md` with current focus and fast paths
+   step. A delegated identity must match exactly. Refresh main-agent-owned `state/working.md` with current focus and fast paths
    only, aiming editorially at 4,096 bytes. Capture immutable `base_rev` before
    any child changes source or history.
 2. For `--resume`, read `state/working.md`, `state.md`, and linked artifacts
@@ -126,7 +122,7 @@ Pass `--from-composite` only to children that declare it (`setup-project`,
    requested status delta by task ID into `state.md`, refresh `state/working.md`, and
    reconcile any lazy overview whose children changed. Re-read `state.md`
    before scheduling newly ready work. A failed leaf records attempt
-   evidence and retry/disposition. The coordinator transitions every affected
+   evidence and retry/disposition. The main agent transitions every affected
    downstream executable leaf to `! blocked` with an `unblock:` action naming
    that retry/disposition; independent branches keep their current/runnable
    state. A material deviation is recorded in
@@ -145,9 +141,9 @@ Pass `--from-composite` only to children that declare it (`setup-project`,
    sealing.
 6. Invoke `coding:review-code` against the completed change and pinned work
    contract, on the same predicate step 6 of the child-skill order applies,
-   without transferring the pointer/overview coordinator lease. Area
-   reviewers write only their assigned files; reconcile their returned roll-up
-   into `review.md` here. Route every outstanding finding to its owner, apply
+   without transferring the lease. Area reviewers return complete proposed
+   reports; the main agent writes their area files and reconciles the roll-up
+   into `review.md`. Route every outstanding finding to its owner, apply
    corrections, and rerun the affected review areas. Require review output to
    reference the same `state.md` plan contract. Do not proceed while
    review closure is outstanding; report a concrete blocker instead of treating
@@ -180,7 +176,7 @@ Pass `--from-composite` only to children that declare it (`setup-project`,
    unpushed change ids. Dirty relevant paths take precedence when saved changes
    also exist. Reconcile the base diff, acceptance map, and every child
    `generated_files` list into the full publishable lifecycle scope: source,
-   tests, project documentation, durable specification/provenance files, and
+   tests, project documentation, active-work specification/provenance files, and
    deletions. Exclude unrelated user-owned changes and all ignored work state.
    When relevant publication paths are dirty, create and seal the
    checksum-bound scoped-save manifest described by

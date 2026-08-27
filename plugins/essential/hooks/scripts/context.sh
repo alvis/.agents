@@ -131,7 +131,7 @@ get_repo_root_documents_context() {
   resolver_status="$(jq -r '.status // empty' <<<"$resolver_payload" 2>/dev/null || true)"
   if [[ "$resolver_status" == "resolved" || "$resolver_status" == "requires_ignore" ]]; then
     work_dir="$(jq -r '.work_dir // empty' <<<"$resolver_payload")"
-    for name in state/working.md state.md; do
+    for name in goal.md state/working.md state.md; do
       path="$work_dir/$name"
       if [[ -f "$path" ]]; then
         rel="${path#"$repo_root"/}"
@@ -153,10 +153,6 @@ get_repo_root_documents_context() {
 
   if [[ -f "$repo_root/docs/design/README.md" ]]; then
     context+="- docs/design/README.md"$'\n'
-  fi
-
-  if [[ -f "$repo_root/docs/specs/README.md" ]]; then
-    context+="- docs/specs/README.md"$'\n'
   fi
 
   if [[ -n "$context" ]]; then

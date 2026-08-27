@@ -81,7 +81,7 @@ The manifest contains:
   },
   "publication_paths": [
     {
-      "path": "docs/specs/example/README.md",
+      "path": "docs/architecture/example.md",
       "state": "file|symlink|deleted",
       "sha256": "<content-or-link-text hash, null only for deleted>",
       "mode": "100644|100755|120000|null for deleted",
@@ -126,10 +126,7 @@ the matching Git HEAD, `mutable: true`, `conflicts: false`,
 `divergent: false`, and the selected jj diff hash. A plain Git manifest must
 use `jj: null`.
 
-`publication_paths` is the full, exact set of lifecycle-created, modified, or
-deleted project artifacts intended for eventual publication, including source,
-tests, project documentation, durable specification carriers, and provenance
-receipts. `selected_paths` is its exact subset that is currently dirty and must
+`publication_paths` is the full, exact set of lifecycle-created, modified, or deleted project artifacts intended for eventual publication, including source, tests, project documentation, active-work specification materializations, and provenance receipts. `selected_paths` is its exact subset that is currently dirty and must
 enter this save. `excluded_dirty_paths` is every other dirty or untracked path
 in the repository. Expand untracked directories to individual files. A dirty
 path must occur in exactly one of `selected_paths` or `excluded_dirty_paths`.

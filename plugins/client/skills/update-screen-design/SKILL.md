@@ -21,7 +21,7 @@ temporary work reasoning, and durable design documentation.
   candidates; a delegated run receives the explicit id/root.
 - Preserve approved content, alternatives, relations, attachments, links,
   responsive/accessibility decisions, and stable Notion identity.
-- Temporary detail belongs under the active work's `design/` with PM-owned
+- Temporary detail belongs under the active work's `design/` with main-agent-owned
   `design.md`; durable detail belongs under `docs/design/`. Never create a root
   design artifact or edit the canonical template.
 - Notion transport bodies are opaque here. This plugin ships no body grammar,
@@ -30,6 +30,9 @@ temporary work reasoning, and durable design documentation.
   change, require a canonical external `--body-author=<plugin:skill>` and pass
   the identical selector through every nested `specification:sync-notion`
   operation. Remote operations also require an absolute transport profile.
+- Only the main agent writes work state, durable documents, or the external
+  design authority. A delegated run returns proposed content and evidence and
+  stops before mutation.
 
 ## Workflow
 
@@ -53,9 +56,9 @@ temporary work reasoning, and durable design documentation.
 4. Build a section-preservation map and a lowercase work-local design child for
    each meaningful revision. Integrate only requested/template changes while
    retaining substantive content; present material alternatives/decisions for
-   approval. Return index/status rows to the PM rather than editing
-   `design.md`/`state.md`.
-5. Resolve and validate the caller's `body_author` once, record
+   approval. Return proposed children and index/status rows to the main agent,
+   which alone writes them and reconciles `design.md`/`state.md`.
+5. The main agent alone resolves and validates the caller's `body_author` once, record
    `selection_source: explicit_argument|delegated_caller`, and apply approved
    Notion body edits only through that exact capability with the approved body
    and exact path. Pass the identical selector and transport profile to
@@ -64,7 +67,7 @@ temporary work reasoning, and durable design documentation.
    collection ref only from the caller's explicit inputs. Stop the batch on a
    missing/changed selector, auth, conflict, identity, or uncertain remote
    state; never retry blindly.
-6. Regenerate the approved durable `docs/design/<slug>.md` derivation with
+6. The main agent regenerates the approved durable `docs/design/<slug>.md` derivation with
    stable Notion ids, source revision/hash, decision/supersession links, and
    current behavior. Promote only system-wide rules to `docs/design/system.md`
    and link rather than duplicate them. Read
@@ -76,7 +79,7 @@ temporary work reasoning, and durable design documentation.
    accessibility, remote identity, and durable derivation. Confirm no
    unselected page changed.
 8. Return explicit final paths generated or materially rewritten as
-`generated_files`, plus PM reconciliation. Do not run file sizing; the PM
+`generated_files`, plus main-agent reconciliation. Do not run file sizing; the main agent
 checks only eligible work Markdown inside the target `.state/`.
 
 ## Verification
@@ -86,7 +89,7 @@ checks only eligible work Markdown inside the target `.state/`.
 - Requested/template changes landed without losing mapped approved content.
 - Temporary and durable designs use correct lowercase paths/provenance;
   system-wide rules are single-owned.
-- No transport body was hand-written, PM-owned files were not edited, the
+- No transport body was hand-written, main-agent-owned files were not edited by subagents, the
   body-author selector stayed unchanged, and the manifest is complete.
 
 ## Completion
@@ -94,5 +97,5 @@ checks only eligible work Markdown inside the target `.state/`.
 Return status, selector, caller-supplied template/parent/collection refs,
 body-author capability and selection source, source manifest,
 changed/compliant/failed pages, preservation/remote verification,
-durable/system promotion, PM reconciliation, recovery actions, and
+durable/system promotion, main-agent reconciliation, recovery actions, and
 `generated_files`.

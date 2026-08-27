@@ -69,7 +69,7 @@ A worker failure aborts that pair without canonical writes.
 
 ## Phase 2 — owner decisions
 
-The coordinator loads each packet and asks the PM/user for every material
+The main agent loads each packet and asks the user for every material
 conflict. Present bounded B/L/R evidence and these choices:
 
 - **Keep Local** — use the local section.
@@ -100,7 +100,7 @@ specification stage, verify it, establish/materialize a new base, and invalidate
 plan/code/review before implementation can resume. Never push proposal M from
 this implementation-stage merge.
 
-For a fully resolved `.mdc` pair, the coordinator applies the staged body only
+For a fully resolved `.mdc` pair, the main agent applies the staged body only
 through the exact capability bound as `body_author`, after its selector matches
 the caller/receipt and every decision and approval gate passes. The capability
 receives only the approved body and exact staged path. Plain Markdown may be

@@ -85,6 +85,8 @@ COMPLETED_RETENTION_DAYS = 3
 # A work ID is repeated in every state path, source tree path, and branch.
 WORK_ID_MAX_BYTES = 32
 WORK_ID_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+SPECIFICATION_BASE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+INLINE_SPECIFICATION_ID = re.compile(r"^inline-approved:sha256:([0-9a-f]{64})$")
 WORK_ID_DATE_PREFIX = re.compile(r"^(?:\d{8}|\d{4}-\d{2}-\d{2}|\d{6})-")
 WORK_ID_TYPE_PREFIX = re.compile(
     r"^(?:build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)-"
@@ -98,7 +100,7 @@ CANONICAL_OVERVIEW_SECTIONS = {
     "goal",
     "requirements",
     "awaiting you",
-    "specifications",
+    "state systems",
     "streams",
     "recently landed",
 }
@@ -162,9 +164,20 @@ UNOWNED_PROSE = re.compile(
     re.IGNORECASE,
 )
 CHARTER_PROVENANCE_VALUES = ("approved", "reconstructed", "absent")
-SPECIFICATION_PENDING = "pending user confirmation"
-SPECIFICATION_LINE = re.compile(
-    r"^-\s*Specification\s*:[^\S\n]*(.*)$"
+SPECIFICATION_FIELDS = (
+    "Source kind",
+    "Canonical specification",
+    "Accepted revision/base",
+    "Local materialization",
+    "Materialization receipt",
+    "Last verification status",
+    "Last verified at",
+)
+SPECIFICATION_FIELD_LINE = re.compile(
+    r"^-\s*(Source kind|Canonical specification|Accepted revision/base|"
+    r"Local materialization|Materialization receipt|Last verification status|"
+    r"Last verified at)\s*:[^\S\n]*(.*)$",
+    re.IGNORECASE,
 )
 STREAM_LOCAL_SPECIFICATION = re.compile(
     r"(?:work[-_ ]?stream|stream|work)[-_ ]?(?:spec|specification)",
@@ -602,6 +615,19 @@ def safe_external_specification_target(target: str) -> bool:
     )
 
 
+def safe_repository_specification_target(target: str) -> bool:
+    """Require a portable repository-relative specification path."""
+    return (
+        bool(target)
+        and not target.startswith(("/", "\\"))
+        and "\\" not in target
+        and ":" not in target
+        and "?" not in target
+        and "#" not in target
+        and all(part not in {"", ".", ".."} for part in target.split("/"))
+    )
+
+
 def parse_tasks(state_text: str) -> tuple[list[dict], int] | None:
     """Return (task rows, unparseable-row count), or None with no table.
 
@@ -768,13 +794,16 @@ def stream_specification_targets(state_dir: Path) -> set[str]:
             text = goal.read_text(encoding="utf-8", errors="replace")
             for body in markdown_sections(text, "Specification provenance"):
                 for raw_line in body.splitlines():
-                    match = SPECIFICATION_LINE.fullmatch(raw_line.strip())
-                    if match is None:
+                    match = SPECIFICATION_FIELD_LINE.fullmatch(raw_line.strip())
+                    if (
+                        match is None
+                        or match.group(1).casefold() != "canonical specification"
+                    ):
                         continue
                     targets.update(
                         target.strip()
                         for _, target in markdown_links_with_labels(
-                            match.group(1)
+                            match.group(2)
                         )
                     )
     return targets
@@ -783,129 +812,81 @@ def stream_specification_targets(state_dir: Path) -> set[str]:
 def check_project_specifications(
     report: Report, state_dir: Path, overview_text: str
 ) -> None:
-    """Require project entry links without allowing stream-local documents."""
-    sections = markdown_sections(overview_text, "Specifications")
+    """Require the overview's presence-only project state-system register."""
+    del state_dir
+    sections = markdown_sections(overview_text, "State systems")
     if not sections:
         report.error(
             "overview.md",
-            "overview-specifications",
-            "overview.md has no required `## Specifications` section",
-            "Add `## Specifications` and ask whether an external specification "
-            "store exists; write exactly `- None` or project-level Markdown "
-            "entry links.",
+            "overview-state-systems",
+            "overview.md has no required `## State systems` section",
+            "Add the two required configured rows and record the external "
+            "specification authority as configured, none, or pending.",
         )
         return
     if len(sections) > 1:
         report.error(
             "overview.md",
-            "overview-specifications",
-            "overview.md has duplicate visible `## Specifications` sections",
-            "Keep exactly one visible `## Specifications` section and put its "
-            "project-level entries there; keep exact stream specifications in "
-            "the stream charter provenance section.",
+            "overview-state-systems",
+            "overview.md has duplicate visible `## State systems` sections",
+            "Keep one presence-only state-system register; specification "
+            "anchors belong in each stream's goal.md.",
         )
         return
-    body = sections[0]
-
-    items = [line.strip() for line in body.splitlines() if line.strip()]
-    if not items:
-        report.error(
-            "overview.md",
-            "overview-specifications",
-            "`## Specifications` is empty, so the project's specification "
-            "store decision is not recorded",
-            "Ask whether an external specification store exists. Write exactly "
-            "`- None`, or record one or more project-level external Markdown "
-            "entry links; keep a yes-without-links answer pending.",
-        )
-        return
-
-    if items == ["- None"]:
-        return
-    if any(item.casefold() == "- none" for item in items):
-        report.error(
-            "overview.md",
-            "overview-specifications",
-            "`None` must be the only exact project specification entry: `- None`",
-            "Use exactly `- None` when no external store exists, or replace it "
-            "with project-level external Markdown entry links.",
-        )
-        return
-    if any(item.casefold() == "- pending user confirmation" for item in items):
-        if len(items) != 1:
-            report.error(
-                "overview.md",
-                "overview-specifications",
-                "pending project specification provenance cannot be mixed "
-                "with another entry",
-                "Keep only `- Pending user confirmation` until the user gives "
-                "project entry links, then replace it with those links or the "
-                "exact none marker.",
-            )
-            return
-        report.warning(
-            "overview.md",
-            "overview-specifications",
-            "project specification entry points are still pending user "
-            "confirmation; a yes answer without links must not become `- None`",
-            "Ask the user for one or more project-level external Markdown entry "
-            "links and replace the pending marker; use `- None` only after a "
-            "none response.",
-        )
-        return
-
-    work_ids: set[str] = set()
-    for root_name in ("works", "archive"):
-        work_root = state_dir / root_name
-        if work_root.is_dir():
-            work_ids.update(
-                path.name for path in work_root.iterdir() if path.is_dir()
-            )
-    exact_stream_targets = stream_specification_targets(state_dir)
+    expected = {
+        "version-controlled documentation": "configured",
+        "local operational state": "configured",
+        "external specification authority": None,
+    }
+    observed: dict[str, str] = {}
     malformed: list[str] = []
-    local: list[str] = []
-    for item in items:
-        match = LIST_ITEM.fullmatch(item)
-        if match is None or not item.startswith("- "):
-            malformed.append(item)
+    for raw_line in sections[0].splitlines():
+        line = raw_line.strip()
+        if not line:
             continue
-        value = match.group(2).strip()
-        spans = markdown_link_spans(value)
-        links = [(label, target) for _, _, label, target in spans]
-        unlinked = value
-        for start, end, _, _ in reversed(spans):
-            unlinked = unlinked[:start] + unlinked[end:]
-        if not spans or unlinked.strip(" \t,;|"):
-            malformed.append(item)
+        match = re.fullmatch(r"-\s*([^:]+):\s*(\S+)\s*", line)
+        if match is None:
+            malformed.append(line)
             continue
-        for label, target in links:
-            if (
-                target.strip() in exact_stream_targets
-                or stream_local_specification_link(label, target, work_ids)
-            ):
-                local.append(item)
-                continue
-            if not label.strip() or not safe_external_specification_target(target):
-                malformed.append(item)
-    if local:
+        key, value = match.group(1).strip().casefold(), match.group(2).casefold()
+        if key in observed:
+            malformed.append(line)
+            continue
+        observed[key] = value
+    if malformed or set(observed) != set(expected):
         report.error(
             "overview.md",
-            "overview-specifications",
-            "global `Specifications` contains an obviously stream-local "
-            f"specification link: {local[0]!r}",
-            "Remove the exact stream document from the global section and put "
-            "it in that stream's goal.md `## Specification provenance`; keep "
-            "only the project entry point here.",
+            "overview-state-systems",
+            "`## State systems` must contain exactly the three canonical rows",
+            "Use the state-system template and keep every URL, revision, mirror, "
+            "and receipt in the applicable stream's goal.md.",
         )
         return
-    if malformed:
+    if any("http" in value or "/" in value for value in observed.values()):
         report.error(
             "overview.md",
-            "overview-specifications",
-            "global `Specifications` must contain `- None` or project-level "
-            f"external Markdown links; malformed entry: {malformed[0]!r}",
-            "Use one `- [Project entry](https://...)` line per project-level "
-            "entry point, or exactly `- None`.",
+            "overview-state-systems",
+            "the project state-system register contains a locator",
+            "Replace locators with presence values; goal.md owns anchors.",
+        )
+        return
+    if observed["version-controlled documentation"] != "configured" or observed[
+        "local operational state"
+    ] != "configured":
+        report.error(
+            "overview.md",
+            "overview-state-systems",
+            "both required project state systems must be configured",
+            "Mark version-controlled documentation and local operational state "
+            "as configured.",
+        )
+    external = observed["external specification authority"]
+    if external not in {"configured", "none", "pending"}:
+        report.error(
+            "overview.md",
+            "overview-state-systems",
+            "external specification authority must be configured, none, or pending",
+            "Record only presence here; keep its URL in goal.md.",
         )
 
 
@@ -923,10 +904,173 @@ def specification_issue(
         report.warning(work, "specification-provenance", message, fix)
 
 
+def materialization_manifest(
+    root: Path, containment_root: Path
+) -> tuple[list[dict[str, object]] | None, str | None]:
+    """Hash every regular file below one revision-bound specification tree."""
+    if root.is_symlink():
+        return None, f"materialization root is a symlink: {root.name}"
+    if not root.is_dir():
+        return None, f"materialization tree is missing: {root.name}"
+    try:
+        contained = containment_root.resolve(strict=True)
+        resolved = root.resolve(strict=True)
+        resolved.relative_to(contained)
+    except ValueError:
+        return None, "materialization root escapes the work directory"
+    except OSError as error:
+        return None, f"materialization root cannot be resolved: {error}"
+    manifest: list[dict[str, object]] = []
+    try:
+        paths = sorted(
+            root.rglob("*"), key=lambda path: path.relative_to(root).as_posix()
+        )
+        for path in paths:
+            relative = path.relative_to(root).as_posix()
+            if path.is_symlink():
+                return None, f"materialization tree contains a symlink: {relative}"
+            if path.is_dir():
+                continue
+            if not path.is_file():
+                return None, f"materialization tree contains a non-file: {relative}"
+            content = path.read_bytes()
+            manifest.append(
+                {
+                    "path": relative,
+                    "sha256": hashlib.sha256(content).hexdigest(),
+                    "bytes": len(content),
+                }
+            )
+    except OSError as error:
+        return None, f"materialization tree is unreadable: {error}"
+    return manifest, None
+
+
+def contained_regular_file(path: Path, containment_root: Path) -> str | None:
+    """Reject missing, non-regular, symlinked, or escaping receipt paths."""
+    try:
+        relative = path.relative_to(containment_root)
+        contained = containment_root.resolve(strict=True)
+    except ValueError:
+        return "materialization receipt path escapes the work directory"
+    except OSError as error:
+        return f"materialization receipt containment root cannot be resolved: {error}"
+
+    current = containment_root
+    try:
+        for index, component in enumerate(relative.parts):
+            current /= component
+            current.lstat()
+            if current.is_symlink():
+                return (
+                    "materialization receipt path contains a symlink: "
+                    + "/".join(relative.parts[: index + 1])
+                )
+            if index < len(relative.parts) - 1 and not current.is_dir():
+                return (
+                    "materialization receipt parent is not a directory: "
+                    + "/".join(relative.parts[: index + 1])
+                )
+        resolved = current.resolve(strict=True)
+        resolved.relative_to(contained)
+    except ValueError:
+        return "materialization receipt path escapes the work directory"
+    except OSError as error:
+        return f"materialization receipt path cannot be resolved: {error}"
+    if not current.is_file():
+        return "materialization receipt is not a regular file"
+    return None
+
+
+def external_materialization_error(
+    work_dir: Path,
+    accepted: str,
+    canonical_url: str,
+    receipt: dict,
+) -> str | None:
+    """Prove that receipt, immutable base, and readable copy carry exact bytes."""
+    required = {
+        "base_id",
+        "canonical_url",
+        "observed_external_revisions",
+        "created_at",
+        "content_manifest",
+    }
+    missing = sorted(required - receipt.keys())
+    if missing:
+        return "materialization receipt is missing field(s): " + ", ".join(missing)
+    if receipt.get("canonical_url") != canonical_url:
+        return "materialization receipt canonical_url does not match goal.md"
+    revisions = receipt.get("observed_external_revisions")
+    if (
+        not isinstance(revisions, dict)
+        or not revisions
+        or any(
+            not isinstance(key, str)
+            or not key
+            or not isinstance(value, str)
+            or not value
+            for key, value in revisions.items()
+        )
+    ):
+        return "materialization receipt has no complete external revision map"
+    created_at = receipt.get("created_at")
+    if not isinstance(created_at, str) or re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z", created_at
+    ) is None:
+        return "materialization receipt has no UTC ISO-8601 creation time"
+    raw_manifest = receipt.get("content_manifest")
+    if not isinstance(raw_manifest, list) or not raw_manifest:
+        return "materialization receipt has no non-empty content manifest"
+    normalized: list[dict[str, object]] = []
+    paths: list[str] = []
+    for entry in raw_manifest:
+        if not isinstance(entry, dict):
+            return "materialization receipt content manifest has a non-object entry"
+        relative = entry.get("path")
+        digest = entry.get("sha256")
+        byte_count = entry.get("bytes")
+        if (
+            not isinstance(relative, str)
+            or not relative
+            or relative.startswith("/")
+            or "\\" in relative
+            or any(part in {"", ".", ".."} for part in relative.split("/"))
+        ):
+            return "materialization receipt content manifest has an unsafe path"
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            return "materialization receipt content manifest has an invalid SHA-256"
+        if (
+            not isinstance(byte_count, int)
+            or isinstance(byte_count, bool)
+            or byte_count < 0
+        ):
+            return "materialization receipt content manifest has an invalid byte count"
+        paths.append(relative)
+        normalized.append(
+            {"path": relative, "sha256": digest, "bytes": byte_count}
+        )
+    if paths != sorted(paths) or len(paths) != len(set(paths)):
+        return "materialization receipt content manifest paths are not unique and sorted"
+
+    base_root = work_dir / "artifacts/spec-sync/bases" / accepted
+    base_manifest, error = materialization_manifest(base_root, work_dir)
+    if error is not None:
+        return "immutable base snapshot is invalid: " + error
+    if base_manifest != normalized:
+        return "immutable base snapshot bytes do not match the receipt manifest"
+    local_manifest, error = materialization_manifest(work_dir / "spec", work_dir)
+    if error is not None:
+        return "local specification copy is invalid: " + error
+    if local_manifest != normalized:
+        return "local specification copy bytes do not match the receipt manifest"
+    return None
+
+
 def check_specification_provenance(
     report: Report, work: str, work_dir: Path, phase: str | None
 ) -> None:
-    """Require exact stream-local specification provenance by execution phase."""
+    """Require the charter's complete, non-duplicated specification anchors."""
     goal = work_dir / "goal.md"
     if not goal.is_file():
         specification_issue(
@@ -934,8 +1078,8 @@ def check_specification_provenance(
             work,
             phase,
             "no goal.md: the stream has no local specification provenance",
-            "Reconstruct the charter, then record exact Markdown specification "
-            "links or exactly `- Specification: None` before active execution.",
+            "Reconstruct the charter and its complete specification provenance "
+            "field set before active execution.",
         )
         return
     text = goal.read_text(encoding="utf-8", errors="replace")
@@ -946,8 +1090,7 @@ def check_specification_provenance(
             work,
             phase,
             "goal.md has no `## Specification provenance` section",
-            "Add the section with one or more exact `- Specification: "
-            "[Document](...)` lines, or exactly `- Specification: None`.",
+            "Add the canonical seven-field specification provenance section.",
         )
         return
     if len(sections) > 1:
@@ -957,33 +1100,37 @@ def check_specification_provenance(
             phase,
             "goal.md has duplicate visible `## Specification provenance` "
             "sections",
-            "Keep exactly one visible `## Specification provenance` section "
-            "with exact Markdown links or exactly `- Specification: None`.",
+            "Keep exactly one visible specification provenance section.",
         )
         return
     body = sections[0]
-
-    values: list[str] = []
+    canonical_names = {name.casefold(): name for name in SPECIFICATION_FIELDS}
+    values: dict[str, str] = {}
     malformed_lines: list[str] = []
     for raw_line in body.splitlines():
         line = raw_line.strip()
         if not line:
             continue
-        match = SPECIFICATION_LINE.fullmatch(line)
-        if match:
-            values.append(match.group(1).strip())
-        else:
+        match = SPECIFICATION_FIELD_LINE.fullmatch(line)
+        if match is None:
             malformed_lines.append(line)
+            continue
+        name = canonical_names[match.group(1).casefold()]
+        if name in values:
+            malformed_lines.append(line)
+            continue
+        values[name] = match.group(2).strip()
 
-    if not values:
+    missing = [name for name in SPECIFICATION_FIELDS if name not in values]
+    if missing:
         specification_issue(
             report,
             work,
             phase,
-            "goal.md's `## Specification provenance` has no `- Specification:` "
-            "value",
-            "Record exact Markdown document links, or exactly `- Specification: "
-            "None`; do not leave the source as prose such as `Not established`.",
+            "goal.md's specification provenance is missing field(s): "
+            + ", ".join(missing),
+            "Record every canonical provenance field; state.md must not carry "
+            "a substitute copy.",
         )
         return
     if malformed_lines:
@@ -992,43 +1139,37 @@ def check_specification_provenance(
             work,
             phase,
             f"goal.md has malformed specification metadata: {malformed_lines[0]!r}",
-            "Put each source on its own line as `- Specification: "
-            "[Exact document](...)` or use exactly `- Specification: None`.",
+            "Use each canonical field exactly once and no prose in the section.",
         )
         return
-
-    if any(value == "None" for value in values):
-        if len(values) != 1:
-            specification_issue(
-                report,
-                work,
-                phase,
-                "`- Specification: None` must be the only stream specification "
-                "provenance value",
-                "Remove the mixed entries and record exact links, or retain only "
-                "`- Specification: None`.",
-            )
+    source_kind = values["Source kind"].strip("`").casefold()
+    verification = values["Last verification status"].strip("`").casefold()
+    if source_kind not in {"external", "repo", "inline", "none", "pending"}:
+        specification_issue(
+            report,
+            work,
+            phase,
+            f"unknown specification source kind: {source_kind!r}",
+            "Use external, repo, inline, none, or pending.",
+        )
         return
-    if any(value.casefold() == SPECIFICATION_PENDING for value in values):
-        if len(values) != 1:
+    if verification not in {"verified", "stale", "missing", "not-applicable", "pending"}:
+        specification_issue(
+            report,
+            work,
+            phase,
+            f"unknown specification verification status: {verification!r}",
+            "Use verified, stale, missing, not-applicable, or pending.",
+        )
+        return
+    if source_kind == "pending":
+        if phase in CHARTERED_PHASES:
             specification_issue(
                 report,
                 work,
                 phase,
-                "pending specification provenance is mixed with another value",
-                "Resolve the user question to exact links or `- Specification: "
-                "None`; do not mix pending and resolved entries.",
-            )
-        elif phase in CHARTERED_PHASES:
-            specification_issue(
-                report,
-                work,
-                phase,
-                f"phase {phase!r} still has `Specification: Pending user "
-                "confirmation`",
-                "Before active execution, ask for exact stream specification "
-                "links or confirm no specification and write `- Specification: "
-                "None`.",
+                f"phase {phase!r} still has pending specification provenance",
+                "Resolve the source kind and anchors before active execution.",
             )
         else:
             report.info(
@@ -1036,21 +1177,204 @@ def check_specification_provenance(
                 "specification-provenance",
                 "planned bootstrap stream has pending specification provenance; "
                 "resolve it before active execution",
-                "Ask for exact stream specification links or confirm no "
-                "specification and write `- Specification: None`.",
+                "Resolve the source kind and all anchors together.",
             )
         return
-
-    invalid = [value for value in values if not exact_specification_links(value)]
-    if invalid:
+    if source_kind == "none":
+        expected_none = {
+            "Canonical specification": "None",
+            "Accepted revision/base": "None",
+            "Local materialization": "None",
+            "Materialization receipt": "None",
+            "Last verification status": "`not-applicable`",
+            "Last verified at": "None",
+        }
+        if any(values[name] != value for name, value in expected_none.items()):
+            specification_issue(
+                report,
+                work,
+                phase,
+                "source kind `none` is mixed with specification anchors",
+                "Use None anchors, `not-applicable`, and no verification time.",
+            )
+        return
+    canonical = values["Canonical specification"]
+    accepted = values["Accepted revision/base"].strip("`")
+    local = values["Local materialization"]
+    receipt = values["Materialization receipt"]
+    verified_at = values["Last verified at"].strip("`")
+    if canonical in {"", "None", "Pending user confirmation"} or accepted in {
+        "", "None", "Pending user confirmation"
+    }:
         specification_issue(
             report,
             work,
             phase,
-            f"goal.md has an unresolved stream specification value: {invalid[0]!r}",
-            "Use one or more exact Markdown document links in the form `- "
-            "Specification: [Exact document](...)`, or exactly `- Specification: "
-            "None`.",
+            "resolved specification source lacks a canonical reference or accepted base",
+            "Record both anchors in goal.md.",
+        )
+        return
+    if source_kind == "external":
+        links = markdown_link_spans(canonical)
+        if (
+            len(links) != 1
+            or canonical[: links[0][0]].strip()
+            or canonical[links[0][1] :].strip()
+            or not safe_external_specification_target(links[0][3].strip())
+        ):
+            specification_issue(
+                report,
+                work,
+                phase,
+                "external specification has no single canonical HTTP(S) URL",
+                "Use one exact Markdown link to the canonical external page.",
+            )
+            return
+        if SPECIFICATION_BASE_ID.fullmatch(accepted) is None:
+            specification_issue(
+                report,
+                work,
+                phase,
+                "external specification accepted base is not one safe path segment",
+                "Use a 1-128 character alphanumeric, dot, underscore, or hyphen "
+                "identifier that begins with an alphanumeric character.",
+            )
+            return
+        local_links = markdown_link_spans(local)
+        receipt_links = markdown_link_spans(receipt)
+        both_none = local == "None" and receipt == "None"
+        if not both_none:
+            local_target = local_links[0][3].strip() if len(local_links) == 1 else ""
+            receipt_target = (
+                receipt_links[0][3].strip() if len(receipt_links) == 1 else ""
+            )
+            expected_receipt = f"artifacts/spec-sync/materializations/{accepted}.json"
+            if local_target != "spec/" or receipt_target != expected_receipt:
+                specification_issue(
+                    report,
+                    work,
+                    phase,
+                    "external materialization and receipt do not match the accepted base",
+                    "Link spec/ and the base-id-keyed artifacts/spec-sync receipt, "
+                    "or set both fields to None.",
+                )
+                return
+            if verification == "verified" and not (work_dir / "spec").is_dir():
+                specification_issue(
+                    report,
+                    work,
+                    phase,
+                    "verified external materialization is missing on disk",
+                    "Refresh the external source before consuming the local copy.",
+                )
+                return
+            if verification == "verified":
+                receipt_path = work_dir / receipt_target
+                receipt_error = contained_regular_file(receipt_path, work_dir)
+                if receipt_error is not None:
+                    specification_issue(
+                        report,
+                        work,
+                        phase,
+                        "verified external " + receipt_error,
+                        "Refresh the external source and write the immutable receipt "
+                        "inside artifacts/spec-sync/materializations/.",
+                    )
+                    return
+                try:
+                    receipt_data = json.loads(receipt_path.read_text(encoding="utf-8"))
+                except (OSError, UnicodeError, json.JSONDecodeError):
+                    specification_issue(
+                        report,
+                        work,
+                        phase,
+                        "verified external materialization receipt is not valid JSON",
+                        "Refresh the external source and write a valid immutable receipt.",
+                    )
+                    return
+                if (
+                    not isinstance(receipt_data, dict)
+                    or receipt_data.get("base_id") != accepted
+                ):
+                    specification_issue(
+                        report,
+                        work,
+                        phase,
+                        "verified external materialization receipt does not identify the accepted base",
+                        "Refresh the external source and require receipt.base_id to match goal.md.",
+                    )
+                    return
+                integrity_error = external_materialization_error(
+                    work_dir,
+                    accepted,
+                    links[0][3].strip(),
+                    receipt_data,
+                )
+                if integrity_error is not None:
+                    specification_issue(
+                        report,
+                        work,
+                        phase,
+                        "verified external " + integrity_error,
+                        "Refresh the external source and regenerate the immutable "
+                        "base, readable copy, and complete receipt together.",
+                    )
+                    return
+        if verification == "verified" and both_none:
+            specification_issue(
+                report,
+                work,
+                phase,
+                "external source is marked verified without a local copy and receipt",
+                "Materialize it or mark verification missing/stale.",
+            )
+            return
+    elif source_kind == "repo":
+        match = re.fullmatch(r"`repo:([^`\r\n]+)`", canonical)
+        if (
+            match is None
+            or not safe_repository_specification_target(match.group(1))
+            or SPECIFICATION_BASE_ID.fullmatch(accepted) is None
+        ):
+            specification_issue(
+                report,
+                work,
+                phase,
+                "repository specification has no safe repo-relative locator or revision",
+                "Use `repo:<repository-relative-path>` and a portable repository revision identity.",
+            )
+            return
+    elif source_kind == "inline":
+        match = re.fullmatch(r"`([^`\r\n]+)`", canonical)
+        identity = INLINE_SPECIFICATION_ID.fullmatch(match.group(1)) if match else None
+        if identity is None or accepted != "sha256:" + identity.group(1):
+            specification_issue(
+                report,
+                work,
+                phase,
+                "inline specification has no matching approved content identity",
+                "Use matching `inline-approved:sha256:<64-lowercase-hex>` and `sha256:<same-hash>` identities.",
+            )
+            return
+    if source_kind != "external" and (local != "None" or receipt != "None"):
+        specification_issue(
+            report,
+            work,
+            phase,
+            "local or inline authority carries external materialization anchors",
+            "Keep local/inline provenance in the active work state and keep both "
+            "external materialization fields None.",
+        )
+        return
+    if verification == "verified" and re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z", verified_at
+    ) is None:
+        specification_issue(
+            report,
+            work,
+            phase,
+            "verified specification has no UTC ISO-8601 verification time",
+            "Record the exact successful verification time.",
         )
 
 
@@ -3220,7 +3544,7 @@ def check_overview_layout(report: Report, state_dir: Path) -> None:
                     "overview-monolith",
                     f"section {stripped[3:].strip()!r} is not one of "
                     "the overview's sections (Goal, Requirements, "
-                    "Specifications, Awaiting you, Streams, Recently landed): "
+                    "State systems, Awaiting you, Streams, Recently landed): "
                     "environment narrative "
                     "belongs in environment.md and traps in traps.md",
                     "Move the section into .state/environment.md or "

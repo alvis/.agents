@@ -221,5 +221,5 @@ generated_files: [<absolute final paths generated or materially rewritten>]
 
 A partial or blocked run still reports this block with `status: aborted`, the
 last completed round, and the blocker in place of `best_artifact` commentary.
-The PM uses `generated_files` to size-check only eligible work Markdown inside
+The main agent uses `generated_files` to size-check only eligible work Markdown inside
 the target `.state/`.

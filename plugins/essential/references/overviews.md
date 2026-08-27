@@ -13,9 +13,11 @@ work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
 ## Goal
 ## Requirements
 
-## Specifications
+## State systems
 
-- None
+- Version-controlled documentation: configured
+- Local operational state: configured
+- External specification authority: none
 
 ## Awaiting you
 
@@ -32,13 +34,10 @@ work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
   rebuild preserves them byte-for-byte, as it does every unrefreshed row.
   Environment narrative is not preamble — it belongs in `environment.md` and
   `traps.md` ([work-memory-topology.md](work-memory-topology.md)).
-- `Specifications` is the project-level entry-point register. It is required
-  on every reconciled overview and contains exactly `- None` when the project
-  has no external specification store, or one or more Markdown links to the
-  store's project or documentation entry point. It never contains an exact
-  work-stream specification link. When the section is absent or empty, ask
-  whether an external store exists; a yes answer without supplied links stays
-  pending and must not be rewritten as `- None`.
+- `State systems` is required on every reconciled overview. The two required
+  rows are `configured`; the external-authority row is exactly `configured`,
+  `none`, or `pending`. It carries no URL, revision, mirror, or local path;
+  those anchors belong only to each applicable stream's `goal.md`.
 - During the lazy migration of an older overview, verify each legacy global
   specification cell and preserve its exact stream provenance in that
   stream's charter before removing the cell. Publish the overview rewrite
@@ -93,18 +92,13 @@ nothing.
 ## Lazy work overviews
 
 Create each work-local overview with the first child in its corresponding
-folder; once created, retain it until work closes. The
-PM/coordinator alone reconciles these overviews; subagents may create or
-update assigned children and return them in their output manifest.
+folder; once created, retain it until work closes. The main agent alone creates
+and reconciles these overviews and children. Subagents return proposed content
+and reconciliation deltas.
 
 ### Proposals vs changes
 
-`proposals/` and `changes/` both document a work stream's tasks and
-implementation against the active canonical specification — the canonical
-Notion spec for a Notion-backed contract, the source at its exact path for a
-reachable `repo:` local contract (the derived carrier is only
-content-equivalent, never the authority), or the durable carrier for a
-`local-approved:` or `inline-approved:` contract. They differ by
+`proposals/` and `changes/` both document a work stream's tasks and implementation against the active canonical specification — the canonical Notion spec for a Notion-backed contract, the source at its exact path for a reachable `repo:` local contract (the work-local copy is only content-equivalent, never the authority), or the work-local specification for a `local-approved:` or `inline-approved:` contract. They differ by
 **implementation state**, not by approval and not by being deviations. A
 `proposals/` child is anything proposed but **not yet implemented**: most
 often a task to implement the work stream (derived from the canonical spec —
@@ -120,7 +114,7 @@ Approval is a **status on the proposal, not a folder move**. A proposal is
 planning can tell an approved proposal from an undecided one — but an
 approved proposal that is not yet implemented stays in `proposals/`; only
 implementation shifts it to `changes/`. A proposal never approved ends in
-`proposals/` (`rejected` or `withdrawn`). Separately, the coordinator creates
+`proposals/` (`rejected` or `withdrawn`). Separately, the main agent creates
 or links the corresponding `changes/` child as implementation proceeds — that
 child may be `pending` before it becomes `applied`. A `changes/` child links
 back to its originating proposal **when one exists**; a direct change record
@@ -162,16 +156,9 @@ acceptance, and the completion gate that dispositions every accepted decision
 before retirement.
 
 When a `proposals/` or `changes/` child's deviation section records a
-deviation from a Notion-backed specification, that deviation's provenance
-MUST link to the related `.mdc` file under `.state/notion/`. All of
-`.state/` lives on the default source tree, so that link resolves from
-whichever checkout the work is done in; a Notion-backed spec deviation
-recorded without that link is incomplete. A
-non-Notion contract has no such folder and cites its authoritative source
-instead of inventing Notion provenance: a reachable `repo:` local source
-keeps its exact source path authoritative and cites that path (the derived
-carrier is only content-equivalent), while a `local-approved:` or
-`inline-approved:` source cites its durable carrier as the sole authority.
+deviation from an externally backed specification, it links to the owning
+`goal.md` provenance and names the accepted base/receipt used. The transport
+mirror is not an authored specification. A non-external contract cites its authoritative source instead of inventing Notion provenance: a reachable `repo:` local source keeps its exact source path authoritative and cites that path (the work-local copy is only content-equivalent), while a `local-approved:` or `inline-approved:` source cites its active-work specification.
 
 If an overview itself ever requires splitting, reserve `00-index-<group>.md`
 names inside its folder for index shards.

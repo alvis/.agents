@@ -10,7 +10,6 @@ Explain which document a new contributor should read first and why.
 |---|---|---|
 | Architecture | Structural rules, boundaries, topology, protocols, and flows | [`architecture/README.md`](architecture/README.md) |
 | Design | Durable system-wide and feature design | [`design/README.md`](design/README.md) |
-| Capability specifications | Approved capability contracts and their provenance | [`specs/README.md`](specs/README.md) |
 | `<domain>` | <What this plugin-owned domain contains> | [`<domain>/README.md`](<domain>/README.md) |
 
 ## Reading rules

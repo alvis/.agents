@@ -52,7 +52,7 @@ dependencies and milestones only, never detailed state:
 - `last_verified` / `revalidate_on` front matter per `approvals.md`.
 
 Each stream stays authoritative in its own tree; the item's `README.md` maps
-readers to that authority, while the manifest tells a coordinator which
+readers to that authority, while the manifest tells the main agent which
 streams a decision's blast radius crosses. Asset-heavy streams version an
 asset manifest from
 `plugins/production/templates/asset-manifest.template.md` — media bytes stay

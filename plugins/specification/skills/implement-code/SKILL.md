@@ -1,6 +1,6 @@
 ---
 name: implement-code
-description: Execute an approved specification work item from an authoritative local, inline, or Notion-backed contract through delegated coding, review, applicable completion sync, and durable derivation. Use after plan-code approval, when resuming partial work, or when auditing delivered ticket work.
+description: Execute an approved specification work item from an authoritative local, inline, or Notion-backed contract through delegated coding, review, source-appropriate completion, and verified provenance. Use after plan-code approval, when resuming partial work, or when auditing delivered ticket work.
 requirements:
   intelligence: high
 argument-hint: "<spec-path-or-ref> [--work-id=<id>] [--source-direction=<direction>] [--transport-root=<dir>] [--transport-profile=<absolute-file>] [--body-author=<plugin:skill>] [--repo=<path>] [--dry-run] [--skip-approval] [--defer-publication]"
@@ -23,11 +23,12 @@ completion sync.
   `state/plan.md` supplies non-authoritative ID-keyed execution
   detail only; never let it define or override task identity or graph fields.
   Do not guess a plan from directory contents.
-- Material departures are work-local `changes/<slug>.md` children and PM
+- Material departures are work-local `changes/<slug>.md` children and main-agent
   state updates. Contract drift also appears in `reviews/alignment.md`.
-- Subagents may write assigned children/evidence but never PM-owned
-  `goal.md`, `state/working.md`, `state.md`, `state/journal.md`,
-  `state/revisions.md`, overview indexes, or `review.md`.
+- Only the main agent writes root `README.md`, `docs/**`, `.state/**`, or an
+  external specification authority. Subagents may write assigned production
+  source and tests outside those systems and return proposed state deltas.
+  <implement-code-protected-ownership owner="main-agent" delegated="return-proposals-and-refresh-requests" documentation="pause-for-main-agent-apply" protected="README.md,docs/**,.state/**,external-specification" />
 - A mid-execution surprise — a new restriction, a design or specification
   issue, a failed premise — follows the Essential state-file format's
   change-control procedure: journal it, classify it task-local, plan-level, or
@@ -53,7 +54,7 @@ completion sync.
    override and accept its deterministic environment, Git-branch/jj-workspace,
    or sole-existing-work match. Ask only when it returns `work_id_required`,
    using its returned candidates. A delegated run receives the explicit work
-   id/root. Resolve the repository and PM-owned state paths. Read the charter
+   id/root. Resolve the repository and main-agent-owned state paths. Read the charter
    `goal.md` when present for the goal, `SC-n` success criteria, and
    specification provenance, then read root
    `state.md` (and any `state/*.md` children) directly; from the task table,
@@ -65,37 +66,31 @@ completion sync.
    contradictory lifecycle/task roll-up blocks execution; never guess past it.
 2. Resolve the authoritative source/location/direction from the explicit request
    first, then active work state. A raw inline prompt is requirements evidence,
-   not an implementation contract. For inline-origin work, require the
-   reachable `docs/specs/<capability>/README.md` carrier and durable
-   `provenance.json` receipt produced by `spec-code`; compare its current content
-   directly against provenance to confirm it matches the approved specification
+   not an implementation contract. For inline-origin work, require the active work's `spec/README.md` and `spec/provenance.json` produced by `spec-code`; compare its current content directly against provenance to confirm it matches the approved specification
    content, and return
    `ready_for_specification` if it is absent or mismatched. For an explicit
-   local source, preserve its exact path and load the corresponding durable
-   derivation/receipt recorded by `spec-code`; never infer a path from its title.
-   A reachable `repo:` locator remains authoritative: compare source and
-   carrier content directly against provenance, require both to match the
-   approved specification content, and
+   local source, preserve its exact path and load the corresponding work-local specification/provenance recorded by `spec-code`; never infer a path from its title. A reachable `repo:` locator remains authoritative: compare source and work-local copy directly against provenance, require both to match the approved specification content, and
    use the content-derived Git blob oid computed from exact bytes even before
    commit, rather than an unrelated commit oid or index state, as optional
-   revision evidence. A missing/moved source, source drift, stale
-   provenance, or carrier drift returns `ready_for_specification` even when the
-   passed carrier itself is unchanged. For a non-reachable `local-approved:`
-   locator, the verified durable carrier is the sole reachable authority and
+   revision evidence. A missing/moved source, source drift, stale provenance, or work-local drift returns `ready_for_specification` even when the passed copy itself is unchanged. For a non-reachable `local-approved:` locator, the verified work-local specification is the active-work authority and
    the origin content is historical evidence; do not require the ignored origin.
    Only for
    a selected Notion ref requiring work-local materialization, resolve the
    transport profile from explicit `--transport-profile` or an active-state
    mapping containing one destination-local absolute file, logical name, and
    last verified exact-byte SHA-256. Never infer its location from the logical
-   name/root or accept an origin path. Invoke `Skill(sync-spec)` with the exact
-   transport root and pass the profile explicitly; the child revalidates its
-   current bytes and executable. `--use-cache` may reuse the
-   work spec only when its receipt matches the requested root `ref:`, all files
-   exist, and the recorded content still matches; otherwise refresh. Filename shape is
+   name/root or accept an origin path. A direct main-agent run invokes
+   `Skill(sync-spec)` with the exact transport root and passes the profile
+   explicitly; the child revalidates its current bytes and executable. A
+   delegated run verifies a matching caller-supplied materialization result and
+   receipt read-only; absent, mismatched, or stale evidence returns a bounded
+   main-agent refresh request without partial protected writes. `--use-cache` may reuse the
+   work spec only when its receipt matches both the requested root `ref:` and
+   the accepted revision/base in `goal.md`, all files exist, and the recorded
+   content still matches; otherwise refresh. Filename shape is
    never an identity gate. If materialization reports remote change against an
    existing plan/review/implementation, stop with `needs_revalidation` rather
-   than continuing from stale intent, and hand the PM the revalidation sweep:
+   than continuing from stale intent, and hand the main agent the revalidation sweep:
    affected non-done task rows become `! blocked` with
    `unblock: revalidate against <base-id>`, affected `✓ done` rows keep their
    status and gain `validity: stale (revalidate against <base-id>)` plus
@@ -117,8 +112,10 @@ completion sync.
 5. Run an architecture/contract soundness pass. Stop for unresolved material
    decisions. Record an approved contract answer only through the selected
    source owner's authoring path. For a Notion-backed source, require the
-   explicit canonical `--body-author`, bind it once, and invoke that exact
-   capability with only the approved body and exact path. Pass the identical
+   explicit canonical `--body-author` and bind it once. A direct main-agent run
+   invokes that exact capability with only the approved body and exact path; a
+   delegated run returns the proposed answer and main-agent authoring/refresh
+   request, then stops before protected writes. Pass the identical
    selector to `sync-spec`/`sync-notion`, reject a missing or changed selector
    with `select_body_author`, and record its capability plus selection source
    separately from transport evidence. Refresh the source provenance
@@ -136,18 +133,20 @@ completion sync.
    never bypasses content-approval or publication gates. Record both consumed
    approvals. A mismatch returns `needs_revalidation`; `--dry-run` stops with the
    plan/evidence report and no writes.
-7. Capture immutable `base_rev` before dispatch. Prepare PM reconciliation
-   entries keyed by full `task_id`; only the coordinator may apply task-status
-   transitions to state. Do not edit PM-owned files from children.
+7. Capture immutable `base_rev` before dispatch. Prepare main-agent reconciliation
+   entries keyed by full `task_id`; only the main agent may apply task-status
+   transitions to state. Do not edit main-agent-owned files from children.
 8. Execute by capability: when deterministic scripted execution is available for a code-producing
    mode, load [references/execute-workflow.md](references/execute-workflow.md);
    otherwise use the sequential chain in `references/modes.md`. Schedule only
    leaf IDs returned runnable by Essential: all parent predecessors and all
    declared sibling predecessors must be done. Independent ready leaves may
-   run concurrently only when their write scopes do not conflict. Before each dispatch batch, cheaply confirm spec freshness (an `unchanged`
-   materialization check for a live source); a changed source stops the batch
-   and routes through the revalidation sweep instead of dispatching against
-   stale intent. Every
+   run concurrently only when their write scopes do not conflict. For a live
+   external source, dispatch reads the verified work-local materialization
+   while its receipt matches `goal.md`; probe the external source only when
+   evidence is missing or mismatched. Only the main agent performs that probe;
+   a delegated run returns the refresh request, then stops and awaits matching
+   evidence. Run the revalidation sweep if the source changed. Every
    dispatch receives repo path, work id, exact spec pointers, the charter
    `goal.md` path when present, full `task_id`,
    canonical `plan_source`, acceptance map,
@@ -161,34 +160,42 @@ completion sync.
    (`pass|fail|partial`), evidence, generated files, and a requested status
    delta; reconcile results by ID rather than arrival order, then re-read
    `state.md` to find newly runnable tasks before dispatching them. A failed leaf retains failure
-   evidence and retry/disposition. The coordinator transitions every affected
+   evidence and retry/disposition. The main agent transitions every affected
    downstream executable leaf to `! blocked` and records an `unblock:` action
    naming the failed task's retry or disposition; independent branches keep
    their current/runnable state. After all code-producing tasks converge, require
    project-documentation coverage from the Coding result. If an applicable
    public behavior, configuration, operations, or developer-workflow change
    has no completed documentation child, invoke `Skill(coding:document)` over
-   the exact touched project scope and collect its `generated_files`. It must
-   finish before Step 9 review; do not run it after the scoped-save manifest is
-   sealed.
-9. Re-run the Step 2 source/carrier authority and direct content comparison after coding;
+   the exact touched project scope. In a direct main-agent run, apply and verify
+   its documentation result and collect `generated_files`. In a delegated run,
+   collect its source-backed patch proposal, return it with a main-agent apply
+   request, and pause. Resume only after the main agent proves the tracked
+   documentation matches the proposal; then collect those paths as verified
+   `generated_files`. Documentation must finish before Step 9 review; do not
+   run it after the scoped-save manifest is sealed.
+9. Re-run the Step 2 source/work-local-specification authority and direct content comparison after coding;
    source drift returns `ready_for_specification` and invalidates the plan/code
-   alignment before review. Invoke `Skill(review-implementation)` with the work
-   id, a reference to the exact current specification content, canonical `plan_source`,
-   and, for a Notion source, the
-   same exact transport root/profile file. Retry P0/P1 alignment fixes at most three passes;
+   alignment before review. The main agent performs the mandatory external
+   pre-review materialization and binds its result to the current goal/receipt.
+   A delegated run returns a main-agent pre-review refresh request and resumes
+   only when supplied that matching evidence. Then invoke
+   `Skill(review-implementation)` with the work id, a reference to the exact
+   current specification content, canonical `plan_source`, the freshness
+   evidence, and, for a Notion source, the same exact transport root/profile
+   file. Retry P0/P1 alignment fixes at most three passes;
    general and security review run every pass. Then run the usage trace in
    [references/thought-experiment.md](references/thought-experiment.md). A
    review is usable only when it was performed against the current specification
    content, confirmed by direct comparison, and against the current task
    definitions; a definition change requires re-review.
 10. Use the selected source's owning completion path. For every Notion-backed
-    source, whether or not local specification content changed, invoke
-    `Skill(sync-spec)` in `complete --stage=implementation` mode with the same
+    source, whether or not local specification content changed, only the main
+    agent invokes `Skill(sync-spec)` in `complete --stage=implementation` mode with the same
     exact `--transport-profile=<absolute-file>` before code
     publication and require outbound verification, refreshed selected mirror,
-    regenerated versioned spec,
-    derivation receipt, and dependent revalidation results before
+    refreshed work-local `spec/`, immutable materialization receipt, and
+    dependent revalidation results before
     `completed`. A `status: success`, `classification: metadata_only` result
     refreshes the exact base/receipt but
     retains semantic approvals only when the content is otherwise identical.
@@ -204,7 +211,7 @@ completion sync.
     `next_action: specification_reconciliation`, do
     not promote either side, reread stale L, or push merged proposal M from the
     implementation stage. Route the B/L/R packet and immutable M proposal to
-    the PM/user source owner. After explicit resolution, the owner may apply M
+    the main agent/user source owner. After explicit resolution, the owner may apply M
     only through the specification authoring path (the exact bound
     `body_author` for Notion),
     then must obtain specification
@@ -225,30 +232,31 @@ completion sync.
     completion. No implementation-stage push of unreviewed M is allowed. Any
     final content that differs from the reviewed content likewise blocks
     publication and requires contract and plan reapproval followed by review
-    and usage tracing. For a
-    local/inline-origin source, repeat the Step 2 authority check immediately
-    before accepting completion; require the current durable
-    carrier and provenance receipt to map the exact reviewed content back
+    and usage tracing. A delegated run returns the complete main-agent completion/revalidation
+    request and never invokes transport, writes specification state, or claims
+    completion. For a local/inline-origin source, repeat the Step 2 authority check immediately
+    before accepting completion; require the current work-local specification and provenance receipt to map the exact reviewed content back
     to its explicit local path or approved inline candidate. Refresh the
     content-preserving derivation when necessary and do not claim a Notion
     round trip. After review, usage tracing, and completion sync have converged,
-    reconcile any `reference.md` one final time. Specification is its sole
-    writer: verify every declared consumer API against repository-relative
+    reconcile any `reference.md` one final time. The main agent is its sole
+    writer; a delegated run returns proposed bytes and provenance/index deltas.
+    Verify every declared consumer API against repository-relative
     implementation paths; keep `**Status:** 🚧 Pending` until the whole surface
     is implemented, otherwise use
     `**Status:** ✅ Implemented (<paths>, <paths>)`. Update its logical-unit mapping
     and exact output hash in `provenance.json`, refresh the external
-    provenance-file hash, re-run the source/carrier/provenance checks, and
+    provenance-file hash, re-run the source/work-local-specification/provenance checks, and
     include both materially changed files in `generated_files`.
-11. Only after review/usage, durable derivation, and applicable completion sync
+11. Only after review/usage, applicable local/inline work-local materialization, and external completion sync
     are stable at one exact specification content may history finalization or
     publication begin. Inspect relevant repository state against `base_rev` and
     record `history_state` with relevant dirty paths, clean saved unpushed
     changes, and any already-published boundary. Relevant dirty paths take
     precedence over saved changes when choosing the terminal. Reconcile the
     base diff and every child `generated_files` list into the full intended
-    publication scope, including source, tests, project docs, durable local or
-    Notion-derived specification carriers, provenance receipts, and deletions;
+    publication scope, including source, tests, project docs, durable
+    local/inline specification materializations, provenance receipts, and deletions;
     exclude unrelated user-owned changes and every ignored work-state/evidence
     file. For dirty publication paths, create the immutable checksum-bound
     scoped-save manifest required by `coding:commit`'s
@@ -284,9 +292,9 @@ completion sync.
     `done`; otherwise return `active` when work is runnable or `blocked` when
     unfinished required work has no runnable leaf. Collect every child
     `generated_files` manifest, deduplicate it, and
-    return it to the PM with ID-keyed task deltas and
+    return it to the main agent with ID-keyed task deltas and
     state/overview/review reconciliation payloads. Never run
-    file sizing; after all writers return, the PM checks only eligible work
+    file sizing; after all writers return, the main agent checks only eligible work
     Markdown inside the target `.state/`.
 
 ## Verification
@@ -318,7 +326,7 @@ completion sync.
   completed the selected source owner's verification and derivation path;
   Notion-backed sources completed a verified round trip, while local/inline
   sources did not claim one.
-- No child wrote PM-owned files or an opaque Notion transport body; collected
+- No child wrote main-agent-owned files or an opaque Notion transport body; collected
   `generated_files` is complete.
 
 ## Completion
@@ -332,7 +340,7 @@ the reviewed specification content reference and observed revision,
 repo/base rev, `plan_source: state.md`, parent/per-parent
 graphs, runnable/blocked/invalidated task IDs, acceptance coverage, decisions,
 dispatched task IDs/children/commits, attempt results and task-status deltas, departures,
-review/usage verdicts, completion-sync/derivation/revalidation result, PM
+review/usage verdicts, completion-sync/derivation/revalidation result, main-agent
 reconciliation payload, the `needs_save`/`ready_for_finalization`/`no_change`
 history terminal or publication result, explicit `history_state`, scoped-save
 manifest path/hash/invocation and preservation receipt when applicable, next

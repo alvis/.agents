@@ -24,8 +24,12 @@ approved specification content, not to any hash.
   base/local/remote decision permits it.
 - `complete` is a publication gate. It reconciles the authored copy with a
   fresh remote view, verifies stage-specific approval, delegates guarded
-  transport, verification-pulls, derives `docs/specs/<capability>/`, and
-  reports dependent work that needs revalidation.
+  transport, verification-pulls, refreshes the work-local materialization and
+  immutable receipt, and reports dependent work that needs revalidation.
+- External specifications never derive version-controlled specification files. In PRs and tracked documents, cite their canonical external URL only—never `.state`, a mirror,
+  an absolute path, or `file://`.
+- Only the main agent writes the external authority, `.state/**`, root
+  `README.md`, or `docs/**`. Subagents return proposals and evidence.
 - Never derive or rename an MDC filename. Select files by stable `ref:` and the
   transport relationship report.
 - Never call `notion-sync` directly, treat the selected mirror as an authoring
@@ -82,7 +86,17 @@ approved specification content, not to any hash.
      their revisions together (sanitized for filesystem use) — never the root
      page's observed revision alone, which collides when a child page or layout
      changes while the root revision is unchanged and would let a later
-     materialization overwrite or compare against a stale base.
+   materialization overwrite or compare against a stale base.
+   Every receipt is JSON with these required top-level fields:
+   `base_id` equal to its filename stem, `canonical_url`, a non-empty
+   `observed_external_revisions` string map, UTC `created_at`, and a non-empty
+   lexically sorted `content_manifest`. Each manifest entry is exactly the
+   work-relative POSIX `path`, lowercase SHA-256 `sha256`, and integer `bytes`
+   for one regular file. The manifest enumerates every file in both
+   `bases/<base-id>/` and `spec/`; both trees must match it byte-for-byte and
+   contain no symlinks. Record the selected body-author identity when
+   applicable. A matching path or `base_id` without this complete byte proof
+   is invalid evidence.
    Validate `body_author` against canonical `<plugin>:<skill>` identity and
    retain it separately from the transport profile. A missing or changed
    selector before semantic body mutation returns `status: refused`,
@@ -90,7 +104,9 @@ approved specification content, not to any hash.
    Creation, materialization, completion, and derivation receipts record the
    selected capability and selection source when present; nested calls compare
    them before authoring.
-   State may point to the current receipt, but the PM owns that update. Require
+   `goal.md` alone points to the accepted base, local copy, and current receipt;
+   the main agent owns that update. `state.md` records sync status and links to
+   `goal.md` without restating anchors. Require
    the real work/mirror targets to be ignored and untracked in their owning VCS
    workspaces; otherwise return `requires_ignore` with the exact ignore file.
    Require the mapped logical name to equal the selected profile's `name` and
@@ -165,7 +181,7 @@ approved specification content, not to any hash.
    gate; remote-only or structural change is `status: success` with
    `next_action: revalidate` and no push;
    concurrent content requires an explicit three-way merge. Workers may return
-   conflict packets/proposals only. The PM/user owns choices, and `Keep Both`
+   conflict packets/proposals only. The main agent/user owns choices, and `Keep Both`
    requires explicit approval of the synthesized final content. Any
    `Skip` leaves that pair's local, mirror, and remote bytes untouched and
    forbids a push. A concurrent relationship at `stage=implementation` returns
@@ -201,34 +217,18 @@ approved specification content, not to any hash.
 8. Only after verified identity/content may canonical L/mirror state advance.
    Create a new immutable base directory and receipt keyed by `<base-id>`; never
    rewrite an earlier base or receipt. A partial remote write is `partial` with
-   exact recovery evidence, not success. Regenerate affected versioned specs
-   under `docs/specs/<capability>/` with stable source id/revision and a
-   durable task/PR/Notion receipt anchor. Use Specification's `spec-code`
-   carrier, optional reference, and provenance templates:
-   `README.md` is the authoritative derived contract, `reference.md` exists
-   only for an intended consumer surface, and `provenance.json` remains the
-   strict machine-readable sidecar. Read
-   `${ESSENTIAL_ROOT}/templates/docs/docs-root-readme.template.md` and
-   `${ESSENTIAL_ROOT}/templates/docs/specs-readme.template.md`, using the root
-   derived from the injected state contract, then reconcile
-   `docs/specs/README.md` and `docs/README.md` with the regenerated capability.
-   If `reference.md` exists, verify its whole consumer surface against current
-   repository-relative implementation paths: keep it
-   `**Status:** 🚧 Pending` until all entries are implemented, otherwise use
-   `**Status:** ✅ Implemented (<paths>, <paths>)`. Hash that final reference in its
-   provenance logical unit/output. The receipt and report
-   store the observed
-   revision and a reference to the recorded content. The embedded
-   output set in `provenance.json` excludes `provenance.json` itself; store its
-   post-write reference only in work/external evidence and the report.
+   exact recovery evidence, not success. Atomically refresh `spec/`, record the
+   observed revision and exact content in the base-id-keyed receipt, and return
+   a main-agent reconciliation delta for `goal.md`. Do not create or update
+   version-controlled specification files; the external authority remains the canonical contract.
 9. Enumerate locally registered Git worktrees and jj workspaces. For readable
    open work on the same source id whose recorded content changed, keep
    `status: success`, set `next_action: revalidate`, and return workspace/work/
    state paths; list external anchors and unknown/remote dependents separately.
-   Never edit another PM's state.
+   Never edit another main agent's state.
 10. Return every final path created or materially rewritten as
-    `generated_files`. The PM runs the Essential size gate only on eligible
-    work Markdown; derived `docs/**` is excluded.
+    `generated_files`. The main agent runs the Essential size gate on eligible
+    work Markdown and applies the `goal.md`/`state.md` reconciliation delta.
 
 <IMPORTANT>
 The selected mirror is ignored, untracked transport state. It is not durable
@@ -244,8 +244,7 @@ documentation or a handoff artifact. Preserve its exact user-selected location.
   `baseline_required`, remote-only, and skipped outcomes did not push.
 - The approval/review was performed against the final specification content, and
   the immediate remote recheck matched the exact comparison revision and content.
-- Every successful publication has a verification pull and a new
-  base/receipt keyed by `<base-id>`; no fixed `materialization.json` was overwritten.
+- Every successful publication has a verification pull, refreshed `spec/`, and a new base/receipt keyed by `<base-id>`; no fixed `materialization.json` was overwritten and no version-controlled specification derivation was produced.
 - Opaque body content and Notion transport stayed with their selected owners;
   every semantic mutation used the exact recorded `body_author`.
 

@@ -54,7 +54,7 @@ Never use a provider-specific workspace or worktree path such as
 ## Bootstrap state
 
 Run the resolver with the confirmed ID. After it returns `resolved` with
-`state_ignored: true`, acquire the coordinator lease and invoke the resolver
+`state_ignored: true`, acquire the main-agent lease and invoke the resolver
 with `--bootstrap` before creating another work artifact. Replace the generated
 charter placeholders with the confirmed goal and behavioral requirements.
 

@@ -26,12 +26,12 @@ recipient does not own or invoke the higher-level skill.
 
 ## Work artifacts
 
-Before changing a lifecycle-managed artifact, read
-`{{PLUGIN_DIR}}/references/state.md` and run its resolver without inventing a
-work ID. On `work_id_required`, the PM asks; on `requires_ignore`, workers stop
-and the PM alone repairs `.gitignore` and reruns. Work state lives only under
-the default tree's `.state/`; promote durable results to `docs/`. For ADRs,
-read `{{PLUGIN_DIR}}/references/adr.md`.
+Before reading or changing project state, read
+`{{PLUGIN_DIR}}/references/state-systems.md`. Before lifecycle-managed work,
+read `{{PLUGIN_DIR}}/references/state.md` and run its resolver without
+inventing a work ID. On `work_id_required`, the main agent asks; on
+`requires_ignore`, subagents stop and the main agent alone repairs
+`.gitignore`. For ADRs, read `{{PLUGIN_DIR}}/references/adr.md`.
 
 ## Work approach
 

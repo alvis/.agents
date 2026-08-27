@@ -28,8 +28,9 @@
 A `reviewing` or `completed` stream is **not** an error: it stays an awaiting
 or index-only row and gets no refresh. An archived stream lives outside
 `works/` and is not indexed. Invalid work IDs and a missing Essential contract path are
-explicit errors. Every stream records exact specification links or `- Specification: None`; a
-generic coding stream cannot omit the provenance line. There is no
+explicit errors. Every stream records the canonical seven-field specification
+provenance shape in `goal.md`, including source kind `none` when no
+specification applies. There is no
 prefix-based or root-file compatibility fallback.
 
 ## Two streams
@@ -57,32 +58,37 @@ example specification-led implementation versus generic coding implementation â€
 never a fixed skill name; takeover maps it to the relevant implementation skill
 and rejects a missing or contradictory intent.
 
-## Specifications and local-only changes
+## State systems and externally backed work
 
-A project or stream specification may have multiple source documents. Keep
-project-level entry points in the global overview and every exact stream
-document in that stream's charter:
+The global overview records system presence only. An externally backed stream
+keeps its canonical URL and revision-bound anchors in `goal.md`:
 
 ```markdown
-## Specifications
+## State systems
 
-- [Project hub](https://notion.so/acme/project-hub)
-- [Documentation index](https://notion.so/acme/documentation-index)
+- Version-controlled documentation: configured
+- Local operational state: configured
+- External specification authority: configured
 
 ## Specification provenance
 
-- Specification: [Authentication requirements](https://notion.so/acme/authentication-requirements)
-- Specification: [Authentication API contract](https://notion.so/acme/authentication-api)
+- Source kind: `external`
+- Canonical specification: [Authentication requirements](https://notion.so/acme/authentication-requirements)
+- Accepted revision/base: `auth-base-7`
+- Local materialization: [spec](spec/)
+- Materialization receipt: [receipt](artifacts/spec-sync/materializations/auth-base-7.json)
+- Last verification status: `verified`
+- Last verified at: `2026-08-27T12:00:00Z`
 ```
 
-The first two links are project entry points; the last two are exact links for
-one stream and must not be copied into the global overview.
+The external URL is never copied into the global overview; PRs and tracked
+documents cite that URL and never the work-local copy or receipt.
 
 A stream whose relevant repository changes exist only in the working copy is
 still persisted and still resumable â€” the pause records exactly what is
 uncommitted, and never returns `handover: blocked`.
 
-For a Notion-backed specification, `state.md` records the stable page ref and
-captured revision so a resume fetches it fresh, plus the merge base a re-publish
-needs. If the live specification source is unreachable at handover time, mark
-the provenance stale and note it.
+For an externally backed specification, `state.md` records sync status and
+links to `goal.md` without duplicating its anchors. A resume reads the verified
+`spec/` copy while its receipt matches the accepted base; external freshness is
+probed only at the explicit lifecycle gates.

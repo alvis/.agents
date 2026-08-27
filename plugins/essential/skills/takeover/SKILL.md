@@ -62,12 +62,10 @@ continuously by the state contract.
   source (such as a Notion-backed spec) is refreshed through the relevant
   specification-sync skill.
 
-A bootstrap charter may carry `- Specification: Pending user confirmation`,
-but that is not an executable provenance value. Resolve the external-store
-question and record exact stream-local links or `- Specification: None` before
-handing a stream to active execution. The global overview's
-`## Specifications` section is only a project entry-point index; never use it
-as a substitute for the stream's exact specification.
+A bootstrap charter may carry source kind `pending`, but that is not executable
+provenance. Resolve all seven `goal.md` specification fields before active
+execution. The global overview's `## State systems` section records presence
+only; never use it as a substitute for stream anchors.
 
 ## State gate
 
@@ -149,8 +147,10 @@ L4. For each selected stream, read its on-disk
     (including its `## Continuation` section: current task, next owner, next
     action, and continuation intent), its linked detail files, decisions, and the
     materialized specification. Read `goal.md`'s `## Specification provenance`
-    and verify it contains exact links or explicit `None` before active
-    execution; a pending value remains a user question. From the `state.md`
+    and verify all seven fields before active execution; a pending value remains
+    a user question. For an external source, read `spec/` only when its receipt
+    matches the accepted base in `goal.md`; otherwise the main agent refreshes
+    at the missing-or-mismatched evidence gate. From the `state.md`
     task table (and any `state/*.md` children), determine which tasks are
     runnable, which are blocked, the current owner, and the next action; there
     is no separate validation step. Treat repository and runtime evidence as
@@ -173,7 +173,7 @@ L5. Verify each selected stream's **source anchor** against the current checkout
     stream only — other selected streams continue.
 
 L6. Reconcile a centralized work directory this session did not write before
-    taking coordinator ownership. A `lease.json` left by another owner is never inherited:
+    taking main-agent ownership. A `lease.json` left by another owner is never inherited:
     treat it as stale and claim the stream through the explicit `takeover` lease
     verb below, journaling the returned payload. Reconcile the stream's row into
     the default tree's `overview.md` with its current `Location`, and leave its
@@ -189,10 +189,10 @@ L7. Resolve decisions that block a selected stream's next action with
 
 ## Shared continuation
 
-Before the first coordinator write to any selected stream, hold its on-disk
+Before the first main-agent write to any selected stream, hold its on-disk
 lease with the idempotent `state-lease ensure` verb (Essential's
 `lease.md`): it acquires a free lease and renews one this session already
-holds; `contended` means a live foreign coordinator owns the stream — stop
+holds; `contended` means a live foreign main agent owns the stream — stop
 and report it, never write; `takeover_required` means the lease expired
 under another owner — claim it only with the explicit `takeover` verb and
 journal the returned payload as a `lease` event. Takeover does not run the
@@ -221,9 +221,9 @@ resolver failure, an unparseable `state.md`), stop that stream and recommend
     each subsequent runnable action, and a completed action is never re-handed.
     Because publication is delegated downstream at completion (step 12), instruct
     the hand-off to **defer its own publication**: it saves work locally but does
-    not open or update pull requests itself. Each stream keeps its own
-    coordinator lease, so per-stream handoffs run sequentially or as per-stream
-    continuation handovers to the PM. Choose each skill by mapping that stream's
+    not open or update pull requests itself. The main agent keeps each stream's
+    lease; subagents receive read paths and return state-system reconciliation
+    deltas, never the lease or state-write permission. Choose each skill by mapping that stream's
     capability-level continuation-intent descriptor to the relevant
     implementation skill. The descriptor comes from the `## Continuation` section
     of the on-disk `state.md`. When it is absent (state written before this field
@@ -278,7 +278,7 @@ resolver failure, an unparseable `state.md`), stop that stream and recommend
     instead.
 
 14. Return every created or materially rewritten path in `generated_files`,
-   including durable promotion paths when any were required. Do not run file sizing; the PM checks only
+   including durable promotion paths when any were required. Do not run file sizing; the main agent checks only
    eligible work Markdown inside the target `.state/`.
 
 ## Verification
@@ -300,9 +300,10 @@ resolver failure, an unparseable `state.md`), stop that stream and recommend
 - Every work directory this session did not write had its foreign lease claimed
   through the explicit `takeover` verb and its `overview.md` row reconciled to
   its current `Location`, with its recorded identity untouched.
-- Each resumed `state.md` is complete and links the PM-owned, current-focus-only
-  `state/working.md`; each selected implementation skill received the coordinator
-  lease plus exact work, specification, decision, and source paths.
+- Each resumed `state.md` is complete and links the main-agent-owned,
+  current-focus-only `state/working.md`; each selected implementation skill
+  received exact read paths and returned proposed state-system deltas without
+  receiving the lease.
 - Every resolved decision is durable in the affected stream's decision artifacts.
 - Each implementation hand-off advanced one runnable next action by the stream's
   declared continuation intent — no fixed skill name, no silent fallback, no

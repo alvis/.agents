@@ -4,12 +4,7 @@ Read this when materializing, revalidating, or completing specification work.
 
 ## Sources and mirrors
 
-An explicit local path, approved inline candidate, or selected Notion
-identity may supply a specification. Inline prompt text is evidence only:
-before planning or implementation it becomes a complete approved candidate
-and a content-equivalent durable `docs/specs/<capability>/README.md` carrier.
-A local source retains its exact path and gains the same durable
-carrier/provenance. Neither path claims a Notion round trip.
+An explicit local path, approved inline candidate, or selected external identity may supply a specification. Inline prompt text is evidence only: before planning or implementation it becomes a complete approved candidate in the active work's `.state/`. A local source retains its exact path and records any approved working copy and provenance in `.state/`. An external source remains canonical at its stable URL; its revision-bound local copy and synchronization evidence stay under the active work's `.state/`.
 
 `.state/notion/` is the conventional ignored mirror in a registered
 default workspace, not a path fixed by the generic resolver. The Notion owner
@@ -22,18 +17,20 @@ or change requires one explicitly selected external
 `--body-author=<plugin:skill>`, passed unchanged through every nested
 specification and transport call; this marketplace supplies no default.
 
-`sync-spec` materializes only the required temporary working specification
-under the active work's `spec/`. Record stable Notion page/block IDs, exact
-returned paths, source revision/hash, and dependent-work revalidation state
-in `state.md`.
+`sync-spec` materializes the required working specification under the active
+work's `spec/` and proves it through immutable `artifacts/spec-sync/` bases and
+receipts. `goal.md` alone records the canonical URL, accepted revision/base,
+local materialization, matching receipt, and last verification. `state.md`
+links to `goal.md` and records only sync status.
 
 ## Freshness and the revalidation sweep
 
-Spec freshness is checked at named moments, not left to chance:
-materialize before planning, before each dispatch batch (a cheap `unchanged`
-check), before review, and at completion. A stream that was idle past any
-of those moments re-materializes before proceeding. When materialization or
-completion returns `next_action: revalidate`, the coordinator runs one
+Probe an external source only at explicit freshness gates: initial
+materialization, missing or mismatched evidence, before review, and at
+completion or publication. Ordinary planning, building, and dispatch read the
+local materialization when its receipt matches the accepted base in `goal.md`.
+When materialization or
+completion returns `next_action: revalidate`, the main agent runs one
 revalidation sweep against the new base-id: mark every non-done task row
 whose definition, targets, or acceptance depend on the changed content
 `! blocked` with `unblock: revalidate against <base-id>` (revalidation is
@@ -54,23 +51,11 @@ copied work directory was updated. The completion receipt lists affected
 external task, PR, and Notion anchors plus every known or unknown remote
 dependent that still needs revalidation.
 
-The authored-docs sweep rides the same trigger: on any
-`next_action: revalidate` outcome, check `docs/README.md` and the
-`docs/architecture/` and `docs/design/` documents that reference the changed
-capability, and journal each file's disposition (`unaffected`, `updated`, or
-`superseded`) — only `docs/specs/` is hash-bound to the source, so ADRs and
-design documents drift silently without this sweep.
+The authored-docs sweep rides the same trigger: on any `next_action: revalidate` outcome, check `docs/README.md` and the `docs/architecture/` and `docs/design/` documents that reference the changed capability, and journal each file's disposition (`unaffected`, `updated`, or `superseded`). Tracked documents cite the canonical external URL only for external specifications; no tracked document links to `.state`, a mirror, an absolute path, or `file://`.
 
 ## Completion
 
 For a Notion-backed specification, completion closes review dispositions and
 identifies approved changes against an exact source hash. The explicitly
 selected body-author capability applies them to the selected transport path.
-The completion entrypoint
-delegates outbound push, merge, and conflict resolution to `sync-notion`,
-then re-pulls and verifies stable identity, explicit conflict dispositions,
-and zero unexpected diff. Regenerate affected `docs/specs/<capability>/`
-content and record source and derivation hashes. A zero exit code without
-this receipt is not successful synchronization. Local and inline sources
-instead re-verify their carrier and provenance hashes and never invoke Notion
-transport merely to complete.
+The completion entrypoint delegates outbound push, merge, and conflict resolution to `sync-notion`, then re-pulls and verifies stable identity, explicit conflict dispositions, and zero unexpected diff. It refreshes `spec/`, stores a new immutable base and matching materialization receipt, and updates the anchors in `goal.md`; it does not generate version-controlled specification content. A zero exit code without this receipt is not successful synchronization. Local and inline sources instead re-verify their explicit source or approved work-local candidate and provenance evidence and never invoke external transport merely to complete.

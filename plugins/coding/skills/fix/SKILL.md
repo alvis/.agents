@@ -54,8 +54,8 @@ writes and report the missing contract. Resolve the active work root first.
 When delegated, start from the mission capsule's exact work root and relevant
 review/spec/design paths. Read `state/working.md` only when navigation is missing,
 and `state.md` only for resume, cross-slice dependency, or alignment work.
-Never write PM-owned work pointers or overview files.
-The caller/PM uses the resolver, asks only on `work_id_required`, and gives a
+Never write main-agent-owned work pointers or overview files.
+The main-agent caller uses the resolver, asks only on `work_id_required`, and gives a
 delegated run the explicit resolved work ID/root.
 Read the work item's `state.md` (and any `state/*.md` children) directly
 before editing. From the task table, determine which tasks are runnable,
@@ -92,7 +92,7 @@ and `testing` write standards.
    user when expected behavior is ambiguous. List the changes needed, ordered
    by dependency. If evidence changes an approved task definition, dependency,
    requiredness, target, or acceptance mapping, stop and return the affected
-   task IDs plus downstream closure for coordinator replan/reapproval; never
+   task IDs plus downstream closure for main-agent replan/reapproval; never
    mutate the plan while fixing.
 3. **Fix tests.** Fix incorrect test behavior and logic — never modify a test
    just to make it pass — plus standards violations, imports, and references.
@@ -119,7 +119,7 @@ and `testing` write standards.
    the blocker instead of looping. For each failure that occurred, record its
    root cause, the systemic cause that allowed it, the assumption that proved
    wrong, and how to prevent that class of error. Return attempt outcome,
-   evidence, and a requested task-status delta to the coordinator; do not edit
+   evidence, and a requested task-status delta to the main agent; do not edit
    task state directly. Re-read `state.md` and require the plan definition
    to remain unchanged before requesting `done`.
 
@@ -156,5 +156,5 @@ review_rerun: /coding:review-code <scope> --plan=<plan_source>
 </report>
 
 Return every created or materially rewritten path as `generated_files` to the
-PM. Do not run file sizing; after all artifact writers finish, the PM checks
+main agent. Do not run file sizing; after all artifact writers finish, the main agent checks
 only eligible work Markdown inside the target `.state/`.

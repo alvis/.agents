@@ -34,7 +34,7 @@ always resumes from the state files on disk.
   shortened to pointers into `.state/`, never spilled to disk; the
   persisted state on disk is already the durable outcome.
 - Do not assume `.state/` is committed.
-- Only the main agent/PM may run this workflow because it writes `state/working.md`
+- Only the main agent may run this workflow because it writes `state/working.md`
   and reconciles work indexes and the overview.
 
 ## Inputs
@@ -54,12 +54,12 @@ the default source tree that carries every work stream and the global
 `.state/overview.md`, whichever tree this session is working in. Resolve the work root,
 conventions, naming, and ownership from that reference before reading or writing
 state. Handover never mints an empty work item. Hold each selected stream's
-on-disk coordinator lease before rewriting its state in steps 5–7 with the
+on-disk main-agent lease before rewriting its state in steps 5–7 with the
 idempotent `state-lease ensure` verb — it renews a lease this session
 already holds and acquires a free one; a live foreign lease (`contended`)
 stops that stream with a report. Perform the rewrites through the
 lease-verified write path in Essential's `lease.md`, bump `State revision`
-on each coordinator rewrite, and release every lease at completion.
+on each main-agent rewrite, and release every lease at completion.
 
 Persistence always runs and always completes: it refreshes the current source
 tree's on-disk work state and the default tree's global `overview.md`. That is
@@ -96,23 +96,24 @@ files. Never terminate the run before the overview upsert.
    working-copy status, staged and unstaged changes, untracked files, recent
    commits, and each specification's location: inline raw text, a
    repository-relative path, or a Notion reference with its captured revision.
-   Reconcile that source into the stream's `goal.md` `## Specification
-   provenance` as one or more exact Markdown links, or exactly
-   `- Specification: None`; a bootstrap-only `Pending user confirmation` value
-   must be resolved before the stream enters active execution.
+   Reconcile that source into the seven fields in the stream's `goal.md`
+   `## Specification provenance`: source kind, canonical specification,
+   accepted revision/base, optional local materialization, matching receipt,
+   last verification status, and last verification time. A bootstrap-only
+   pending shape must be resolved before active execution.
    Classify changed and planned files with the substates in
    [references/document-templates.md](references/document-templates.md).
 4. For each selected stream, identify every material unresolved decision.
    Consult the user using
    [references/decision-consultation.md](references/decision-consultation.md);
-   route durable decision detail to `decisions/<slug>.md` and let the PM
+   route durable decision detail to `decisions/<slug>.md` and let the main agent
    reconcile `decisions.md`. Record low-impact reversible assumptions in
    `state.md` with evidence and recheck triggers.
 5. Generate one UTC ISO-8601 timestamp for the whole run. For each continuable
    stream, rewrite `state.md` as the complete work context: goal, full
    parent/subtask task table with marked status and evidence, phase, success
    criteria, decisions, dependencies, blockers, review dispositions, evidence,
-   durable promotion, specification location, and a prominent link to
+   durable promotion, specification sync status linked to `goal.md`, and a prominent link to
    `state/working.md`. Include a `## Continuation` section persisting the current
    task ID, exact next owner, exact next action, a capability-level continuation
    intent describing the work type (never a fixed skill name), and the stream's
@@ -130,13 +131,12 @@ files. Never terminate the run before the overview upsert.
    canonical shape in
    [references/document-templates.md](references/document-templates.md).
    Immediately before writing, re-read the current `overview.md` so a concurrent
-   update from another session is not lost. If `## Specifications` is absent or
-   empty, ask the user whether an external specification store exists (for
-   example, Notion). A none response writes exactly `- None`. A yes response
-   writes one or more supplied project-level Markdown entry links only; yes
-   without links keeps `- Pending user confirmation` and the user question,
-   never `- None`, until links arrive. Do not derive this section from any
-   stream or copy an exact stream specification into it.
+   update from another session is not lost. Reconcile `## State systems` as
+   exactly three presence rows: version-controlled documentation and local
+   operational state are `configured`; external specification authority is
+   `none`, `configured`, or `pending`. This is a presence inventory only;
+   canonical URL, revision, copy, receipt, and verification anchors remain in
+   each stream's `goal.md`.
 
    Before removing a legacy global `Spec` cell, verify and persist its exact
    source in that stream's charter provenance. Then upsert one row per stream
@@ -146,11 +146,11 @@ files. Never terminate the run before the overview upsert.
    Write the normalized overview once, atomically, and preserve every other
    row plus the authored `Goal` and `Requirements` sections byte-for-byte. If
    no `overview.md` exists yet, create it with the canonical
-   `Specifications` section. After this write the pause is complete and
+   `State systems` section. After this write the pause is complete and
    resumable from state files.
 8. Return every created or materially rewritten path — including the updated
    `overview.md` — in `generated_files`. Do not run file sizing; after all
-   artifact writers finish, the PM checks only eligible work Markdown inside the
+   artifact writers finish, the main agent checks only eligible work Markdown inside the
    target `.state/` and coordinates any complete split round.
 
 ## Verification
@@ -160,7 +160,7 @@ files. Never terminate the run before the overview upsert.
 - Handover touched only `state_root/.state/works/` and
   `state_root/.state/overview.md`; no unselected stream's files were
   rewritten.
-- `overview.md` now carries the canonical project-level `Specifications`
+- `overview.md` now carries the canonical three-row `State systems`
   section and one up-to-date row per stream — each with its phase, blocker,
   `Location`, and documentation-only `Documentations` — and every row it did
   not own is unchanged.
@@ -179,7 +179,7 @@ files. Never terminate the run before the overview upsert.
   promotion, and specification state are preserved per selected stream.
 - No secret, credential, absolute host path, path traversal, or symlink escape
   is present in the report.
-- Every held coordinator lease was released and each refreshed stream states
+- Every held main-agent lease was released and each refreshed stream states
   its `State revision`.
 
 ## Completion

@@ -31,6 +31,10 @@ local–Notion pairs. Public modes are `validate-metadata`, `local-to-notion`,
   syntax.
 - A cached mirror is not proof of current Notion state. Every outbound decision
   compares against a fresh staging pull.
+- Only the main agent may advance a canonical mirror, work state, or the
+  external authority. A delegated run may validate, read, or pull into a unique
+  OS-temporary staging directory and returns evidence/proposed bytes; it never
+  performs outbound mutation or writes `.state/**`.
 
 ## Inputs
 
@@ -210,7 +214,7 @@ local–Notion pairs. Public modes are `validate-metadata`, `local-to-notion`,
      [references/two-way-merge.md](references/two-way-merge.md) and produces an
      explicit base/local/remote proposal before any canonical write; applying
      that proposal requires the previously bound `body_author`.
-   Workers compute diffs/conflict packets/proposals only. The coordinator asks
+   Subagents compute diffs/conflict packets/proposals only. The main agent asks
    the user and records decisions. `Keep Both` requires explicit approval of
    the synthesized final hash. `Skip` leaves that pair unchanged and forbids
    TODO insertion or push.
@@ -261,13 +265,13 @@ local–Notion pairs. Public modes are `validate-metadata`, `local-to-notion`,
    evidence/corrected content, and report `partial`; never claim atomic success
    the transport did not prove.
 9. Return every final path created or materially rewritten as
-   `generated_files`. The PM applies the Essential size gate only to eligible
+   `generated_files`. The main agent applies the Essential size gate only to eligible
    work Markdown.
 
 <IMPORTANT>
 Only `sync-spec` may complete a specification across work copy, selected
-mirror, Notion, and durable derived docs. This skill does not promote docs,
-edit PM-owned state, or mark dependents for revalidation.
+mirror, external authority, and immutable receipts. This skill does not
+promote docs, edit main-agent-owned state, or mark dependents for revalidation.
 </IMPORTANT>
 
 ## Verification

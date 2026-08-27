@@ -23,28 +23,24 @@ handover-specific content; all timestamps are one real UTC ISO-8601 value.
 |---|---|---|
 | `SC-1` | `<criterion>` | `<expected evidence>` |
 
-## Specification notes
-
-- Source kind: `<source-kind>`
-- Page ID: `<page-id>`
-- Base ID/revision: `<base-id>/<revision>`
-
 ## Specification provenance
 
-- Specification: [Exact document](<exact-document-link>)
-- Specification: [Related exact document](<related-exact-document-link>)
+- Source kind: `<external|repo|inline|none|pending>`
+- Canonical specification: `<canonical external URL|portable repo identity|None|Pending user confirmation>`
+- Accepted revision/base: `<revision-or-base-id|None|Pending user confirmation>`
+- Local materialization: `[spec/](spec/)|None|Pending user confirmation`
+- Materialization receipt: `[receipt](artifacts/spec-sync/materializations/<base-id>.json)|None|Pending user confirmation`
+- Last verification status: `<verified|stale|missing|not-applicable|pending>`
+- Last verified at: `<ISO-8601|None|Pending user confirmation>`
 ```
 
-The charter owns goal, scope, success criteria, and specification provenance;
-`state.md` links to it and never restates them. `## Specification notes` is
-metadata-only: record the source kind, page id, and base-id/revision the
-charter was authored against there. The canonical specification stays the
-sole authority; `## Specification provenance` contains only exact document
-links or its explicit `None` marker.
-Record one line per exact specification document, or exactly
-`- Specification: None` when the stream has no specification. A newly
-bootstrapped stream may temporarily record exactly `- Specification: Pending
-user confirmation`, but it must resolve before active execution.
+The charter owns goal, scope, success criteria, and every specification anchor;
+`state.md` links to it and never restates them. For an external authority the
+canonical reference is its stable external URL. A local materialization is
+usable only when its receipt matches the accepted revision/base. Use `None`
+and `not-applicable` for a confirmed stream without a specification. A newly
+bootstrapped stream may use the `pending` values, but must resolve them before
+active execution.
 `Charter revision` bumps only on explicit user approval, journaled in
 `state/journal.md` and `state/revisions.md`.
 
@@ -166,9 +162,11 @@ streams it refreshed and preserves every other row byte-for-byte. Follow this te
 
 - `<overall requirement the end result must satisfy>`
 
-## Specifications
+## State systems
 
-- `None` or one or more project-level external Markdown entry links
+- Version-controlled documentation: configured
+- Local operational state: configured
+- External specification authority: `none|configured|pending`
 
 ## Awaiting you
 
@@ -191,15 +189,13 @@ Every cell's derivation, the `Next action` budget, the `Last progress` rule,
 and the sort order live in
 [overviews.md](../../../references/overviews.md); this template is only their
 shape. Handover fills `Goal` and `Requirements` from user intent when creating
-a brand-new overview, or leaves an explicit `-` for the PM to resolve — never
+a brand-new overview, or leaves an explicit `-` for the main agent to resolve — never
 inventing them from stream files — and preserves them byte-for-byte
 afterwards, exactly like unrefreshed rows.
-When creating or reconciling an absent or empty `Specifications` section, ask
-whether an external specification store exists. A none response writes
-exactly `- None`; a yes response writes only the supplied project entry links.
-If the user says yes but supplies no links, retain a pending marker and the
-user question rather than writing `- None`. Never derive this section from the
-Streams table or put an exact stream specification there.
+When creating or reconciling `State systems`, write exactly the three presence
+rows. The required documentation and local-state rows are `configured`; the
+external-authority row is `none`, `configured`, or `pending`. Never put a URL,
+revision, mirror, or local path there; stream anchors belong in `goal.md`.
 
 ## `state/working.md`
 
@@ -213,7 +209,7 @@ Streams table or put an exact stream specification there.
 
 ## Fast paths
 - State: [state.md](../state.md)
-- Specification: [<exact relative path>](<exact relative path>)
+- Specification anchors: [goal.md](../goal.md)
 - Source/test: [<relative path>](<relative path>)
 - Active decision/design/review/evidence: [<relative path>](<relative path>)
 ```
@@ -225,5 +221,5 @@ plan, history, completed inventory, copied spec, or review findings.
 
 `proposals.md`, `changes.md`, `decisions.md`, and `design.md` are created with
 their first child and then retained until work closes. Each contains purpose,
-one headline, canonical status counts, last PM reconciliation timestamp, and a
+one headline, canonical status counts, last main-agent reconciliation timestamp, and a
 table of child headline/status/relative path. Never copy child detail.

@@ -23,7 +23,7 @@ Semantic comparison disregards only the declared volatile Notion
 `last_edited_time` line; exact comparison covers the full bytes, stable
 identity, path, and revision. Keep B read-only. A new verified exact state
 creates a new base directory and receipt; it never rewrites an existing receipt
-or base. `state.md` may point to the current receipt, but the PM owns that
+or base. `state.md` may point to the current receipt, but the main agent owns that
 pointer.
 
 ## Materialize decision table
@@ -70,7 +70,7 @@ all exact bytes/revisions for the publication gate:
 | `L != B` and `R == B` | `local_only` | Eligible to stage for publication only when the final L content has the stage-specific approval/review. |
 | `L == B` and `R != B` | `remote_only` | Do not push. Return `status: success`, `next_action: revalidate` and reconcile the new remote contract before review/implementation continues. |
 | `L != B`, `R != B`, and `L == R` | `converged` | No push. Verify, then create a new immutable base/receipt. |
-| `L != B`, `R != B`, and `L != R` | `concurrent` | Produce an explicit three-way merge proposal from B/L/R. At specification stage the PM/user may resolve it and approve the final merged content. At implementation stage return `status: success`, `next_action: specification_reconciliation`; do not apply or push M there. |
+| `L != B`, `R != B`, and `L != R` | `concurrent` | Produce an explicit three-way merge proposal from B/L/R. At specification stage the main agent/user may resolve it and approve the final merged content. At implementation stage return `status: success`, `next_action: specification_reconciliation`; do not apply or push M there. |
 
 Never use timestamps alone to select a winner. A worker may compute diffs and
 merge proposals, but may not ask the user, select a winner, or apply

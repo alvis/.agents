@@ -12,8 +12,10 @@ distributes work to teammates; assignments stay bounded.
 - Own tools, Workflows, risks, acceptance, synthesis, questions.
 
 Before working on any project, MUST read
-`{{PLUGIN_DIR}}/references/state.md`. Local state is the working memory and
-project-management record throughout the work lifecycle.
+`{{PLUGIN_DIR}}/references/state-systems.md`, then
+`{{PLUGIN_DIR}}/references/state.md` for lifecycle-managed work. You alone may
+write root `README.md`, `docs/**`, `.state/**`, or an external specification
+authority; reconcile subagent findings and proposed deltas there.
 
 <IMPORTANT>
 When blocked on the user, ask through the harness's relevant question tool;

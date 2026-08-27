@@ -9,21 +9,17 @@ requirements, and Notion work routes to the `specification-expert` agent via
 
 Every workflow distinguishes three kinds of specification source:
 
-- **Reachable `repo:` local source** — authoritative at its exact path; the
-  promoted `docs/specs/` carrier is content-equivalent, never the authority.
-- **`local-approved:` / `inline-approved:`** — the durable promoted carrier
-  becomes the sole authority after content-equivalence verification.
+- **Reachable `repo:` local source** — authoritative at its exact path; an
+  approved work-local copy is content-equivalent, never a second authority.
+- **`local-approved:` / `inline-approved:`** — the approved work-local copy
+  becomes the active-work authority after content-equivalence verification.
 - **Notion-backed** — the canonical Notion spec (via its `.mdc` mirror) is
-  authoritative; `docs/specs/` is a reviewed derivation.
+  authoritative; its revision-bound readable copy and synchronization evidence
+  stay under the active work's `.state/`.
 
-Approval always binds to exact content confirmed by direct comparison, and
-`docs/specs/<capability>/provenance.json` records source kind, content
-hashes, and outputs — so a resumed spec is verified, not assumed.
-`docs/specs/<capability>/README.md` is the reachable approved contract and
-reader orientation. `reference.md` is optional and exists only for an
-intended consumer surface.
+Approval always binds to exact content confirmed by direct comparison. For local or inline authority, the active work's `spec/` and `spec/provenance.json` record the approved contract, source kind, content hashes, and outputs. `spec/README.md` is the readable work-local contract and `reference.md` is optional for an intended consumer surface. For Notion authority, `goal.md` owns the canonical URL and accepted base while `spec/` plus `artifacts/spec-sync/` provide the verified work-local copy and receipt. Version-controlled `docs/**` remains durable project guidance, never a specification output.
 
-Specification owns the capability carriers it derives:
+Specification owns the work-local specification assets it derives:
 `skills/spec-code/assets/capability-readme.template.md`,
 `skills/spec-code/assets/reference.template.md`, and
 `skills/spec-code/assets/provenance.template.json`.
@@ -32,7 +28,7 @@ Specification owns the capability carriers it derives:
 
 | Skill | Use when |
 | --- | --- |
-| `specification:spec-code` | Authoring, updating, or retrospectively documenting a technical spec from a local, inline, or Notion source; owns promotion to `docs/specs/` with provenance. |
+| `specification:spec-code` | Authoring, updating, or retrospectively documenting a technical spec; writes approved local or inline content to the active work's `spec/` and keeps Notion-backed materialization under active work state. |
 | `specification:mdc` | Reading, editing, and authoring Notion-backed MDC bodies while preserving the grammar, refs, and transport-owned metadata. |
 | `specification:plan-code` | Turning an approved spec into an implementation-ready plan: stable task IDs, dependency DAG, acceptance mapping. Plan approval names the exact spec base-id. |
 | `specification:implement-code` | Executing an approved work item end to end: dispatches ready tasks to coding skills, enforces spec freshness before each batch, reconciles worker evidence (with `capability_id`), runs review and completion sync. |

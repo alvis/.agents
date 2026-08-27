@@ -16,7 +16,7 @@ fingerprint immediately before invocation.
 Require the conformance-bound `notion-search-json-v1` output: one JSON object
 whose candidates each contain canonical `ref`, `parent`, and `title` fields.
 Reject unknown/malformed output rather than guessing its schema. Search does
-not select a winner. The coordinator compares the explicit hint and optional
+not select a winner. The main agent compares the explicit hint and optional
 `database_id`, accepts one unambiguous identity, or asks the user. Fuzzy or
 partial title similarity alone never authorizes pairing.
 

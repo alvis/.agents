@@ -1,8 +1,6 @@
 # DOCUMENT Mode — Codebase-Extraction Workflow
 
-DOCUMENT mode derives specification content from an existing codebase. It
-updates the active work specification and ultimately the versioned capability
-docs; it implies no remote destination.
+DOCUMENT mode derives specification content from an existing codebase. It updates the active work specification and provenance; it implies no remote destination.
 
 ## When DOCUMENT Mode Activates
 
@@ -74,9 +72,7 @@ DOCUMENT mode does NOT research; it extracts.
 - Fill all template sections with discovered information.
 - Note where the implementation differs from best practices (if relevant).
 - Apply transport and derivation metadata from `references/frontmatter.md`.
-- For a local or inline destination, author the work-local specification and
-  derive reviewed versioned capability docs directly. Do not search a Notion
-  database, create a remote page, author MDC, or claim a 1:1 remote mapping.
+- For a local or inline destination, author and review the work-local specification directly. Do not search a Notion database, create a remote page, author MDC, or claim a 1:1 remote mapping.
 - Only for an explicitly selected Notion destination, require the caller's
   exact `--body-author=<plugin:skill>`; select `specification:mdc` for MDC,
   author through that installed capability, and follow the transport flow
@@ -108,7 +104,7 @@ project convention, or the absence of a local source.
 # Extracts package name from package.json (e.g., "express-api").
 # Analyzes structure, extracts tech stack, documents architecture from code.
 # Identifies components, extracts API endpoints from route files.
-# Generates work-local evidence and reviewed versioned capability docs.
+# Generates work-local evidence and a reviewed specification.
 # No Notion database search, page creation, MDC, or remote sync occurs.
 ```
 
@@ -128,6 +124,6 @@ project convention, or the absence of a local source.
 # Partial-codebase DOCUMENT.
 # Analyzes auth-related files only.
 # Documents auth component architecture and API endpoints.
-# Produces a focused local capability specification and durable derivation.
+# Produces a focused local capability specification and work-local provenance.
 # Does not search or mutate a remote database.
 ```

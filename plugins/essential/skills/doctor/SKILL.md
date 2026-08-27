@@ -22,12 +22,12 @@ reading them — never by a version token, and never by guessing from memory.
   itself (`essential:takeover` owns resumption) and do not touch another source
   tree's `works/`.
 - Diagnosis never mutates anything. Repairs and migrations happen only after
-  explicit user approval, per stream, under that stream's coordinator lease.
+  explicit user approval, per stream, under that stream's main-agent lease.
 - Never rewrite a state file merely because the convention moved on — older
   formats are valid history and migrate lazily. Migration here is an explicit
-  user-approved coordinator rewrite: the only sanctioned
+  user-approved main-agent rewrite: the only sanctioned
   *structure-changing* rewrite of work memory, as opposed to the content
-  updates other coordinator skills make under the normal write protocol.
+  updates other main-agent workflows make under the normal write protocol.
 - Never falsify history: journal lines, tombstones, completed marks, and
   superseded decisions are preserved; migration reshapes structure, not
   truth. Unrecognized files are reported and preserved, never deleted,
@@ -118,7 +118,7 @@ locate the active workspace and `.state/`; on `requires_ignore` or
    `lease.json` via `state-lease` — a live foreign lease stops that
    stream with a report; an expired lease is claimed with the explicit
    `takeover` verb and journaled. Then apply the approved plan as ordinary
-   coordinator rewrites: journal the migration first, preserve all history
+   main-agent rewrites: journal the migration first, preserve all history
    (append, restructure, and relink — never rewrite recorded events), and
    follow the contract's write protocol. For an approved ADR repair, preserve
    the historical body, move a superseded ADR under
@@ -141,7 +141,7 @@ none rewrites what a record already claims about the past.
 | `check` | Offer |
 |---|---|
 | `overview-monolith` | Move environment narrative into `.state/environment.md` and symptom→cause→do-this-instead lines into `.state/traps.md`, creating either when missing. `Goal` and `Requirements` are authored, never derived: carry them byte-for-byte. Drop a preamble paragraph only where the current table contradicts it, and say which. |
-| `overview-specifications` | Ask whether an external specification store exists when `## Specifications` is missing or empty. Write exactly `- None` for a none answer, or supplied project-level entry links for yes; keep yes-without-links pending and remove exact stream links from this section. |
+| `overview-state-systems` | Rewrite `## State systems` as exactly three presence rows: version-controlled documentation and local operational state are `configured`; external specification authority is `none`, `configured`, or `pending`. Keep every URL and revision anchor in the owning stream's `goal.md`. |
 | `overview-legacy-specification` | Before removing a legacy `Spec` or mixed `Links` column, verify each value against its stream charter, preserve exact provenance there, and atomically rewrite the global table with documentation-only `Documentations`. |
 | `lifecycle-vocabulary` | Rewrite the field as phase plus a nullable `Blocked on:` line — `initialized`→`planned`, `active`→`working`, `blocked`→`Blocked on: <who or what>` at the phase the stream actually sits in, and `retiring`→`completed` with no retention blocker because archival readiness is derived. Never an unnamed blocker: name it, or write `unknown`. |
 | `motion-vocabulary` | Rewrite the retired `- Motion:` line — `running`→drop the line (nothing is blocking the stream), `idle <N>d`→`Blocked on: unknown` (no reason was ever recorded, and inventing one would be false), `waiting: X`→`Blocked on: X`, bare `waiting:`→`Blocked on: unknown`, anything else by hand as the named blocker or `unknown`. Duration is never typed: it derives from `Last progress`. |
@@ -155,7 +155,7 @@ none rewrites what a record already claims about the past.
 | `state-metadata` | Split `Phase` and any `Blocked on:` onto their own lines, or add `Phase`. The reader is anchored one key per line, so a packed `- Phase: \`x\` · Blocked on: \`y\`` parses as neither — and `retention`, `merge-evidence`, `blocked-on` and `outlives-me` then skip the stream in silence and report a clean zero for it. `Blocked on:` is nullable: absent means not blocked, and is never added to satisfy a shape. |
 | `work-id-naming` | **Report only.** A work ID is an identity and is never renamed or reused; the fix is forward-only, on the next stream. |
 | `charter-provenance` | Add `Charter: approved \| reconstructed \| absent` to `goal.md`, recording what is true. Mark `approved` only where the user approved it; reconstruct from recorded history otherwise and leave it `reconstructed` until they do. |
-| `specification-provenance` | Add exact `- Specification: [Document](...)` lines or exactly `- Specification: None` to the stream charter. Resolve bootstrap `Pending user confirmation` before the stream enters `working`; never infer a link from the global overview. |
+| `specification-provenance` | Write the canonical seven-field `goal.md` section: source kind, canonical specification, accepted revision/base, optional local materialization, matching receipt, last verification status, and last verified time. Resolve `pending` before `working`; never infer anchors from the global overview. |
 | `merge-evidence` | Preserve this check ID. For coding work, record merged pull request(s) or the observation on the default branch. For non-coding work, record explicit acceptance and a promotion receipt listing every promoted durable path or evidenced `not required`. Without the applicable landing evidence, return the stream to `reviewing`; an author's assertion alone is never evidence. |
 | `outlives-me` | Give every item an owner: promote it, open a successor stream, or file it in `.state/backlog.md` as id, one clause, source stream, owner or `unowned`. Filing is a rehoming that survives the row drop, not a deletion. |
 

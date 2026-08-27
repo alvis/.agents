@@ -23,12 +23,12 @@ contract; `specification:implement-code` and Coding skills execute it.
   `state/plan.md` is non-authoritative implementation
   detail keyed by existing task IDs. Proposals, changes, decisions,
   and design reasoning use the corresponding work-local child folders.
-- `goal.md` is the PM-owned charter (goal, scope, numbered `SC-n` success
+- `goal.md` is the main-agent-owned charter (goal, scope, numbered `SC-n` success
   criteria, specification provenance). Planning consumes it and proposes
   charter content as reconciliation payload; it never edits the file, and for
   a Notion-backed contract the canonical specification remains the sole
   authority over the charter.
-- `state/working.md` is a temporary current-focus summary, not the plan. Only the PM
+- `state/working.md` is a temporary current-focus summary, not the plan. Only the main agent
   writes it and reconciles the four overview indexes.
 - Do not implement source code, mutate history, or change authoritative MDC.
 
@@ -50,26 +50,10 @@ contract; `specification:implement-code` and Coding skills execute it.
    using its returned candidates. A delegated run receives the explicit
    id/root. Read only the exact state, receipt, and specification pointers
    required for this plan. Load the durable provenance recorded by `spec-code`.
-   For a reachable `repo:` local
-   source, that source remains authoritative even when the caller names the
-   derived carrier: compare source and carrier content directly against
-   provenance, and require both to match the approved specification content. Use
-   the content-derived Git blob oid (computed from the exact bytes even before
-   commit), not an unrelated commit oid or index state, as optional revision
-   evidence. Missing/moved source, source drift, stale provenance, or carrier
-   drift returns `ready_for_specification` and routes through `spec-code`; never
-   plan from whichever copy happened to be passed. For `local-approved:` or
-   `inline-approved:` provenance, the content-equivalent durable carrier is the
-   sole reachable authority and the original content is historical evidence, so
-   compare the carrier without requiring the ignored origin. Notion authority
-   remains its selected materialized/verified source receipt. Require a
-   specification approval of the resulting specification content. A missing
-   approval returns `ready_for_spec_approval`; content that differs from the
-   approved specification returns `ready_for_specification`, without planning
-   from stale intent.
+   For a reachable `repo:` local source, that source remains authoritative even when the caller names the work-local copy: compare source and `spec/` content directly against provenance, and require both to match the approved specification content. Use the content-derived Git blob oid (computed from the exact bytes even before commit), not an unrelated commit oid or index state, as optional revision evidence. Missing/moved source, source drift, stale provenance, or work-local drift returns `ready_for_specification` and routes through `spec-code`; never plan from whichever copy happened to be passed. For `local-approved:` or `inline-approved:` provenance, the content-equivalent work-local copy is the active-work authority and the original content is historical evidence, so compare the copy without requiring the ignored origin. Notion authority remains its selected materialized/verified source receipt. Require a specification approval of the resulting specification content. A missing approval returns `ready_for_spec_approval`; content that differs from the approved specification returns `ready_for_specification`, without planning from stale intent.
 2. Treat any legacy root design/draft/plan/proposed/change files as read-only
    migration inputs. Do not overwrite or delete them. Report ambiguous mapping
-   for PM disposition.
+   for main-agent disposition.
 3. Build the decision surface before implementation detail: data/migrations,
    public interfaces, user-visible flows, dependencies, security/privacy,
    integration boundaries, and acceptance criteria. Classify each as resolved,
@@ -90,7 +74,7 @@ contract; `specification:implement-code` and Coding skills execute it.
      interfaces, implementation notes, test procedure, repository gates,
      assumptions, and pivot signals keyed by those proposed IDs. It must not
      duplicate or override IDs, dependencies, requiredness, targets, or
-     acceptance mappings, and becomes usable only after PM root reconciliation.
+     acceptance mappings, and becomes usable only after main-agent root reconciliation.
    Ordinary work children always use an unnumbered semantic slug. Reserve
    `<nn>-<topic-slug>.md` for split output only; durable ADRs alone use
    `docs/architecture/decisions/<nnnn>-<decision-slug>.md`.
@@ -124,14 +108,14 @@ contract; `specification:implement-code` and Coding skills execute it.
    is needed to prevent implementer choice; do not duplicate whole files.
    Include the shared direction's Context navigation in the root reconciliation
    payload, linking decisions and recent work rather than copying their detail.
-6. Re-run the Step 1 source/carrier authority check immediately before freezing
+6. Re-run the Step 1 source/work-local-specification authority check immediately before freezing
    the plan. Dispatch one read-only reviewer with the authoritative spec and its
    approved specification content, proposed root task registry,
    ID-keyed implementation detail, decisions, and repository standards. It verifies complete acceptance/test
    mapping, architecture consistency, schema/API fidelity, executable order,
    and absence of hidden decisions. Resolve findings and review once more.
    Review the proposed complete root task registry together with any
-   non-authoritative ID-keyed detail. Set `plan_source: state.md`. Ask the PM to
+   non-authoritative ID-keyed detail. Set `plan_source: state.md`. Ask the main agent to
    reconcile the complete registry and that exact pointer into root state.
    Read the reconciled root `state.md` (and any `state/*.md` children)
    directly; from the task table, determine which tasks are runnable, which
@@ -151,12 +135,12 @@ contract; `specification:implement-code` and Coding skills execute it.
    entry naming what changed, why, the approver, and the exact spec base-id
    approved against when one exists), any proposed charter content for
    `goal.md`, parent/leaf task rows, and the four overview rows/status deltas
-   to the PM. Do not directly
-   edit PM-owned `goal.md`, `state.md`, `state/working.md`,
+   to the main agent. Do not directly
+   edit main-agent-owned `goal.md`, `state.md`, `state/working.md`,
    `state/journal.md`, `state/revisions.md`, `proposals.md`, `changes.md`,
    `decisions.md`, or `design.md`.
 8. Return explicit final paths generated or materially rewritten as
-`generated_files`. Do not run file sizing; after every writer finishes, the PM
+`generated_files`. Do not run file sizing; after every writer finishes, the main agent
 checks only eligible work Markdown inside the target `.state/`.
 
 ## Verification
@@ -165,21 +149,20 @@ checks only eligible work Markdown inside the target `.state/`.
   verification action.
 - Every task ID appears once, has dependency-safe edges, and introduces no
   unresolved material decision.
-- Temporary detail is work-local, legacy root files are untouched, and PM-owned
+- Temporary detail is work-local, legacy root files are untouched, and main-agent-owned
   indexes have explicit reconciliation data.
 - The read-only quality gate passed and `generated_files` is complete.
 - Specification approval binds to the exact approved specification content;
   plan approval binds to the exact approved task definitions. Neither survives its
   corresponding definition change, but task status/evidence changes do not
   invalidate plan approval. Reachable `repo:` source drift cannot hide behind
-  an unchanged derived carrier.
+  an unchanged work-local copy.
 
 ## Completion
 
-Report work id, authoritative source/carrier/receipt content references and the
-approved specification content, authority kind (`repo` source or promoted carrier), decisions and
+Report work id, authoritative source/specification/receipt content references and the approved specification content, authority kind (`repo` source or work-local specification), decisions and
 proposals created, `plan_source`, plan approval, parent and
 executable task counts, overall and per-parent dependency graphs,
-quality-gate result, legacy migration issues, PM reconciliation payload, and
+quality-gate result, legacy migration issues, main-agent reconciliation payload, and
 `generated_files`. A refusal names the missing spec, work state, repository, or
 blocking decision.

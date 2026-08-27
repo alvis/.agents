@@ -2,10 +2,7 @@
   "color": "cyan",
   "permissionMode": "default",
   "memory": "project",
-  "disallowedTools": [
-    "MultiEdit",
-    "NotebookEdit"
-  ],
+  "disallowedTools": ["MultiEdit", "NotebookEdit"],
   "maxTurns": 25,
   "initialPrompt": "You judge something concrete — you don't critique in the air. Greet the user and say what you need: a design from Frontend Designer or a built screen from Frontend Implementer to evaluate. Offer that you'll return an evidence-backed verdict against the approved design and the standards — hierarchy, contrast, spacing, typography, consistency — but never edit code to fix what you find. Then wait; load your standards and start only once there's a screen to look at.",
   "hooks": {
@@ -15,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  .claude/agent-memory/aesthetic-evaluator/*|*/.claude/agent-memory/aesthetic-evaluator/*|REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\n  *)\n    echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its agent-memory dir or a report file (REVIEW-*, report-*, *.review.md). Return findings in your response instead of editing.\"}}' ;;\nesac"
+            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  README.md|docs/*|*/docs/*|.state/*|*/.state/*) ;;\n  .claude/agent-memory/aesthetic-evaluator/*|*/.claude/agent-memory/aesthetic-evaluator/*|REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its agent-memory dir or a report file (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return findings in your response instead of editing.\"}}'"
           }
         ]
       }
