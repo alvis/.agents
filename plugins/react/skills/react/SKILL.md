@@ -69,7 +69,38 @@ theming rules were not evaluated.
      standards.
    - Visual design or runtime diagnosis: recommend an optional web skill when
      available; otherwise state the recommendation without invoking it.
-4. When a scan or review flags a violation code, open the matching rule file
+4. After any task builds or changes a component, route rendered verification
+   before reporting completion:
+   - Use the project's Storybook workflow when Storybook is available. If it
+     is unavailable, use another repeatable rendered surface or isolated
+     harness; recommend an available rendered-interface evaluator without
+     making this router depend on another plugin. Keep component fixes with
+     the implementation owner.
+   - Write a component/state matrix from the public behavior and accessibility
+     contract. Each row names the component, action or state, expected
+     observable result, surface, viewport/theme (or `N/A` with a reason), and
+     evidence path. Include applicable actions and states such as click or tap,
+     hover, focus-visible, keyboard navigation, input or selection, disabled,
+     loading, error, responsive, and theme behavior.
+     A row is required when the task, public API, or accessibility contract
+     exposes its action/state; mark unexposed actions/states and irrelevant
+     viewport/theme combinations `N/A` with a reason. Optional addon
+     diagnostics are not required unless the task acceptance criteria require
+     them.
+   - Execute every row on the selected story, route, or harness. A missing
+     route/tool, failed required interaction, or unavailable required screenshot
+     is `blocked`. A web-owner `partial` result is acceptable only when every
+     required row and screenshot passes and only optional coverage is absent;
+     record that limitation. Otherwise `partial` and `blocked` are incomplete:
+     report the next action and do not report the component build complete.
+   - Capture and inspect one screenshot for each changed component and each
+     applicable visual state, including states exercised by the matrix. Record
+     the matrix, executed interactions, expected/observed results, screenshot
+     paths, selected surface, exact revision, and `success`/`partial`/`blocked`
+     result in the implementation or review report. Preserve web-owner raw
+     artifacts at their canonical paths and link to the selected web owner's
+     canonical report/artifact paths instead of copying them.
+5. When a scan or review flags a violation code, open the matching rule file
    under the standard's `rules/` directory for the precise definition and
    remediation, apply or route the fix, and re-run the relevant `scan.md`
    heuristic to confirm. Repeat until every flagged code is resolved or a
