@@ -9,6 +9,8 @@ This reference is consulted at the START of any non-trivial task, before code ed
 
 A commit is a unit of intent, not a unit of file system location. One feature that touches data, service, and UI layers is **ONE commit**, NOT three commits split by directory.
 
+Apply the authoritative `coding:standards/git/rules/GIT-PR-TYPE-02.md` when a plan changes public types, interfaces, schemas, signatures, exports, generated declarations, or prerequisite scaffolding. By default, they form one domain-coherent commit with the first implementation that fulfills or consumes them; review size can demand stronger evidence but cannot create a contract-first commit or stack entry. The rule's exceptions remain available for documentation-only corrections, declarations that are themselves complete type-level implementations even inside mixed runtime packages, and standalone initialization whose requested deliverable is a runnable or buildable baseline. Migrations and consumer logic remain separate under `GIT-PR-TYPE-03`; coupled generated output stays with its implementing feature under `GIT-PR-TYPE-05`. Keep focused runtime tests and compiler-semantic tests permitted by `TST-CORE-10` in the implementing change.
+
 ### Good (domain-coherent)
 
 ```
@@ -26,7 +28,7 @@ feat(service): add upload endpoint  # broken on its own — UI doesn't call it y
 feat(web): add avatar picker        # broken on its own — calls service that doesn't exist (forward ref!)
 ```
 
-The "bad" form fails the self-containment rule in [SKILL.md](../SKILL.md) hard rules: each change must compile + lint + test in isolation.
+The "bad" form fails the self-containment rule in [SKILL.md](../SKILL.md) hard rules: each change must compile + lint + run applicable tests in isolation. Runtime tests apply to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. A declaration-only change with neither test kind still runs its configured typecheck or equivalent diagnostics and affected-consumer builds; it must not receive a static-shape test.
 
 ## Layering check: no forward references
 
@@ -37,6 +39,7 @@ Forward references typically appear when:
 - UI commits land before the service/data they call
 - A `package.json` `dependencies` bump lands in a different commit than the code that uses the new API
 - A `tsconfig` `paths` mapping lands later than imports that resolve through it
+- A public type, schema, export, or scaffold lands before the first behavior that makes it useful
 
 ## Shared-file evolution
 
@@ -53,15 +56,15 @@ Never separate `package.json` from the code that needs the new dep — that's a 
 Before coding, answer:
 
 1. **Is this one logical feature or several?**
-   - One feature, one PR: default path → end with single commit on `@`, no `--create-pr` flag needed beyond the basic save.
+   - One feature, one PR: default path, including its public shape and first implementation → end with single commit on `@`, no `--create-pr` flag needed beyond the basic save.
    - Several independent features: stacked PRs → plan the bookmark chain now, use `--create-pr` later.
 2. **Can each piece be reviewed and merged independently?** If not, it's one PR.
 3. **Does each piece deliver standalone value?** If not, it's one PR.
 
 If "many bookmarks":
 
-- Sketch the chain order: `feat-a/01-data` → `feat-a/02-service` → `feat-a/03-ui` (each layer compiles standalone)
-- Confirm the order respects layering (lower layers first)
+- Sketch the chain order: `feat-x/01-reset` → `feat-x/02-avatar` (each bookmark is an independently shippable feature)
+- Confirm the order respects any real dependency between those independent features
 - Each saved change will be handed to [`coding:pr create`](../../pr/references/create-update.md), which owns bookmark and draft-PR publication.
 
 ## Concrete examples
@@ -94,14 +97,13 @@ Two commits. Each is independent. `/coding:commit --create-pr` preserves the
 compatibility call and delegates the saved stack to
 [`coding:pr create`](../../pr/references/create-update.md).
 
-### Example C: refactor that enables a feature (TWO commits, layered)
+### Example C: refactor first consumed by a feature (ONE commit)
 
 ```
-01 refactor(auth): extract token validation into shared util   (pure refactor, zero behaviour change)
-02 feat(auth): add password reset flow                          (uses the new util)
+01 feat(auth): extract token validation and add password reset flow
 ```
 
-The refactor commit must compile + pass tests with no behaviour change. Verify the layering: at commit 01, no caller of the new util exists yet — that's fine as long as it's exported and unit-tested.
+The utility ships with the first behavior that consumes it; exporting or testing an otherwise unused helper does not make a dormant prerequisite independently shippable. A separate pure-refactor commit is allowed only when existing behavior already consumes the extracted utility and remains complete after that commit.
 
 ## Output of planning
 

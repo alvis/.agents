@@ -1,4 +1,4 @@
-import { specFiles } from "../scanlib/predicates.ts";
+import { jsTsTestFiles } from "../scanlib/predicates.ts";
 import type { Rule } from "../scanlib/rule.ts";
 
 const property = /\b[\w$]+\s*:\s*undefined\b/g;
@@ -20,7 +20,7 @@ export const RULE: Rule = {
   id: "undefined-override",
   label: "Explicit `key: undefined` override in call argument (TST-DATA-04)",
   order: 210,
-  appliesTo: specFiles,
+  appliesTo: jsTsTestFiles,
   ruleRefs: ["TST-DATA-04"],
   scan: ({ path, lines, matches }) => {
     const text = lines.join("\n");

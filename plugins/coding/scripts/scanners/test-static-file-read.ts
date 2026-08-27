@@ -1,7 +1,7 @@
 import { extname } from "node:path";
 
-import { isTestFile, RUST_SUFFIXES } from "../scanlib/predicates.ts";
-import type { Rule } from "../scanlib/rule.ts";
+import { RUST_SUFFIXES, testFiles } from "../scanlib/predicates.ts";
+import type { ApplicabilityContext, Rule } from "../scanlib/rule.ts";
 
 const staticRead = /\b(?:readFile|readFileSync)\s*\(|\.read_text\s*\(/;
 const rustStaticRead = /\b(?:std::)?fs::(?:read|read_to_string)\s*\(/;
@@ -197,8 +197,11 @@ function rustTestCodeLines(path: string, lines: readonly string[]): string[] {
   return result;
 }
 
-function candidateFiles(path: string): boolean {
-  return RUST_SUFFIXES.has(extname(path).toLowerCase()) || isTestFile(path);
+function candidateFiles(path: string, context: ApplicabilityContext): boolean {
+  return (
+    RUST_SUFFIXES.has(extname(path).toLowerCase()) ||
+    testFiles(path, context)
+  );
 }
 
 /** Flags static file reads inside tests as review candidates only. */

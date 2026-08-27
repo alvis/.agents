@@ -18,10 +18,14 @@ outcomes and load the matching guide from `rules/`.
 
 ## Semantic Scans
 
-Inspect the implementation diff for mixed specification and implementation,
-migrations coupled to logic, mechanical changes hiding behavior, generated
-output that is neither isolated nor marked, and nontrivial behavior lacking a
-feature flag. Syntax alone cannot establish these findings.
+Inspect the implementation diff for public shape or feature prerequisite
+scaffolding stranded without its first implementation, migrations coupled to
+logic, mechanical changes hiding behavior, generated output that is unmarked
+or unrelated to the authored change, and nontrivial behavior lacking a feature
+flag. A declaration that is itself a complete type-level implementation and a
+standalone initialization whose requested result is the runnable or buildable
+baseline are complete rather than stranded. Syntax alone cannot establish
+these findings.
 
 Do not report commit messages, branch names, PR titles, draft state, labels,
 stack position, history mutation, or merge order as standard violations. They
@@ -36,7 +40,7 @@ are directions in [coding:commit](../../skills/commit/SKILL.md) and the
 - DO NOT omit required Risk or Test plan evidence outside green [`GIT-PR-SIZE-02`]
 - DO NOT omit a specific indivisibility rationale in red [`GIT-PR-SIZE-03`]
 - DO NOT publish a black draft without its required message evidence or approve it without exact-revision OWNER authorization [`GIT-PR-SIZE-04`]
-- DO NOT mix spec or required scaffolding with an over-green implementation [`GIT-PR-TYPE-02`]
+- DO NOT publish public shape or feature prerequisite scaffolding without the first implementation that fulfills or consumes it [`GIT-PR-TYPE-02`]
 - DO NOT mix migrations with logic or omit migration rollback evidence [`GIT-PR-TYPE-03`]
 - DO NOT mix mechanical refactors with behavior changes [`GIT-PR-TYPE-04`]
 - DO NOT leave generated files unmarked in a mixed PR [`GIT-PR-TYPE-05`]
@@ -51,7 +55,7 @@ are directions in [coding:commit](../../skills/commit/SKILL.md) and the
 | `GIT-PR-SIZE-02` | Missing non-green evidence | Yellow PR without Risk |
 | `GIT-PR-SIZE-03` | Missing red rationale | Generic or absent Why this size |
 | `GIT-PR-SIZE-04` | Missing black evidence or approval gate | Approval without live OWNER authorization |
-| `GIT-PR-TYPE-02` | Spec mixed with over-green implementation | Public types plus behavior |
+| `GIT-PR-TYPE-02` | Public shape stranded from first implementation | `ArchiveOrderInput` now; `archiveOrder()` later |
 | `GIT-PR-TYPE-03` | Migration mixed with logic or missing rollback | Schema and business rule together |
 | `GIT-PR-TYPE-04` | Mechanical and behavioral changes mixed | Rename plus new method |
 | `GIT-PR-TYPE-05` | Unmarked generated output | Generated client mixed without evidence |

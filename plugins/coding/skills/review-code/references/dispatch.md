@@ -12,11 +12,12 @@ Dispatch selected areas in one parallel batch, at most seven reviewers. Each rev
 
 The capsule is sufficient by default. Give `state.md` to alignment reviewers, or when resume/cross-slice evidence requires it; give `state/working.md` only when navigation is otherwise missing. Do not make every area reread both broad entrypoints.
 
-Before dispatch, run:
+Before dispatch, group discovered files by owning project, resolve every configured compiler-test discovery glob that applies to each group, then run the scanner once per group with that project's root and one repeated pattern argument per resolved compiler glob. Never combine files owned by different test roots in one invocation:
 
 ```bash
 bun run plugins/coding/scripts/scan_potential_violations.ts \
-  <discovered-files> --category all --before 5 --after 10
+  <files-owned-by-project> --category all --before 5 --after 10 \
+  --test-root <project-root> [--test-pattern <compiler-test-glob> ...]
 ```
 
 Surface a hard Bun runtime failure. Candidate output is not a finding until the assigned reviewer validates it.

@@ -37,7 +37,7 @@ findings in rendered PR messages and implementation diffs.
 ## Commit and branch directions
 
 Inspect the working tree, branch or bookmark graph, remote refs, and open PRs
-before mutation. Plan domain-coherent changes that compile, test, and remain
+before mutation. Plan domain-coherent changes that compile, pass applicable tests, and remain
 reviewable without forward references; preserve unrelated dirty paths.
 
 Use lowercase kebab-case branch segments. An ordinary branch is
@@ -75,7 +75,7 @@ to the caller that owns any subsequent `coding:pr update`.
   `--no-verify` never skips this direct-sync gate. Passing it does not make a
   direct bookmark sync PR publication.
 - NEVER rewrite merged-on-origin history without explicit consent. For a detected target, prompt through the graphical or structured user-input tool; default to the corrective-PR route in [workflow-correct-merged.md](references/workflow-correct-merged.md). `--allow-rewrite-merged` skips the prompt.
-- Every change MUST be self-contained: compile + lint + tests pass for each change in isolation. Shared files (package.json, tsconfig, lockfiles) evolve incrementally — no forward references.
+- Every change MUST be self-contained: compile/type diagnostics + lint + applicable tests and affected-consumer builds pass for each change in isolation. Runtime tests apply to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. A declaration-only change with neither test kind still runs its configured typecheck or equivalent diagnostics and affected-consumer builds; it must not receive a static-shape test. Shared files (package.json, tsconfig, lockfiles) evolve incrementally — no forward references.
 - `--paths-from` is a closed-set save, not a path suggestion. Never save,
   stage, reset, stash, or rewrite a non-selected dirty path, and never continue
   when exact isolation or the before/after preservation proof is unavailable.
@@ -98,7 +98,7 @@ to the caller that owns any subsequent `coding:pr update`.
 | `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard via `verify.sh`. See `references/workflow-reorder.md`. |
 | `--create-pr` | Compatibility entrypoint: finish the selected save/history route, then invoke `coding:pr create` with the resolved change or stack. |
 | `--branch-prefix <name>` | Forward the branch/bookmark prefix to `coding:pr create` when `--create-pr` is present. |
-| `--no-verify` | Skip this skill's ordinary pre-commit and post-commit lint/test/build checks. It does not waive or pre-authorize the exact-revision gate before a PR handoff or sanctioned direct push. |
+| `--no-verify` | Skip this skill's ordinary pre-commit and post-commit project-script checks, including lint, type diagnostics, consumer builds, tests, and builds. It does not waive or pre-authorize the exact-revision gate before a PR handoff or sanctioned direct push. |
 | `--dry-run` | Print the plan, don't mutate. |
 | `--allow-rewrite-merged` | Explicit consent to rewrite history already merged on origin (skips the graphical or structured user-input tool corrective-PR prompt). |
 
@@ -195,7 +195,7 @@ If the hook didn't fire, run manually:
 bash "${CODING_COMMIT_SKILL_DIR}/scripts/verify.sh"
 ```
 
-Then run the project's own lint, test, and build commands (skip if `--no-verify`) — `npm run lint`/`test`/`build` where `package.json` defines them, otherwise the equivalents its language standard mandates — and confirm the final chain is linear with each change self-contained.
+Then run the project's own applicable lint, typecheck/diagnostics, affected-consumer build, test, and build commands (skip if `--no-verify`) and confirm the final chain is linear with each change self-contained. Runtime tests apply only to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with neither test kind, run its configured typecheck or equivalent diagnostics and affected-consumer builds, then record runtime and compiler tests as `SKIP (not applicable)` rather than running or inventing a test. Use configured project commands where they exist and the equivalents its language standard mandates otherwise.
 
 The direct-sync publication gate in the two sanctioned push references is
 separate from these ordinary checks and remains mandatory with `--no-verify`.
@@ -206,8 +206,9 @@ Report the route taken (save, manifest-scoped save, split, edit, parallel,
 retrospective, reorder, create-pr compatibility handoff, partial-to-branch,
 empty, divergent, or correct-merged), changes touched (change IDs), any
 directly synchronized bookmark, the last jj op id as the rollback handle, and
-verification results — lint/test/build as PASS/SKIP/FAIL plus the integrity
-outcome. A manifest-scoped result also reports the exact manifest path/hash,
+verification results — lint/type diagnostics/affected-consumer build/applicable
+tests/build as PASS/SKIP/FAIL plus the integrity outcome. A manifest-scoped
+result also reports the exact manifest path/hash,
 selected paths, saved-tree hash evidence, preservation receipt, and whether all
 non-selected dirty bytes and index/status entries remained identical. When a
 plain-Git scoped save was recovered, report the immutable recovery receipt and

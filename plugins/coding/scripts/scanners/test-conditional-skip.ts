@@ -1,4 +1,4 @@
-import { specFiles } from "../scanlib/predicates.ts";
+import { jsTsTestFiles } from "../scanlib/predicates.ts";
 import { lineRule, withoutLineComment } from "./_line-rule.ts";
 
 /** Flags conditional test skips declared through runIf and skipIf. */
@@ -6,7 +6,7 @@ export const RULE = lineRule({
   id: "test-conditional-skip",
   label: "Conditional test skip (`runIf`/`skipIf`) (TST-CORE-11)",
   order: 110,
-  appliesTo: specFiles,
+  appliesTo: jsTsTestFiles,
   ruleRefs: ["TST-CORE-11"],
   pattern: /\b(?:describe|it|test)\s*\.\s*(?:runIf|skipIf)\b/,
   code: withoutLineComment,

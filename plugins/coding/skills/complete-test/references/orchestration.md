@@ -2,21 +2,24 @@
 
 Referenced from SKILL.md. You are the orchestrator: drive the workflow end-to-end through fire-and-forget subagent dispatch with structured task-tracking status, dispatching a maximum of **8 parallel subagents** at any time. After each sub-step, aggregate the returned reports before moving on. Every dispatch is a mission capsule naming the exact scope, expected result, standards to read (`testing/meta.md` + `testing/write.md`, `typescript/write.md`, `documentation/write.md`), active work root, and only the relevant contract/evidence paths. Children do not reread broad work journals unless the assignment is a resume or cross-slice alignment task; they never write main-agent-owned pointers/overviews or delegate further. Every writer returns explicit `generated_files` to the main agent.
 
-## Sub-step 1 — Initial coverage analysis (single subagent)
+## Sub-step 1 — Initial test analysis (single subagent)
 
-Discover existing test files with filesystem pattern search (`**/*.spec.{ts,tsx}`, `**/*.test.{ts,tsx}` — never `find` in bash). Dispatch one Coverage Analysis subagent to:
+Classify the selected targets before inventory. Resolve the configured type-test mechanism and command when compiler-semantic targets exist; resolve runtime-test and coverage mechanisms only when eligible runtime sources exist. Group targets by owning project, derive each project's applicable discovery patterns from its configuration and conventions, including compiler-test patterns such as tsd's `**/*.test-d.ts`, run the coding scanner separately for each group with its project root as `--test-root` plus every resolved compiler-test glob as a repeated `--test-pattern` argument, then discover the applicable test files with filesystem pattern search (never `find` in bash). Never combine targets owned by different test roots in one scanner invocation. Dispatch one Test Analysis subagent to:
 
-1. **Discover test configuration**: locate `vitest.config.ts` or equivalent, verify the coverage provider (v8), check excluded patterns.
-2. **Run existing tests** and note any failures.
-3. **Generate a coverage report** (`npm run coverage` / `vitest --coverage`) and extract line, branch, statement, and function coverage.
-4. **Identify uncovered code**: fully uncovered files, and for partially covered files the uncovered line ranges, branches, and functions.
-5. **Report baseline metrics**: overall and per-file percentages, `uncovered_files`, `partially_covered_files`, existing test count, failing tests.
+1. **Discover test configuration**: locate the configured type-test tool and command for compiler-semantic targets, and record every compiler-test path pattern before counting or batching tests. Only when eligible runtime sources exist, locate `vitest.config.ts` or equivalent, verify the runtime coverage provider, and record runtime exclusions.
+2. **Run existing applicable tests** and note any failures: focused compiler tests for compiler-semantic targets, and the runtime suite only when eligible runtime sources exist.
+3. **Generate runtime coverage when applicable**: only for eligible runtime sources, run `npm run coverage` / `vitest --coverage` or the configured equivalent and extract line, branch, statement, and function coverage. Record runtime coverage as not applicable for compiler-only scopes.
+4. **Identify uncovered runtime code when applicable**: for eligible runtime sources, list fully uncovered files and the uncovered line ranges, branches, and functions of partially covered files.
+5. **Classify non-runtime targets**: route compiler-observable behaviors permitted by `TST-CORE-10` to representative consumer cases outside runtime coverage. For each semantic target, inspect the discovered compiler-test files and map every existing oracle that already protects it; only an unmapped promise is eligible for a new case. Exclude declaration/signature-shape targets such as exact members, signatures, schema fields, export inventories, and barrels; record them for type diagnostics and affected-consumer builds. Keep executable runtime schema validators eligible and test accepted and rejected inputs through their supported parser entrypoints.
+6. **Report baseline metrics**: applicable overall and per-runtime-file percentages, `uncovered_files`, `partially_covered_files`, `compiler_semantic_targets`, `compiler_oracle_files`, the target-to-existing-oracle map, `uncovered_compiler_promises`, `static_shape_files`, existing applicable test count, and failing tests. Mark runtime coverage fields not applicable when no runtime sources are selected.
 
 Verify the baseline is present and accurate before planning batches from it.
 
 ## Sub-step 2 — Progressive test writing (parallel batches)
 
-Each subagent owns 2–5 source files (max 500 source lines per batch) and writes tests ONE at a time, verifying coverage after each and retaining a zero-gain test only when it provides distinct behavioral evidence.
+Each subagent owns 2–5 eligible runtime source files (max 500 source lines per batch) and writes tests ONE at a time, verifying coverage after each and retaining a zero-gain test only when it provides distinct behavioral evidence. No runtime batch owns a pure type, barrel, non-executable schema-shape-only, or export-inventory target. Runtime schema validators remain eligible runtime sources.
+
+Create separate focused type-test batches only for `uncovered_compiler_promises`: compiler-observable behaviors permitted by `TST-CORE-10` that the baseline did not map to an existing oracle. Cap each compiler batch at 10 target/resources so the dispatch stays within the repository resource ceiling; split larger sets, record every batch in task tracking, and re-batch and retry incomplete work. Give each batch its existing-oracle map so it reuses or extends the owning compiler-test file instead of duplicating a case. These batches use representative consumer acceptance or rejection cases and the repository-native type-test/typecheck command. They do not claim runtime coverage. Do not batch declaration/signature inventories or exact shape.
 
 **Batching algorithm**: start with the first uncovered file, add files until 5 files OR 500 lines is reached, create the batch, repeat until all files are assigned. Example:
 
@@ -28,18 +31,23 @@ Batches:      1: auth/service, auth/controller, users/service   (450 lines, 3 fi
               3: posts/controller                               (300 lines, 1 file)
 ```
 
-Record the batch-to-file map in structured task-tracking capability (one todo per batch) so no source file is skipped. Dispatch all batches in a single message, at most 8 concurrent. Each batch subagent runs this loop **for each source file**:
+Record separate runtime and compiler batch maps in structured task tracking (one todo per batch) so no target is skipped. Dispatch each kind in waves of at most 8 concurrent batches; aggregate every batch in one wave before scheduling the next. A compiler batch subagent adds one consumer-like case at a time, runs the configured type-test/typecheck command after each case, and keeps only distinct compiler-semantic evidence. Authoring may run in parallel where safe outside a sensitivity critical section; from each temporary runtime or compiler mutation through every observing test/type command, restoration, and green rerun, quiesce all other writes in the same project or run the proof in an isolated workspace. When an already-correct compiler behavior gains an initially passing oracle, the subagent follows `TST-CORE-02`: make the case fail through a temporary implementation mutation or equivalent controlled sensitivity proof, restore the implementation, rerun green, and report the proof/restoration with target-to-oracle coverage. Compiler batches never invoke Vitest or runtime coverage. Each runtime batch subagent runs this loop **for each source file**:
 
 1. **Initial coverage check**: `vitest --coverage <spec path>`; note current coverage and the first uncovered line/branch.
-2. **Progressive writing loop** (repeat until statements, branches, functions, and lines are each 100%): a. Write ONE test targeting a specific uncovered line/branch (AAA pattern, proper types, per standards). b. Re-run the focused coverage command and parse the new numbers. c. Decide: coverage increased → KEEP; coverage unchanged → KEEP only when the test provides distinct behavioral evidence, otherwise DELETE it and write a different one. d. All four metrics at 100% → next file in the batch; otherwise repeat from (a).
+2. **Progressive writing loop** (repeat until statements, branches, functions, and lines are each 100%):
+   a. Write ONE test that reaches a specific uncovered runtime line/branch through a supported public entrypoint (AAA pattern, proper types, per standards).
+   b. Re-run the focused coverage command and parse the new numbers.
+   c. For already-correct behavior, prove the initially passing case detects the named regression through a temporary implementation mutation or equivalent controlled proof, restore the implementation, and rerun the focused case green (`TST-CORE-02`).
+   d. Decide: coverage increased → KEEP only after applicable `TST-CORE-02` proof; coverage unchanged → KEEP only when the test provides distinct behavioral evidence and satisfies `TST-CORE-02`, otherwise DELETE it and write a different one.
+   e. All four metrics at 100% → next file in the batch; otherwise repeat from (a).
 3. **Batch completion verification**: run coverage for all the batch's test files together; verify every source file is at 100% statements, branches, functions, and lines; count tests created vs deleted.
 4. **Standards compliance**: lint the created test files, fix type errors, verify documentation.
 
-Each batch reports: per-file coverage (lines/branches/statements/functions), `tests_created` / `tests_kept` / `tests_deleted`, standards compliance, and whether all four metrics reached 100% in every file. **Retry rule**: if any batch reports partial or failed, re-batch the incomplete files and dispatch again (still capped at 8 concurrent).
+Each runtime batch reports: per-file coverage (lines/branches/statements/functions), `tests_created` / `tests_kept` / `tests_deleted`, applicable `sensitivity_proof` and `implementation_restored` evidence, standards compliance, and whether all four metrics reached 100% in every file. Compiler batches report the same sensitivity/restoration fields for every initially passing oracle. Every sensitivity record in this workflow, including redundancy and compliance proofs, names the exact revision or tree hash, mutated inputs, restored inputs, oracle, and observing command; any change to one of those bound inputs invalidates the record. **Retry rule**: if any runtime batch reports partial or failed, re-batch the incomplete files and dispatch again in waves of at most 8 concurrent batches; incomplete compiler targets follow the compiler batch report and wave rules above.
 
 ## Sub-step 3 — Remove redundant tests (plan, then parallel removal)
 
-**CRITICAL RULE — source-file-scoped coverage**: each test file mirrors exactly one source file (`src/auth/service.ts` → `spec/auth/service.spec.ts`), and coverage is verified per mirrored source file. A test is redundant ONLY IF it does not contribute to its mirrored source file's coverage. Tests that contribute to their mirrored file MUST be kept even when globally redundant, and tests that verify distinct behavioral aspects must be kept even when they cover the same lines. **Checked-in repository content is carved out of this gate**: existence, absence, content, inventory, layout, parity, and systematic-property assertions over checked-in artifacts are removed under `TST-CORE-10` regardless of coverage. Properties of freshly generated output remain behavioral evidence.
+**CRITICAL RULE — source-file-scoped runtime coverage**: each runtime test file mirrors one eligible runtime source file (`src/auth/service.ts` → `spec/auth/service.spec.ts`), and coverage is verified per mirrored source file. A test is redundant only if it contributes neither coverage nor distinct behavior. Declaration shape and checked-in repository content are carved out: exact type/interface members, signatures, exports, schema fields, barrel layout, existence, content, inventory, parity, and systematic-property assertions are removed under `TST-CORE-10` regardless of coverage. Focused compile-time cases permitted by that rule remain semantic evidence. Properties of freshly generated output remain behavioral evidence.
 
 **Phase A — plan**: dispatch one Plan subagent (`subagent_type="Plan"`) to read every test file and, per test, determine lines covered, branches exercised, and the unique behavior verified. Redundancy patterns to flag (always scoped to the mirrored source file):
 
@@ -47,7 +55,10 @@ Each batch reports: per-file coverage (lines/branches/statements/functions), `te
 - same lines AND same behavioral aspect as another test;
 - artificial scenarios contributing neither coverage nor behavioral documentation;
 - wrapper-function tests without unique coverage or insight;
-- assertions over checked-in existence, absence, bytes, literals, inventories, path layout, parity, or systematic properties — flag regardless of coverage contribution (`TST-CORE-10`).
+- assertions over checked-in existence, absence, bytes, literals, inventories,
+  path layout, parity, or systematic properties — flag regardless of coverage
+  contribution (`TST-CORE-10`).
+- assertions over exact type/interface members, signatures, export inventories, schema declaration fields, or barrel/re-export layout — flag regardless of coverage contribution (`TST-CORE-10`). Do not flag a representative consumer case permitted by that rule. Tests that execute a runtime schema parser with valid or invalid input remain behavior tests.
 
 The plan groups candidates by file, marks each `safe_to_remove` | `uncertain` | `keep`, and emits removal tasks (max 10 tests per task, least-risky first).
 
@@ -60,9 +71,11 @@ The plan groups candidates by file, marks each `safe_to_remove` | `uncertain` | 
 
 Aggregate removal reports, verify 100% is maintained per mirrored source file, and compute redundancy metrics (removed, kept-as-essential, redundancy %).
 
+For a compile-time candidate, prove redundancy while the candidate oracle remains present: remove it only when both the candidate and an identified retained oracle fail under the same temporary implementation mutation that represents the same named compiler-semantic regression, then restore the implementation and rerun green before deletion. From that mutation through every observing focused or project-wide type command, restoration, and green rerun, quiesce all other writes in the same project or run the proof in an isolated workspace; non-mutating removal batching outside the critical section may remain parallel. Unrelated retained-oracle sensitivity and a passing command after deleting the only oracle are not proof. Remove declaration/signature-shape inventories under `TST-CORE-10` regardless; keep unique compiler-semantic evidence permitted by that rule unless the paired proof succeeds.
+
 ## Sub-step 4 — Fix test issues & standards compliance
 
-List all test files with filesystem pattern search. ≤25 files → one subagent; >25 files → batches of 10, max 8 concurrent. Each subagent: identify standards violations and logic errors; fix type errors (no `any`), apply the AAA pattern, correct naming, add missing documentation; then verify with the project test, lint, and type-check commands and confirm coverage is unchanged. Retry any batch that leaves issues open.
+List all applicable test files with the resolved runtime and compiler-test patterns. ≤25 files → one subagent; >25 files → batches of 10, max 8 concurrent. Each subagent: identify standards violations and logic errors; fix type errors (no `any`), apply the AAA pattern where relevant, correct naming, add missing documentation; then verify with the applicable project test, lint, and type-check commands and, when runtime sources exist, confirm coverage is unchanged. After any material rewrite of an initially passing runtime or compiler oracle, renew its `TST-CORE-02` sensitivity proof while the rewritten oracle is present, restore the implementation, and rerun the focused case green before accepting the correction. From each temporary mutation through every observing focused or project-wide test/type command, restoration, and green rerun, quiesce all other writes in the same project or run the proof in an isolated workspace; non-mutating compliance batching outside the critical section may remain parallel. Retry any batch that leaves issues open.
 
 ## Sub-step 5 — Restructure fixtures & test doubles (plan, then execute)
 
@@ -82,15 +95,15 @@ Never leave old and new fixture systems in parallel. Report created/deleted file
 
 Run these mechanical gates once per state of the tree — in place, or through `test-runner` when the sweep's raw output would swamp this session; either way that run is authoritative for the files it measured, and no agent is dispatched to re-confirm a result whose inputs have not changed. They do not stand in for the independent final test review in step 8 of `SKILL.md`, which asks the different, behavioral question of what the suite fails to cover.
 
-1. **Coverage**: full coverage command; statements, branches, functions, and lines are each 100% in every selected source file.
-2. **Execution**: full test run passes; note flaky tests.
-3. **Standards**: lint clean, type-check clean.
-4. **Efficiency metrics**: count source files, test files, and total tests; record suite execution time; compute tests per source file and the coverage-per-test ratio. The final report requires these, and deletion and fixture restructuring make them unreconstructable from the baseline and per-batch deltas.
+1. **Coverage**: when runtime sources are selected, run the full coverage command; statements, branches, functions, and lines are each 100% in every selected runtime source file. Runtime coverage is not applicable to a compiler-only scope.
+2. **Execution**: applicable focused compile-time tests pass, and the full runtime suite passes when runtime sources are selected; note flaky tests.
+3. **Standards**: lint clean, type-check clean, and affected-consumer builds clean for changed public shape.
+4. **Efficiency metrics**: count source files, applicable test files, and total tests; record applicable suite execution time. When runtime sources are selected, compute tests per source file and the coverage-per-test ratio. The final report requires applicable metrics because deletion and fixture restructuring make them unreconstructable from the baseline and per-batch deltas.
 
-All green → hand off to the independent final test review. Every test-only correction that review justifies invalidates the sweep above, which measured the pre-correction files: rerun the affected gates and the full sweep after the last accepted edit, and let that result complete the workflow. Re-running gates over changed files is not re-confirmation — the earlier result is stale, not doubted. Any failure → return to the sub-step that owns the blocker; report with details only when a blocker is not fixable here.
+All green → hand off to the independent final test review. Every test-only correction that review justifies invalidates the sweep above, which measured the pre-correction files. For each added or materially changed runtime or compiler oracle whose accepted baseline is green, repeat its `TST-CORE-02` sensitivity proof while the corrected oracle is present, restore the implementation, and rerun the focused case. Then rerun the affected gates and the full sweep after the last accepted edit, and let that result complete the workflow. Re-running proof and gates over changed files is not re-confirmation — the earlier evidence is stale, not doubted. Any failure → return to the sub-step that owns the blocker; report with details only when a blocker is not fixable here.
 
 ## Final report shape
 
-Aggregate into one report covering: baseline coverage → batches executed, tests created/kept/deleted → redundancy candidates, removed, kept-essential → issues fixed → fixtures consolidated, unused files deleted → final verified coverage, all-passing status, efficiency metrics, and per-source statements/branches/functions/lines. If any metric remains below 100%, name its concrete blocker and report the run incomplete.
+Aggregate into one report covering: applicable baseline coverage → runtime and compile-time batches executed, tests created/kept/deleted, sensitivity proofs, and implementation restorations, including renewed proof for final-review corrections → redundancy candidates, removed, kept-essential → issues fixed → fixtures consolidated, unused files deleted → applicable final verified coverage, compiler-semantic cases, all-passing status, efficiency metrics, and per-runtime-source statements/branches/functions/lines. Mark runtime-only fields not applicable for compiler-only scopes. If any applicable gate remains failing, name its concrete blocker and report the run incomplete.
 
 Include the deduplicated `generated_files` from all subtasks. No child runs file sizing; after every artifact writer returns, the main agent checks only eligible work Markdown inside the target `.state/`.

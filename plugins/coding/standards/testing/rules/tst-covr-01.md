@@ -30,7 +30,7 @@ global: { lines: 100, statements: 100 }
   (`GEN-DESN-04`, `FUNC-ARCH-03`) and the threshold applies to what remains.
 </IMPORTANT>
 
-Exclude barrel files (`index.ts`) and pure type files (`types.ts`) by placing `/* v8 ignore file */` at the top of the file.
+Exclude barrel files (`index.ts`) and pure type files (`types.ts`) by placing `/* v8 ignore file */` at the top of the file. Do not add tests to manufacture coverage for them. Validate their public shape with type diagnostics and builds of affected consumers.
 
 For the one-test-at-a-time workflow, see `TST-COVR-03`.
 
@@ -54,6 +54,10 @@ For the one-test-at-a-time workflow, see `TST-COVR-03`.
 - If uncovered lines remain, prioritize tests for failure/fallback branches before adding variation tests.
 - Barrel files are ignore-marked with `/* v8 ignore file */`; do not write
   re-export tests to chase their coverage.
+- Pure type files are excluded from runtime coverage. A focused compile-time
+  test remains valid only for a compiler-observable behavior permitted by
+  `TST-CORE-10`; exact declaration shape stays with type diagnostics and
+  affected-consumer builds.
 
 ## Related
 

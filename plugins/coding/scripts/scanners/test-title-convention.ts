@@ -1,4 +1,4 @@
-import { specFiles } from "../scanlib/predicates.ts";
+import { jsTsTestFiles } from "../scanlib/predicates.ts";
 import type { Rule } from "../scanlib/rule.ts";
 
 const prefixes = new Set([
@@ -17,12 +17,12 @@ const prefixes = new Set([
 ]);
 const itTitle = /\bit\s*\(\s*(['"])(.*?)\1/g;
 const describeTitle = /\bdescribe\s*\(\s*(['"])(.*?)\1/g;
-/** Flags non-canonical it and describe titles in spec files. */
+/** Flags non-canonical it and describe titles in test files. */
 export const RULE: Rule = {
   id: "test-title-convention",
   label: "Non-canonical test title (`it`/`describe`) (TST-CORE-03)",
   order: 130,
-  appliesTo: specFiles,
+  appliesTo: jsTsTestFiles,
   ruleRefs: ["TST-CORE-03"],
   scan: ({ path, lines, matches }) => {
     for (const [index, line] of lines.entries()) {

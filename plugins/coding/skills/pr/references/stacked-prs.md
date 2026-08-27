@@ -34,14 +34,23 @@ exceeds the active green zone and its files form at least two domain-coherent
 slices that compile, test, and deliver reviewable value in bottom-to-top order
 without forward references.
 
-Do not suggest a split based on counts alone. Generated output, an atomic
-migration, or a mechanical refactor may be larger while remaining easier to
-review as one change. Every proposed slice must be independently valid:
-backward-compatible configuration, schema, contract, migration, or feature-flag
-prerequisites may land before their consumers, but dangling updates may not.
-Keep tests and lockfiles with the change that needs them. When splitting would
-break integrity or merely scatter one mechanical operation, keep one PR and
-apply its actual size zone.
+Do not suggest a split based on counts alone. Apply `GIT-PR-TYPE-02`
+directly: public shape and prerequisite scaffolding stay with the first
+implementation that fulfills or consumes them, even when the atomic feature is
+large, while declarations that are themselves complete type-level
+implementations, including inside mixed runtime packages, and standalone
+runnable or buildable initialization retain that rule's exceptions. Coupled
+generated output stays in that feature and is marked under `GIT-PR-TYPE-05`.
+Every proposed slice must be
+independently valid: non-migratory configuration prerequisites stay with the
+first behavior that consumes them, while database migrations, data backfills,
+and configuration-format upgrades remain governed by `GIT-PR-TYPE-03`. Add and
+consume a feature flag with the changed behavior under `GIT-PR-STACK-04` and
+`GIT-PR-TYPE-02`; it is not a prerequisite slice. Keep runtime-behavior tests,
+focused compiler-semantic tests permitted by `TST-CORE-10`, and
+lockfiles with the change that needs them. When splitting would break integrity
+or merely scatter one feature or mechanical operation, keep one PR and apply
+its actual size zone.
 
 Present the suggestion before publication:
 

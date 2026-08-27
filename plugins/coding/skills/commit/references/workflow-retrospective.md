@@ -118,7 +118,7 @@ After git rebase completes, jj will see the rewritten objects on next op; run `j
   that owns pushing and PR-base repair.
 
 - Integrity check ([SKILL.md](../SKILL.md) Verification) — the dual-checksum backup ensures the merged tree at `@` matches pre-state (since logically the same content lands, just redistributed across ancestors).
-- Project scripts: `npm run lint`, `npm run test`, `npm run build` for EACH affected change (check by `jj edit <change_id>` then build).
+- Project scripts for EACH affected change (check by `jj edit <change_id>`): run lint/build where defined, configured typecheck or equivalent type diagnostics for all changed code, affected-consumer builds for changed public shape, runtime tests only for runtime behavior, and focused compile-time tests only for allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with no runtime behavior or allowed compiler-semantic promise, record those two test gates as `SKIP (not applicable)` after type diagnostics and affected-consumer builds pass; do not run or invent a test.
 
 ## Error / edge cases
 

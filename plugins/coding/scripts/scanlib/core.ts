@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
+import { extname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { loadRules } from "./loader.ts";
 import {
-  isSpecFile,
+  isTestFile,
   PY_SUFFIXES,
   RUST_SUFFIXES,
   SOURCE_SUFFIXES,
@@ -42,9 +42,43 @@ interface ParsedArgs {
   readonly before: number;
   readonly after: number;
   readonly noTests: boolean;
+  readonly compilerTestPatterns: readonly string[];
+  readonly testRoot: string;
 }
 
 type ParseResult = ParsedArgs | { readonly error: string };
+
+const EXTGLOB_OPERATORS = "?*+@!";
+
+function containsExtglob(pattern: string): boolean {
+  let inCharacterClass = false;
+  for (let index = 0; index < pattern.length - 1; index += 1) {
+    const character = pattern[index];
+    if (character === "\\") {
+      index += 1;
+      continue;
+    }
+    if (character === "[") inCharacterClass = true;
+    else if (character === "]") inCharacterClass = false;
+    else if (
+      !inCharacterClass &&
+      EXTGLOB_OPERATORS.includes(character ?? "") &&
+      pattern[index + 1] === "("
+    )
+      return true;
+  }
+  return false;
+}
+
+function normalizeCompilerTestPattern(
+  pattern: string,
+  testRoot: string,
+): string {
+  const negated = pattern.startsWith("!");
+  const glob = negated ? pattern.slice(1) : pattern;
+  const absolute = isAbsolute(glob) ? glob : resolve(testRoot, glob);
+  return `${negated ? "!" : ""}${relative(testRoot, absolute)}`;
+}
 
 /**
  * Walks a file or directory tree and collects every scannable source path.
@@ -121,6 +155,8 @@ function parseArgs(argv: readonly string[]): ParseResult {
   let before = 5;
   let after = 10;
   let noTests = false;
+  const compilerTestPatterns: string[] = [];
+  let testRoot = process.cwd();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index] ?? "";
     if (argument === "--category") category = argv[++index] ?? "";
@@ -133,7 +169,36 @@ function parseArgs(argv: readonly string[]): ParseResult {
     else if (argument.startsWith("--after="))
       after = Number(argument.slice("--after=".length));
     else if (argument === "--no-tests") noTests = true;
-    else if (argument.startsWith("--"))
+    else if (argument === "--test-pattern") {
+      const pattern = argv[++index];
+      if (
+        pattern === undefined ||
+        pattern === "" ||
+        pattern === "!" ||
+        pattern.startsWith("--")
+      )
+        return { error: "--test-pattern requires a non-empty glob" };
+      if (containsExtglob(pattern))
+        return { error: "--test-pattern does not support extglob syntax" };
+      compilerTestPatterns.push(pattern);
+    } else if (argument.startsWith("--test-pattern=")) {
+      const pattern = argument.slice("--test-pattern=".length);
+      if (pattern === "" || pattern === "!")
+        return { error: "--test-pattern requires a non-empty glob" };
+      if (containsExtglob(pattern))
+        return { error: "--test-pattern does not support extglob syntax" };
+      compilerTestPatterns.push(pattern);
+    } else if (argument === "--test-root") {
+      const root = argv[++index];
+      if (root === undefined || root === "" || root.startsWith("--"))
+        return { error: "--test-root requires a non-empty path" };
+      testRoot = resolve(root);
+    } else if (argument.startsWith("--test-root=")) {
+      const root = argument.slice("--test-root=".length);
+      if (root === "")
+        return { error: "--test-root requires a non-empty path" };
+      testRoot = resolve(root);
+    } else if (argument.startsWith("--"))
       return { error: `unrecognized argument: ${argument}` };
     else paths.push(argument);
   }
@@ -147,6 +212,10 @@ function parseArgs(argv: readonly string[]): ParseResult {
     before,
     after,
     noTests,
+    compilerTestPatterns: compilerTestPatterns.map((pattern) =>
+      normalizeCompilerTestPattern(pattern, testRoot),
+    ),
+    testRoot,
   };
 }
 
@@ -193,11 +262,18 @@ export async function run(
       continue;
     }
     for (const path of iterFiles(root)) {
+      const testPath = relative(args.testRoot, path);
+      const applicability = {
+        compilerTestPatterns: args.compilerTestPatterns,
+        testPath,
+      };
       let lines: readonly string[] | undefined;
       for (const rule of selected) {
         if (
-          !appliesTo(rule, path) ||
-          (rule.honorNoTests && args.noTests && isSpecFile(path))
+          !appliesTo(rule, path, applicability) ||
+          (rule.honorNoTests &&
+            args.noTests &&
+            isTestFile(testPath, args.compilerTestPatterns))
         )
           continue;
         if (lines === undefined) {

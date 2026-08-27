@@ -5,7 +5,7 @@
 | Break a project into milestones, decide the approach, and delegate them | `tech-lead` |
 | Lead an ML/RL/AI research initiative and reconcile its evidence | `ai-research-lead` |
 | Bootstrap and scaffold a new project | `project-initializer` |
-| Author tests via TDD | `testing-evangelist` |
+| Author runtime behavior tests or focused compiler-observable tests permitted by `TST-CORE-10` via TDD | `testing-evangelist` |
 | Design a schema, data model, analytics system, or pipeline | `data-architect` |
 | Analyze data, build an ML/AI feature, or productionize a model | `ml-engineer` |
 | Implement a general library, data pipeline, CLI, or glue code | `generalist-engineer` |

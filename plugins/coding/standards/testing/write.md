@@ -6,13 +6,13 @@
 ## Key Principles
 
 - 100% statements, branches, functions, and lines with the minimum tests that preserve distinct behavioral evidence
-- TDD: write failing test -> implement -> refactor
-- Test descriptions: `it("should ...")`, symbol-scoped suites: `describe("fn:symbol")`, general suites: plain description
+- TDD: write failing test -> implement -> refactor; for already-correct behavior, prove an initially passing oracle's sensitivity through a temporary mutation or equivalent controlled proof, restore the implementation, and rerun green before retaining it
+- Test descriptions: `it("should ...")`, runtime-symbol or allowed-type-subject suites: `describe("fn:symbol")` / `describe("ty:symbol")`, general suites: plain description
 - All mocks typed with `satisfies Partial<typeof import("...")>` or `satisfies Partial<RealType>` — never `Record<string, unknown>` or inline structural types
 - Happy-path defaults inline: `vi.fn(() => value)`, never `.mockResolvedValue()`
 - No `beforeEach` for mock setup — only for non-Vitest mock history resets (`client.resetHistory()`) or registering `ctx.onTestFailed(...)` debug-dump hooks
 - Log-observable behavior: capture logger as typed `vi.fn<LogFn>()` and assert `log.mock.calls` structurally
-- Test behavior, not the checkout: checked-in artifacts may only feed an actual consumer or generator, and assertions may cover only runtime behavior or generated-result structure
+- Test observable runtime behavior; compiler-observable type tests are limited to the subjects permitted by `TST-CORE-10`; never mirror declaration or signature inventories or checked-in content
 - `const` for shared fixtures; file-level instances by default
 - Structural assertions (`toEqual`), not field-by-field
 - No silent skips: missing env/config must hard-fail at file load (`throw`), never `runIf`/`skipIf`/conditional-return
@@ -30,11 +30,11 @@
 | `gt:` | Class getters |
 | `st:` | Class setters |
 | `re:` | Regex |
-| `ty:` | Utility types or interfaces |
+| `ty:` | Symbol exercised by a compiler-observable type test permitted by `TST-CORE-10` |
 | `rc:` | React components |
 | `hk:` | React hooks |
 
-**Prefixes apply only to symbol-scoped `describe()` blocks** — i.e., when the suite tests a specific function, class, method, hook, etc. General-purpose `describe()` blocks that group by scenario, behavior category, or context must use plain natural-language titles without any prefix.
+**Prefixes apply only to subject-scoped `describe()` blocks** — a specific runtime symbol or a symbol exercised by compiler-observable type behavior permitted by `TST-CORE-10`. A `ty:` title contains only that symbol name; put inference, narrowing, assignability, or other scenarios in nested suites or test names. Use `ty:` only when the compiler behavior warrants a suite, not merely because a declaration exists. General-purpose `describe()` blocks that group by scenario, behavior category, or context use plain natural-language titles without a prefix.
 
 ## Test Structure Template
 
@@ -57,15 +57,15 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 ### Testing Discipline (TST-CORE)
 
 - **TST-CORE-01**: Test code inherits full TypeScript constraints: no `any`, proper import separation, safe narrowing, typed contracts.
-- **TST-CORE-02**: Write failing tests before implementation, then implement, then refactor.
-- **TST-CORE-03**: Every `it(...)` starts with `should`. `describe(...)` titles scoped to a symbol use approved prefixes; general-purpose `describe(...)` titles use plain descriptions without prefixes.
+- **TST-CORE-02**: Write failing tests before implementation, then implement, then refactor. For already-correct behavior that lacks an oracle, retain an initially passing regression case only after recorded sensitivity proof, implementation restoration, and a green rerun.
+- **TST-CORE-03**: Every `it(...)` starts with `should`. `describe(...)` titles scoped to a runtime symbol or a compiler-observable type behavior permitted by `TST-CORE-10` use approved prefixes; general-purpose `describe(...)` titles use plain descriptions without prefixes.
 - **TST-CORE-04**: A test is valid only if it adds a new behavior path, branch, or meaningful edge case.
 - **TST-CORE-05**: Do not add tests that only vary arbitrary numbers/strings without changing behavior.
 - **TST-CORE-06**: Do not test only that dependencies were called. Assert behavior and outcome.
 - **TST-CORE-07**: Do not spy on internals when external behavior can be tested.
 - **TST-CORE-08**: Avoid `await import(...)` in tests. Keep imports static and predictable.
 - **TST-CORE-09**: For log-observable behavior, capture the logger as `vi.fn<LogFn>()` or `{ info: vi.fn<Logger['info']>() } satisfies Partial<Logger>` and assert the full call record with `expect(log.mock.calls).toEqual([...])` — the array pins how many lines were logged and each line's content (one call `[[...]]` or many). Do not use `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs, count-only assertions, or `log.mock.calls[N]` indexing. Prefer the SUT's exported `Log` type; a local alias is acceptable only when no real type is exported.
-- **TST-CORE-10**: Never assert checked-in existence, absence, bytes, hashes, text, literals, inventories, path layout, or parity, including systematic properties directly over a committed deliverable. A checked-in artifact may only be input to an executed consumer or generator; assert observable behavior or the structure of output generated in memory or a temporary workspace.
+- **TST-CORE-10**: Never pin an exact declaration inventory/layout, including generic parameters, defaults, or signatures, or checked-in content. This rule is the sole whitelist for compiler-observable type-test subjects; a focused representative compiler case may observe a generic parameter's default only when the consumer omits that type argument, while ordinary declarations need no test merely because they exist, so use type diagnostics and affected-consumer builds for other declaration changes.
 - **TST-CORE-11**: Tests must run or hard-fail. Never gate with `describe.runIf`/`it.skipIf`/`if (!env.X) return`. Required env vars are validated at file load with `throw new Error(...)` so missing config breaks the suite loudly.
 
 ### Coverage (TST-COVR)
@@ -104,7 +104,7 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 
 ### Structure (TST-STRU)
 
-- **TST-STRU-01**: `*.spec.ts` for unit, `*.spec.int.ts` for integration, `*.spec.e2e.ts` for e2e. Unit tests isolated; integration tests must not use unit-style mocks.
+- **TST-STRU-01**: `*.spec.ts` for runtime unit, `*.spec.int.ts` for integration, and `*.spec.e2e.ts` for e2e; configured compiler tests keep their discovered convention such as tsd's `*.test-d.ts`. Unit tests are isolated; integration tests must not use unit-style mocks.
 - **TST-STRU-02**: Canonical order: imports, constants/fixtures/mocks, setup hooks, then `describe`. No `describe` before setup.
 - **TST-STRU-03**: AAA with blank-line separation. Comments explain why, stay concise, lowercase style.
 - **TST-STRU-05**: One-time async setup lives in the runner `globalSetup`; expose serializable handles via `project.provide` and read them with `inject` into a `const`. No `beforeAll`/`afterAll`, no `let`.
@@ -145,8 +145,9 @@ Pick the form by *what you assert*, not by call count:
 0. Before measuring, remove dead code — unused constants, regexps, no-value
    wrappers (`GEN-DESN-04`, `FUNC-ARCH-03`). Coverage applies to living code only.
 1. Write one test -> run coverage -> check delta
-2. Zero coverage gain? Keep the test only when it provides distinct behavioral evidence; otherwise delete it
-3. Repeat until statements, branches, functions, and lines all reach 100%
+2. For already-correct behavior, prove the initially passing case detects the named regression through a temporary implementation mutation or equivalent controlled proof; restore the implementation and rerun green
+3. Zero coverage gain? Keep the test only when it provides distinct behavioral evidence and satisfies `TST-CORE-02`; otherwise delete it
+4. Repeat until statements, branches, functions, and lines all reach 100%
 
 ## Quick Reference
 
@@ -155,6 +156,7 @@ Pick the form by *what you assert*, not by call count:
 | Unit        | `*.spec.ts`     | Isolated component testing    | Required for IO/external deps |
 | Integration | `*.spec.int.ts` | Component interaction testing | NOT allowed                   |
 | E2E         | `*.spec.e2e.ts` | Full system testing           | NOT allowed                   |
+| Compiler    | Configured type-test pattern | Compiler-observable semantics | Not applicable                |
 
 Patterns derive from [`TST-STRU-01`].
 
@@ -165,6 +167,8 @@ Patterns derive from [`TST-STRU-01`].
 - Repeating nearly identical tests to inflate coverage numbers.
 - Asserting a checked-in file's existence, absence, layout, inventory, bytes,
   literals, or parity, including through a snapshot or golden-output mirror.
+- Using exact-type, signature, export, schema-field, or barrel assertions to
+  mirror a static declaration inventory.
 - Mocking internal pure functions instead of testing outcomes.
 - Reassigning shared test data with `let` in suites.
 - Building large fake interfaces that diverge from real contracts.
@@ -180,7 +184,7 @@ Patterns derive from [`TST-STRU-01`].
 3. Need a mock? Only if dependency is IO/external/control-sensitive (`TST-MOCK-01`).
 4. Need hoisted mocks? Use only for call spying or error-path overrides (`TST-MOCK-02`).
 5. Reusing a hoisted/mock symbol in `vi.mock` factory? Export it directly, do not re-wrap with nested `vi.fn` (`TST-MOCK-15`).
-6. Adding a test now? Run coverage before and after; keep positive-delta tests and zero-gain tests with distinct behavioral evidence (`TST-COVR-03`, `TST-COVR-04`).
+6. Adding a test now? For pre-implementation or diagnosed-failure work, confirm red first. For already-correct behavior, record sensitivity proof, restore the implementation, and rerun green before retaining the case; coverage or distinct evidence alone does not replace `TST-CORE-02` (`TST-COVR-03`, `TST-COVR-04`).
 7. Structuring a test file? Enforce naming, canonical layout, and AAA spacing (`TST-STRU-01`, `TST-STRU-02`, `TST-STRU-03`).
 8. Needs an env var? Validate at file top with `throw`; never `runIf`/`skipIf` (`TST-CORE-11`).
-9. Reading a checked-in artifact? Pass it to an actual consumer or generator and assert only behavior or generated-result structure; otherwise remove the test (`TST-CORE-10`).
+9. Does a type assertion protect a compiler-observable behavior permitted by `TST-CORE-10`? Keep it. Otherwise use diagnostics and consumer builds; declaration/signature inventories, layout, and checked-in content remain forbidden.

@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import {
   copyFileSync,
   mkdirSync,
@@ -20,7 +21,6 @@ import {
   isTestFile,
   pythonFiles,
   sourceFiles,
-  specFiles,
   tsOnly,
 } from "./scanlib/predicates.ts";
 
@@ -206,8 +206,7 @@ describe("coding scanner fixture reports", () => {
   it.each(fixtureCases)(
     "should emit a structural report for $category",
     async ({ category, directory, expectedFinding, inputName }) => {
-      const root =
-        inputName === undefined ? directory : temporaryRoot();
+      const root = inputName === undefined ? directory : temporaryRoot();
       if (inputName !== undefined) {
         const source = readFileSync(resolve(directory, inputName), "utf8");
         const extension = inputName.slice("input".length);
@@ -242,6 +241,148 @@ describe("coding scanner fixture reports", () => {
         (await capture([fixtures, "--category", rule.id])).stdout,
       ).toContain(`  ${rule.id}:`);
   }, 30_000);
+
+  it("should accept the ty type-suite prefix", async () => {
+    const root = temporaryRoot();
+    writeFileSync(
+      resolve(root, "input.spec.ts"),
+      [
+        'describe("ty:Config", () => {',
+        '  it("should preserve representative assignability", () => {});',
+        "});",
+        "",
+      ].join("\n"),
+    );
+
+    const previous = process.cwd();
+    process.chdir(root);
+    try {
+      const result = await capture([
+        ".",
+        "--category",
+        "test-title-convention",
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain("(no matches)");
+      expect(result.stdout).toContain(
+        "test-title-convention: 0 matches in 0 files",
+      );
+    } finally {
+      process.chdir(previous);
+    }
+  });
+
+  it("should exclude compiler tests while reporting runtime access", async () => {
+    const root = temporaryRoot();
+    writeFileSync(
+      resolve(root, "input.test-d.ts"),
+      [
+        "type Fetch = typeof globalThis.fetch;",
+        "type Environment = typeof process.env;",
+        "globalThis.fetch = fakeFetch;",
+        "process.env = fakeEnvironment;",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(
+      resolve(root, "configured.spec.ts"),
+      [
+        "type Fetch = typeof globalThis.fetch;",
+        "globalThis.fetch = fakeFetch;",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(
+      resolve(root, "input.spec.ts"),
+      [
+        'const hasFetch = typeof globalThis.fetch === "function";',
+        'const hasEnvironment = typeof process.env === "object";',
+        "const fetch = globalThis.fetch;",
+        "const environment = process.env;",
+        "globalThis.fetch = fakeFetch;",
+        "process.env = fakeEnvironment;",
+        "",
+      ].join("\n"),
+    );
+
+    const result = await capture([
+      root,
+      "--category",
+      "test-env-access",
+      "--test-root",
+      root,
+      "--test-pattern",
+      "**/configured.spec.ts",
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).not.toContain("input.test-d.ts:");
+    expect(result.stdout).not.toContain("configured.spec.ts:");
+    expect(result.stdout).toMatch(/^[^\n]*input\.spec\.ts:1  /m);
+    expect(result.stdout).toMatch(/^[^\n]*input\.spec\.ts:2  /m);
+    expect(result.stdout).toMatch(/^[^\n]*input\.spec\.ts:3  /m);
+    expect(result.stdout).toMatch(/^[^\n]*input\.spec\.ts:4  /m);
+    expect(result.stdout).toMatch(/^[^\n]*input\.spec\.ts:5  /m);
+    expect(result.stdout).toMatch(/^[^\n]*input\.spec\.ts:6  /m);
+    expect(result.stdout).toContain("test-env-access: 6 matches in 1 files");
+  });
+
+  it("should exclude compiler tests from runtime import and cleanup scans", async () => {
+    const root = temporaryRoot();
+    writeFileSync(
+      resolve(root, "input.test-d.ts"),
+      [
+        'type Exported = import("pkg").Exported;',
+        'type Reset = Client["reset"];',
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(
+      resolve(root, "configured.spec.ts"),
+      [
+        'type Exported = import("pkg").Exported;',
+        "expectType<Reset>(client.reset);",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(
+      resolve(root, "runtime.spec.ts"),
+      ['const module = await import("pkg");', "client.reset();", ""].join(
+        "\n",
+      ),
+    );
+    const common = [
+      root,
+      "--test-root",
+      root,
+      "--test-pattern",
+      "**/configured.spec.ts",
+    ];
+
+    const dynamicImport = await capture([
+      ...common,
+      "--category",
+      "test-dynamic-import",
+    ]);
+    const cleanup = await capture([
+      ...common,
+      "--category",
+      "test-mock-cleanup",
+    ]);
+
+    expect(dynamicImport.code).toBe(0);
+    expect(dynamicImport.stdout).not.toContain("input.test-d.ts:");
+    expect(dynamicImport.stdout).not.toContain("configured.spec.ts:");
+    expect(dynamicImport.stdout).toMatch(/^[^\n]*runtime\.spec\.ts:1  /m);
+    expect(dynamicImport.stdout).toContain(
+      "test-dynamic-import: 1 matches in 1 files",
+    );
+    expect(cleanup.code).toBe(0);
+    expect(cleanup.stdout).not.toContain("input.test-d.ts:");
+    expect(cleanup.stdout).not.toContain("configured.spec.ts:");
+    expect(cleanup.stdout).toMatch(/^[^\n]*runtime\.spec\.ts:2  /m);
+    expect(cleanup.stdout).toContain("test-mock-cleanup: 1 matches in 1 files");
+  });
 });
 
 describe("rule module loading", () => {
@@ -304,6 +445,67 @@ describe("scanner command-line handling", () => {
     expect((await capture(["--before=nope"])).code).toBe(2);
     expect((await capture(["--unknown"])).code).toBe(2);
   });
+  it.each([
+    [
+      "--test-pattern",
+      "--no-tests",
+      "--test-pattern requires a non-empty glob",
+    ],
+    ["--test-root", "--no-tests", "--test-root requires a non-empty path"],
+  ])("should not consume %s option boundaries", async (option, next, message) => {
+    const result = await capture([option, next]);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(message);
+  });
+  it.each([["--test-pattern", "!"], ["--test-pattern=!"]])(
+    "should reject a lone negation in %s",
+    async (...argv) => {
+      const result = await capture(argv);
+      expect(result.code).toBe(2);
+      expect(result.stderr).toContain(
+        "--test-pattern requires a non-empty glob",
+      );
+    },
+  );
+  it.each([
+    "test-d/**/*.types.ts",
+    "test-d/**/*.{types,check}.ts",
+    "test-d/**/*.type[sd].ts",
+  ])("should accept ordinary compiler-test glob %s", async (pattern) => {
+    const result = await capture([
+      temporaryRoot(),
+      "--category",
+      "let",
+      "--test-pattern",
+      pattern,
+    ]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe("");
+  });
+  it.each([
+    ["at", "test-d/**/*.@(types|check).ts", false],
+    ["negative", "!(src)/**/*.types.ts", true],
+    ["optional", "test-d/**/?(types|check).ts", false],
+    ["one-or-more", "test-d/**/+(types|check).ts", false],
+    ["zero-or-more", "test-d/**/*(types|check).ts", false],
+  ] as const)(
+    "should reject %s extglob syntax under the Bun CLI entrypoint",
+    (_form, pattern, joined) => {
+      const option = joined
+        ? [`--test-pattern=${pattern}`]
+        : ["--test-pattern", pattern];
+      const result = spawnSync(
+        "bun",
+        [resolve(here, "scan_potential_violations.ts"), ".", ...option],
+        { cwd: temporaryRoot(), encoding: "utf8" },
+      );
+      expect(result.status).toBe(2);
+      expect(result.stderr).toBe(
+        "error: --test-pattern does not support extglob syntax\n",
+      );
+      expect(result.stdout).toBe("");
+    },
+  );
   it("warns for missing roots and returns a zero-match report", async () => {
     const result = await capture([
       resolve(temporaryRoot(), "missing"),
@@ -326,6 +528,65 @@ describe("scanner command-line handling", () => {
     expect(result.stdout).not.toContain("feature.spec.ts:");
     expect(result.stdout).toContain("source.ts:");
   });
+  it("should skip tsd declaration tests for opted-in rules", async () => {
+    const root = temporaryRoot();
+    writeFileSync(resolve(root, "feature.test-d.ts"), "let result = 1;\n");
+    const result = await capture([root, "--category", "let", "--no-tests"]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).not.toContain("feature.test-d.ts:");
+  });
+  it("should skip files matched by repeatable compiler-test patterns", async () => {
+    const root = temporaryRoot();
+    mkdirSync(resolve(root, "test-d/nested"), { recursive: true });
+    mkdirSync(resolve(root, "src"));
+    writeFileSync(
+      resolve(root, "test-d/nested/configured.types.ts"),
+      "let configured = 1;\n",
+    );
+    writeFileSync(
+      resolve(root, "src/unconfigured.types.ts"),
+      "let unconfigured = 1;\n",
+    );
+    const result = await capture([
+      root,
+      "--category",
+      "let",
+      "--no-tests",
+      "--test-root",
+      root,
+      "--test-pattern",
+      "test-d/**/*.types.ts",
+      "--test-pattern",
+      "checks/**/*.check.ts",
+    ]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).not.toContain("test-d/nested/configured.types.ts:");
+    expect(result.stdout).toContain("src/unconfigured.types.ts:");
+  });
+  it.each(["file", "directory"] as const)(
+    "should skip configured compiler tests discovered from a %s root",
+    async (rootKind) => {
+      const projectRoot = temporaryRoot();
+      const testDirectory = resolve(projectRoot, "test-d/nested");
+      const testFile = resolve(testDirectory, "configured.types.ts");
+      mkdirSync(testDirectory, { recursive: true });
+      writeFileSync(testFile, "let configured = 1;\n");
+      const discoveredRoot =
+        rootKind === "file" ? testFile : resolve(projectRoot, "test-d");
+      const result = await capture([
+        discoveredRoot,
+        "--category",
+        "let",
+        "--no-tests",
+        "--test-root",
+        projectRoot,
+        "--test-pattern",
+        "test-d/**/*.types.ts",
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout).not.toContain("configured.types.ts:");
+    },
+  );
 });
 
 describe("path predicates and rule id prefixes", () => {
@@ -334,10 +595,66 @@ describe("path predicates and rule id prefixes", () => {
     expect(isSpecFile("thing.spec.py")).toBe(false);
     expect(isTestFile("test_thing.py")).toBe(true);
     expect(sourceFiles("thing.tsx")).toBe(true);
+    expect(sourceFiles("thing.mts")).toBe(true);
+    expect(sourceFiles("thing.cts")).toBe(true);
     expect(sourceFiles("thing.py")).toBe(false);
-    expect(specFiles("thing.test.ts")).toBe(false);
     expect(pythonFiles("thing.py")).toBe(true);
     expect(tsOnly("thing.jsx")).toBe(false);
+    expect(tsOnly("thing.mts")).toBe(true);
+    expect(tsOnly("thing.cts")).toBe(true);
+  });
+  it("should classify tsd declaration tests without treating them as specs", () => {
+    expect(isTestFile("thing.test-d.ts")).toBe(true);
+    expect(isSpecFile("thing.test-d.ts")).toBe(false);
+  });
+  it("should classify configured compiler tests without reclassifying production", () => {
+    const patterns = ["test-d/**/*.types.ts"];
+    expect(isTestFile("test-d/nested/thing.types.ts", patterns)).toBe(true);
+    expect(isTestFile("src/thing.types.ts", patterns)).toBe(false);
+  });
+  it.each([
+    [
+      "included path",
+      "test-d/api.types.ts",
+      ["test-d/**/*.types.ts", "!**/fixtures/**"],
+      true,
+    ],
+    [
+      "excluded path",
+      "test-d/fixtures/api.types.ts",
+      ["test-d/**/*.types.ts", "!**/fixtures/**"],
+      false,
+    ],
+    ["exclusion-only set", "src/api.ts", ["!**/fixtures/**"], false],
+    [
+      "ordered re-inclusion",
+      "test-d/api.types.ts",
+      ["test-d/**/*.types.ts", "!test-d/**", "test-d/api.types.ts"],
+      true,
+    ],
+    [
+      "excluded built-in path",
+      "test-d/fixtures/api.test-d.ts",
+      ["!**/fixtures/**"],
+      false,
+    ],
+    [
+      "re-included built-in path",
+      "test-d/fixtures/api.test-d.ts",
+      ["!**/fixtures/**", "test-d/fixtures/api.test-d.ts"],
+      true,
+    ],
+  ] as const)(
+    "should apply configured compiler-test patterns to an %s",
+    (_kind, path, patterns, expected) => {
+      expect(isTestFile(path, patterns)).toBe(expected);
+    },
+  );
+  it.each([
+    ["test-d/**/*.{types,check}.ts", "test-d/nested/thing.check.ts"],
+    ["test-d/**/*.type[sd].ts", "test-d/nested/thing.types.ts"],
+  ])("should honor configured compiler-test glob %s", (pattern, path) => {
+    expect(isTestFile(path, [pattern])).toBe(true);
   });
   it("derives a sorted standard-prefix set", () => {
     const prefixes = deriveRuleIdPrefixes();
@@ -366,6 +683,108 @@ describe("static file read scoping", () => {
     const result = await capture([root, "--category", "test-static-file-read"]);
     expect(result.stdout.includes(`${name}:1`)).toBe(found);
   });
+
+  it("should scan static reads in tsd declaration tests", async () => {
+    const root = temporaryRoot();
+    writeFileSync(
+      resolve(root, "example.test-d.ts"),
+      'readFileSync("fixture.txt");\n',
+    );
+    const result = await capture([root, "--category", "test-static-file-read"]);
+    expect(result.stdout).toContain("example.test-d.ts:1");
+  });
+
+  it("should scan configured compiler tests but not unconfigured production", async () => {
+    const root = temporaryRoot();
+    mkdirSync(resolve(root, "test-d/nested"), { recursive: true });
+    mkdirSync(resolve(root, "src"));
+    writeFileSync(
+      resolve(root, "test-d/nested/configured.types.ts"),
+      'readFileSync("fixture.txt");\n',
+    );
+    writeFileSync(
+      resolve(root, "src/unconfigured.types.ts"),
+      'readFileSync("fixture.txt");\n',
+    );
+    const result = await capture([
+      root,
+      "--category",
+      "test-static-file-read",
+      "--test-root",
+      root,
+      "--test-pattern",
+      "test-d/**/*.types.ts",
+      "--test-pattern",
+      "checks/**/*.check.ts",
+    ]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("configured.types.ts:1");
+    expect(result.stdout).not.toContain("unconfigured.types.ts:");
+  });
+
+  it.each(["relative", "absolute"] as const)(
+    "should normalize %s configured compiler-test globs to the test root",
+    async (patternKind) => {
+      const root = temporaryRoot();
+      const testDirectory = resolve(root, "test-d/nested");
+      const testFile = resolve(testDirectory, "configured.types.ts");
+      mkdirSync(testDirectory, { recursive: true });
+      writeFileSync(
+        testFile,
+        'let configured = 1;\nreadFileSync("fixture.txt");\n',
+      );
+      const pattern =
+        patternKind === "relative"
+          ? "./test-d/**/*.types.ts"
+          : resolve(root, "test-d/**/*.types.ts");
+      const common = [
+        testFile,
+        "--test-root",
+        root,
+        "--test-pattern",
+        pattern,
+      ];
+      const skipped = await capture([
+        ...common,
+        "--category",
+        "let",
+        "--no-tests",
+      ]);
+      expect(skipped.code).toBe(0);
+      expect(skipped.stdout).not.toContain("configured.types.ts:");
+      const staticRead = await capture([
+        ...common,
+        "--category",
+        "test-static-file-read",
+      ]);
+      expect(staticRead.code).toBe(0);
+      expect(staticRead.stdout).toContain("configured.types.ts:2");
+    },
+  );
+
+  it.each(["file", "directory"] as const)(
+    "should scan configured compiler tests discovered from a %s root",
+    async (rootKind) => {
+      const projectRoot = temporaryRoot();
+      const testDirectory = resolve(projectRoot, "test-d/nested");
+      const testFile = resolve(testDirectory, "configured.types.ts");
+      mkdirSync(testDirectory, { recursive: true });
+      writeFileSync(testFile, 'readFileSync("fixture.txt");\n');
+      const discoveredRoot =
+        rootKind === "file" ? testFile : resolve(projectRoot, "test-d");
+      const result = await capture([
+        discoveredRoot,
+        "--category",
+        "test-static-file-read",
+        "--test-root",
+        projectRoot,
+        "--test-pattern",
+        "test-d/**/*.types.ts",
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain("configured.types.ts:1");
+    },
+  );
 
   it("scans Rust integration tests and cfg(test) items but not runtime code", async () => {
     const root = temporaryRoot();
@@ -481,8 +900,205 @@ describe("static file read scoping", () => {
   });
 });
 
-describe("spec-gated rule applicability", () => {
-  it("does not flag hook-shaped calls outside spec files", async () => {
+describe("test-gated rule applicability", () => {
+  it.each([
+    ["ordinary spec", "src/api.spec.ts", undefined, true],
+    ["tsd declaration test", "test-d/api.test-d.ts", undefined, true],
+    [
+      "configured compiler test",
+      "test-d/api.types.ts",
+      "test-d/**/*.types.ts",
+      true,
+    ],
+    ["production source", "src/api.ts", undefined, false],
+  ] as const)(
+    "should route `as never` in %s to exactly one escape-cast scanner",
+    async (_kind, name, pattern, testRule) => {
+      const root = temporaryRoot();
+      const path = resolve(root, name);
+      mkdirSync(resolve(path, ".."), { recursive: true });
+      writeFileSync(path, "const api = {} as never;\n");
+      const common = [
+        path,
+        "--test-root",
+        root,
+        ...(pattern === undefined ? [] : ["--test-pattern", pattern]),
+      ];
+      const testResult = await capture([
+        ...common,
+        "--category",
+        "spec-escape-cast",
+      ]);
+      const productionResult = await capture([
+        ...common,
+        "--category",
+        "escape-cast",
+      ]);
+      expect(testResult.stdout.includes(`${name}:1`)).toBe(testRule);
+      expect(productionResult.stdout.includes(`${name}:1`)).toBe(!testRule);
+    },
+  );
+
+  it.each(["relative", "absolute"] as const)(
+    "should preserve %s negated compiler-test patterns during normalization",
+    async (patternKind) => {
+      const root = temporaryRoot();
+      const included = resolve(root, "test-d/api.types.ts");
+      const excluded = resolve(root, "test-d/fixtures/api.types.ts");
+      mkdirSync(resolve(excluded, ".."), { recursive: true });
+      writeFileSync(included, "const api = {} as never;\n");
+      writeFileSync(excluded, "const api = {} as never;\n");
+      const positive =
+        patternKind === "relative"
+          ? "test-d/**/*.types.ts"
+          : resolve(root, "test-d/**/*.types.ts");
+      const negative =
+        patternKind === "relative"
+          ? "!**/fixtures/**"
+          : `!${resolve(root, "**/fixtures/**")}`;
+      const result = await capture([
+        root,
+        "--category",
+        "spec-escape-cast",
+        "--test-root",
+        root,
+        "--test-pattern",
+        positive,
+        "--test-pattern",
+        negative,
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain("test-d/api.types.ts:1");
+      expect(result.stdout).not.toContain("test-d/fixtures/api.types.ts:");
+    },
+  );
+
+  it.each([
+    ["Python test", "test_client.py", undefined, false],
+    [
+      "configured ESM compiler test",
+      "test-d/nested/api.types.mts",
+      "test-d/**/*.types.mts",
+      true,
+    ],
+  ] as const)(
+    "should classify %s for JavaScript/TypeScript test scanners",
+    async (_kind, name, pattern, found) => {
+      const root = temporaryRoot();
+      const path = resolve(root, name);
+      mkdirSync(resolve(path, ".."), { recursive: true });
+      writeFileSync(path, "const api = {} as never;\n");
+      const result = await capture([
+        path,
+        "--category",
+        "spec-escape-cast",
+        "--test-root",
+        root,
+        ...(pattern === undefined ? [] : ["--test-pattern", pattern]),
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout.includes(`${name}:1`)).toBe(found);
+    },
+  );
+
+  it.each(["mts", "cts"])(
+    "should enumerate configured .%s compiler tests from directory roots",
+    async (extension) => {
+      const root = temporaryRoot();
+      const relativePath = `test-d/nested/api.types.${extension}`;
+      const path = resolve(root, relativePath);
+      mkdirSync(resolve(path, ".."), { recursive: true });
+      writeFileSync(path, "const api = {} as never;\n");
+      const result = await capture([
+        root,
+        "--category",
+        "spec-escape-cast",
+        "--test-root",
+        root,
+        "--test-pattern",
+        `test-d/**/*.types.${extension}`,
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain(`${relativePath}:1`);
+    },
+  );
+
+  it.each([
+    ["tsd declaration test", "api.test-d.ts", undefined, true],
+    [
+      "configured compiler test",
+      "test-d/nested/api.types.ts",
+      "test-d/**/*.types.ts",
+      true,
+    ],
+    [
+      "configured ESM compiler test",
+      "test-d/nested/api.types.mts",
+      "test-d/**/*.types.mts",
+      true,
+    ],
+    [
+      "configured CommonJS compiler test",
+      "test-d/nested/api.types.cts",
+      "test-d/**/*.types.cts",
+      true,
+    ],
+    [
+      "production source",
+      "src/api.types.ts",
+      "test-d/**/*.types.ts",
+      false,
+    ],
+  ] as const)(
+    "should classify %s for test-only scanner applicability",
+    async (_kind, name, pattern, found) => {
+      const root = temporaryRoot();
+      const path = resolve(root, name);
+      mkdirSync(resolve(path, ".."), { recursive: true });
+      writeFileSync(path, "const api = {} as never;\n");
+      const result = await capture([
+        path,
+        "--category",
+        "spec-escape-cast",
+        "--test-root",
+        root,
+        ...(pattern === undefined ? [] : ["--test-pattern", pattern]),
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout.includes(`${name}:1`)).toBe(found);
+    },
+  );
+
+  it.each([
+    ["tsd declaration test", "api.test-d.ts", undefined, false],
+    [
+      "configured compiler test",
+      "test-d/nested/api.test.ts",
+      "test-d/**/*.test.ts",
+      false,
+    ],
+    ["runtime test", "src/api.test.ts", undefined, true],
+  ] as const)(
+    "should classify %s for runtime test-file naming",
+    async (_kind, name, pattern, found) => {
+      const root = temporaryRoot();
+      const path = resolve(root, name);
+      mkdirSync(resolve(path, ".."), { recursive: true });
+      writeFileSync(path, "export {};\n");
+      const result = await capture([
+        path,
+        "--category",
+        "test-file-naming",
+        "--test-root",
+        root,
+        ...(pattern === undefined ? [] : ["--test-pattern", pattern]),
+      ]);
+      expect(result.code).toBe(0);
+      expect(result.stdout.includes(`${name}:1`)).toBe(found);
+    },
+  );
+
+  it("should not flag hook-shaped calls outside test files", async () => {
     const result = await capture([
       resolve(fixtures, "_corpus/not-a-spec.ts"),
       "--category",

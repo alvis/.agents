@@ -7,20 +7,19 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 > **During linting**: Only apply a rule's fix if it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
 
-> **Scanner-backed rules**: `TST-CORE-03`, `TST-CORE-08`, `TST-CORE-10`, `TST-CORE-11`, `TST-DATA-04`, `TST-DATA-06`, `TST-MOCK-10`, `TST-MOCK-11`, `TST-STRU-01`, and `TST-STRU-03` have advisory mechanical scanner support (`plugins/coding/scripts/scanners/`). The scanner surfaces candidates only — always re-verify each hit against the rule guide before flagging. For `TST-CORE-10`, a checked-in file read is compliant only when the file feeds an executed consumer or generator and every assertion targets runtime behavior or generated-result structure. The `TST-MOCK-10` and `TST-MOCK-11` scanners inspect JavaScript and TypeScript spec files.
+> **Scanner-backed rules**: `TST-CORE-03`, `TST-CORE-08`, `TST-CORE-10`, `TST-CORE-11`, `TST-DATA-04`, `TST-DATA-06`, `TST-MOCK-10`, `TST-MOCK-11`, `TST-STRU-01`, and `TST-STRU-03` have advisory mechanical scanner support (`plugins/coding/scripts/scanners/`). The scanner surfaces candidates only — always re-verify each hit against the rule guide before flagging. For `TST-CORE-10`, current scanner support detects checked-in-file reads only; exact declaration, signature, schema-inventory, export-inventory, and re-export-layout assertions remain semantic review checks. A checked-in file read is compliant only when the file feeds an executed consumer or generator and every assertion targets runtime behavior or generated-result structure. The `TST-MOCK-10` and `TST-MOCK-11` scanners inspect JavaScript and TypeScript spec files.
 
 ## Quick Scan
 
 - DO NOT bypass TypeScript safety requirements in tests [`TST-CORE-01`]
-- DO NOT implement code before writing a failing test [`TST-CORE-02`]
-- DO NOT use non-compliant test naming: `it(...)` must start with `should`; `describe(...)` titles scoped to a **symbol** (function, class, method, etc.) must use the correct approved prefix: `fn:` function, `op:` operation, `sv:` service, `cl:` class, `mt:` method, `gt:` getter, `st:` setter, `re:` regex, `ty:` type, `rc:` React component, `hk:` hook, `cmd:` CLI command — DO NOT change an existing valid prefix to a different prefix; IMPORTANT: general-purpose `describe(...)` titles (e.g. grouping by scenario or context) must **NOT** use prefixes [`TST-CORE-03`]
+- DO NOT use non-compliant test naming: `it(...)` must start with `should`; `describe(...)` titles scoped to a symbol must use the correct approved prefix: `fn:` function, `op:` operation, `sv:` service, `cl:` class, `mt:` method, `gt:` getter, `st:` setter, `re:` regex, `ty:` allowed compiler-observable type subject, `rc:` React component, `hk:` hook, `cmd:` CLI command; the `ty:` suffix is the symbol name only, with scenarios in nested suites or test names — DO NOT change an existing valid prefix to a different prefix; IMPORTANT: general-purpose `describe(...)` titles (e.g. grouping by scenario or context) must **NOT** use prefixes [`TST-CORE-03`]
 - DO NOT add tests that provide no unique path or behavior (including a test whose name claims a path its input never reaches) [`TST-CORE-04`]
 - DO NOT add artificial variation-only tests [`TST-CORE-05`]
 - DO NOT write tests that only check wrapper/dependency calls [`TST-CORE-06`]
 - DO NOT assert implementation details in tests [`TST-CORE-07`]
 - DO NOT use dynamic imports in tests [`TST-CORE-08`]
 - DO NOT assert log output via scattered `toHaveBeenCalledWith(...)` or count-only checks; capture the logger as `vi.fn<LogFn>()` / `satisfies Partial<Logger>` and assert the full call sequence with `expect(log.mock.calls).toEqual([...])` [`TST-CORE-09`]
-- DO NOT assert checked-in repository or plugin content: existence, absence, bytes or hashes, text or literals, inventories or exact counts, path layout, committed snapshots, or parity between checked-in files. Systematic properties over checked-in deliverables are also forbidden. A checked-in artifact may only feed an executed consumer or generator, with assertions restricted to observable behavior or generated-result structure; construct missing, malformed, stale, and expected-output scenarios in memory or a temporary workspace [`TST-CORE-10`]
+- DO NOT pin static declaration inventories or checked-in repository content: exact type/interface members, generic parameters or defaults, function signatures or overload sets, export or symbol inventories, schema declaration inventories, barrel/re-export layout, file existence or content, committed snapshots, or parity between checked-in files. `TST-CORE-10` is the sole whitelist for compiler-observable type-test subjects; a declaration's existence alone never requires a test [`TST-CORE-10`]
 - DO NOT silently skip tests on missing env/config; `describe.runIf(...)`, `it.skipIf(process.env.X)`, or `if (!env.X) return` at suite/test level are forbidden — gate with a file-level `throw` so missing config hard-fails [`TST-CORE-11`]
 - DO NOT merge with statements, branches, functions, or lines below 100% [`TST-COVR-01`]
 - DO NOT leave critical branch paths untested [`TST-COVR-02`]
@@ -49,7 +48,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 - DO NOT use module types for class instance mock typing, such as `typeof import("#svc")` for instance doubles [`TST-MOCK-14`]
 - DO NOT wrap existing mock instances with nested `vi.fn` in `vi.mock` factories [`TST-MOCK-15`]
 - DO NOT flag existing `vi.fn<T>()` type generics as a violation; typed `vi.fn<T>` is encouraged when named types are available and is not required only when the type can be inferred within a `satisfies` container [`TST-MOCK-16`]
-- DO NOT use `.test.ts` extension; use `.spec.ts` for unit, `.spec.int.ts` for integration, `.spec.e2e.ts` for e2e, such as `user.test.ts` instead of `user.spec.ts` [`TST-STRU-01`]
+- DO NOT use `.test.ts` for a runtime test; use `.spec.ts` for unit, `.spec.int.ts` for integration, and `.spec.e2e.ts` for e2e. Keep configured compiler-test conventions such as tsd's `*.test-d.ts` and run them through their type-test command [`TST-STRU-01`]
 - DO NOT use ad-hoc test file layout/import order [`TST-STRU-02`]
 - DO NOT add AAA section comments or inline noise comments or `expect(result).toBe(x); // check ...` [`TST-STRU-03`]
 - DO NOT use `beforeAll`/`afterAll`/`beforeEach`/`afterEach` for any purpose other than the narrow allowances in `TST-MOCK-04`/`TST-MOCK-10`; every occurrence is review-worthy [`TST-STRU-04`]
@@ -60,7 +59,6 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 | Rule ID | Violation | Bad Examples |
 |---|---|--- |
 | `TST-CORE-01` | Test code bypasses TypeScript safety requirements | `const svc: any = {}`; `const mockRepo: any = {` |
-| `TST-CORE-02` | Code is implemented before a failing test exists | `runFeature(); // before failing test` |
 | `TST-CORE-03` | Test naming format is non-compliant (`it`/`describe`) | `it("returns user", fn)`; `describe("processUser", () => { ... })`; `describe("fn:edge cases", () => { ... })` |
 | `TST-CORE-04` | Test adds no unique path or behavior | `it("same case #2", fn)`; `it("should return user again with same input", fn)` |
 | `TST-CORE-05` | Artificial variation tests are added | `tax(10); tax(20); tax(30)`; `it("should apply 10% discount for $101", fn)` when behavior is identical |
@@ -68,7 +66,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 | `TST-CORE-07` | Test asserts implementation details | `expect(useState).toHaveBeenCalled()` |
 | `TST-CORE-08` | Dynamic import is used in tests | `const m = await import("#mod")` |
 | `TST-CORE-09` | Log output asserted with scattered calls / count-only / untyped mock | `expect(log).toHaveBeenCalledWith('x')` + `expect(log).toHaveBeenCalledTimes(2)`; `const log = vi.fn()` without generic |
-| `TST-CORE-10` | Test asserts checked-in existence, absence, content, inventory, layout, or parity instead of executed behavior or generated-result structure | `expect(existsSync(repoFile)).toBe(true)`; `expect(readFileSync(repoFile, 'utf8')).toContain('literal')`; `expect(committedProjection).toEqual(render())` |
+| `TST-CORE-10` | Test pins an exact declaration inventory/layout or checked-in content | `expectTypeOf<Api>().toEqualTypeOf<{ id: string; run(): void }>()` mirroring `Api`; `expect(Object.keys(exports)).toEqual([...])`; `expect(readFileSync(repoFile, 'utf8')).toContain('literal')` |
 | `TST-CORE-11` | Test silently skips on missing env/config | `describe.runIf(process.env.TEST_DATABASE_URL)("fn:fetchUser", ...)`; `it.skipIf(!process.env.TEST_DATABASE_URL)("should ...", ...)`; `if (!process.env.TEST_DATABASE_URL) return` inside `describe("fn:fetchUser", ...)` |
 | `TST-COVR-01` | Statements, branches, functions, or lines are below 100% | `branches: 98 // required: 100` |
 | `TST-COVR-02` | Critical branch path is untested | `if (err) throw err // untested` |
@@ -97,7 +95,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 | `TST-MOCK-14` | Module type is used for class instance mock typing | `Partial<typeof import("#svc")>`; `const client: typeof import("#svc") = { ... }` for an instance double |
 | `TST-MOCK-15` | Existing mock instance is wrapped by nested `vi.fn` in `vi.mock` factory | `existsSync: vi.fn((...args: unknown[]) => existsSync(...args))`; `upload: vi.fn(async (...args) => upload(...args))` |
 | `TST-MOCK-16` | Existing `vi.fn<T>()` type generic is incorrectly removed | `vi.fn<HttpReply>()` changed to `vi.fn()`; `vi.fn<(req: Request) => Response>()` changed to `vi.fn()` |
-| `TST-STRU-01` | Test file uses `.test.ts` instead of `.spec.ts` / `.spec.int.ts` / `.spec.e2e.ts` | `user.test.ts`; `user-api.integration.ts` |
+| `TST-STRU-01` | Runtime test file uses `.test.ts` instead of `.spec.ts` / `.spec.int.ts` / `.spec.e2e.ts` | `user.test.ts`; `user-api.integration.ts` |
 | `TST-STRU-02` | File layout/import order is ad-hoc | `describe(...) // before mock setup`; `import { describe, it, expect, vi } from 'vitest';` |
 | `TST-STRU-03` | AAA spacing/comment policy is violated | `// Arrange`; `expect(result.name).toBe('John'); // check that result has name` |
 | `TST-STRU-04` | Lifecycle hook used outside the narrow `TST-MOCK-04`/`TST-MOCK-10` allowances | `beforeEach(() => { user = createUser() })`; `afterAll(() => server.close())`; `beforeAll(() => seed(db))` |
