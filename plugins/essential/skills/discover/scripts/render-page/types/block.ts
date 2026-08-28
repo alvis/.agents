@@ -21,6 +21,7 @@ import type {
   TreeItem,
   Viewport,
 } from "./content.ts";
+import type { CodeExcerpt } from "./code.ts";
 import type { Rich } from "./inline.ts";
 
 /**
@@ -31,26 +32,6 @@ import type { Rich } from "./inline.ts";
  * never reported as a refusal, nor an unasked follow-up as an instruction.
  */
 export type Response = "decision" | "follow-up";
-
-/** a run of lines tied to a partner elsewhere on the page. */
-export interface CodeTie {
-  /** the name this end and its partner share */
-  key: string;
-  /** the 1-based lines the tie covers */
-  lines: number[];
-}
-
-/** a reviewer note anchored to one line of an excerpt. */
-export interface CodeComment {
-  /** the 1-based line the note reads under */
-  line: number;
-  /** what the reviewer said */
-  text: Rich;
-  /** how much the note matters, drawn as a word as well as a colour */
-  severity?: "critical" | "high" | "medium" | "low";
-  /** where the line lives, when the excerpt is not the whole file */
-  at?: string;
-}
 
 /** the content units a section body can hold in the walking skeleton. */
 export type Block =
@@ -142,24 +123,17 @@ export type Block =
   | { type: "list"; ordered?: boolean; items: Point[] }
   /** an executive summary of two to four strong-lead bullets */
   | { type: "tldr"; title?: string; points: Point[] }
-  /**
-   * a source excerpt, held verbatim.
-   *
-   * the text is escaped like any other author string: there is no highlighter
-   * and no markup pass-through, so a code block cannot smuggle elements into
-   * the page.
-   */
+  /** a source excerpt, held verbatim */
+  | ({ type: "code" } & CodeExcerpt)
+  /** two excerpts read against each other, sharing one annotation sequence */
   | {
-      type: "code";
-      language?: string;
+      type: "codepair";
+      /** the small label above the pair, such as `PAIR B / 3` */
+      eyebrow?: string;
+      /** a caption read as the pair's title */
       caption?: string;
-      code: string;
-      /** 1-based lines the author is drawing the reader's eye to */
-      highlight?: number[];
-      /** lines tied to whatever else on the page shares their key */
-      ties?: CodeTie[];
-      /** reviewer notes, each reading directly under the line it is about */
-      comments?: CodeComment[];
+      /** the two panels, left first */
+      panels: CodeExcerpt[];
     }
   /** anticipated reviewer questions, each answer able to carry provenance */
   | { type: "faq"; items: Definition[] }

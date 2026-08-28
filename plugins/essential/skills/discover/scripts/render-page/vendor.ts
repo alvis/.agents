@@ -1,17 +1,36 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 
 import { RenderError } from "./error.ts";
 
-/** root of the Discover skill tree every asset path resolves against. */
-const DISCOVER_ROOT = resolve(import.meta.dirname, "..", "..");
-const VENDOR_ROOT = join(DISCOVER_ROOT, "assets", "html", "vendor");
+/**
+ * where every downloaded bundle is kept between runs.
+ *
+ * D-69 — under the reader's own cache directory, never inside this repository.
+ * A vendored copy of somebody else's minified JavaScript is not source: it is
+ * megabytes a checkout carries, a diff nobody reads, and a file that goes stale
+ * without anyone noticing. One root for every bundle rather than one rule per
+ * bundle, because a second location is a second place for one to reappear.
+ *
+ * The filename carries the version, so upgrading the pin misses the old cache
+ * rather than reading it, and the stale copy is a file to delete rather than a
+ * board rendered from the wrong release.
+ */
+export const CACHE_ROOT = join(
+  process.env.XDG_CACHE_HOME || join(homedir(), ".cache"),
+  "discover-render",
+);
 
+/** the Mermaid major release every board is drawn by. */
+export const MERMAID_VERSION = "11";
 /** CDN URL the Mermaid runtime downloads from. */
-export const MERMAID_CDN_URL =
-  "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
+export const MERMAID_CDN_URL = `https://cdn.jsdelivr.net/npm/mermaid@${MERMAID_VERSION}/dist/mermaid.min.js`;
 /** local cache path for the downloaded Mermaid bundle. */
-export const MERMAID_CACHE = join(VENDOR_ROOT, "mermaid.cache.js");
+export const MERMAID_CACHE = join(
+  CACHE_ROOT,
+  `mermaid-${MERMAID_VERSION}.cache.js`,
+);
 /** substring identifying an official Mermaid release bundle. */
 export const MERMAID_BUNDLE_SIGNATURE = "flowchart-v2";
 const MERMAID_BUNDLE_TAIL = 'globalThis["mermaid"] =';

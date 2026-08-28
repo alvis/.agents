@@ -14,7 +14,6 @@ export type PageIds = Record<
   Set<string>
 >;
 
-/** the only ids that survive `s-`/`q-`/`f-` prefixing as a usable fragment. */
 /**
  * builds the empty ledger a page starts from, one set per peer group.
  *

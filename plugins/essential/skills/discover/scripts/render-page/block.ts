@@ -1,6 +1,6 @@
 import { renderBoards } from "./block/board.ts";
 import { renderCallout } from "./block/callout.ts";
-import { renderCode } from "./block/code.ts";
+import { renderCode, renderCodePair } from "./block/code.ts";
 import { renderDisclosure } from "./block/disclosure.ts";
 import { renderEmbed } from "./block/embed.ts";
 import { renderFaq, renderGlossary } from "./block/definition.ts";
@@ -67,6 +67,8 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
       return renderTldr(block, path);
     case "code":
       return renderCode(block, path);
+    case "codepair":
+      return renderCodePair(block, path);
     case "faq":
       return renderFaq(block, path);
     case "glossary":

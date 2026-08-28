@@ -1,4 +1,4 @@
-import type { Block, PageData, Section } from "./types.ts";
+import type { Block, CodeExcerpt, PageData, Section } from "./types.ts";
 
 /** one block a board holds, against where in the data it sits. */
 export interface Placed {
@@ -54,4 +54,35 @@ export function pageBlocks(data: PageData): Placed[] {
   return sections.flatMap((section, index) =>
     walkBlocks(section?.blocks, `sections[${index}].blocks`),
   );
+}
+
+/** one source excerpt a board holds, against where in the data it sits. */
+export interface PlacedCode {
+  /** the excerpt itself, exactly as the author wrote it */
+  excerpt: CodeExcerpt;
+  /** its JSON path, used verbatim by every refusal that names it */
+  path: string;
+}
+
+/**
+ * collects every source excerpt on a board, standalone or half of a pair.
+ *
+ * the CLI layer formats and colours excerpts before rendering, and a panel of
+ * a pair is an excerpt like any other: missing them here would leave half of
+ * every comparison unformatted and grey, which is exactly the half a reader is
+ * comparing against.
+ * @param data the board's data, as read from disk
+ * @returns every excerpt on the board, each with its own JSON path
+ */
+export function codeExcerpts(data: PageData): PlacedCode[] {
+  return pageBlocks(data).flatMap(({ block, path }) => {
+    if (block?.type === "code") return [{ excerpt: block, path }];
+    if (block?.type !== "codepair") return [];
+    const panels = Array.isArray(block.panels) ? block.panels : [];
+
+    return panels.map((excerpt, index) => ({
+      excerpt,
+      path: `${path}.panels[${index}]`,
+    }));
+  });
 }

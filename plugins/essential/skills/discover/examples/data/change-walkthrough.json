@@ -61,7 +61,7 @@
     {
       "id": "fingerprint",
       "label": "Fingerprint",
-      "eyebrow": "1 of 3",
+      "eyebrow": "1 of 4",
       "title": "What makes two alerts the same alert.",
       "blocks": [
         {
@@ -103,7 +103,7 @@
     {
       "id": "window",
       "label": "Window",
-      "eyebrow": "2 of 3",
+      "eyebrow": "2 of 4",
       "title": "The ten minutes, and what happens after them.",
       "blocks": [
         {
@@ -165,9 +165,95 @@
       ]
     },
     {
+      "id": "parity",
+      "label": "Parity",
+      "eyebrow": "3 of 4",
+      "title": "The same key, computed twice.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The ingest daemon fingerprints an alert before it ever reaches the service, so the key exists in two languages and the whole suppression scheme rests on the two agreeing. Read them against each other rather than one after the other."
+        },
+        {
+          "type": "codepair",
+          "eyebrow": "PAIR A / 1",
+          "caption": "One identity, spelled on both sides of the queue.",
+          "panels": [
+            {
+              "language": "rust",
+              "label": "ingest/src/fingerprint.rs",
+              "code": "/// The fields that decide two alerts are the same alert.\nconst IDENTITY: [&str; 3] = [\"rule\", \"service\", \"instance\"];\n\n/// Builds the fingerprint two alerts must share to be treated as one.\npub fn fingerprint_of(alert: &Alert) -> String {\n    let mut key = String::new();\n    for field in IDENTITY {\n        key.push_str(alert.field(field).unwrap_or(\"\"));\n        key.push('\\0');\n    }\n    key\n}",
+              "selections": [
+                {
+                  "text": "alert.field(field).unwrap_or(\"\")",
+                  "note": [
+                    "A field the daemon never parsed becomes the empty string rather than an error — the alert still fingerprints, it just fingerprints as though the field were blank."
+                  ]
+                },
+                {
+                  "text": "key.push('\\0');",
+                  "note": [
+                    "NUL, not a hyphen. A service literally named ",
+                    {
+                      "kind": "code",
+                      "text": "ledger-eu"
+                    },
+                    " would otherwise collide with a ",
+                    {
+                      "kind": "code",
+                      "text": "ledger"
+                    },
+                    " on instance ",
+                    {
+                      "kind": "code",
+                      "text": "eu"
+                    },
+                    "."
+                  ]
+                }
+              ]
+            },
+            {
+              "language": "typescript",
+              "label": "src/alert/fingerprint.ts",
+              "code": "/** the fields that decide two alerts are the same alert. */\nconst IDENTITY = [\"rule\", \"service\", \"instance\"] as const;\n\n/**\n * builds the fingerprint two alerts must share to be treated as one.\n * @param alert the alert as the rule engine produced it\n * @returns a stable key, safe to compare and to log\n */\nexport function fingerprintOf(alert: Alert): string {\n  return IDENTITY.map((field) => alert[field] ?? \"\").join(\"\\u0000\");\n}",
+              "selections": [
+                {
+                  "text": "IDENTITY.map((field) => alert[field] ?? \"\").join(\"\\u0000\")",
+                  "note": [
+                    "The same two decisions in one line: ",
+                    {
+                      "kind": "code",
+                      "text": "??"
+                    },
+                    " for the absent field, the same NUL for the joiner. Nothing enforces the agreement — note 3 is the whole audit, which is what the parity test below is for."
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "label": "test/alert/fingerprint.parity.spec.ts",
+          "caption": "Written at whatever indentation it was typed at; the builder formats it before drawing it.",
+          "code": "import { expect, it } from \"vitest\";\nimport { fingerprintOf } from \"../src/alert/fingerprint.ts\";\nimport { rustFingerprint } from \"./harness.ts\";\n\nit(\"should agree with the ingest daemon on every identity field\", async () => {\n    const alert = { rule: \"disk-pressure\", service: \"ledger\" };\n        const mine = fingerprintOf(alert);\n      const theirs = await rustFingerprint(alert);\n\n  expect(mine).toBe(theirs);\n});",
+          "selections": [
+            {
+              "text": "const mine = fingerprintOf(alert);\n      const theirs = await rustFingerprint(alert);",
+              "note": [
+                "Quoted from the source as it was typed, eight spaces of indent and all. Selections name the code they cover rather than an offset into it, so the builder formats first and then finds this run — the mark lands on the reformatted line instead of on the position the text used to sit at."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "findings",
       "label": "Findings",
-      "eyebrow": "3 of 3",
+      "eyebrow": "4 of 4",
       "title": "What this review found.",
       "blocks": [
         {

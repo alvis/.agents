@@ -1,110 +1,35 @@
+import { drawRun } from "../span.ts";
 import { escapeHtml } from "../escape.ts";
-import { renderInline } from "../inline.ts";
 import { syncAttribute } from "../sync.ts";
+import { RenderError } from "../error.ts";
 import {
   optionalString,
   requireArray,
-  requireFilledArray,
-  requireLine,
   requireObject,
-  requireOneOf,
   requireString,
 } from "../validate.ts";
-import { RISK_SEVERITY_LABEL } from "../vocabulary.ts";
+import {
+  readComments,
+  readHighlight,
+  readTies,
+  readTokens,
+} from "./code-read.ts";
+import { placeSelections } from "./code-select.ts";
 
-import type { Block, CodeComment, CodeTie } from "../types.ts";
+import type { PlacedSelection } from "./code-select.ts";
+import type { Span } from "../span.ts";
+import type { Block, CodeExcerpt } from "../types.ts";
 
-/** the severities a reviewer note may carry. */
-const SEVERITIES = Object.keys(RISK_SEVERITY_LABEL) as (keyof typeof RISK_SEVERITY_LABEL)[];
-
-/**
- * reads which lines each tie covers, keyed by line
- * @param ties the author-supplied ties
- * @param path JSON path of `ties`, named verbatim by any refusal
- * @param lines how many lines the excerpt has
- * @returns each line's tie key, by 1-based line number
- */
-function readTies(
-  ties: unknown,
-  path: string,
-  lines: number,
-): Map<number, string> {
-  const keyed = new Map<number, string>();
-  for (const [index, tie] of requireArray<CodeTie>(ties, path).entries()) {
-    const at = `${path}[${index}]`;
-    requireObject<CodeTie>(tie, at);
-    const key = requireString(tie.key, `${at}.key`);
-    for (const [which, line] of requireFilledArray<unknown>(
-      tie.lines,
-      `${at}.lines`,
-    ).entries())
-      keyed.set(requireLine(line, `${at}.lines[${which}]`, lines), key);
-  }
-
-  return keyed;
+/** an excerpt drawn, against the selections it turned out to carry. */
+interface Drawn {
+  /** the path chip and the excerpt itself, without caption or notes */
+  html: string;
+  /** every selection on it, located and numbered */
+  placed: PlacedSelection[];
 }
 
 /**
- * reads the reviewer notes anchored to a line, keyed by the line they follow
- * @param comments the author-supplied notes
- * @param path JSON path of `comments`, named verbatim by any refusal
- * @param lines how many lines the excerpt has
- * @returns each line's notes as HTML, by 1-based line number
- */
-function readComments(
-  comments: unknown,
-  path: string,
-  lines: number,
-): Map<number, string[]> {
-  const keyed = new Map<number, string[]>();
-  for (const [index, comment] of requireArray<CodeComment>(
-    comments,
-    path,
-  ).entries()) {
-    const at = `${path}[${index}]`;
-    requireObject<CodeComment>(comment, at);
-    const line = requireLine(comment.line, `${at}.line`, lines);
-    const severity = comment.severity
-      ? requireOneOf(comment.severity, SEVERITIES, `${at}.severity`)
-      : undefined;
-    const where = optionalString(comment.at, `${at}.at`);
-    const head = [
-      severity
-        ? `<span class="diff-severity" data-severity="${severity}">${RISK_SEVERITY_LABEL[severity]}</span>`
-        : "",
-      where ? `<span class="diff-where">${escapeHtml(where)}</span>` : "",
-    ].join("");
-
-    keyed.set(line, [
-      ...(keyed.get(line) ?? []),
-      `<span class="diff-comment">${head ? `<span class="diff-comment-head">${head}</span>` : ""}<span class="diff-comment-body">${renderInline(comment.text, `${at}.text`)}</span></span>`,
-    ]);
-  }
-
-  return keyed;
-}
-
-/**
- * reads which lines the author is drawing the eye to
- * @param highlight the author-supplied line numbers
- * @param path JSON path of `highlight`, named verbatim by any refusal
- * @param lines how many lines the excerpt has
- * @returns the marked lines, by 1-based line number
- */
-function readHighlight(
-  highlight: unknown,
-  path: string,
-  lines: number,
-): Set<number> {
-  return new Set(
-    requireArray<unknown>(highlight, path).map((line, index) =>
-      requireLine(line, `${path}[${index}]`, lines),
-    ),
-  );
-}
-
-/**
- * draws a source excerpt, held verbatim and escaped like any other text
+ * draws a source excerpt, held verbatim and escaped as it is sliced
  * @param block the code block
  * @param path JSON path of `block`, named verbatim by any refusal
  * @returns the excerpt as HTML
@@ -113,52 +38,180 @@ export function renderCode(
   block: Extract<Block, { type: "code" }>,
   path: string,
 ): string {
-  const code = requireString(block.code, `${path}.code`);
-  const language = optionalString(block.language, `${path}.language`);
   const caption = optionalString(block.caption, `${path}.caption`);
-  const opening = `<pre class="code"${language ? ` data-language="${escapeHtml(language)}"` : ""}><code>`;
-  const annotated =
-    block.highlight !== undefined ||
-    block.ties !== undefined ||
-    block.comments !== undefined;
+  const { html, placed } = drawExcerpt(block, path, 1);
+  const notes = drawNotes(placed);
+  if (!caption && !notes && html.startsWith("<pre")) return html;
 
-  // no highlighter and no token spans: the excerpt is one escaped string, so
-  // there is no path by which a data file can put an element on the page. An
-  // unannotated excerpt stays exactly that one string, so adding the feature
-  // did not change a single byte of the boards that do not use it
-  const inner = annotated
-    ? drawLines(block, code, path)
-    : escapeHtml(code);
-  const body = `${opening}${inner}</code></pre>`;
-  if (!caption) return body;
+  // a figure, so the caption and the notes are associated with the excerpt
+  // rather than floating above it as paragraphs that happen to sit nearby
+  return `<figure class="code-figure">${html}${notes}${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}</figure>`;
+}
 
-  // a figure, so the caption is associated with the excerpt rather than
-  // floating above it as a paragraph that happens to sit nearby
-  return `<figure class="code-figure">${body}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
+/**
+ * draws two excerpts to be read against each other.
+ *
+ * the panels share one number sequence and one note list, which is what makes
+ * the pair read as a single annotated comparison rather than as two blocks that
+ * happen to sit side by side: note 3 is note 3 wherever the reader finds it.
+ * @param block the code pair
+ * @param path JSON path of `block`, named verbatim by any refusal
+ * @returns the pair as HTML
+ */
+export function renderCodePair(
+  block: Extract<Block, { type: "codepair" }>,
+  path: string,
+): string {
+  const eyebrow = optionalString(block.eyebrow, `${path}.eyebrow`);
+  const caption = optionalString(block.caption, `${path}.caption`);
+  const panels = requirePanels(block.panels, `${path}.panels`);
+  const placed: PlacedSelection[] = [];
+  const drawn = panels.map((panel, index) => {
+    const one = drawExcerpt(panel, `${path}.panels[${index}]`, placed.length + 1);
+    placed.push(...one.placed);
+
+    return `<div class="code-panel">${one.html}</div>`;
+  });
+
+  return [
+    `<figure class="code-pair">`,
+    eyebrow ? `<p class="code-eyebrow">${escapeHtml(eyebrow)}</p>` : "",
+    caption ? `<figcaption class="code-pair-title">${escapeHtml(caption)}</figcaption>` : "",
+    `<div class="code-panels">${drawn.join("")}</div>`,
+    drawNotes(placed),
+    `</figure>`,
+  ].join("");
+}
+
+/**
+ * reads a pair's two panels, refusing any other count by JSON path.
+ *
+ * two is the whole shape: a pair with one panel has nothing to compare against
+ * and a pair with three has no side-by-side reading, and both would otherwise
+ * lay out as something the author did not ask for rather than be refused.
+ * @param panels the author-supplied panels
+ * @param path JSON path of `panels`, named verbatim by any refusal
+ * @returns the two panels
+ */
+function requirePanels(panels: unknown, path: string): CodeExcerpt[] {
+  const read = requireArray<CodeExcerpt>(panels, path);
+  if (read.length !== 2)
+    throw new RenderError(
+      `${path}: required exactly 2 panels, received ${String(read.length)}`,
+    );
+  for (const [index, panel] of read.entries())
+    requireObject<CodeExcerpt>(panel, `${path}[${index}]`);
+
+  return read;
+}
+
+/**
+ * draws one excerpt: its path chip, then the excerpt itself.
+ * @param excerpt the excerpt as the author wrote it
+ * @param path JSON path of `excerpt`, named verbatim by any refusal
+ * @param from the number the first of its selections carries
+ * @returns the drawn excerpt and the selections it turned out to carry
+ */
+function drawExcerpt(
+  excerpt: CodeExcerpt,
+  path: string,
+  from: number,
+): Drawn {
+  const code = requireString(excerpt.code, `${path}.code`);
+  const language = requireString(excerpt.language, `${path}.language`);
+  const label = optionalString(excerpt.label, `${path}.label`);
+  const placed = placeSelections(
+    excerpt.selections ?? [],
+    code,
+    `${path}.selections`,
+    from,
+  );
+  const tokens = readTokens(excerpt.tokens ?? [], `${path}.tokens`, code.length);
+  const head = label
+    ? `<p class="code-path"><span class="code-path-file">${escapeHtml(label)}</span><span class="code-path-language">${escapeHtml(language)}</span></p>`
+    : "";
+  const plain =
+    !placed.length &&
+    !tokens.length &&
+    excerpt.highlight === undefined &&
+    excerpt.ties === undefined &&
+    excerpt.comments === undefined;
+
+  // an excerpt nobody has marked up is still one escaped string, exactly as it
+  // was before any of this existed, so the boards that use none of these
+  // features did not gain a byte
+  const inner = plain
+    ? escapeHtml(code)
+    : drawLines(excerpt, code, path, tokens, placed);
+
+  return {
+    html: `${head}<pre class="code" data-language="${escapeHtml(language)}"><code>${inner}</code></pre>`,
+    placed,
+  };
+}
+
+/**
+ * draws the numbered notes that read under an excerpt or a pair.
+ * @param placed the located selections, in reading order
+ * @returns the note list as HTML, or nothing when there are no selections
+ */
+function drawNotes(placed: PlacedSelection[]): string {
+  if (!placed.length) return "";
+  const items = placed
+    .map(
+      (one) =>
+        `<li class="code-note" value="${String(one.number)}"><span class="code-note-body">${one.note}</span></li>`,
+    )
+    .join("");
+
+  return `<ol class="code-notes">${items}</ol>`;
 }
 
 /**
  * draws an excerpt line by line, so a line can be marked, tied, or commented on
- * @param block the code block
+ * @param excerpt the excerpt as the author wrote it
  * @param code the excerpt text
- * @param path JSON path of `block`, named verbatim by any refusal
+ * @param path JSON path of `excerpt`, named verbatim by any refusal
+ * @param tokens the measured colour ranges
+ * @param placed the located selections
  * @returns the lines as HTML, newlines preserved
  */
 function drawLines(
-  block: Extract<Block, { type: "code" }>,
+  excerpt: CodeExcerpt,
   code: string,
   path: string,
+  tokens: Span[],
+  placed: PlacedSelection[],
 ): string {
   const lines = code.split("\n");
-  const marked = readHighlight(block.highlight ?? [], `${path}.highlight`, lines.length);
-  const tied = readTies(block.ties ?? [], `${path}.ties`, lines.length);
-  const commented = readComments(block.comments ?? [], `${path}.comments`, lines.length);
+  const marked = readHighlight(excerpt.highlight ?? [], `${path}.highlight`, lines.length);
+  const tied = readTies(excerpt.ties ?? [], `${path}.ties`, lines.length);
+  const commented = readComments(excerpt.comments ?? [], `${path}.comments`, lines.length);
+  // colour first and selection second, so a picked keyword reads as a keyword
+  // that is picked rather than the other way round
+  const spans = [
+    ...tokens,
+    ...placed.map((one) => ({
+      start: one.start,
+      end: one.end,
+      className: "code-pick",
+    })),
+  ];
+  const after = new Map(
+    placed.map((one) => [
+      one.end,
+      `<sup class="code-pick-mark">${String(one.number)}</sup>`,
+    ]),
+  );
+  let at = 0;
 
   return lines
     .map((line, index) => {
       const number = index + 1;
+      const start = at;
+      at += line.length + 1;
       const key = tied.get(number);
-      const text = escapeHtml(line);
+      const text = drawRun(code, spans, start, start + line.length, after);
       const drawn = marked.has(number) ? `<mark>${text}</mark>` : text;
       const classes = `code-line${marked.has(number) ? " is-marked" : ""}`;
       // the newline lives inside the span, so a marked line's background does
