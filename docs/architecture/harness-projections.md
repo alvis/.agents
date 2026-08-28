@@ -3,13 +3,15 @@
 ## Support tiers
 
 The files under `plugins/` are the source of truth. Claude Code consumes each
-`.claude-plugin` manifest; Codex consumes generated `.codex-plugin` manifests
+`.claude-plugin` manifest; Codex consumes the committed `.codex-plugin` manifests
 and `.agents/plugins/marketplace.json`. Both are native targets and must remain
-behaviorally aligned.
+behaviorally aligned. Maintain the marketplace manifests manually when the
+plugin set or source manifests change.
 
 Grok Build is a compatibility consumer: xAI documents direct loading of Claude
-marketplaces, plugins, skills, agents, MCP servers, hooks, and instructions. No
-Grok-specific source or generated manifest exists here.
+marketplaces, plugins, skills, agents, MCP servers, hooks, and instructions. The
+committed `.grok-plugin/marketplace.json` keeps its marketplace catalog aligned
+with the native manifests.
 
 OpenCode support targets stable V1 only. Its documented extension layout differs
 from this marketplace, so `scripts/install_opencode.ts` produces a managed
@@ -143,9 +145,9 @@ skill-frontmatter hook whose event, matcher, command shape, script, payload, or
 requirements are not represented in `scripts/opencode_contract.json`. Plugin
 names and bundle paths must match that protocol; every executable, supporting
 resource, or payload must remain beneath its regular-file bundle path and match
-its recorded digest before it is read or spawned. The compatibility generator
-uses the same hook authority, so an unsupported registration cannot silently
-disappear from the matrix.
+its recorded digest before it is read or spawned. The compatibility matrix uses
+the same hook authority, so an unsupported registration cannot silently disappear
+from the matrix.
 
 Replacement authority is also bound outside the projected tree. The installer
 stores a target-specific ownership record and durable transaction journal under
@@ -159,13 +161,13 @@ receipt schema independently of the current contract, then commits schema-v2
 ownership only after the new install succeeds. Dry-run never mutates recovery
 state and stops when recovery is required.
 
-`COMPATIBILITY.md` is generated from current skill and agent sources plus explicit
+`COMPATIBILITY.md` is maintained from current skill and agent sources plus explicit
 cross-harness exceptions. Its emoji is part of the claim: adapted, experimental,
 external, and unavailable features must never be rewritten as native support.
 
 ## Upstream documentation
 
-OpenCode V1 claims were reviewed on 2026-08-25 against its documentation for
+OpenCode V1 claims are grounded in its documentation for
 [plugins](https://dev.opencode.ai/docs/plugins/),
 [skills](https://opencode.ai/docs/skills/),
 [agents](https://opencode.ai/docs/agents/),

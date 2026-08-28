@@ -33,7 +33,7 @@ plus `gh`, and optionally `jj`, for publishing.
 | Codex marketplace projection | `.agents/plugins/marketplace.json` |
 | Grok marketplace projection | `.grok-plugin/marketplace.json` |
 | OpenCode V1 projector | `scripts/install_opencode.ts` + `scripts/opencode_adapter.js` + `scripts/opencode_contract.json` |
-| Harness compatibility projection | `COMPATIBILITY.md` from `scripts/generate_harness_compatibility.ts` |
+| Harness compatibility matrix | `COMPATIBILITY.md` (maintained manually) |
 | Plugin manifests | `plugins/<p>/.{claude,codex,grok}-plugin/plugin.json` |
 | Skill | `plugins/<p>/skills/<name>/SKILL.md` (+ `references/`, `scripts/`, `assets/`) |
 | Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex,grok}.json` |
@@ -122,11 +122,12 @@ these sources, and each is the rule a locally sensible change breaks first.
   place. This is the rule behind "no central roster in a plugin's
   `plugins/<p>/hooks/ALLAGENT.md`" above — a
   convenience copy is drift with a head start.
-- **Regenerate projections; never trust them.** Overviews and the installed plugin
-  cache are derived views, safe to delete and rebuild. `.state/` is operational
-  working memory, not byte-reconstructible; it becomes disposable only after every
-  durable fact is promoted and closure is recorded. Do not add a cache, index, or
-  generated summary that something else then depends on.
+- **Keep committed artifacts and derived views distinct.** The committed marketplace
+  projections and compatibility matrix are maintained manually. Overviews and the
+  installed plugin cache are derived views, safe to delete and rebuild. `.state/`
+  is operational working memory, not byte-reconstructible; it becomes disposable
+  only after every durable fact is promoted and closure is recorded. Do not add a
+  cache, index, or generated summary that something else then depends on.
 - **Status is not validity.** `done` is terminal history; whether its result still holds
   is a separate question with a separate answer. A skill choosing what to recompute reads
   validity, never status, and never flips a completed row back.

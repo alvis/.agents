@@ -3,8 +3,6 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  rmSync,
-  writeFileSync,
 } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
@@ -64,32 +62,6 @@ function hookCommands(
     hooks.map(({ command }) => command),
   );
 }
-async function projectionSandbox() {
-  const directory = await createTemporaryDirectory("projections-");
-  mkdirSync(join(directory, ".claude-plugin"), { recursive: true });
-  cpSync(
-    claudeCatalogPath,
-    join(directory, ".claude-plugin", "marketplace.json"),
-  );
-  mkdirSync(join(directory, "scripts"), { recursive: true });
-  cpSync(
-    join(root, "scripts/generate_marketplace_projections.ts"),
-    join(directory, "scripts", "generate_marketplace_projections.ts"),
-  );
-  return {
-    directory,
-    run: (args: readonly string[]) =>
-      spawnSync(
-        "bun",
-        [
-          "run",
-          join(directory, "scripts", "generate_marketplace_projections.ts"),
-          ...args,
-        ],
-        { encoding: "utf8", cwd: directory },
-      ),
-  };
-}
 function cleanHarnessEnvironment(
   variable?: string,
   value?: string,
@@ -100,7 +72,7 @@ function cleanHarnessEnvironment(
   return environment;
 }
 
-describe("marketplace projections", () => {
+describe("runtime contracts", () => {
   it("should fail loudly when the test runtime is too old", () => {
     expect(() => assertSupportedTestRuntime("19.9.0")).toThrow(
       `this suite needs Node ${MINIMUM_NODE_MAJOR}+ but Vitest is running on 19.9.0`,
@@ -108,138 +80,6 @@ describe("marketplace projections", () => {
     expect(() =>
       assertSupportedTestRuntime(`${MINIMUM_NODE_MAJOR}.0.0`),
     ).not.toThrow();
-  });
-  it("should generate valid deterministic marketplace structures", async () => {
-    const sandbox = await projectionSandbox();
-    try {
-      expect(sandbox.run([]).status).toBe(0);
-      const codexPath = join(
-        sandbox.directory,
-        ".agents",
-        "plugins",
-        "marketplace.json",
-      );
-      const grokPath = join(
-        sandbox.directory,
-        ".grok-plugin",
-        "marketplace.json",
-      );
-      const firstCodex = readFileSync(codexPath, "utf8");
-      const firstGrok = readFileSync(grokPath, "utf8");
-      const codex = JSON.parse(firstCodex) as {
-        readonly interface: { readonly displayName: unknown };
-        readonly name: unknown;
-        readonly plugins: readonly {
-          readonly category: unknown;
-          readonly name: unknown;
-          readonly policy: {
-            readonly authentication: unknown;
-            readonly installation: unknown;
-          };
-          readonly source: { readonly path: unknown; readonly source: unknown };
-        }[];
-      };
-      const grok = JSON.parse(firstGrok) as {
-        readonly description: unknown;
-        readonly name: unknown;
-        readonly owner: { readonly name: unknown };
-        readonly plugins: readonly {
-          readonly name: unknown;
-          readonly source: { readonly path: unknown; readonly type: unknown };
-        }[];
-      };
-
-      expect(codex.plugins.length).toBeGreaterThan(0);
-      expect(grok.plugins.length).toBeGreaterThan(0);
-      expect(codex.name).toBeTypeOf("string");
-      expect(codex.name).not.toBe("");
-      expect(codex.interface.displayName).toBeTypeOf("string");
-      expect(codex.interface.displayName).not.toBe("");
-      for (const plugin of codex.plugins) {
-        expect(plugin.category).toBeTypeOf("string");
-        expect(plugin.category).not.toBe("");
-        expect(plugin.name).toBeTypeOf("string");
-        expect(plugin.name).not.toBe("");
-        expect(plugin.policy.authentication).toBe("ON_INSTALL");
-        expect(plugin.policy.installation).toBe("AVAILABLE");
-        expect(plugin.source.path).toBeTypeOf("string");
-        expect(plugin.source.path).not.toBe("");
-        expect(plugin.source.source).toBe("local");
-      }
-      for (const plugin of grok.plugins) {
-        expect(plugin.name).toBeTypeOf("string");
-        expect(plugin.name).not.toBe("");
-        expect(plugin.source.path).toBeTypeOf("string");
-        expect(plugin.source.path).not.toBe("");
-        expect(plugin.source.type).toBe("local");
-      }
-      expect(grok.description).toBeTypeOf("string");
-      expect(grok.description).not.toBe("");
-      expect(grok.name).toBeTypeOf("string");
-      expect(grok.name).not.toBe("");
-      expect(grok.owner.name).toBeTypeOf("string");
-      expect(grok.owner.name).not.toBe("");
-      expect(new Set(codex.plugins.map(({ name }) => name)).size).toBe(
-        codex.plugins.length,
-      );
-      expect(new Set(grok.plugins.map(({ name }) => name)).size).toBe(
-        grok.plugins.length,
-      );
-      expect(codex.name).toBe(grok.name);
-      expect(codex.interface.displayName).toBe(grok.owner.name);
-      expect(codex.plugins.map(({ name }) => name).sort()).toEqual(
-        grok.plugins.map(({ name }) => name).sort(),
-      );
-
-      expect(sandbox.run([]).status).toBe(0);
-      expect(readFileSync(codexPath, "utf8")).toBe(firstCodex);
-      expect(readFileSync(grokPath, "utf8")).toBe(firstGrok);
-      expect(sandbox.run(["--check"]).status).toBe(0);
-    } finally {
-      await removeTemporaryDirectory(sandbox.directory);
-    }
-  });
-
-  it("should fail generator --check with exit 2 when a projection is stale", async () => {
-    const sandbox = await projectionSandbox();
-    try {
-      expect(sandbox.run([]).status).toBe(0);
-      writeFileSync(
-        join(sandbox.directory, ".grok-plugin", "marketplace.json"),
-        "{}\n",
-      );
-      writeFileSync(
-        join(sandbox.directory, ".agents", "plugins", "marketplace.json"),
-        "",
-      );
-      const check = sandbox.run(["--check"]);
-      expect(check.status).toBe(2);
-      expect(check.stderr).toContain(
-        "Grok Build marketplace projection is stale",
-      );
-      expect(check.stderr).toContain("Codex marketplace projection is stale");
-      expect(sandbox.run([]).status).toBe(0);
-      expect(sandbox.run(["--check"]).status).toBe(0);
-    } finally {
-      await removeTemporaryDirectory(sandbox.directory);
-    }
-  });
-
-  it("should fail generator --check when a generated projection is missing", async () => {
-    const sandbox = await projectionSandbox();
-    try {
-      expect(sandbox.run([]).status).toBe(0);
-      rmSync(
-        join(sandbox.directory, ".agents", "plugins", "marketplace.json"),
-      );
-
-      const check = sandbox.run(["--check"]);
-
-      expect(check.status).toBe(2);
-      expect(check.stderr).toContain("Codex marketplace projection is stale");
-    } finally {
-      await removeTemporaryDirectory(sandbox.directory);
-    }
   });
 });
 
