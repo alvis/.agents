@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -149,7 +149,7 @@ describe("the example board set", () => {
   it("should render every board the run declares", async () => {
     const boards = await renderExamples();
 
-    expect(Object.keys(boards)).toHaveLength(15);
+    expect(Object.keys(boards)).toHaveLength(17);
     for (const [file, html] of Object.entries(boards)) {
       expect(html, file).toMatch(/^<!doctype html>/u);
       expect(html.length, file).toBeGreaterThan(50_000);
@@ -175,6 +175,30 @@ describe("the example board set", () => {
 
     expect(handled.length).toBeGreaterThan(30);
     expect(handled.filter((type) => !block!.has(type))).toEqual([]);
+  });
+
+  it("should carry a format's sheet only into a board that draws it", async () => {
+    // the sheets are appended per board, which is what keeps a board holding
+    // no card and no excerpt at exactly the bytes it rendered before either
+    // format existed. Named from the data rather than by hand, so a second
+    // board authoring the block moves the expectation with it
+    const run = readRun(await readFile(RUN, "utf8"), RUN);
+    const drawn = new Set<string>();
+    for (const board of run.boards) {
+      const into = { block: new Set<string>(), run: new Set<string>() };
+      vocabularyOf(
+        JSON.parse(await readFile(join(dirname(RUN), board.data), "utf8")),
+        into,
+      );
+      if (into.block.has("observations")) drawn.add(basename(board.out));
+    }
+    const boards = await renderExamples();
+    const carrying = Object.entries(boards)
+      .filter(([, html]) => html.includes(".observation-tick{"))
+      .map(([file]) => basename(file));
+
+    expect(drawn.size).toBeGreaterThan(0);
+    expect(carrying.sort()).toEqual([...drawn].sort());
   });
 
   it("should use every inline run kind the format accepts", async () => {

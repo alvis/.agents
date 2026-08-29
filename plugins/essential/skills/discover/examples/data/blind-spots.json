@@ -1,0 +1,434 @@
+{
+  "kind": "blind-spots",
+  "id": "blind-spots-docs-search-v1",
+  "action": "Blind spots",
+  "title": "Blind spots — “add search to the docs site”",
+  "masthead": {
+    "eyebrow": "Blind spots · Docs search",
+    "headline": "Six words asked for search. The site has five versions, a search box already, and nothing that builds an index.",
+    "lede": "Nothing here says the request was wrong. It says which decisions the request handed to whoever picks it up, and gives you the chance to make them yourself before somebody guesses.",
+    "meta": [
+      {
+        "label": "Words in the prompt",
+        "value": "6"
+      },
+      {
+        "label": "Decisions it leaves open",
+        "value": "5"
+      },
+      {
+        "label": "Doc versions published",
+        "value": "5"
+      },
+      {
+        "label": "Search surfaces today",
+        "value": "1"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "asked",
+      "label": "What you asked",
+      "eyebrow": "The prompt",
+      "title": "This is the whole of it.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "A short prompt is not a bad prompt. It is a bet that the person reading it shares enough context to fill the gaps the same way you would. This board tests that bet by naming each gap and showing what falls through it."
+        },
+        {
+          "type": "code",
+          "language": "markdown",
+          "caption": "The prompt, as sent",
+          "code": "Add search to the docs site.\n"
+        },
+        {
+          "type": "callout",
+          "title": "What a reader has to invent to start",
+          "text": "Which of five versions results come from, whether the existing command palette grows or a second box appears, what builds and stores the index, what counts as a good result, and who notices when it stops being one. None of those has a default that is obviously right, so each one gets guessed."
+        }
+      ]
+    },
+    {
+      "id": "overlooked",
+      "label": "Overlooked",
+      "eyebrow": "What it leaves out",
+      "title": "Four things the codebase already decided for you.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "The short version",
+          "points": [
+            {
+              "lead": "There is already a search box.",
+              "text": "The command palette opens on ⌘K and searches page titles. A second box means two answers to the same question, and readers will find whichever one is nearer."
+            },
+            {
+              "lead": "There are five sites, not one.",
+              "text": "Each published version is its own tree. An index that spans them will confidently return a page the reader's version does not contain."
+            },
+            {
+              "lead": "Nothing builds an index today.",
+              "text": "Whatever is chosen, it adds a build artefact and an owner for it. That cost belongs in the prompt, not in the pull request."
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": "Each card below was found by reading the repository rather than by reasoning about search in general. Tick the ones that change what you were about to ask for."
+        },
+        {
+          "type": "observations",
+          "id": "blindspot-overlooked",
+          "ref": "B1",
+          "label": "Which of these change the ask",
+          "ask": "Tick every observation that would have altered the prompt if you had known it.",
+          "response": "follow-up",
+          "items": [
+            {
+              "title": "A search surface already exists and the prompt does not mention it",
+              "file": "web/src/palette/command-palette.tsx",
+              "found": [
+                "The palette opens on ",
+                {
+                  "kind": "code",
+                  "text": "⌘K"
+                },
+                " and matches page titles and headings. It has no body text index, which is the part it does not do."
+              ],
+              "impact": "Adding a second box gives one question two answers, and the palette is the one readers already reach for. Growing it is a different change from building beside it, and the prompt does not choose.",
+              "source": "Code read"
+            },
+            {
+              "title": "The docs are versioned five ways and the prompt names no version",
+              "file": "docs/versions.json",
+              "found": [
+                "Five trees are published, and ",
+                {
+                  "kind": "code",
+                  "text": "next"
+                },
+                " is one of them — unreleased, and already the second most visited."
+              ],
+              "impact": "One index over all five makes the top hit a page the reader's version does not have. Five indexes make a version switcher part of the search UI. Either is a design; neither is a detail.",
+              "source": "Docs analytics"
+            },
+            {
+              "title": "There is no index build step in the pipeline",
+              "file": ".github/workflows/docs.yml",
+              "found": "The site compiles MDX at deploy and uploads the output. Nothing walks the compiled pages afterwards.",
+              "impact": [
+                "Any answer adds an artefact that has to be built, stored, invalidated and owned. Left unsaid, it lands as ",
+                {
+                  "kind": "mark",
+                  "text": "a script somebody runs by hand"
+                },
+                " and stales the first week nobody remembers."
+              ],
+              "source": "Pipeline read"
+            },
+            {
+              "title": "The three most-run palette queries are navigation, not content",
+              "file": "analytics/queries/palette-terms.sql",
+              "found": [
+                "The top three terms over ninety days are ",
+                {
+                  "kind": "code",
+                  "text": "install"
+                },
+                ", ",
+                {
+                  "kind": "code",
+                  "text": "cli"
+                },
+                " and ",
+                {
+                  "kind": "code",
+                  "text": "env"
+                },
+                " — all of them section names in the sidebar."
+              ],
+              "impact": "If readers are searching to navigate, full-text search over bodies answers a question they were not asking, and the sidebar is the thing that is failing.",
+              "source": "Docs analytics"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mean",
+      "label": "What you may mean",
+      "eyebrow": "Three readings",
+      "title": "The same six words, read three defensible ways.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "These are not options for how to build it. They are readings of what was asked — different enough that a week of work on one is a week of nothing on the others. Pick the one you meant."
+        },
+        {
+          "type": "choice",
+          "id": "blindspot-reading",
+          "ref": "B2",
+          "label": "Which reading is yours",
+          "ask": "Choose the reading that matches what you had in mind.",
+          "choices": [
+            {
+              "value": "Grow the palette to search page bodies, current version only",
+              "summary": "One surface, one version, an index built at deploy from the compiled pages.",
+              "tags": [
+                "Pragmatic",
+                "Recommended"
+              ],
+              "pros": [
+                "Uses the box readers already open, so nothing has to be discovered.",
+                "One version means no cross-version result can be wrong."
+              ],
+              "cons": [
+                "A reader on an old version searching for a new feature finds nothing and cannot tell why."
+              ]
+            },
+            {
+              "value": "Full-text search across all five published versions",
+              "summary": "A dedicated page, its own index per version, and a version selector in the results.",
+              "tags": [
+                "Ideal"
+              ],
+              "pros": [
+                "Answers the question a reader on an old version actually has.",
+                "Makes the version dimension explicit instead of hiding it."
+              ],
+              "cons": [
+                "Five indexes to build, store and invalidate, and a second search surface competing with the palette.",
+                "The analytics say navigation, not content, is what people are looking for."
+              ]
+            },
+            {
+              "value": "Fix navigation; do not add search at all",
+              "summary": "Treat the top palette terms as a sidebar defect and reorganise around them.",
+              "tags": [
+                "Architectural"
+              ],
+              "pros": [
+                "Addresses what the measured queries are asking for.",
+                "Adds no index, no artefact and no owner."
+              ],
+              "cons": [
+                "Does nothing for a reader who knows the word but not the section.",
+                "Reads as a refusal if the person who asked meant search literally."
+              ]
+            }
+          ],
+          "recommendation": "Grow the palette to search page bodies, current version only"
+        }
+      ]
+    },
+    {
+      "id": "prompts",
+      "label": "Better prompts",
+      "eyebrow": "Beside yours",
+      "title": "The same request, written so it cannot be guessed at.",
+      "blocks": [
+        {
+          "type": "codepair",
+          "eyebrow": "PROMPT A / 1",
+          "caption": "Left is what was sent. Right is the same intent with the five open decisions closed.",
+          "panels": [
+            {
+              "language": "markdown",
+              "label": "As sent",
+              "code": "Add search to the docs site.\n"
+            },
+            {
+              "language": "markdown",
+              "label": "As it needed to be",
+              "code": "Extend the existing command palette so it matches page body\ntext, not just titles.\n\nScope it to the version the reader is currently on. Do not\nadd a second search box.\n\nBuild the index in the docs deploy workflow from the compiled\noutput, and fail the deploy if the index is missing rather\nthan shipping a palette that silently finds nothing.\n\nGood enough to ship: searching `retry backoff` returns the\nRetries page above the changelog entry that mentions it. Ship\nit behind the existing docs flag and read palette terms again\nafter two weeks.\n",
+              "selections": [
+                {
+                  "text": "Extend the existing command palette",
+                  "note": [
+                    "Names the surface, which is the decision the original left open. ",
+                    {
+                      "kind": "mark",
+                      "text": "Extend"
+                    },
+                    " rather than ",
+                    {
+                      "kind": "mark",
+                      "text": "add"
+                    },
+                    " also settles that no second box appears."
+                  ]
+                },
+                {
+                  "text": "Scope it to the version the reader is currently on.",
+                  "note": "Closes the five-versions problem in one sentence, and closes it the cheap way. A reader who disagrees now has something specific to disagree with."
+                },
+                {
+                  "text": "fail the deploy if the index is missing",
+                  "note": "Names the failure mode, not just the artefact. This is the line that stops the index becoming a script somebody runs by hand."
+                },
+                {
+                  "text": "searching `retry backoff` returns the Retries page above the changelog entry",
+                  "note": [
+                    "A single worked example is worth more than an adjective. It is the difference between ",
+                    {
+                      "kind": "mark",
+                      "text": "make it good"
+                    },
+                    " and something the implementer can run."
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "What the second prompt adds",
+            "The guess it removes",
+            "Cost of leaving it out"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Names the palette as the surface"
+              },
+              {
+                "text": "One box or two"
+              },
+              {
+                "text": "Two search UIs, discovered by whichever is nearer",
+                "verdict": "bad"
+              }
+            ],
+            [
+              {
+                "text": "Scopes to the current version"
+              },
+              {
+                "text": "One index or five"
+              },
+              {
+                "text": "Confident results for pages the reader cannot open",
+                "verdict": "bad"
+              }
+            ],
+            [
+              {
+                "text": "Places the index build in the deploy workflow"
+              },
+              {
+                "text": "Who owns the artefact"
+              },
+              {
+                "text": "A stale index nobody is paged for",
+                "verdict": "mixed"
+              }
+            ],
+            [
+              {
+                "text": "Gives one worked query and its expected ranking"
+              },
+              {
+                "text": "What good means"
+              },
+              {
+                "text": "Review turns into taste, and taste turns into rounds",
+                "verdict": "mixed"
+              }
+            ],
+            [
+              {
+                "text": "Names the flag and the follow-up measurement"
+              },
+              {
+                "text": "How it lands and how it is judged"
+              },
+              {
+                "text": "Shipped and never looked at again",
+                "verdict": "mixed"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "label": "Write the real one",
+      "eyebrow": "Your turn",
+      "title": "The reply below is the prompt. Finish it.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The drawer holds a reply shaped as a prompt rather than as feedback. Everything you tick and choose above lands inside it, and what you write here becomes its closing paragraph. Copy the whole thing back."
+        },
+        {
+          "type": "checklist",
+          "id": "blindspot-carry",
+          "ref": "B3",
+          "label": "What your prompt must carry",
+          "ask": "Which of these will your prompt state outright?",
+          "options": [
+            {
+              "value": "The surface it changes",
+              "summary": "Named file or component, so nothing new is invented beside it."
+            },
+            {
+              "value": "The scope boundary",
+              "summary": "Which versions, which locales, which audience — stated, not implied."
+            },
+            {
+              "value": "Where the new artefact is built and owned",
+              "summary": "The pipeline step, and what happens when it is missing."
+            },
+            {
+              "value": "One worked example of a good result",
+              "summary": "A query and the ranking it should produce."
+            },
+            {
+              "value": "How it ships and how it is judged",
+              "summary": "The flag, and the measurement taken afterwards."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "blindspot-prompt",
+          "ref": "B4",
+          "label": "The part only you can write",
+          "ask": "What do you know about this request that the repository cannot tell anyone?",
+          "placeholder": "For example: this came from the two enterprise accounts still on v3, so the version question is the whole request and the palette is beside the point."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Command palette implementation and its title-only matcher",
+      "ref": "web/src/palette/command-palette.tsx",
+      "level": "measured"
+    },
+    {
+      "label": "Published version trees and their release state",
+      "ref": "docs/versions.json",
+      "level": "measured"
+    },
+    {
+      "label": "Palette query terms, ninety days, ranked by count",
+      "ref": "analytics · palette-terms.sql",
+      "level": "measured"
+    },
+    {
+      "label": "That readers searching section names are navigating rather than researching",
+      "ref": "inferred from the term list",
+      "level": "assumed"
+    }
+  ],
+  "reply": {
+    "heading": "The prompt you should have written",
+    "template": "Here is the request again, with the decisions it left open now closed.\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\nContext this rests on:\n\n{{provenance}}\n\nIf any line above is wrong, correct that line rather than the whole request — the rest of it still holds.\n"
+  }
+}

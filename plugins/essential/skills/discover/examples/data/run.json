@@ -30,6 +30,13 @@
       "blurb": "Severity-ranked findings and the context around them, for work whose risk is the thing being decided."
     },
     {
+      "id": "blind-spots-docs-search-v1",
+      "label": "Blind spots",
+      "data": "blind-spots.json",
+      "out": "blind-spots.html",
+      "blurb": "What a short request left for somebody else to decide, and the prompt it needed to be instead."
+    },
+    {
       "id": "architecture-board-conflux-sync-v1",
       "label": "Architecture board",
       "data": "architecture-board.json",
@@ -49,6 +56,13 @@
       "data": "domain-explainer.json",
       "out": "domain-explainer.html",
       "blurb": "The vocabulary and shape of an unfamiliar problem, before any option is on the table."
+    },
+    {
+      "id": "concept-primer-motion-easing-v1",
+      "label": "Concept primer",
+      "data": "concept-primer.json",
+      "out": "concept-primer.html",
+      "blurb": "One concept taught end to end, with a demonstration to feel it and the words to ask a professional for it."
     },
     {
       "id": "readiness-check-notification-service-v1",

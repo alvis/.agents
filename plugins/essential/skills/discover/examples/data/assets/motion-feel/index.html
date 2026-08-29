@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Motion — easing and duration</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1>Open a panel</h1>
+      <p class="reading" id="reading">linear · 500ms against ease-out · 220ms</p>
+    </header>
+
+    <main>
+      <div class="tracks">
+        <section class="track">
+          <h2>What you shipped</h2>
+          <div class="stage">
+            <div class="panel cheap" id="cheap"><span>Settings</span></div>
+          </div>
+          <p class="label">linear · 500ms</p>
+        </section>
+
+        <section class="track">
+          <h2>What you asked for</h2>
+          <div class="stage">
+            <div class="panel tuned" id="tuned"><span>Settings</span></div>
+          </div>
+          <p class="label" id="tunedLabel">ease-out · 220ms</p>
+        </section>
+      </div>
+
+      <form class="controls" id="controls">
+        <fieldset>
+          <legend>Curve</legend>
+          <label><input type="radio" name="curve" value="linear" />linear</label>
+          <label><input type="radio" name="curve" value="ease-in" />ease-in</label>
+          <label
+            ><input type="radio" name="curve" value="ease-out" checked />ease-out</label
+          >
+          <label><input type="radio" name="curve" value="ease-in-out" />ease-in-out</label>
+        </fieldset>
+
+        <label class="duration">
+          Duration
+          <input type="range" id="ms" min="80" max="800" step="20" value="220" />
+          <output id="msOut">220ms</output>
+        </label>
+
+        <button type="button" id="play">Play both</button>
+      </form>
+
+      <p class="hint" id="hint">
+        Both panels travel the same distance. Only the curve and the clock differ.
+      </p>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

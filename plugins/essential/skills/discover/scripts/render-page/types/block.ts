@@ -10,6 +10,7 @@ import type {
   Meter,
   Metric,
   Moment,
+  Observation,
   Option,
   Person,
   Pin,
@@ -118,6 +119,20 @@ export type Block =
       label: string;
       ask: string;
       options: Option[];
+    }
+  /**
+   * numbered cards the reader ticks where one lands, each naming what was
+   * seen, where, and what it costs
+   */
+  | {
+      type: "observations";
+      response?: Response;
+      id: string;
+      /** the citation code drawn on its chip and beside it, e.g. `O2` */
+      ref: string;
+      label: string;
+      ask: string;
+      items: Observation[];
     }
   /** a bulleted or numbered list, each item optionally led by its claim */
   | { type: "list"; ordered?: boolean; items: Point[] }

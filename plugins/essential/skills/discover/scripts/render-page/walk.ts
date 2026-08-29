@@ -56,6 +56,24 @@ export function pageBlocks(data: PageData): Placed[] {
   );
 }
 
+/**
+ * says whether a board holds a block of one type, at any depth.
+ *
+ * asked of the data rather than of the rendered HTML, because the answers
+ * decide what rendering is handed: whether 3.5 MB of graph runtime is fetched
+ * at all, and whether a page carries the sheet for a format it never draws.
+ * Asked through the same walk that resolves a board's files, so a block behind
+ * a disclosure is one this sees — read flat, a graph nested there once shipped
+ * with the marker its loader matches on, no library to draw it, and no refusal
+ * either.
+ * @param data the board's data, as read from disk
+ * @param type the block type to look for
+ * @returns true where the board holds one
+ */
+export function usesBlock(data: PageData, type: Block["type"]): boolean {
+  return pageBlocks(data).some((placed) => placed.block?.type === type);
+}
+
 /** one source excerpt a board holds, against where in the data it sits. */
 export interface PlacedCode {
   /** the excerpt itself, exactly as the author wrote it */

@@ -44,7 +44,7 @@ const SUPPORT = ["dom-support.ts", "test-support.ts"];
 const PAGE = "render-page/page.ts";
 
 /** how many edges the tree holds, as a graph read the way a bundler reads one. */
-const EDGES = 401;
+const EDGES = 412;
 
 /** one module against another. */
 interface Edge {

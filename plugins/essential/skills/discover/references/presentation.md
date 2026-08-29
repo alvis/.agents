@@ -11,6 +11,8 @@ source of truth after answers and annotations are transferred back.
 | -------------- | --------------------- | ----------------------------------------------------------------------- |
 | `blindspots`   | risk/context report   | Interacting risks, constraints, actors, or failure surfaces             |
 | `blindspots`   | domain explainer      | An unfamiliar mechanism must become understandable before deciding      |
+| `blindspots`   | blind spots           | A short request leaves its hard decisions to whoever reads it           |
+| `blindspots`   | concept primer        | One idea must be learned well enough to ask a professional for it       |
 | `options`      | ranked options        | Viable approaches or experiential directions need in-context comparison |
 | `options`      | brainstorm spectrum   | The user should react to a deliberately broad solution space            |
 | `interview`    | guided interview      | Several coupled questions need visible supporting context               |
@@ -49,14 +51,14 @@ committed, so the data is what to read and one `--set` run is what to look at.
 Every action example follows that contract while changing its content density
 and its blocks to fit the action.
 
-Together, the eleven action examples and four convention boards (specimen-board,
-board-hub, architecture-board, triage-board) must cover the complete reusable
-pattern catalog. Use the [presentation coverage map](presentation/coverage.md)
-to see which action owns each demonstration. This is suite-level coverage:
-generated pages still select only the components that improve their
-task-specific UX. The complete validator checks both catalog coverage and
-minimum semantic structure for every action; neither check substitutes for
-rendered review.
+Together, the thirteen action examples and four convention boards
+(specimen-board, board-hub, architecture-board, triage-board) must cover the
+complete reusable pattern catalog. Use the
+[presentation coverage map](presentation/coverage.md) to see which action owns
+each demonstration. This is suite-level coverage: generated pages still select
+only the components that improve their task-specific UX. The complete validator
+checks both catalog coverage and minimum semantic structure for every action;
+neither check substitutes for rendered review.
 
 ## Variable length, modular sources
 

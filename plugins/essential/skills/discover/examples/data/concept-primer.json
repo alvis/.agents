@@ -1,0 +1,398 @@
+{
+  "kind": "concept-primer",
+  "id": "concept-primer-motion-easing-v1",
+  "action": "Concept primer",
+  "title": "Concept primer — easing and duration",
+  "masthead": {
+    "eyebrow": "Concept primer · Interface motion",
+    "headline": "Motion reads as cheap for two reasons, and both of them are numbers you can name.",
+    "lede": "This board teaches one concept end to end: how long a thing takes, and how it distributes that time. By the end you should be able to say what is wrong with an animation in words a motion designer would recognise, instead of saying it feels off.",
+    "meta": [
+      {
+        "label": "Concept",
+        "value": "Easing + duration"
+      },
+      {
+        "label": "Steps in the model",
+        "value": "4"
+      },
+      {
+        "label": "Terms to keep",
+        "value": "6"
+      },
+      {
+        "label": "Time to read",
+        "value": "8 minutes"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "model",
+      "label": "The model",
+      "eyebrow": "Four steps",
+      "title": "Every piece of interface motion is these four decisions.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "If you keep three things",
+          "points": [
+            {
+              "lead": "Duration is a budget, not a taste.",
+              "text": "Most interface motion belongs between 150ms and 300ms. Under 100ms it is not perceived as motion; over 400ms the reader is waiting for the software."
+            },
+            {
+              "lead": "Easing is where that budget is spent.",
+              "text": "The same 220ms feels mechanical spread evenly and deliberate spent mostly at the start. Linear is the giveaway: nothing in the physical world moves at a constant speed from rest."
+            },
+            {
+              "lead": "Entrances and exits are not symmetrical.",
+              "text": "Something arriving should decelerate into place so the eye can follow it. Something leaving should accelerate away, because nobody needs to watch it go."
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": "Work through the four in order. Each one is a question with a defensible answer, and skipping any of them is what produces motion that technically animates and still reads as an afterthought."
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Decide what the motion is for",
+              "text": "Motion answers exactly one of: where did this come from, what just changed, or is the system still working. If it answers none of those, the right duration is zero.",
+              "state": "done"
+            },
+            {
+              "title": "Set the duration from the distance",
+              "text": "A small element moving a short way needs less time than a full-screen sheet. 150ms for a toggle or a chip; 200 to 250ms for a card or a menu; up to 350ms for something crossing the whole viewport.",
+              "state": "done"
+            },
+            {
+              "title": "Choose the curve from the direction",
+              "text": "Arriving takes ease-out, so it lands softly. Leaving takes ease-in, so it commits and goes. Something both leaving and arriving — a page transition — takes ease-in-out.",
+              "state": "current"
+            },
+            {
+              "title": "Check it against the reader who did not ask for it",
+              "text": "Play it ten times in a row, then honour prefers-reduced-motion. Motion that is pleasant once and irritating on the tenth repeat is too long, not too fast.",
+              "state": "todo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vocabulary",
+      "label": "The words",
+      "eyebrow": "Vocabulary ladder",
+      "title": "Six terms, and the sentence each one lets you say.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The point of the vocabulary is not precision for its own sake. It is that a named cause can be fixed by someone else, and “feels cheap” cannot. Each entry below gives the meaning, then the phrasing that gets the change made."
+        },
+        {
+          "type": "glossary",
+          "entries": [
+            {
+              "term": "easing curve",
+              "detail": [
+                "How the motion's time is distributed across its distance, written as a timing function. Say: ",
+                {
+                  "kind": "mark",
+                  "text": "this is on a linear curve; put it on ease-out so it decelerates into place"
+                },
+                "."
+              ]
+            },
+            {
+              "term": "ease-out",
+              "detail": [
+                "Fast at the start, slow at the end. The default for anything arriving, because the eye catches it early and then has time to read where it stopped. Say: ",
+                {
+                  "kind": "mark",
+                  "text": "entrances should be ease-out, not linear"
+                },
+                "."
+              ]
+            },
+            {
+              "term": "ease-in",
+              "detail": [
+                "Slow at the start, fast at the end. Correct for exits and wrong for entrances, where it reads as hesitation. Say: ",
+                {
+                  "kind": "mark",
+                  "text": "the dismissal should ease in and get out of the way"
+                },
+                "."
+              ]
+            },
+            {
+              "term": "duration",
+              "detail": [
+                "The total time, in milliseconds. Quote it as a number, always. Say: ",
+                {
+                  "kind": "mark",
+                  "text": "this is running at 500ms; it wants about 220"
+                },
+                " — which is a change anyone can make, unlike “it's too slow”."
+              ]
+            },
+            {
+              "term": "stagger",
+              "detail": [
+                "A fixed delay applied between siblings so a list arrives in sequence rather than as a block. Say: ",
+                {
+                  "kind": "mark",
+                  "text": "stagger the rows by about 30ms so the list reads top to bottom"
+                },
+                ". Above roughly 60ms it stops reading as one gesture."
+              ]
+            },
+            {
+              "term": "spring",
+              "detail": [
+                "Motion described by stiffness and damping rather than by a curve and a clock, so it can overshoot and settle. Say: ",
+                {
+                  "kind": "mark",
+                  "text": "this wants a spring, not a curve — it should overshoot slightly and settle"
+                },
+                ". Reach for it when something is being grabbed or thrown, not for a menu."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Instead of",
+            "Say",
+            "Because"
+          ],
+          "rows": [
+            [
+              {
+                "text": "It feels cheap"
+              },
+              {
+                "text": "It's on a linear curve — put the entrance on ease-out"
+              },
+              {
+                "text": "Names the property to change",
+                "verdict": "good"
+              }
+            ],
+            [
+              {
+                "text": "Make it snappier"
+              },
+              {
+                "text": "Bring it from 400ms to 200ms and keep the curve"
+              },
+              {
+                "text": "One number, and the rest is held still",
+                "verdict": "good"
+              }
+            ],
+            [
+              {
+                "text": "The list is janky"
+              },
+              {
+                "text": "The rows all arrive at once; stagger them by 30ms"
+              },
+              {
+                "text": "Distinguishes timing from frame rate",
+                "verdict": "good"
+              }
+            ],
+            [
+              {
+                "text": "It's distracting"
+              },
+              {
+                "text": "It's fine once and tiring on the tenth repeat — halve it"
+              },
+              {
+                "text": "Says which viewing it fails on",
+                "verdict": "mixed"
+              }
+            ],
+            [
+              {
+                "text": "Make it feel more premium"
+              },
+              {
+                "text": "Overshoot slightly and settle, rather than stopping dead"
+              },
+              {
+                "text": "Turns a mood into a behaviour",
+                "verdict": "mixed"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feel",
+      "label": "Feel it",
+      "eyebrow": "Interactive",
+      "title": "The same distance, twice, with only the numbers changed.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Both panels below travel exactly the same distance. The left one is fixed at linear over 500ms — the shape almost every unconsidered animation has, because it is what you get by typing a number and moving on. Set the right one yourself, play them together, and watch which one you stop noticing."
+        },
+        {
+          "type": "embed",
+          "title": "Easing and duration, side by side",
+          "src": "./assets/motion-feel/index.html",
+          "alt": "Two panels slide in from the left inside their own frames. The left is fixed at a linear curve over 500 milliseconds. The right takes a curve chosen from linear, ease-in, ease-out and ease-in-out, and a duration set on a slider between 80 and 800 milliseconds, defaulting to ease-out at 220. A Play both button replays them together, and a readout names the current pairing.",
+          "chrome": false,
+          "viewports": [
+            {
+              "name": "Phone",
+              "width": 390,
+              "height": 520
+            },
+            {
+              "name": "Tablet",
+              "width": 768,
+              "height": 460
+            },
+            {
+              "name": "Desktop",
+              "width": 1200,
+              "height": 420
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": "Two things are worth trying deliberately. Put the right panel on ease-in and play it: an entrance that starts slowly reads as the software thinking. Then take the duration to 800ms on any curve — the motion is smooth, correct, beautifully eased, and still wrong, which is the demonstration that the curve cannot rescue the clock."
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "label": "Check it",
+      "eyebrow": "Quality",
+      "title": "What to look for before you sign it off.",
+      "blocks": [
+        {
+          "type": "checklist",
+          "id": "primer-checks",
+          "ref": "P1",
+          "label": "Checks you will actually run",
+          "ask": "Which of these will you run on the next animation you review?",
+          "options": [
+            {
+              "value": "It answers one of the three questions",
+              "summary": "Where it came from, what changed, or that the system is working — otherwise cut it."
+            },
+            {
+              "value": "The duration is in the 150–300ms band",
+              "summary": "Or has a stated reason for being outside it, such as distance travelled."
+            },
+            {
+              "value": "Entrances ease out, exits ease in",
+              "summary": "And nothing that arrives is on a linear curve."
+            },
+            {
+              "value": "It survives ten repeats",
+              "summary": "Judged on the tenth viewing, not the first."
+            },
+            {
+              "value": "prefers-reduced-motion is honoured",
+              "summary": "The state change still happens; only the travel between states is dropped."
+            }
+          ]
+        },
+        {
+          "type": "scale",
+          "id": "primer-confidence",
+          "ref": "P2",
+          "label": "Naming the fault out loud",
+          "ask": "After the demo, how confident are you naming what is wrong with an animation in a review?",
+          "points": [
+            {
+              "value": "1",
+              "label": "Still 'feels off'"
+            },
+            {
+              "value": "2",
+              "label": "I can name duration"
+            },
+            {
+              "value": "3",
+              "label": "Duration and direction"
+            },
+            {
+              "value": "4",
+              "label": "Curve, duration, stagger"
+            },
+            {
+              "value": "5",
+              "label": "I could specify the fix"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "say",
+      "label": "Ask for it",
+      "eyebrow": "Example prompts",
+      "title": "Two requests a motion designer can act on without a meeting.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The test of the vocabulary is whether a request written in it can be implemented by someone who was not in the conversation. Both prompts below pass that test: each names the element, the property, the number, and what it should look like when it is right."
+        },
+        {
+          "type": "code",
+          "language": "markdown",
+          "caption": "A review comment, written in the vocabulary",
+          "code": "The settings panel entrance is on a linear curve at 500ms.\n\nPut it on ease-out and bring it to 220ms — it should decelerate into place rather than arriving at a constant speed. Keep the exit as it is; that one is already ease-in and reads fine.\n\nThe rows inside the panel all land together. Stagger them by 30ms so the list reads top to bottom, and cap the total at about 200ms so a long list does not turn into a queue.\n"
+        },
+        {
+          "type": "code",
+          "language": "markdown",
+          "caption": "A brief, before anything is built",
+          "code": "Dragging a card between columns should feel grabbed rather than transported.\n\nUse a spring rather than a curve: slight overshoot on drop, settling within about 400ms. Everything else on this board stays on ease-out at 200ms, so the drag is the only place anything overshoots — that contrast is the point.\n\nUnder prefers-reduced-motion the card still moves columns; it just arrives without travel.\n"
+        },
+        {
+          "type": "note",
+          "id": "primer-apply",
+          "ref": "P3",
+          "label": "The animation you are going to fix",
+          "ask": "Name one animation in your own product and write the request in these words.",
+          "placeholder": "For example: the toast slides up over 600ms on ease-in-out. Put it on ease-out at 200ms; it should arrive and settle, not drift in and drift back out."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Duration bands drawn from published platform motion guidance",
+      "ref": "Material and Human Interface motion sections",
+      "level": "measured"
+    },
+    {
+      "label": "That the 150–300ms band suits most interface motion",
+      "ref": "convention across both guidelines",
+      "level": "estimated"
+    },
+    {
+      "label": "That linear entrances are the most common single fault",
+      "ref": "author's review experience",
+      "level": "assumed"
+    }
+  ],
+  "reply": {
+    "heading": "What this primer changed",
+    "template": "Concept primer — easing and duration\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{provenance}}\n"
+  }
+}

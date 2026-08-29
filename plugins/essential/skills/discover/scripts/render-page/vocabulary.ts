@@ -35,10 +35,34 @@ export const QUESTION_TYPES = [
   "checklist",
   "scale",
   "decision",
+  "observations",
 ] as const;
 
 /** a question block, whichever affordance it uses. */
 export type Question = Extract<Block, { type: (typeof QUESTION_TYPES)[number] }>;
+
+/**
+ * the answer contract each kind is saved, restored and read back through.
+ *
+ * a kind is not always its own contract. `observations` asks which of a set of
+ * cards land, and an answer to that is a set of ticked values — the exact shape
+ * a checklist already saves, restores, and joins into the reply. Saying so here
+ * is what keeps `runtime/answer.ts` at the branches it has: a branch of its own
+ * would be a copy of the checklist one, and two copies of a serialisation have
+ * to stay identical forever or a saved answer stops restoring.
+ *
+ * the map is read at render time and emitted as `data-question-kind`, so the
+ * runtime never consults it; every kind is listed, so a new one cannot inherit
+ * a contract by default and be discovered as a silent answer that never saved.
+ */
+export const ANSWER_KIND: Record<(typeof QUESTION_TYPES)[number], string> = {
+  choice: "choice",
+  note: "note",
+  checklist: "checklist",
+  scale: "scale",
+  decision: "decision",
+  observations: "checklist",
+};
 
 /**
  * how bad a risk would be, and the word each rating shows.

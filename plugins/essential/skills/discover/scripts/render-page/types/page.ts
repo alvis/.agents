@@ -11,10 +11,12 @@ import type { Metric, Source } from "./content.ts";
  */
 export const PAGE_KINDS = [
   "architecture-board",
+  "blind-spots",
   "board-hub",
   "brainstorm-spectrum",
   "build-journal",
   "change-walkthrough",
+  "concept-primer",
   "domain-explainer",
   "guided-interview",
   "interactive-prototype",

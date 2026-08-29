@@ -214,8 +214,10 @@ function drawLines(
       const text = drawRun(code, spans, start, start + line.length, after);
       const drawn = marked.has(number) ? `<mark>${text}</mark>` : text;
       const classes = `code-line${marked.has(number) ? " is-marked" : ""}`;
-      // the newline lives inside the span, so a marked line's background does
-      // not stretch to the width of the widest line below it
+      // the newline lives inside the span rather than between two of them, so
+      // a copied excerpt still carries its line breaks and no stray text node
+      // sits between the line boxes; a block drops a trailing break rather
+      // than drawing the empty row it would otherwise leave
       const own = `<span class="${classes}"${key ? syncAttribute("tie", key) : ""}>${drawn}\n</span>`;
 
       return `${own}${(commented.get(number) ?? []).join("")}`;
