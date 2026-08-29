@@ -1543,8 +1543,12 @@ function removeEmptyParents(path: string, target: string): void {
   while (parent !== target && isInside(target, parent)) {
     try {
       rmdirSync(parent);
-    } catch {
-      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOTEMPTY" || code === "EEXIST" || code === "ENOENT") {
+        return;
+      }
+      throw error;
     }
     parent = dirname(parent);
   }

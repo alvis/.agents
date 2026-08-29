@@ -839,9 +839,14 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       selected(workspace.run().findings, "specification-provenance"),
     ).toEqual([]);
 
+    await mkdir(join(workspace.workDir, "spec"), { recursive: true });
+    await writeFile(
+      join(workspace.workDir, "spec/README.md"),
+      "# Repository specification\n",
+    );
     await writeFile(
       join(workspace.workDir, "goal.md"),
-      "# Charter\n\n- Charter: `approved`\n- Charter revision: `1`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: `repo`\n- Canonical specification: `repo:requirements/demo.md`\n- Accepted revision/base: `blob-123`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`\n",
+      "# Charter\n\n- Charter: `approved`\n- Charter revision: `1`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: `repo`\n- Canonical specification: `repo:requirements/demo.md`\n- Accepted revision/base: `blob-123`\n- Local materialization: [spec](spec/)\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`\n",
     );
     expect(
       selected(workspace.run().findings, "specification-provenance"),
