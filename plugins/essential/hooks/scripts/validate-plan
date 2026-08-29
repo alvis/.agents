@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # PreToolUse gate for ExitPlanMode: enforces the required headings documented in
-# references/directions/plan.md. Presence only — order and content are not
+# directions/plan.md. Presence only — order and content are not
 # judged. Compatible with bash 3.2+
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +16,7 @@ deny() {
 
 allow() {
   output_pretooluse_decision "allow" \
-    "Remind you to follow instructions in essential:references/directions/plan.md"
+    "Remind you to follow instructions in essential:directions/plan.md"
 }
 
 input=$(cat)
@@ -52,7 +52,7 @@ for heading in Goal Requirements Boundary Direction Context; do
 done
 
 if [[ -n "$missing" ]]; then
-  deny "missing headings: ${missing}. See essential:references/directions/plan.md."
+  deny "missing headings: ${missing}. See essential:directions/plan.md."
 fi
 
 allow

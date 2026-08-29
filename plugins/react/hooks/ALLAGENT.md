@@ -1,1 +1,1 @@
-<IMPORTANT>Before creating, editing, reviewing, or linting React, JSX, hooks, components, accessibility behavior, project structure, tests, or stories, you MUST read `{{PLUGIN_DIR}}/references/WORKFLOW.md` for action ownership and standards selection.</IMPORTANT>
+<IMPORTANT>Before creating, editing, reviewing, or linting React, JSX, hooks, components, accessibility behavior, project structure, tests, or stories, you MUST read `{{PLUGIN_DIR}}/directions/WORKFLOW.md` for action ownership and standards selection.</IMPORTANT>

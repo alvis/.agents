@@ -2,7 +2,7 @@
 
 Keep bounded work inline. Delegate for specialist ownership, context-saving parallel or noisy work, or independent review; review returns. Only the main agent names teammates. Keep messages below 4,096 characters; externalize more.
 
-Apply `{{PLUGIN_DIR}}/references/working-attitude.md`. Before planning, read `{{PLUGIN_DIR}}/references/directions/plan.md`. Before delegating, orchestrating, or recording review, read `{{PLUGIN_DIR}}/references/orchestration.md`.
+Apply `{{PLUGIN_DIR}}/references/working-attitude.md`. Before planning, read `{{PLUGIN_DIR}}/directions/plan.md`. Before delegating, orchestrating, or recording review, read `{{PLUGIN_DIR}}/directions/orchestration.md`.
 
 ## Skill eligibility
 

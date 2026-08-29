@@ -17,13 +17,13 @@ workflow.
 
 - **`create`** — Add a new reusable skill that teaches a missing behavior with
   clear ownership and triggers. See
-  [references/create.md](references/create.md).
+  [create.md](directions/create.md).
 - **`update`** — Revise existing skill behavior, wording, or triggers, or align
   skills with current policy, without creating a competing skill. See
-  [references/update.md](references/update.md).
+  [update.md](directions/update.md).
 - **`verify`** — Validate structural, repository-policy, and (when behavior or
   discovery changed) trigger and behavior compliance, optionally exercising
-  isolated harness prompts. See [references/verify.md](references/verify.md).
+  isolated harness prompts. See [verify.md](directions/verify.md).
 
 If the action is missing or ambiguous, ask which action is intended rather than
 guessing. `create` requires that no suitable owner exists; when one does,
@@ -32,8 +32,8 @@ functional and trigger evaluation.
 
 ## Shared policy
 
-Follow [references/authoring.md](references/authoring.md) for all three actions.
-Load [references/harnesses.md](references/harnesses.md) only when a Claude Code,
+Follow [authoring.md](references/authoring.md) for all three actions.
+Load [harnesses.md](references/harnesses.md) only when a Claude Code,
 Codex, or Grok Build difference affects execution, required tools, or validation.
 
 ## Shared thought experiment and blindspot test
@@ -59,9 +59,9 @@ bun run "<loaded-write-skill-root>/scripts/quick_validate.ts" --portable "$TARGE
 Portable mode rejects required Markdown links outside the skill root and checks
 root-relative links in `references/`. The script resolves a containing Claude
 plugin through the target's ancestors and validates it when present. Complete
-the checks in [references/authoring.md](references/authoring.md) and any
+the checks in [authoring.md](references/authoring.md) and any
 applicable harness checks in
-[references/harnesses.md](references/harnesses.md) after every fix iteration.
+[harnesses.md](references/harnesses.md) after every fix iteration.
 When a check fails, change only the reported cause and re-run that check; loop
 fix and re-verify at most 3 times, then report partial completion with the
 remaining issues.
@@ -71,7 +71,7 @@ remaining issues.
 <IMPORTANT>
 A `create`, operational `update`, or verification claiming behavioral
 self-sufficiency cannot return `PASS` from paper reasoning or validators. Apply the
-[cold-start release gate](references/functional-mode.md#run-the-cold-start-release-gate)
+[cold-start release gate](directions/functional-mode.md#run-the-cold-start-release-gate)
 to every representative task. A standalone structural verification may report
 structural `PASS`, but must state that self-sufficiency was not evaluated.
 </IMPORTANT>
@@ -80,6 +80,6 @@ Report the action taken, affected skill paths, ownership boundaries or changes,
 reusable knowledge target, thought-experiment and blindspot coverage, structural
 validation, behavioral gate status and session IDs when applicable, optional harness
 runtime status, and unresolved ambiguity. The behavioral report schema and evidence
-currency rules live only in `references/functional-mode.md`.
+currency rules live only in `directions/functional-mode.md`.
 Confirm any temporary Markdown thought-experiment notes were deleted before
 commit. Never claim a bulk update without listing its targets.

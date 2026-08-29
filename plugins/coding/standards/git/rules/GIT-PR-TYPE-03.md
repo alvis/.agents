@@ -22,7 +22,7 @@ part of the migration concern.
 Separate migration artifacts from dependent behavior, and render the rollback
 or forward-only mitigation through the selected PR message template. Each
 resulting diff must remain independently valid. Use
-[stacked-prs.md](../../../skills/pr/references/stacked-prs.md) for ordering.
+[stacked-prs.md](../../../skills/pr/directions/stacked-prs.md) for ordering.
 
 ## Edge Cases
 

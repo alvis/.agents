@@ -51,7 +51,7 @@ Git stores refs as files, so `feat/<work-id>` and `feat/<work-id>/01-resolver` c
 
 Renaming leaves this checkout pointing at a ref that is gone. Run `git fetch --prune` and reset the renamed branch's upstream before pushing anything: a stale `origin/<type>/<work-id>` fails the next `--force-with-lease` with `stale info`, because the lease is a claim about a remote value that no longer exists, and the same stale flat ref blocks fetching the numbered child that has taken its name. Only once both renames and that prune have landed do the later numbered branches push.
 
-The segment after the ordinal is a semantic scope label for branch readability, not an identity or a substitute for the stable reference above. Name that scope, not the PR archetype selected from `coding:skills/pr/references/create-update.md`.
+The segment after the ordinal is a semantic scope label for branch readability, not an identity or a substitute for the stable reference above. Name that scope, not the PR archetype selected from `coding:skills/pr/directions/create-update.md`.
 
 Naming the branch this way is what lets the workspace resolution step select the stream from whichever branch is checked out. Only these two shapes resolve; anything else means the main agent asks instead — which is the intended outcome, not a failure.
 

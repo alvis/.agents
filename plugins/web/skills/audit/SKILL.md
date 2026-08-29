@@ -45,7 +45,7 @@ Default `--viewport all` audits mobile 390×844, tablet 820×1180, desktop 1440�
    Add only supported requested arguments. Capture the exit status and final stdout path. Require `report.json` with `contract_version: 3.0`. Preserve stderr and the action log on failure; warnings or zero pages mean partial coverage even with exit zero.
 
 4. **Adjudicate AI-marked findings.** Read, do not recrawl, `report.json`. Require a focused section crop per `ai-visual-review.md`; capture one beneath `$OUT/evidence/` when missing. Record grounded `{passed, confidence, rationale}` or explicit `missing_section_crop`, then write `report-final.json` without changing deterministic fields or scores.
-5. **Classify once and propose canonical reviews.** Render from the final report when available, otherwise clearly partial deterministic data. Use `review-template.md` and `phase-4-output.md` to map every finding into exactly one of:
+5. **Classify once and propose canonical reviews.** Render from the final report when available, otherwise clearly partial deterministic data. Use `templates/review.md` and `templates/output.md` to map every finding into exactly one of:
    - `alignment.md`: divergence from an active work design, durable design, or approved scope;
    - `correctness.md`: broken interaction, navigation, feedback, or semantics;
    - `security.md`: only an observed trust, permission, unsafe-content, or abuse issue—never infer security coverage from a visual audit;

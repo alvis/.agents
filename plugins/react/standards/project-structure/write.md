@@ -349,7 +349,7 @@ Brief decision matrix:
 | Tab list fetched from API                           | feature container fetches → composite Tabs      | Container/presentational split — see `RPS-FEAT-02`               |
 | Wrapping Radix/Headless UI Tabs                     | `src/components/adapters/RadixTabsAdapter.tsx`  | Quarantine third-party API surface                               |
 
-See `references/tabs-placement.md` for the full 8-section case study.
+See `examples/tabs-placement.md` for the full 8-section case study.
 
 ## Anti-Patterns
 

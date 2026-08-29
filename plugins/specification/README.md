@@ -12,7 +12,7 @@ Every workflow distinguishes three kinds of specification source:
 
 Approval always binds to exact content confirmed by direct comparison. For local or inline authority, the active work's `spec/` and `spec/provenance.json` record the approved contract, source kind, content hashes, and outputs. `spec/README.md` is the readable work-local contract and `reference.md` is optional for an intended consumer surface. For Notion authority, `goal.md` owns the canonical URL and accepted base while `spec/` plus `artifacts/spec-sync/` provide the verified work-local copy and receipt. Version-controlled `docs/**` remains durable project guidance, never a specification output.
 
-Specification owns the work-local specification assets it derives: `skills/spec-code/assets/capability-readme.template.md`, `skills/spec-code/assets/reference.template.md`, and `skills/spec-code/assets/provenance.template.json`.
+Specification owns the work-local specification assets it derives: `./skills/spec-code/templates/capability-readme.md`, `./skills/spec-code/templates/reference.md`, and `./skills/spec-code/templates/provenance.json`.
 
 ## Skills
 

@@ -10,7 +10,7 @@ argument-hint: "<area> [--focus=naming|structure|redundancy|docs|all]"
 # Refactor Code
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`.
+`coding:directions/jj.md`.
 
 Improve green code's structure, readability, naming, and documentation
 without changing behavior, keeping every test passing throughout.

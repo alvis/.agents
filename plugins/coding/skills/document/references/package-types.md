@@ -33,27 +33,27 @@ OSS overrides the bundled example **only for `library` and `monorepo-root`**; al
 
 Resolve to `<skill_root>/references/README.example.<type>.md`:
 
-- `library` (internal) → `README.example.library.md`
-- `library` (OSS) → `README.example.oss-library.md`
-- `cli` → `README.example.cli.md`
-- `microservice` → `README.example.microservice.md`
-- `stateless` → no bundled example; use `README.template.md` plus source evidence
-- `data-controller` → no bundled example; use `README.template.md` plus source evidence
-- `iac` → `README.example.iac.md`
-- `monorepo-root` (internal) → `README.example.monorepo.md`
-- `monorepo-root` (OSS) → `README.example.oss-monorepo.md`
+- `library` (internal) → `../examples/readme-library.md`
+- `library` (OSS) → `../examples/readme-oss-library.md`
+- `cli` → `../examples/readme-cli.md`
+- `microservice` → `../examples/readme-microservice.md`
+- `stateless` → no bundled example; use `../templates/readme.md` plus source evidence
+- `data-controller` → no bundled example; use `../templates/readme.md` plus source evidence
+- `iac` → `../examples/readme-iac.md`
+- `monorepo-root` (internal) → `../examples/readme-monorepo.md`
+- `monorepo-root` (OSS) → `../examples/readme-oss-monorepo.md`
 
 ## ARCHITECTURE Bundled Example Map (Step 7)
 
 Resolve to `<skill_root>/references/ARCHITECTURE.example.<type>.md` (no OSS variants):
 
-- `library` → `ARCHITECTURE.example.library.md`
-- `cli` → `ARCHITECTURE.example.cli.md`
-- `microservice` → `ARCHITECTURE.example.microservice.md`
-- `stateless` → no bundled example; use `ARCHITECTURE.template.md` plus source evidence
-- `data-controller` → no bundled example; use `ARCHITECTURE.template.md` plus source evidence
-- `iac` → `ARCHITECTURE.example.iac.md`
-- `monorepo-root` → `ARCHITECTURE.example.monorepo.md`
+- `library` → `../examples/architecture-library.md`
+- `cli` → `../examples/architecture-cli.md`
+- `microservice` → `../examples/architecture-microservice.md`
+- `stateless` → no bundled example; use `../templates/architecture.md` plus source evidence
+- `data-controller` → no bundled example; use `../templates/architecture.md` plus source evidence
+- `iac` → `../examples/architecture-iac.md`
+- `monorepo-root` → `../examples/architecture-monorepo.md`
 
 ## Usage Note
 

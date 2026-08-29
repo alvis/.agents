@@ -34,7 +34,7 @@ For persistent discovery, follow `state-format.md` linked by the state contract.
 
 Use `DSC01 → {DSC02,DSC03} → DSC04` when the work maps to capture, independent intent/system probes, then synthesis. Otherwise encode the smallest truthful linear or branching sibling DAG; never force this example onto a different dependency shape. Root and child rows use the same immutable definition and mutable execution fields byte-for-byte at reconciliation. After each status transition, update the child, reconcile the complete root registry, re-read the root task definitions when immutable definition fields changed, and read `state.md` and `state/discovery.md` directly to determine runnable/ blocked tasks, owner, and next action from the task table; proceed on that reading — there is no separate validation step. Only the main agent edits root state.
 
-When structured comparison, explanation, or preference capture would be easier to understand interactively, follow [presentation](references/presentation.md). Generated HTML is a temporary review surface, not a durable deliverable: always create it in a collision-safe OS temporary directory and discard it after its decisions and annotations have been transferred. A persisted discovery ledger may record the temporary path and extracted decisions, but must not treat the HTML as long-lived evidence.
+When structured comparison, explanation, or preference capture would be easier to understand interactively, follow [presentation](directions/presentation.md). Generated HTML is a temporary review surface, not a durable deliverable: always create it in a collision-safe OS temporary directory and discard it after its decisions and annotations have been transferred. A persisted discovery ledger may record the temporary path and extracted decisions, but must not treat the HTML as long-lived evidence.
 
 The evidence ledger uses these fields:
 
@@ -56,14 +56,14 @@ The evidence ledger uses these fields:
    - `state`: the unknown is where work already in flight actually stands, and the local state tree is the only honest source for it;
    - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it.
 3. **Load only the selected mode reference** and execute it:
-   - [blindspots](references/blindspots.md)
-   - [options](references/options.md)
-   - [interview](references/interview.md)
-   - [reference](references/reference.md)
-   - [prototype](references/prototype.md)
-   - [readiness](references/readiness.md)
-   - [state](references/state.md)
-   - [implementation](references/implementation.md)
+   - [blindspots](directions/blindspots.md)
+   - [options](directions/options.md)
+   - [interview](directions/interview.md)
+   - [reference](directions/reference.md)
+   - [prototype](directions/prototype.md)
+   - [readiness](directions/readiness.md)
+   - [state](directions/state.md)
+   - [implementation](directions/implementation.md)
 4. **Update the ledger.** Preserve provenance. Move an item between kinds only when evidence or a user decision justifies it; do not collapse inference into observed fact. Record rejected alternatives and why they were rejected when they would otherwise be rediscovered.
 5. **Choose the next probe or stop.** Continue only when another cheap probe can resolve a material unknown. Stop when all material items are resolved, explicitly deferred with an owner, or blocking; remaining assumptions must be low-impact and reversible.
 6. **Route the result.** Recommend exactly one next owner: another discovery mode, `essential:decide`, `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.

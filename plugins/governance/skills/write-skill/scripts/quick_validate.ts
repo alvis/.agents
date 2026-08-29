@@ -25,12 +25,22 @@ const ILLUSTRATIVE_DESTINATION = /<[^>]+>|\[[^\]]+\]|\{\{[^}]+\}\}|\{[^{}]+\}/;
 const LOCAL_DIRECTORIES = new Set([
   "agents",
   "assets",
+  "directions",
   "evals",
+  "examples",
   "hooks",
   "references",
   "scripts",
+  "standards",
   "templates",
 ]);
+/** local content directories whose Markdown is link-checked with the skill */
+const BUNDLED_MARKDOWN_DIRECTORIES = [
+  "directions",
+  "examples",
+  "references",
+  "templates",
+] as const;
 const YAML_MERGE_TAGS = new Set(["!!merge", "!<tag:yaml.org,2002:merge>"]);
 const MODEL_SELECTION_FIELDS = new Set([
   "effort",
@@ -97,6 +107,7 @@ export function discoverSkills(target: string): string[] {
     const parts = relative(absolute, path).split(/[\\/]/);
     return (
       !parts.slice(0, -1).includes("templates") &&
+      !parts.slice(0, -1).includes("examples") &&
       !parts.some((part) => part.startsWith("."))
     );
   });
@@ -762,15 +773,14 @@ export function validatePolicy(
     if (PLACEHOLDERS.some((pattern) => pattern.test(line)))
       errors.push(issue("Placeholder text remains in the skill.", index + 1));
   const markdownFiles = [absoluteSkill];
-  const referencesRoot = resolve(dirname(absoluteSkill), "references");
-  if (
-    options.portable &&
-    existsSync(referencesRoot) &&
-    statSync(referencesRoot).isDirectory()
-  )
-    markdownFiles.push(
-      ...walkFiles(referencesRoot).filter((path) => extname(path) === ".md"),
-    );
+  if (options.portable)
+    for (const directory of BUNDLED_MARKDOWN_DIRECTORIES) {
+      const bundled = resolve(dirname(absoluteSkill), directory);
+      if (existsSync(bundled) && statSync(bundled).isDirectory())
+        markdownFiles.push(
+          ...walkFiles(bundled).filter((path) => extname(path) === ".md"),
+        );
+    }
   for (const markdownFile of markdownFiles) {
     const source = relative(dirname(absoluteSkill), markdownFile);
     for (const [index, line] of splitLines(

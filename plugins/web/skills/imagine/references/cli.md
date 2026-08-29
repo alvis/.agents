@@ -284,4 +284,4 @@ The `edit` subcommand is still supported as a hidden alias for `generate --image
 ## See also
 
 - API parameter quick reference: `references/providers/google.md`, `references/providers/openai.md`, `references/providers/recraft.md`
-- Prompt examples: `references/sample-prompts.md`
+- Prompt examples: `examples/prompts.md`

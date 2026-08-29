@@ -146,4 +146,4 @@ machine-readable output contracts. Close every tag.
    and near-miss prompts. Do not report runtime behavior as exercised unless an
    executable evaluation ran.
 5. Apply the root `SKILL.md` completion guard. When cold-start is applicable, use
-   `references/functional-mode.md` as the sole receipt and evidence-currency contract.
+   `directions/functional-mode.md` as the sole receipt and evidence-currency contract.

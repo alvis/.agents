@@ -2,8 +2,8 @@
 Canonical inline-review template for `coding:pr review`.
 
 Render one finding into one comment. The finding schema and priority/kind
-selection live in `references/review-checklist.md`; voice and marker meaning
-live in `references/review-tone.md`. This file alone owns the posted markup.
+selection live in `directions/review-checklist.md`; voice and marker meaning
+live in `directions/review-tone.md`. This file alone owns the posted markup.
 
 Placeholders:
 

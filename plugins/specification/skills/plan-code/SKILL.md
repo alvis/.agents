@@ -12,7 +12,7 @@ Turn an approved work specification into a decision-complete implementation blue
 
 ## Boundaries
 
-- Follow Essential's [Making plans](../../../essential/references/directions/plan.md); this skill adds specification and task-registry requirements without redefining that shared contract.
+- Follow Essential's [Making plans](../../../essential/directions/plan.md); this skill adds specification and task-registry requirements without redefining that shared contract.
 - Root `state.md` is the sole canonical plan definition and contains the complete task registry; its `plan_source` is exactly `state.md`. `state/plan.md` is non-authoritative implementation detail keyed by existing task IDs. Proposals, changes, decisions, and design reasoning use the corresponding work-local child folders.
 - `goal.md` is the main-agent-owned charter (goal, scope, numbered `SC-n` success criteria, specification provenance). Planning consumes it and proposes charter content as reconciliation payload; it never edits the file, and for a Notion-backed contract the canonical specification remains the sole authority over the charter.
 - `state/working.md` is a temporary current-focus summary, not the plan. Only the main agent writes it and reconciles the four overview indexes.

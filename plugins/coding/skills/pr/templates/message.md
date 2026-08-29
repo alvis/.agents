@@ -11,10 +11,10 @@ When a repo template exists, that template takes precedence and is emitted
 verbatim instead of this one.
 
 Body and scanner metadata: classify every PR with the archetype selected in
-[create-update.md](../references/create-update.md#select-the-pr-archetype).
+[create-update.md](../directions/create-update.md#select-the-pr-archetype).
 Archetype drives conditional body evidence and scanner input only. Repository
 label discovery, selection, and attachment follow
-[create-update.md](../references/create-update.md#discover-and-select-repository-labels).
+[create-update.md](../directions/create-update.md#discover-and-select-repository-labels).
 Attached labels are never rendered in the title or body.
 
 Always required: Summary + Goal + Requirements + Context + Verification. Goal

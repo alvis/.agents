@@ -8,7 +8,7 @@ requirements:
 # Presetter
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`.
+`coding:directions/jj.md`.
 
 Presetter is a configuration-as-code layer for TypeScript toolchains. A checked-in
 preset stack defines variables, runnable scripts, and generated assets; `bootstrap`
@@ -65,13 +65,13 @@ Replace `pnpm` with the detected package manager. Do not install a different man
 ## Load the task recipe
 
 - For adoption, complete preset stacks, package scripts, `prepare`, or monorepo
-  targeting, read [setup.md](references/setup.md).
+  targeting, read [setup.md](directions/setup.md).
 - For variables, scripts, assets, `override`, `null`, `merge`, or a reusable custom
-  preset package, read [customization.md](references/customization.md).
+  preset package, read [customization.md](directions/customization.md).
 - For an existing-config migration, a legacy Presetter upgrade, generated-file
-  ownership, or regeneration, read [migration.md](references/migration.md).
+  ownership, or regeneration, read [migration.md](directions/migration.md).
 - For a failed or surprising bootstrap, wrong task, wrong target, or recurring diff,
-  read [troubleshooting.md](references/troubleshooting.md).
+  read [troubleshooting.md](directions/troubleshooting.md).
 
 ## Apply and verify
 

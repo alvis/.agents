@@ -105,13 +105,19 @@ const fixtureCases: readonly FixtureCase[] = [
     expected: [],
   },
   {
-    name: "skips illustrative roots and example documents",
+    name: "skips illustrative roots, template trees, and example trees",
     documents: {
       "plugins/alpha/doc.md": "`services/user.ts`",
-      "plugins/alpha/references/plan.template.md": "[x](missing/a.md)",
-      "plugins/alpha/references/README.example.cli.md": "[x](missing/b.md)",
+      "plugins/alpha/templates/plan.md": "[x](missing/a.md)",
+      "plugins/alpha/skills/demo/examples/readme-cli.md": "[x](missing/b.md)",
+      "plugins/alpha/examples/nested/deep.md": "[x](missing/c.md)",
     },
     expected: [],
+  },
+  {
+    name: "still checks a document merely named like a template",
+    documents: { "plugins/alpha/references/plan.template.md": "[x](missing/gone.md)" },
+    expected: ["plugins/alpha/references/plan.template.md:1 → missing/gone.md"],
   },
   {
     name: "skips relative paths into an illustrative tree",
@@ -393,7 +399,7 @@ const fixtureCases: readonly FixtureCase[] = [
     documents: { "guides/setup.md": "[ok](target.md) [bad](missing/gone.md)" },
     expected: ["guides/setup.md:1 → missing/gone.md"],
   },
-  ...["templates", "examples", "scripts"].map((segment) => ({
+  ...["assets", "directions", "examples", "scripts", "standards", "templates"].map((segment) => ({
     name: `reports forbidden references/${segment}`,
     documents: {
       [`plugins/alpha/references/nested/${segment}/artifact.md`]: "x",

@@ -1,0 +1,68 @@
+%% Workspace Package Dependency Graph
+%% When to use: For OSS monorepo roots to show package relationships at a glance; embed in ../readme-oss-monorepo.md §Monorepo Structure.
+%% Embed in README with ```mermaid fence.
+%%
+%% --- Placeholder version ---
+
+flowchart TD
+    subgraph foundation[Foundation]
+        PackageA[<PackageA>]
+        PackageB[<PackageB>]
+    end
+
+    subgraph runtime[Runtime]
+        PackageC[<PackageC>]
+        PackageD[<PackageD>]
+    end
+
+    subgraph extension[Extension]
+        PackageE[<PackageE>]
+        PackageF[<PackageF>]
+    end
+
+    subgraph integrations[Integrations]
+        PackageG[<PackageG>]
+        PackageH[<PackageH>]
+    end
+
+    PackageC --> PackageA
+    PackageC --> PackageB
+    PackageD --> PackageA
+    PackageE --> PackageC
+    PackageF --> PackageC
+    PackageF --> PackageD
+    PackageG --> PackageE
+    PackageH --> PackageE
+    PackageH --> PackageF
+
+%% --- Worked example ---
+%%
+%% flowchart TD
+%%     subgraph foundation[Foundation]
+%%         core["@scope/core"]
+%%         types["@scope/types"]
+%%     end
+%%
+%%     subgraph runtime[Runtime]
+%%         cli["@scope/cli"]
+%%         server["@scope/server"]
+%%     end
+%%
+%%     subgraph extension[Extension]
+%%         react["@scope/react"]
+%%         vue["@scope/vue"]
+%%     end
+%%
+%%     subgraph integrations[Integrations]
+%%         nextjs["@scope/nextjs"]
+%%         nuxt["@scope/nuxt"]
+%%     end
+%%
+%%     cli --> core
+%%     cli --> types
+%%     server --> core
+%%     react --> cli
+%%     vue --> cli
+%%     vue --> server
+%%     nextjs --> react
+%%     nuxt --> vue

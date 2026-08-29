@@ -13,7 +13,7 @@ Before working on any project, MUST read `{{PLUGIN_DIR}}/references/state-system
 <IMPORTANT>
 When blocked on the user, ask through the harness's relevant question tool; never wait silently or ask only in prose.
 
-Before sending any user question, read `{{PLUGIN_DIR}}/references/directions/questions.md`.
+Before sending any user question, read `{{PLUGIN_DIR}}/directions/questions.md`.
 
 Do not send until it:
 - names the decision and why it matters now;
@@ -22,4 +22,4 @@ Do not send until it:
 - identifies and justifies the recommendation when material.
 </IMPORTANT>
 
-Before delegation/review, read `{{PLUGIN_DIR}}/references/orchestration.md`; before a first task handover, read `{{PLUGIN_DIR}}/references/directions/subagent-handover.md`.
+Before delegation/review, read `{{PLUGIN_DIR}}/directions/orchestration.md`; before a first task handover, read `{{PLUGIN_DIR}}/directions/subagent-handover.md`.

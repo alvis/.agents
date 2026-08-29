@@ -53,7 +53,7 @@ stated behavior change. `create-agent` owns genuinely new roles.
    - the explicit requested changes and the protected fields not authorized
      to change.
 3. Re-evaluate the role classification and launch scenario against
-   [../create-agent/references/intelligence-level-heuristic.md](../create-agent/references/intelligence-level-heuristic.md)
+   [intelligence.md](../create-agent/directions/intelligence.md)
    (intelligence level, permissionMode, runtime tool inheritance, memory, and isolation criteria).
    Change those fields only when the requested migration or template requires
    it; report every such change.
@@ -90,7 +90,7 @@ stated behavior change. `create-agent` owns genuinely new roles.
    test. If notes are written down, keep them temporary as a Markdown scratch
    document in an OS temp
    folder (for example `${TMPDIR:-/tmp}/check.md`) using
-   [check reference](../../references/check.md) as the
+   [check reference](../../templates/check.md) as the
    example table format with `:white_check_mark:`/`:x:` status markers,
    and delete them before staging; they are not deliverables and must not be
    committed. Keep the task-to-agent row in the

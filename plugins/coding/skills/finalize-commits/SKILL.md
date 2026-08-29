@@ -9,7 +9,7 @@ argument-hint: "[--auto-push]"
 # Finalize Commits
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`.
+`coding:directions/jj.md`.
 
 Verify that every unpushed commit is independently shippable. This skill owns
 isolated per-commit QA and the finalization report. `coding:commit` is the sole
@@ -32,14 +32,14 @@ owner of history mutations.
 
 ## Workflow
 
-1. Detect jj or git and record the current working state and upstream without mutation. Load [references/dependency-scan.md](references/dependency-scan.md) to enumerate unpushed commits oldest first and determine dependency order.
-2. Load [references/workflow.md](references/workflow.md) for the coordination and approval contract. Report any recommended reorder or fold before QA.
-3. For each commit, load [references/qa-loop.md](references/qa-loop.md), create a disposable worktree at that revision, and run the repository's complete QA gate. Never split a required gate to hide failure.
+1. Detect jj or git and record the current working state and upstream without mutation. Load [dependency-scan.md](directions/dependency-scan.md) to enumerate unpushed commits oldest first and determine dependency order.
+2. Load [orchestration.md](directions/orchestration.md) for the coordination and approval contract. Report any recommended reorder or fold before QA.
+3. For each commit, load [qa-loop.md](directions/qa-loop.md), create a disposable worktree at that revision, and run the repository's complete QA gate. Never split a required gate to hide failure.
 4. If QA changes source or a generated lockfile, validate the correction in the
    isolated worktree, then invoke `coding:commit` to apply it to the owning commit.
 5. If a subject is non-conforming, propose the truthful replacement and invoke
    `coding:commit` for the approved reword.
-6. Load [references/squash-fixups.md](references/squash-fixups.md) only when a fixup/fold is approved. Re-run the affected commit and all dependent later commits after any mutation.
+6. Load [squash-fixups.md](directions/squash-fixups.md) only when a fixup/fold is approved. Re-run the affected commit and all dependent later commits after any mutation.
 7. Run the verification below; when a check fails, route the correction (steps
    4-6) and re-run that commit and its dependents. Repeat until every commit is
    green or a concrete blocker or pending decision remains, then report it
@@ -55,7 +55,7 @@ owner of history mutations.
 
 ## QA markers
 
-Load [references/markers.md](references/markers.md) when reading or writing QA markers. A marker is valid only when its stored lockfile-excluded stable patch ID equals the current commit's. It may skip the skippable lint/test legs, but never a required install/lock regeneration. Write or replace it only after install, lint, test/coverage, build, message checks, and delegated folds are green with no pending decision.
+Load [markers.md](references/markers.md) when reading or writing QA markers. A marker is valid only when its stored lockfile-excluded stable patch ID equals the current commit's. It may skip the skippable lint/test legs, but never a required install/lock regeneration. Write or replace it only after install, lint, test/coverage, build, message checks, and delegated folds are green with no pending decision.
 
 ## Completion
 

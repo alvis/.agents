@@ -27,7 +27,7 @@ a worker's intelligence.
   hand-offs to known `agent_id`s don't spend it, but the same task must not
   cross the same sibling edge twice.
 - **Hand off by reference.** The first message follows
-  [directions/subagent-handover.md](directions/subagent-handover.md). Later
+  [subagent-handover.md](../directions/subagent-handover.md). Later
   messages carry only deltas. If
   the direct teammate-messaging capability is unavailable, return the compact hand-off to the caller.
 - **Keep agent definitions role-specific.** An agent's `Collaboration`

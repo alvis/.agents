@@ -214,4 +214,4 @@ Edit:
 
 ## Where to find copy/paste recipes
 
-For copy/paste prompt specs (examples only), see `references/sample-prompts.md`. This file focuses on principles, structure, and iteration patterns.
+For copy/paste prompt specs (examples only), see `examples/prompts.md`. This file focuses on principles, structure, and iteration patterns.

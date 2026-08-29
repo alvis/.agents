@@ -28,11 +28,11 @@ outside Git; their identity and lineage do not.
 Before creating or materially rewriting a project artifact, read the absolute
 `state.md` path injected by Essential; if unavailable, stop
 artifact writes and report the missing contract. Then read Essential's
-`${ESSENTIAL_ROOT}/templates/docs/docs-root-readme.template.md`,
-`${ESSENTIAL_ROOT}/templates/docs/domain-readme.template.md`, and
-`${ESSENTIAL_ROOT}/templates/docs/domain-item-readme.template.md`, using the
+`${ESSENTIAL_ROOT}/templates/docs/readme.md`,
+`${ESSENTIAL_ROOT}/templates/docs/domain.md`, and
+`${ESSENTIAL_ROOT}/templates/docs/domain-item.md`, using the
 root derived from the injected state contract. Read Production's
-[asset manifest template](../../templates/asset-manifest.template.md) for the
+[asset manifest template](../../templates/asset-manifest.md) for the
 semantic shape, and
 Essential's `anchors.md` reference (anchor declarations). The manifest is a
 durable versioned document under the contract's plugin-owned

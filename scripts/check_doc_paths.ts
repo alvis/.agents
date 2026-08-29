@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import {
-  basename,
   dirname,
   extname,
   isAbsolute,
@@ -63,16 +62,22 @@ export const EXAMPLE_ROOTS = new Set([
 export const EXCLUDED_TREE_NAMES = new Set([".git", ".state", "__pycache__"]);
 /** directories that must never nest inside a plugin references tree */
 export const FORBIDDEN_REFERENCE_SEGMENTS = new Set([
+  "assets",
+  "directions",
   "examples",
   "scripts",
+  "standards",
   "templates",
 ]);
+/** content directories whose documents carry placeholder or fictional paths */
+export const UNCHECKED_CONTENT_SEGMENTS = new Set(["examples", "templates"]);
 /** top-level directories a backticked mention may legitimately reference */
 export const REPOSITORY_PATH_ROOTS = new Set([
   ".github",
   "agents",
   "assets",
   "bin",
+  "directions",
   "hooks",
   "plugins",
   "references",
@@ -198,6 +203,19 @@ export function forbiddenReferenceNesting(
   return [...forbidden]
     .sort()
     .map((path) => `${path} → forbidden path segment nested under references`);
+}
+
+/**
+ * decides whether a document sits inside an examples or templates tree.
+ * @param root repository root the document is relative to
+ * @param document path of the document being checked
+ * @returns true when the document is a specimen or a fill-in shape
+ */
+export function isUncheckedContent(root: string, document: string): boolean {
+  return relative(root, document)
+    .split(sep)
+    .slice(0, -1)
+    .some((segment) => UNCHECKED_CONTENT_SEGMENTS.has(segment));
 }
 
 /**
@@ -1144,7 +1162,7 @@ export function check(root: string): string[] {
   const sourcePaths = repositorySourcePaths(root);
   const findings = forbiddenReferenceNesting(root, sourcePaths);
   for (const document of iterDocuments(sourcePaths)) {
-    if (/\.(?:template|example)\./.test(basename(document))) continue;
+    if (isUncheckedContent(root, document)) continue;
     const bases = resolutionBases(root, document);
     const owner = pluginRoot(root, document);
     const lines = readFileSync(document, "utf8").split(/\r?\n/);

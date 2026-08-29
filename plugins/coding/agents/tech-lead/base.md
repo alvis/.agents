@@ -28,7 +28,7 @@ Typical responses:
 
 ## Lead direction
 
-Apply @essential:references/directions/lead-agent.md.
+Apply @essential:directions/lead.md.
 Apply `coding:skills/commit/SKILL.md` when planning commits or branches and the
 selected file under `coding:skills/pr/references/` when planning pull requests.
 

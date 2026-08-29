@@ -9,7 +9,7 @@ argument-hint: "[--only <name1,name2>] [--check] [--dry-run] [--force]"
 # Sync Tool
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`. This skill installs the
+`coding:directions/jj.md`. This skill installs the
 tool; the guide owns repository initialization and use.
 
 Set `CODING_SYNC_TOOL_SKILL_DIR` to the absolute directory containing this
@@ -19,7 +19,7 @@ Idempotently installs or updates a fixed registry of coding CLI tools from
 their official upstream sources so any sibling skill (for example
 `coding:commit`, which needs `jj` and `gh`) can rely on them being on `PATH`
 at minimum versions. The registry — order, minimum versions, installer
-contract — lives in [references/tool-registry.md](references/tool-registry.md);
+contract — lives in [tool-registry.md](references/tool-registry.md);
 `scripts/sync.ts` executes it.
 
 ## Boundaries
@@ -29,7 +29,7 @@ contract — lives in [references/tool-registry.md](references/tool-registry.md)
   (`--dry-run`), forcing a reinstall (`--force`), or bootstrapping a fresh
   machine for coding work.
 - Do not use for: arbitrary package management — the registry is deliberately
-  closed (see [references/tool-registry.md](references/tool-registry.md) for
+  closed (see [tool-registry.md](references/tool-registry.md) for
   why, and for how to register a new tool).
 - Never run interactive auth: for `gh`, the pipeline polls `gh auth status`
   and prints a banner instructing the user — it never invokes `gh auth login`.
@@ -40,7 +40,7 @@ contract — lives in [references/tool-registry.md](references/tool-registry.md)
 - **Optional**:
   - `--only <csv>` — subset of registered tool names (registry order is
     preserved regardless of CSV order); reject names that are not in
-    [references/tool-registry.md](references/tool-registry.md).
+    [tool-registry.md](references/tool-registry.md).
   - `--check` — status-only; no installation, non-zero exit if any selected
     tool is missing or below its minimum version.
   - `--dry-run` — print each planned installer command without executing
@@ -66,7 +66,7 @@ contract — lives in [references/tool-registry.md](references/tool-registry.md)
    verifies `<tool> --version` against the registry minimum, and — for `gh`
    only — polls `gh auth status` until authenticated, aborted, or
    `SYNC_TOOL_NO_WAIT=1` short-circuits. Per-OS install methods are documented
-   in [references/platforms.md](references/platforms.md).
+   in [platforms.md](references/platforms.md).
 
    ```bash
    # Only sync jj and gh (e.g., from coding:commit)

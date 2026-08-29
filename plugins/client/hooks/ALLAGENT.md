@@ -1,1 +1,1 @@
-<IMPORTANT>Before creating or updating a client-facing screen-design contract, you MUST read `{{PLUGIN_DIR}}/references/WORKFLOW.md` for action ownership, required context, and standards applicability.</IMPORTANT>
+<IMPORTANT>Before creating or updating a client-facing screen-design contract, you MUST read `{{PLUGIN_DIR}}/directions/WORKFLOW.md` for action ownership, required context, and standards applicability.</IMPORTANT>

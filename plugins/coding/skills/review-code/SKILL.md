@@ -8,7 +8,7 @@ argument-hint: "[specifier] [--area=alignment|correctness|security|quality|testi
 
 # Review Code
 
-Before any `jj` decision or command, follow `coding:references/jj.md`.
+Before any `jj` decision or command, follow `coding:directions/jj.md`.
 
 Orchestrate a read-only code review. Area reviewers return seven canonical reports; the main agent writes the lowercase review areas beneath the active work root. Remediation belongs to `coding:fix`; mechanical enforcement belongs to `coding:lint`.
 
@@ -45,20 +45,20 @@ Before creating or materially rewriting a project artifact, read the absolute `s
   | `DOCS` | `docs.md` | code and durable documentation accuracy |
   | `STYL` | `style.md` | repository naming and mechanical-tool results |
 
-- Each area follows [references/review.template.md](references/review.template.md) and uses `open|fixed|acknowledged|deferred|skipped` finding status. IDs remain stable across reruns. `fixed` is closed only by verified evidence. `acknowledged` and `skipped` are closed non-fixed risk dispositions only with rationale, accountable owner, and explicit recheck condition; P0/P1 also require explicit risk-acceptance authority and durable evidence. `open`, `deferred`, and malformed risk dispositions remain outstanding and block review closure.
+- Each area follows [./templates/review.md](templates/review.md) and uses `open|fixed|acknowledged|deferred|skipped` finding status. IDs remain stable across reruns. `fixed` is closed only by verified evidence. `acknowledged` and `skipped` are closed non-fixed risk dispositions only with rationale, accountable owner, and explicit recheck condition; P0/P1 also require explicit risk-acceptance authority and durable evidence. `open`, `deferred`, and malformed risk dispositions remain outstanding and block review closure.
 - The main agent rewrites `review.md` from every existing area file after writers finish. It contains overall status, all five disposition counts, derived `closed` and `outstanding` counts, priority counts for outstanding findings, one-line area headlines, paths, systemic patterns, and main-agent handback—not duplicated findings.
-- With `--explain`, write a lowercase child under `changes/` using [references/explainer.md](references/explainer.md); return it for main-agent reconciliation of `changes.md`.
+- With `--explain`, write a lowercase child under `changes/` using [./directions/explainer.md](directions/explainer.md); return it for main-agent reconciliation of `changes.md`.
 
 </report>
 
 ## Workflow
 
-1. Resolve the specifier and per-area file lists through [references/specifier-resolution.md](references/specifier-resolution.md). Use root `state.md` as the only plan definition. An explicit `--plan` must resolve to that file. Follow only its explicit implementation-detail link, which may add ID-keyed procedure but cannot redefine IDs, edges, requiredness, targets, or acceptance mappings. Never auto-adopt another planning/design file.
-2. Run the mandatory mechanical candidate scan described in [references/dispatch.md](references/dispatch.md). Candidates are advisory.
-3. Dispatch one read-only reviewer per selected area in one parallel batch, following [references/dispatch.md](references/dispatch.md) and [references/mandates.md](references/mandates.md). Pass the canonical plan source (`state.md`) and applicable full task IDs. Each returns its assigned area's complete proposed content, counts, context level, and evidence. The main agent validates and writes the lowercase area file.
+1. Resolve the specifier and per-area file lists through [./directions/specifier-resolution.md](directions/specifier-resolution.md). Use root `state.md` as the only plan definition. An explicit `--plan` must resolve to that file. Follow only its explicit implementation-detail link, which may add ID-keyed procedure but cannot redefine IDs, edges, requiredness, targets, or acceptance mappings. Never auto-adopt another planning/design file.
+2. Run the mandatory mechanical candidate scan described in [./directions/dispatch.md](directions/dispatch.md). Candidates are advisory.
+3. Dispatch one read-only reviewer per selected area in one parallel batch, following [./directions/dispatch.md](directions/dispatch.md) and [references/mandates.md](references/mandates.md). Pass the canonical plan source (`state.md`) and applicable full task IDs. Each returns its assigned area's complete proposed content, counts, context level, and evidence. The main agent validates and writes the lowercase area file.
 4. Re-read `state.md` before aggregation and reject plan-definition drift. Validate every expected selected file, then aggregate every existing canonical area so a partial rerun cannot hide unselected findings; reject malformed disposition metadata. For every reused (unselected) area file, compare its `reviewed_task_defs` binding against the current definitions of the same `reviewed_task_ids` in `state.md`; when a task kept its ID but its immutable definition (summary, targets, requiredness, acceptance) changed, treat that area as stale — do not aggregate it as clean, and require its re-review before closure. Derive outstanding findings as `open`, `deferred`, or malformed `acknowledged`/`skipped`; derive closed findings as verified `fixed` plus valid `acknowledged`/`skipped`. Any outstanding P0 is `fail`; outstanding P1 is `requires_changes`; only outstanding P2/P3 is `pass_with_suggestions`; zero outstanding findings is `pass`. Every outstanding finding blocks review closure regardless of displayed verdict. The main agent rewrites `review.md` entirely from the validated areas.
 5. With `--explain`, generate the evidence-backed change child after review.
-6. Render the final summary through [references/output-formats.md](references/output-formats.md). On malformed output, redispatch only the owning area until valid or blocked.
+6. Render the final summary through [./templates/output.md](templates/output.md). On malformed output, redispatch only the owning area until valid or blocked.
 7. The main agent returns all changed area, summary, and optional explainer paths in `generated_files`. A delegated reviewer returns no `.state` path as a file it wrote. Do not run file sizing; after every artifact writer returns, the main agent checks only eligible work Markdown inside the target `.state/` and coordinates a complete split round if required.
 
 ## Verification

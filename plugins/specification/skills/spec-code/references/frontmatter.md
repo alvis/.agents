@@ -42,7 +42,7 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
   "outputs": [
     {"path": "spec/README.md", "exact_sha256": "sha256:<64-lowercase-hex>"}
   ],
-  "template": {"locator": "plugin:specification/spec-code/assets/capability-readme.template.md", "plugin_version": "<exact-installed-version>", "exact_sha256": "sha256:<64-lowercase-hex>"},
+  "template": {"locator": "plugin:specification/spec-code/templates/capability-readme.md", "plugin_version": "<exact-installed-version>", "exact_sha256": "sha256:<64-lowercase-hex>"},
   "derived_at": "2026-07-20T10:33:00Z",
   "receipt_anchor": "github-pr:owner/repository#123"
 }
@@ -57,7 +57,7 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
 - `logical_units` preserves source logical ids in the work-local output, so a renamed path cannot silently remap semantic units.
 - When an intended consumer surface produces `reference.md`, include its source-to-output logical-unit mapping and exact output hash. Remove those conditional entries when no reference file exists; never leave a fictional output in the receipt.
 - The receipt is JSON because this is a strict machine-readable sidecar: standard parsers preserve arrays and objects without Markdown ambiguity or a YAML dependency. Keep lineage separate from semantic contract prose so changing evidence never rewrites the approved contract.
-- The bundled fallback template uses the stable `plugin:specification/spec-code/assets/capability-readme.template.md` locator, exact installed plugin version, and exact asset SHA-256. This singular `template` object identifies the primary README template. `reference.md` is prescribed by the same workflow/plugin version and is independently hashed as an output; v1 does not add a second template object. Never record the origin machine's plugin cache/install path. Explicit/project templates use a durable `repo:` or selected remote locator instead.
+- The bundled fallback template uses the stable `plugin:specification/spec-code/templates/capability-readme.md` locator, exact installed plugin version, and exact asset SHA-256. This singular `template` object identifies the primary README template. `reference.md` is prescribed by the same workflow/plugin version and is independently hashed as an output; v1 does not add a second template object. Never record the origin machine's plugin cache/install path. Explicit/project templates use a durable `repo:` or selected remote locator instead.
 - `outputs` lists contract Markdown files only and **must exclude `provenance.json` itself**. Compute the provenance file's own exact SHA-256 only after its final write; store that self-hash in ignored work evidence and the run report. Never insert the self-hash into the file it hashes.
 - `receipt_anchor` points to the durable owning task, pull request, or repository record that records completion. It remains resolvable after ignored local work is retired. Only ignored work evidence may contain temporary absolute source or receipt paths.
 - Filenames follow `naming.md` in the essential plugin's `references/` directory, never a transport-mirror filename.

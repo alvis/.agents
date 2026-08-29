@@ -41,7 +41,7 @@ review scheduling internal.
 - Red PRs that interleave behaviour changes with mechanical edits violate `GIT-PR-TYPE-04`; split before submitting.
 - A red PR whose justification is only "feature too large to split" is a
   yellow-PR-shaped feature in disguise; re-plan independently shippable
-  behavior through [stacked-prs.md](../../../skills/pr/references/stacked-prs.md).
+  behavior through [stacked-prs.md](../../../skills/pr/directions/stacked-prs.md).
   Do not split public contract from its first implementation; when that atomic
   surface itself crosses red, explain the concrete `GIT-PR-TYPE-02` coupling
   and supply the stronger review evidence.

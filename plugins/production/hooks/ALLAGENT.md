@@ -1,1 +1,1 @@
-<IMPORTANT>Before registering production assets or renders, or recording render feedback or approval, you MUST read `{{PLUGIN_DIR}}/references/WORKFLOW.md` for action ownership, provenance, review binding, and standards applicability.</IMPORTANT>
+<IMPORTANT>Before registering production assets or renders, or recording render feedback or approval, you MUST read `{{PLUGIN_DIR}}/directions/WORKFLOW.md` for action ownership, provenance, review binding, and standards applicability.</IMPORTANT>

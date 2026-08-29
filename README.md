@@ -266,7 +266,7 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 ### Review and write fences
 
-- **Independent review** is shared conduct, not per-agent machinery: whoever spawns an agent owns its output quality, each producer's own convergence predicate holds it to a clean independent review, and changed-code completion is recorded with the `REVIEWED:` attestation. The rule and its exact attestation format live in [plugins/essential/references/orchestration.md](plugins/essential/references/orchestration.md).
+- **Independent review** is shared conduct, not per-agent machinery: whoever spawns an agent owns its output quality, each producer's own convergence predicate holds it to a clean independent review, and changed-code completion is recorded with the `REVIEWED:` attestation. The rule and its exact attestation format live in [plugins/essential/directions/orchestration.md](plugins/essential/directions/orchestration.md).
 - **Write-fenced critics** (PreToolUse fence): `code-quality-critic`, `aesthetic-evaluator` — may only write to their agent-memory dir or review reports.
 
 ### Team operation

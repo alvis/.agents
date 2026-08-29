@@ -1,7 +1,7 @@
 # Overall review body template
 
 Fill this and submit it as the review `body`, in the voice from
-[review-tone.md](../references/review-tone.md). Always populate Goal and
+[review-tone.md](../directions/review-tone.md). Always populate Goal and
 Requirements, Tests, Standards, Reuse and minimality, and Verdict. Drop any other
 section that would be empty rather than writing "None" under a heading. Detail
 lives in the inline comments; this is the map, and it should be actionable in
@@ -76,7 +76,7 @@ Notes for the sections where the guidance is not self-evident:
 - **Opening marker** — render `📌` on its own line, then a blank line and the
   review facts prefixed by the verdict glyph — `✅` approve, `❌` request
   changes, or `⚠️` capped at comment — resolved from the substantive verdict in
-  [review-workflow.md](../references/review-workflow.md), exactly as
+  [review.md](../directions/review.md), exactly as
   `{{verdict_alert}}` is. Preserve one space between `{{zone}}` and
   `zone`.
 - **Section headings** — every `###` heading starts with its template emoji;
@@ -86,11 +86,11 @@ Notes for the sections where the guidance is not self-evident:
   things need to change before it merges." Name the zone when it is not green, and
   lead with it when it is black.
 - **Markers** — every bullet opens with the same marker its inline comment carries,
-  per [review-tone.md](../references/review-tone.md): a P0–P4 badge when the finding claims a consequence, a tag when it
+  per [review-tone.md](../directions/review-tone.md): a P0–P4 badge when the finding claims a consequence, a tag when it
   demands a process step, an emoji when it demands nothing. The body and the inline
   comment must not disagree about a finding's level.
 - **Alerts** — at most one per section, and only where it changes what the author
-  does next; [review-tone.md](../references/review-tone.md) owns which alert means what. `> [!CAUTION]` opens *Must
+  does next; [review-tone.md](../directions/review-tone.md) owns which alert means what. `> [!CAUTION]` opens *Must
   change* under a substantive `REQUEST_CHANGES` that was not capped — a self-review
   downgrade does not clear it, because the blockers are still there, but a cap does,
   because a review that cannot stand behind its own evidence cannot declare merge
@@ -135,7 +135,7 @@ the closing alert is never read as part of the exclusion list above it. Close it
 the verdict in one sentence.
 
 `{{verdict_alert}}` is not a free choice. Resolve it from the **substantive verdict** —
-step 1 of the `event` derivation in [review-workflow.md](../references/review-workflow.md) — and never from the submitted `event`,
+step 1 of the `event` derivation in [review.md](../directions/review.md) — and never from the submitted `event`,
 so a review that cannot be trusted never closes as if it needed no action. The two
 diverge whenever a cap or a
 self-review downgrade rewrote the event, and keying the alert to the submitted value is

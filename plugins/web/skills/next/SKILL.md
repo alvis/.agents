@@ -43,7 +43,7 @@ Debug and inspect Next.js applications by combining Chrome DevTools MCP and the 
    | JS debugging | Chrome DevTools breakpoints, stepping, `evaluate_script` (exclusive) |
    | Accessibility tree | either Chrome DevTools `take_snapshot` or next-browser `snapshot` — use whichever is already active |
 
-   Fallback order, per-category rationale, and multi-step recipes (slow page, broken component render, mobile layout, failed API call, SSR inspection): see [references/tool-routing.md](references/tool-routing.md). Full tool inventories: [references/chrome-devtools-tools.md](references/chrome-devtools-tools.md) and [references/next-browser-commands.md](references/next-browser-commands.md).
+   Fallback order, per-category rationale, and multi-step recipes (slow page, broken component render, mobile layout, failed API call, SSR inspection): see [tool-routing.md](references/tool-routing.md). Full tool inventories: [chrome-devtools-tools.md](references/chrome-devtools-tools.md) and [next-browser-commands.md](references/next-browser-commands.md).
 3. Execute with the primary tool; fall back to the secondary when the primary is unavailable or insufficient.
 4. Analyze and summarize findings with evidence. If code fixes are needed,
    provide file paths and specific changes. Apply or dispatch repairs only when
@@ -51,11 +51,11 @@ Debug and inspect Next.js applications by combining Chrome DevTools MCP and the 
    files. Otherwise hand the evidence and proposed changes to
    `frontend-implementer` (or the documented implementation owner) and do not
    edit production source. An implementation-owning invoker may use
-   [references/implementation-team.md](references/implementation-team.md) for a
+   [implementation-team.md](directions/implementation-team.md) for a
    multi-file repair.
 5. When this skill creates or modifies any visible page or component, integrate design quality:
    - Invoke the `design` skill first for all visual decisions — layout, color, typography, spacing, animation. Do not implement UI without it; it iterates in a browser feedback loop toward 10/10 in all 12 design categories, within its own rework budget, and reports whatever still falls short as a residual gap for confirmation.
-   - After implementation, spawn a subagent to run the `audit` skill on the affected URL/component; it checks compliance against the web plugin's `standards/design/scan.md`. P0 and P1 findings block UI completion unless closed under the canonical [audit disposition rules](../audit/references/review-template.md): a non-fixed closure requires explicit risk-acceptance authority, an accountable owner, non-placeholder rationale, durable acceptance evidence, and a concrete recheck condition. P2 and P3 are ranked follow-up, and info is advisory.
+   - After implementation, spawn a subagent to run the `audit` skill on the affected URL/component; it checks compliance against the web plugin's `standards/design/scan.md`. P0 and P1 findings block UI completion unless closed under the canonical [audit disposition rules](../audit/templates/review.md): a non-fixed closure requires explicit risk-acceptance authority, an accountable owner, non-placeholder rationale, durable acceptance evidence, and a concrete recheck condition. P2 and P3 are ranked follow-up, and info is advisory.
    - Consult the web plugin's `standards/design/write.md` for the spacing scale (4px/8px grid), type scale (1.25 ratio), color palette construction, component state requirements (loading/empty/error/success/permission), and token usage.
 6. If the issue is not resolved, try the fallback tool or a different approach and loop back to step 3.
 7. When done, optionally close skill-opened sessions with `next-browser close`; never close a browser session owned by another skill.

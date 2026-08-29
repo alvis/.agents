@@ -62,17 +62,17 @@ Command:
 - Many different prompts/assets → `generate-batch`
 - Else → `generate`
 
-Assume the user wants a new image unless they explicitly ask for an edit. Provider parameter tables live in [references/providers/google.md](references/providers/google.md), [references/providers/openai.md](references/providers/openai.md), and [references/providers/recraft.md](references/providers/recraft.md); CLI commands, flags, and recipes in [references/cli.md](references/cli.md).
+Assume the user wants a new image unless they explicitly ask for an edit. Provider parameter tables live in [google.md](references/providers/google.md), [openai.md](references/providers/openai.md), and [recraft.md](references/providers/recraft.md); CLI commands, flags, and recipes in [cli.md](references/cli.md).
 
 ## Workflow
 
 1. **Ask for a reference image** — before anything else, ask whether the user has a reference image or style to match. Do not skip this step.
-2. **Extract style** — if a reference is provided, determine the intended provider and model first, then follow [references/style-extraction.md](references/style-extraction.md): Recraft V3 models use `mcp__recraft__create_style` to obtain a `styleID`; all other models get a visually analyzed style prompt (medium, palette, texture, lighting, composition, mood, line quality, detail level) confirmed by the user. Describe the extracted style back to the user before proceeding.
+2. **Extract style** — if a reference is provided, determine the intended provider and model first, then follow [style-extraction.md](directions/style-extraction.md): Recraft V3 models use `mcp__recraft__create_style` to obtain a `styleID`; all other models get a visually analyzed style prompt (medium, palette, texture, lighting, composition, mood, line quality, detail level) confirmed by the user. Describe the extracted style back to the user before proceeding.
 3. **Decide provider + command** — use the selection rules above.
 4. **Collect inputs** — gather prompt(s), exact text (verbatim), constraints/avoid list, and any input image(s)/mask(s). For multi-image edits, label each input by index and role; for edits, list invariants explicitly.
 5. **Craft the structured prompt** — the primary deliverable; see the next section. Only make implicit details explicit; do not invent new requirements.
 6. **Present the prompt for review** — show it to the user for approval. If the request is prompt-only, stop here and deliver the prompt.
-7. **Execute** — run the bundled CLI (`bun "$IMAGINE" ...`) with sensible defaults, or Recraft MCP tools when working within Recraft's ecosystem (see the MCP Tools section of [references/providers/recraft.md](references/providers/recraft.md) for the tool table and the MCP-vs-CLI decision). For batch runs, write a temporary JSONL, run once, then delete. Remote inputs use per-run sibling directories in the system temporary directory with the `imagine_dl_*` prefix; write final artifacts under `output/imagine/` when working in this repo; use `--out` or `--out-dir` with stable, descriptive filenames.
+7. **Execute** — run the bundled CLI (`bun "$IMAGINE" ...`) with sensible defaults, or Recraft MCP tools when working within Recraft's ecosystem (see the MCP Tools section of [recraft.md](references/providers/recraft.md) for the tool table and the MCP-vs-CLI decision). For batch runs, write a temporary JSONL, run once, then delete. Remote inputs use per-run sibling directories in the system temporary directory with the `imagine_dl_*` prefix; write final artifacts under `output/imagine/` when working in this repo; use `--out` or `--out-dir` with stable, descriptive filenames.
 8. **Inspect & iterate** — for complex edits/generations, inspect outputs and validate subject, style, composition, text accuracy, and invariants/avoid items. Make a single targeted change per iteration; only ask a question if a missing detail blocks success.
 9. **Deliver** — save/return final outputs and note the final prompt + flags used.
 10. Run the verification below; when a check fails, fix the cause (usually one targeted prompt or flag change) and re-run that check. Repeat until every check passes or a concrete blocker remains (missing key, unavailable dependency, provider rejection), then report the blocker instead of looping.
@@ -128,7 +128,7 @@ Augmentation rules — augment, never invent:
 
 - Keep it short; add only details the user already implied or provided elsewhere. "A hero image for a landing page" may gain implied layout constraints ("generous negative space on the right for headline text"); it may not gain a mascot, a new subject, or invented brand names/logos.
 - Order the spec from global to local: scene/environment first, then subject framing, then fine details (lighting, camera, materials), then constraints/avoid. This reduces randomness in outputs.
-- Tailor constraints/composition/quality to the taxonomy slug; use the slug to find the matching example in [references/sample-prompts.md](references/sample-prompts.md).
+- Tailor constraints/composition/quality to the taxonomy slug; use the slug to find the matching example in [prompts.md](examples/prompts.md).
 - If the user gives a broad request (e.g., "Generate images for this website"), propose tasteful, context-appropriate assets and map each to a slug.
 - For edits, explicitly list invariants ("change only X; keep Y unchanged") and repeat them every iteration to reduce drift.
 - If any critical detail is missing and blocks success, ask a question; otherwise proceed.
@@ -141,7 +141,7 @@ Prompting practices (all providers):
 - Start latency-sensitive runs at quality=low; use quality=high for text-heavy or detail-critical outputs; consider `--input-fidelity high` (OpenAI only) for strict identity/layout locks.
 - If results feel "tacky", add a brief `Avoid:` line (stock-photo vibe; cheesy lens flare; oversaturated neon; harsh bloom; oversharpening; clutter) and specify restraint ("editorial", "premium", "subtle").
 - Use short prompts (2-3 elements) for exploration; structured prompts (all 7 elements: Subject, Composition, Context, Medium, Style, Vibe, Attributes) for production. If a result feels random, add spatial anchors, lighting direction, or mood — not more detail.
-- Format-specific cheat sheets (photorealism, illustration, vector/logo, graphic design, 3D) and further principles: [references/prompting.md](references/prompting.md). Copy/paste specs and asset-type templates (website assets, game assets, wireframes, logo): [references/sample-prompts.md](references/sample-prompts.md).
+- Format-specific cheat sheets (photorealism, illustration, vector/logo, graphic design, 3D) and further principles: [prompting.md](references/prompting.md). Copy/paste specs and asset-type templates (website assets, game assets, wireframes, logo): [prompts.md](examples/prompts.md).
 
 ## Verification
 
