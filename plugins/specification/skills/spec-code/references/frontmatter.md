@@ -4,8 +4,7 @@ Use separate schemas for Notion transport and work-local specification evidence.
 
 ## Notion transport metadata
 
-Paths are returned by notion-sync and never derived. Preserve all existing
-properties; the keys below are the minimum identity/provenance surface:
+Paths are returned by notion-sync and never derived. Preserve all existing properties; the keys below are the minimum identity/provenance surface:
 
 ```yaml
 ---
@@ -18,15 +17,10 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
 
 - `ref` is the stable Notion identity and never derives a local filename.
 - `parent` is present only when needed to create an unsynced page.
-- `last_edited_time` is remote revision metadata returned and updated only by
-  Notion transport. The selected body author preserves it byte-for-byte and never
-  replaces it with a local clock. An unsynced locally authored page omits this
-  key until transport supplies it.
-- Local edit timestamps belong in ignored work evidence or the sync receipt,
-  never in Notion transport frontmatter.
+- `last_edited_time` is remote revision metadata returned and updated only by Notion transport. The selected body author preserves it byte-for-byte and never replaces it with a local clock. An unsynced locally authored page omits this key until transport supplies it.
+- Local edit timestamps belong in ignored work evidence or the sync receipt, never in Notion transport frontmatter.
 - Preserve Notion properties and relationship annotations verbatim.
-- The transport body remains opaque state and is edited only through the exact
-  explicitly selected body-author capability.
+- The transport body remains opaque state and is edited only through the exact explicitly selected body-author capability.
 
 ## Work-local specification evidence
 
@@ -67,7 +61,4 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
 - `outputs` lists contract Markdown files only and **must exclude `provenance.json` itself**. Compute the provenance file's own exact SHA-256 only after its final write; store that self-hash in ignored work evidence and the run report. Never insert the self-hash into the file it hashes.
 - `receipt_anchor` points to the durable owning task, pull request, or repository record that records completion. It remains resolvable after ignored local work is retired. Only ignored work evidence may contain temporary absolute source or receipt paths.
 - Filenames follow `naming.md` in the essential plugin's `references/` directory, never a transport-mirror filename.
-- The main agent's final output manifest includes all derived `.md` files and
-  `provenance.json` in `generated_files`; versioned `docs/**` remains excluded
-  from the final size check, which selects only eligible Markdown inside
-  `.state/`.
+- The main agent's final output manifest includes all derived `.md` files and `provenance.json` in `generated_files`; versioned `docs/**` remains excluded from the final size check, which selects only eligible Markdown inside `.state/`.

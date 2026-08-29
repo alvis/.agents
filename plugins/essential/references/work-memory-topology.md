@@ -1,8 +1,6 @@
 # Work-memory topology
 
-Read this when creating, locating, or migrating ignored local state.
-`state-systems.md` owns system selection and access, `state.md` owns the
-lifecycle and resolver, and `state-format.md` owns state semantics.
+Read this when creating, locating, or migrating ignored local state. `state-systems.md` owns system selection and access, `state.md` owns the lifecycle and resolver, and `state-format.md` owns state semantics.
 
 ```text
 .state                                  # ignored operational work memory in the default source tree
@@ -40,21 +38,8 @@ lifecycle and resolver, and `state-format.md` owns state semantics.
                 └── <base-id>.json      # source revision and content receipt
 ```
 
-For an externally backed stream, `goal.md` links the canonical external URL,
-accepted base, optional `spec/` copy, and matching materialization receipt.
-The readable copy and receipt are revision-bound partners; a reader never
-assumes that an unreceipted local file represents the external authority.
-There is no `spec-derivations/` sibling.
+For an externally backed stream, `goal.md` links the canonical external URL, accepted base, optional `spec/` copy, and matching materialization receipt. The readable copy and receipt are revision-bound partners; a reader never assumes that an unreceipted local file represents the external authority. There is no `spec-derivations/` sibling.
 
-`archive/` is the single sink for every stream that leaves `works/`, whether
-it completed or was parked. Keep it singular: a sibling `archives/` would
-leave every future reader guessing which of two near-identical directories
-holds what. Why a stream left is recorded in its own `state.md` completion
-receipt, never encoded in the directory name, so the reason survives being
-moved and can say more than one word.
+`archive/` is the single sink for every stream that leaves `works/`, whether it completed or was parked. Keep it singular: a sibling `archives/` would leave every future reader guessing which of two near-identical directories holds what. Why a stream left is recorded in its own `state.md` completion receipt, never encoded in the directory name, so the reason survives being moved and can say more than one word.
 
-`environment.md` and `traps.md` sit beside `overview.md` rather than inside
-it because they rot on a different clock: which trees, refs, and gates exist
-changes when the repository does, not when a stream advances, and a trap is
-true until the underlying tool changes. Both are re-measurable and dated; a
-claim in either that no longer reproduces is replaced, not annotated.
+`environment.md` and `traps.md` sit beside `overview.md` rather than inside it because they rot on a different clock: which trees, refs, and gates exist changes when the repository does, not when a stream advances, and a trap is true until the underlying tool changes. Both are re-measurable and dated; a claim in either that no longer reproduces is replaced, not annotated.

@@ -1,7 +1,6 @@
 # Work-memory templates
 
-Use the Essential state contract as authoritative. These shapes add
-handover-specific content; all timestamps are one real UTC ISO-8601 value.
+Use the Essential state contract as authoritative. These shapes add handover-specific content; all timestamps are one real UTC ISO-8601 value.
 
 ## `goal.md`
 
@@ -34,15 +33,7 @@ handover-specific content; all timestamps are one real UTC ISO-8601 value.
 - Last verified at: `<ISO-8601|None|Pending user confirmation>`
 ```
 
-The charter owns goal, scope, success criteria, and every specification anchor;
-`state.md` links to it and never restates them. For an external authority the
-canonical reference is its stable external URL. A local materialization is
-usable only when its receipt matches the accepted revision/base. Use `None`
-and `not-applicable` for a confirmed stream without a specification. A newly
-bootstrapped stream may use the `pending` values, but must resolve them before
-active execution.
-`Charter revision` bumps only on explicit user approval, journaled in
-`state/journal.md` and `state/revisions.md`.
+The charter owns goal, scope, success criteria, and every specification anchor; `state.md` links to it and never restates them. For an external authority the canonical reference is its stable external URL. A local materialization is usable only when its receipt matches the accepted revision/base. Use `None` and `not-applicable` for a confirmed stream without a specification. A newly bootstrapped stream may use the `pending` values, but must resolve them before active execution. `Charter revision` bumps only on explicit user approval, journaled in `state/journal.md` and `state/revisions.md`.
 
 ## `state.md`
 
@@ -94,60 +85,23 @@ active execution.
 ## Continuation
 ```
 
-The `## Context` lines follow
-[Making plans](../../../references/directions/plan.md). Under each label, keep
-one item per directly related record and remove the second example when only one
-qualifies. When none qualifies, replace the nested examples with
-`- None — no directly related record`.
+The `## Context` lines follow [Making plans](../../../references/directions/plan.md). Under each label, keep one item per directly related record and remove the second example when only one qualifies. When none qualifies, replace the nested examples with `- None — no directly related record`.
 
-Add one further metadata line, `- Blocked on: <named blocker>`, only when the
-stream is stopped — or `- Blocked on: unknown` when it is stopped and nobody
-recorded why. The line is absent from the template because absence is a fact:
-it means the stream is not blocked. It is never carried as an empty or
-placeholder value, which would claim a blocker that does not exist and cost the
-distinction between a healthy stream and a forgotten one
-([state-format.md](../../../references/state-format.md)).
+Add one further metadata line, `- Blocked on: <named blocker>`, only when the stream is stopped — or `- Blocked on: unknown` when it is stopped and nobody recorded why. The line is absent from the template because absence is a fact: it means the stream is not blocked. It is never carried as an empty or placeholder value, which would claim a blocker that does not exist and cost the distinction between a healthy stream and a forgotten one ([state-format.md](../../../references/state-format.md)).
 
-The root table contains the complete registry: every three-letter parent and
-every `AAA01`-style child exactly once. A resumable `state/*.md` child may mirror
-only its parent's existing subset and cannot introduce an ID. Store full IDs in
-`Depends on`; parent edges target parents and child edges target siblings.
-Every Task cell is exactly `<summary> [targets: <comma-separated paths>|none]`.
-Marks and status words use `- planned`, `⧗ working`, `✓ done`, `X failed`,
-`! blocked`, or `⊘ cancelled`. Graph notation and diagrams are derived display,
-not authority.
+The root table contains the complete registry: every three-letter parent and every `AAA01`-style child exactly once. A resumable `state/*.md` child may mirror only its parent's existing subset and cannot introduce an ID. Store full IDs in `Depends on`; parent edges target parents and child edges target siblings. Every Task cell is exactly `<summary> [targets: <comma-separated paths>|none]`. Marks and status words use `- planned`, `⧗ working`, `✓ done`, `X failed`, `! blocked`, or `⊘ cancelled`. Graph notation and diagrams are derived display, not authority.
 
-`## Outstanding proposals` preserves the proposal inventory across the state
-rewrite: every `proposals/` child still awaiting user approval and every approved
-proposal not yet implemented, each with its status and child path, so a
-same-machine resume reads the outstanding approval/implementation work from
-`state.md` without scanning the folder. Omit the section only when no such
-proposal exists.
+`## Outstanding proposals` preserves the proposal inventory across the state rewrite: every `proposals/` child still awaiting user approval and every approved proposal not yet implemented, each with its status and child path, so a same-machine resume reads the outstanding approval/implementation work from `state.md` without scanning the folder. Omit the section only when no such proposal exists.
 
-`## Completion receipt` appears once the stream reaches phase `completed` and
-holds its applicable landing evidence, promoted durable paths, and each outlives-me item
-with the owner that took it; the stream's overview row is generated from it.
-Omit it before then.
+`## Completion receipt` appears once the stream reaches phase `completed` and holds its applicable landing evidence, promoted durable paths, and each outlives-me item with the owner that took it; the stream's overview row is generated from it. Omit it before then.
 
-File substates: completed; `need-draft`; `need-completion`; `need-fixing`;
-`need-testing`; `need-linting`; `need-refactoring`; blocked. Record path,
-substate, remaining action, evidence, and blocker. Use semantic `state/*.md`
-children for genuinely resumable execution detail. Numeric split children are
-reserved for a shared file that exceeded its size limit.
+File substates: completed; `need-draft`; `need-completion`; `need-fixing`; `need-testing`; `need-linting`; `need-refactoring`; blocked. Record path, substate, remaining action, evidence, and blocker. Use semantic `state/*.md` children for genuinely resumable execution detail. Numeric split children are reserved for a shared file that exceeded its size limit.
 
-The `## Continuation` section persists, on disk, everything a resume needs to
-route the next step: `Current task` (full executable task ID or
-none), `Next owner` (exact continuation owner), `Next action` (one sentence), and
-`Continuation intent` (a capability-level work-type descriptor — for example
-`specification-led implementation` or `generic coding implementation` — never a
-fixed skill name). A takeover reads these fields straight from `state.md`.
+The `## Continuation` section persists, on disk, everything a resume needs to route the next step: `Current task` (full executable task ID or none), `Next owner` (exact continuation owner), `Next action` (one sentence), and `Continuation intent` (a capability-level work-type descriptor — for example `specification-led implementation` or `generic coding implementation` — never a fixed skill name). A takeover reads these fields straight from `state.md`.
 
 ## `overview.md`
 
-The global index beside the centralized `.state/works/`: one table of
-every work stream on the machine, so a single read shows all outstanding work
-and which checkout each is worked in. Handover upserts only the rows for the
-streams it refreshed and preserves every other row byte-for-byte. Follow this template:
+The global index beside the centralized `.state/works/`: one table of every work stream on the machine, so a single read shows all outstanding work and which checkout each is worked in. Handover upserts only the rows for the streams it refreshed and preserves every other row byte-for-byte. Follow this template:
 
 ```markdown
 # State overview
@@ -185,17 +139,7 @@ streams it refreshed and preserves every other row byte-for-byte. Follow this te
 - `<work-id>` — `<one line>` `<merge date>`
 ```
 
-Every cell's derivation, the `Next action` budget, the `Last progress` rule,
-and the sort order live in
-[overviews.md](../../../references/overviews.md); this template is only their
-shape. Handover fills `Goal` and `Requirements` from user intent when creating
-a brand-new overview, or leaves an explicit `-` for the main agent to resolve — never
-inventing them from stream files — and preserves them byte-for-byte
-afterwards, exactly like unrefreshed rows.
-When creating or reconciling `State systems`, write exactly the three presence
-rows. The required documentation and local-state rows are `configured`; the
-external-authority row is `none`, `configured`, or `pending`. Never put a URL,
-revision, mirror, or local path there; stream anchors belong in `goal.md`.
+Every cell's derivation, the `Next action` budget, the `Last progress` rule, and the sort order live in [overviews.md](../../../references/overviews.md); this template is only their shape. Handover fills `Goal` and `Requirements` from user intent when creating a brand-new overview, or leaves an explicit `-` for the main agent to resolve — never inventing them from stream files — and preserves them byte-for-byte afterwards, exactly like unrefreshed rows. When creating or reconciling `State systems`, write exactly the three presence rows. The required documentation and local-state rows are `configured`; the external-authority row is `none`, `configured`, or `pending`. Never put a URL, revision, mirror, or local path there; stream anchors belong in `goal.md`.
 
 ## `state/working.md`
 
@@ -214,12 +158,8 @@ revision, mirror, or local path there; stream anchors belong in `goal.md`.
 - Active decision/design/review/evidence: [<relative path>](<relative path>)
 ```
 
-Aim at approximately 4,096 bytes by editing, not a gate. Never include the full
-plan, history, completed inventory, copied spec, or review findings.
+Aim at approximately 4,096 bytes by editing, not a gate. Never include the full plan, history, completed inventory, copied spec, or review findings.
 
 ## Lazy work overviews
 
-`proposals.md`, `changes.md`, `decisions.md`, and `design.md` are created with
-their first child and then retained until work closes. Each contains purpose,
-one headline, canonical status counts, last main-agent reconciliation timestamp, and a
-table of child headline/status/relative path. Never copy child detail.
+`proposals.md`, `changes.md`, `decisions.md`, and `design.md` are created with their first child and then retained until work closes. Each contains purpose, one headline, canonical status counts, last main-agent reconciliation timestamp, and a table of child headline/status/relative path. Never copy child detail.

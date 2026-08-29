@@ -1,25 +1,15 @@
 # Coding
 
-General code production: writing, fixing, refactoring, testing, linting,
-documenting, and publishing code with history you can trust. Depends on
-`essential`. Every workflow follows the state contract — worker
-skills return evidence and manifests; the main agent reconciles state.
+General code production: writing, fixing, refactoring, testing, linting, documenting, and publishing code with history you can trust. Depends on `essential`. Every workflow follows the state contract — worker skills return evidence and manifests; the main agent reconciles state.
 
 ## History safety
 
 Two mechanisms make saves and publication safe around AI-driven edits:
 
-- **One `jj` playbook.** [`references/jj.md`](references/jj.md) owns
-  initialization, workspaces, stacked-review fixes, history shaping,
-  publication handoffs, and recovery for every coding skill.
+- **One `jj` playbook.** [`references/jj.md`](references/jj.md) owns initialization, workspaces, stacked-review fixes, history shaping, publication handoffs, and recovery for every coding skill.
 
-- **Scoped saves.** Lifecycle saves run through `coding:commit` with a sealed
-  path manifest (`--paths-from=<manifest> --manifest-sha256=<sha>`), so a
-  save touches exactly the reviewed file set and preserves unrelated staged
-  or dirty developer work. Any writer after sealing invalidates the manifest.
-- **Per-commit QA.** `coding:finalize-commits` verifies every unpushed commit
-  in isolation before `coding:pr create` publishes draft PRs and drives CI to
-  green. History mutation belongs to `coding:commit` alone.
+- **Scoped saves.** Lifecycle saves run through `coding:commit` with a sealed path manifest (`--paths-from=<manifest> --manifest-sha256=<sha>`), so a save touches exactly the reviewed file set and preserves unrelated staged or dirty developer work. Any writer after sealing invalidates the manifest.
+- **Per-commit QA.** `coding:finalize-commits` verifies every unpushed commit in isolation before `coding:pr create` publishes draft PRs and drives CI to green. History mutation belongs to `coding:commit` alone.
 
 ## Skills
 
@@ -43,11 +33,4 @@ Two mechanisms make saves and publication safe around AI-driven edits:
 | `coding:find-unused` | Read-only dead-code discovery. |
 | `coding:sync-tool` | Installing/updating registered CLI tools (brew, jj, gh, …). |
 
-`skills/commit/SKILL.md` carries commit, branch, and local-history directions;
-the action references under `skills/pr/references/` carry pull-request
-directions. `standards/git/` scans rendered PR messages and implementation-diff
-size and composition; `skills/pr/templates/message.md` and
-`skills/pr/templates/inline-review.md` own their rendered shapes. Other
-`standards/` directories carry implementation-scannable policy that `lint`
-and reviewers enforce; React and Web route their standards through the same
-executors.
+`skills/commit/SKILL.md` carries commit, branch, and local-history directions; the action references under `skills/pr/references/` carry pull-request directions. `standards/git/` scans rendered PR messages and implementation-diff size and composition; `skills/pr/templates/message.md` and `skills/pr/templates/inline-review.md` own their rendered shapes. Other `standards/` directories carry implementation-scannable policy that `lint` and reviewers enforce; React and Web route their standards through the same executors.

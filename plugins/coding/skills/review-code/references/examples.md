@@ -30,8 +30,4 @@ Load only the example matching the invocation.
 # promoting an implementation-detail or root planning file to authority.
 ```
 
-Clean output reports `pass` in the selected area and a `review.md`
-reconciliation delta. Findings use
-stable IDs and `open|fixed|acknowledged|deferred|skipped`. A missing work ID, unresolved
-path, binary-only scope, or legacy `--out` is rejected with the exact corrective
-invocation; no root `reviews/` fallback is created.
+Clean output reports `pass` in the selected area and a `review.md` reconciliation delta. Findings use stable IDs and `open|fixed|acknowledged|deferred|skipped`. A missing work ID, unresolved path, binary-only scope, or legacy `--out` is rejected with the exact corrective invocation; no root `reviews/` fallback is created.

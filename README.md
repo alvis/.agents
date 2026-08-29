@@ -1,23 +1,10 @@
 # Claude Code, Codex, and Grok Build Plugin Marketplace
 
-Eight composable plugins for Claude Code, Codex, and Grok Build, with a
-best-effort OpenCode V1 projection: specifications with real provenance,
-plans with stable task identity, execution state that survives crashes and
-machine moves, and decisions that never silently rewrite history.
-Claude Code, Codex, and Grok Build are native targets whose harness-specific
-manifests are thin adapters. OpenCode V1 uses a generated best-effort
-projection; see the emoji-qualified [compatibility matrix](COMPATIBILITY.md)
-before relying on a harness-specific feature. This README explains how the
-system thinks and how to get the most out of it; each plugin's own
-`README.md` documents its skills in depth.
+Eight composable plugins for Claude Code, Codex, and Grok Build, with a best-effort OpenCode V1 projection: specifications with real provenance, plans with stable task identity, execution state that survives crashes and machine moves, and decisions that never silently rewrite history. Claude Code, Codex, and Grok Build are native targets whose harness-specific manifests are thin adapters. OpenCode V1 uses a generated best-effort projection; see the emoji-qualified [compatibility matrix](COMPATIBILITY.md) before relying on a harness-specific feature. This README explains how the system thinks and how to get the most out of it; each plugin's own `README.md` documents its skills in depth.
 
 ## How the system thinks
 
-Everything in this marketplace is built around one observation: **long-running
-AI work fails less from missing memory than from stale memory** — an agent
-that remembers yesterday's plan perfectly and doesn't notice the world moved.
-The system therefore separates six kinds of truth and refuses to let one
-impersonate another (`plugins/essential/references/truth.md`):
+Everything in this marketplace is built around one observation: **long-running AI work fails less from missing memory than from stale memory** — an agent that remembers yesterday's plan perfectly and doesn't notice the world moved. The system therefore separates six kinds of truth and refuses to let one impersonate another (`plugins/essential/references/truth.md`):
 
 | Kind | Question it answers | Lives in |
 | --- | --- | --- |
@@ -32,40 +19,17 @@ Five rules are constitutional:
 
 1. Never edit an accepted decision into its replacement — supersede it.
 2. Never approve an artifact without naming its exact revision.
-3. Never treat `done` as synonymous with `current` — status is history,
-   validity is now.
+3. Never treat `done` as synonymous with `current` — status is history, validity is now.
 4. Every derived artifact names the inputs it was derived from.
 5. Deleting `.state/` must never erase anything consequential.
 
 Practical consequences you will see day to day:
 
-- **`.state/` is an operational projection, not the record of record.**
-  It is ignored working memory — rich, continuously persisted, and not
-  byte-reconstructible — held centrally in the default source tree, so every
-  worktree and workspace shares one view of the work. Every state change, discovery, and decision is stored
-  immediately in the journal and its owning state file; accepted decisions,
-  approvals, and published artifact identities also live in versioned
-  `docs/` and external anchors (issue, PR, Notion) via promotion records. The
-  projection becomes disposable only after durable promotion and closure.
-- **Completed work stays completed.** When a decision or spec change
-  invalidates a finished task, its row keeps `✓ done` and gains
-  `validity: stale (<reason>)`; new remediation tasks carry the rework. The
-  system recomputes only what the changed truth touched instead of restarting
-  everything — and history is never falsified.
-- **Approvals bind to exact revisions.** "Approved" names the artifact, its
-  hash or immutable revision, the reviewer, and the scope. An approval of v7
-  never silently carries to v8.
-- **Concurrency is technical, not social.** One coordinator per work stream
-  holds an on-disk lease (`state-lease`); state writes are atomic and
-  bump a monotonic `State revision`; an append-only journal records causality
-  so drift between tables is settled by evidence, not guesswork. A small
-  read-only `state-doctor` catches structural defects (cycles,
-  dangling dependencies, contradictory statuses) without ever judging prose.
-- **Context is revealed progressively.** Only the tiny
-  `plugins/<p>/hooks/ALLAGENT.md` / `plugins/<p>/hooks/MAINAGENT.md` /
-  `plugins/<p>/hooks/SUBAGENT.md` entry points are injected into every
-  session. Contracts load on demand at the moment they matter, so agents
-  spend context on your work, not on ceremony.
+- **`.state/` is an operational projection, not the record of record.** It is ignored working memory — rich, continuously persisted, and not byte-reconstructible — held centrally in the default source tree, so every worktree and workspace shares one view of the work. Every state change, discovery, and decision is stored immediately in the journal and its owning state file; accepted decisions, approvals, and published artifact identities also live in versioned `docs/` and external anchors (issue, PR, Notion) via promotion records. The projection becomes disposable only after durable promotion and closure.
+- **Completed work stays completed.** When a decision or spec change invalidates a finished task, its row keeps `✓ done` and gains `validity: stale (<reason>)`; new remediation tasks carry the rework. The system recomputes only what the changed truth touched instead of restarting everything — and history is never falsified.
+- **Approvals bind to exact revisions.** "Approved" names the artifact, its hash or immutable revision, the reviewer, and the scope. An approval of v7 never silently carries to v8.
+- **Concurrency is technical, not social.** One coordinator per work stream holds an on-disk lease (`state-lease`); state writes are atomic and bump a monotonic `State revision`; an append-only journal records causality so drift between tables is settled by evidence, not guesswork. A small read-only `state-doctor` catches structural defects (cycles, dangling dependencies, contradictory statuses) without ever judging prose.
+- **Context is revealed progressively.** Only the tiny `plugins/<p>/hooks/ALLAGENT.md` / `plugins/<p>/hooks/MAINAGENT.md` / `plugins/<p>/hooks/SUBAGENT.md` entry points are injected into every session. Contracts load on demand at the moment they matter, so agents spend context on your work, not on ceremony.
 
 ## Install
 
@@ -77,10 +41,7 @@ claude plugin marketplace add alvis/.claude --scope project
 claude plugin install specification@alvis --scope project
 ```
 
-`specification` is the recommended end-to-end bundle; its declared
-dependencies install `coding` and `essential`. After installation, ask Claude
-to run `/essential:install-agents`, restart the session, and run
-`/reload-plugins` after marketplace updates.
+`specification` is the recommended end-to-end bundle; its declared dependencies install `coding` and `essential`. After installation, ask Claude to run `/essential:install-agents`, restart the session, and run `/reload-plugins` after marketplace updates.
 
 | Scope | Use |
 |---|---|
@@ -88,10 +49,7 @@ to run `/essential:install-agents`, restart the session, and run
 | `project` | Record the plugin for collaborators in the target project. |
 | `user` | Enable it for the current developer across projects. |
 
-Project scope writes marketplace and enabled-plugin declarations to the
-target's `.claude/settings.json`; review before committing. Keep
-`NOTION_TOKEN` and every other credential out of project settings and version
-control.
+Project scope writes marketplace and enabled-plugin declarations to the target's `.claude/settings.json`; review before committing. Keep `NOTION_TOKEN` and every other credential out of project settings and version control.
 
 ### Codex
 
@@ -102,19 +60,9 @@ codex plugin add coding@alvis
 codex plugin add specification@alvis
 ```
 
-Codex reads `.agents/plugins/marketplace.json`, a structural projection of the
-authoritative Claude catalog. Install the workflow's listed plugins explicitly
-because Claude's plugin dependency metadata is harness-specific. Ask Codex to
-run `essential:install-agents` for the Codex harness, then start a fresh session
-so the native TOML specialist definitions are loaded. Role-binding context is
-withheld until its required specialist is installed. Open `/hooks` after
-installation and trust the bundled plugin hooks; Codex skips new or changed
-context-injection hooks until their definitions are reviewed.
+Codex reads `.agents/plugins/marketplace.json`, a structural projection of the authoritative Claude catalog. Install the workflow's listed plugins explicitly because Claude's plugin dependency metadata is harness-specific. Ask Codex to run `essential:install-agents` for the Codex harness, then start a fresh session so the native TOML specialist definitions are loaded. Role-binding context is withheld until its required specialist is installed. Open `/hooks` after installation and trust the bundled plugin hooks; Codex skips new or changed context-injection hooks until their definitions are reviewed.
 
-In T3-hosted Plan Mode, Codex emits the plan without a plan-transition tool
-call. Essential therefore validates the current turn's `<proposed_plan>` from
-the Codex transcript at Stop and requests one corrected response when needed.
-The first malformed plan may render before that feedback arrives.
+In T3-hosted Plan Mode, Codex emits the plan without a plan-transition tool call. Essential therefore validates the current turn's `<proposed_plan>` from the Codex transcript at Stop and requests one corrected response when needed. The first malformed plan may render before that feedback arrives.
 
 ### Grok Build
 
@@ -123,27 +71,15 @@ cd /path/to/claude-marketplace-checkout
 grok plugin install plugins/specification --trust
 ```
 
-Grok reads `.grok-plugin/marketplace.json`, a structural projection of the
-authoritative Claude catalog, and validates each plugin's thin
-`.grok-plugin/plugin.json` adapter. Install is source-scoped: `grok plugin
-install` takes a local path directly and `--trust` enables it, while
-`marketplace add` only lists discovery entries.
+Grok reads `.grok-plugin/marketplace.json`, a structural projection of the authoritative Claude catalog, and validates each plugin's thin `.grok-plugin/plugin.json` adapter. Install is source-scoped: `grok plugin install` takes a local path directly and `--trust` enables it, while `marketplace add` only lists discovery entries.
 
-Grok discovers plugin agents only from direct `agents/*.md` children, so this
-repository's split layout yields none there — agents come from the installer.
-Ask Grok to run `essential:install-agents` with `--harness grok`; specialists
-land in `${GROK_HOME:-~/.grok}/agents/*.md`.
+Grok discovers plugin agents only from direct `agents/*.md` children, so this repository's split layout yields none there — agents come from the installer. Ask Grok to run `essential:install-agents` with `--harness grok`; specialists land in `${GROK_HOME:-~/.grok}/agents/*.md`.
 
-Scoped out under Grok Build: its `SessionStart` and `SubagentStart` handlers
-ignore stdout, so the routing-payload injection is a registered no-op there.
-The PreToolUse gates run natively, emitting top-level `{"decision","reason"}`
-envelopes over camelCase `toolInput` stdin; the plan-heading gate fail-opens
-because Grok's `exit_plan_mode` sends no plan field.
+Scoped out under Grok Build: its `SessionStart` and `SubagentStart` handlers ignore stdout, so the routing-payload injection is a registered no-op there. The PreToolUse gates run natively, emitting top-level `{"decision","reason"}` envelopes over camelCase `toolInput` stdin; the plan-heading gate fail-opens because Grok's `exit_plan_mode` sends no plan field.
 
 ### OpenCode V1
 
-Project a selected plugin and its recursive dependencies into a target Git
-worktree:
+Project a selected plugin and its recursive dependencies into a target Git worktree:
 
 ```bash
 bun /path/to/.agents/scripts/install_opencode.ts \
@@ -152,8 +88,7 @@ bun /path/to/.agents/scripts/install_opencode.ts \
   --plugin specification
 ```
 
-Install selected plugins for the current user, or project every marketplace
-plugin:
+Install selected plugins for the current user, or project every marketplace plugin:
 
 ```bash
 bun scripts/install_opencode.ts --scope user --plugin essential --plugin coding
@@ -161,83 +96,29 @@ bun /path/to/.agents/scripts/install_opencode.ts \
   --scope project --project-root /path/to/target-project --all
 ```
 
-The installer projects the current Git worktree's tracked and non-ignored
-untracked regular files. It rejects source symlinks before target mutation, so
-ignored environments, caches, and build output do not leak into the projection
-and every managed output remains a regular file. Repeating the same install is
-byte-stable.
+The installer projects the current Git worktree's tracked and non-ignored untracked regular files. It rejects source symlinks before target mutation, so ignored environments, caches, and build output do not leak into the projection and every managed output remains a regular file. Repeating the same install is byte-stable.
 
-Only managed paths beneath `.opencode/` or
-`${XDG_CONFIG_HOME:-~/.config}/opencode/` are written; `opencode.json` and
-`opencode.jsonc` are never edited. Schema-v2 receipts record source hashes and
-resolved hook mappings in `alvis/manifest.json`. <!-- doc-path-gate: ignore --> An external target-bound ownership
-and recovery record under
-`${XDG_STATE_HOME:-~/.local/state}/alvis-opencode-v1/` prevents a copied or
-forged project receipt from claiming user files and lets the next non-dry run
-roll back a hard-interrupted install. An authenticated schema-v1 projection is
-migrated transactionally; modified, unowned, current-schema non-regular, and
-genuinely colliding paths remain fatal. OpenCode names are hyphenated to satisfy
-its skill and command rules: `coding:pr` becomes the `coding-pr` skill and
-`/coding-pr` command. Rerun the installer after updating this source checkout.
+Only managed paths beneath `.opencode/` or `${XDG_CONFIG_HOME:-~/.config}/opencode/` are written; `opencode.json` and `opencode.jsonc` are never edited. Schema-v2 receipts record source hashes and resolved hook mappings in `alvis/manifest.json`. <!-- doc-path-gate: ignore --> An external target-bound ownership and recovery record under `${XDG_STATE_HOME:-~/.local/state}/alvis-opencode-v1/` prevents a copied or forged project receipt from claiming user files and lets the next non-dry run roll back a hard-interrupted install. An authenticated schema-v1 projection is migrated transactionally; modified, unowned, current-schema non-regular, and genuinely colliding paths remain fatal. OpenCode names are hyphenated to satisfy its skill and command rules: `coding:pr` becomes the `coding-pr` skill and `/coding-pr` command. Rerun the installer after updating this source checkout.
 
-OpenCode support targets stable V1 only. OpenCode V2 and `opencode2` are not
-supported. The adapter executes receipt-bound hooks with a child-only
-`PLUGIN_ROOT`; it neither changes the parent environment nor alters Claude,
-Codex, or Grok's native root-variable precedence. OpenCode's before/after tool
-events preserve supported denials, advice, diagnostics, and commit rewrite
-checks. The system-transform hook remains experimental, Stop is advisory, and
-V1 exposes no enforceable plan-transition event; the compatibility
-matrix states these limits explicitly.
+OpenCode support targets stable V1 only. OpenCode V2 and `opencode2` are not supported. The adapter executes receipt-bound hooks with a child-only `PLUGIN_ROOT`; it neither changes the parent environment nor alters Claude, Codex, or Grok's native root-variable precedence. OpenCode's before/after tool events preserve supported denials, advice, diagnostics, and commit rewrite checks. The system-transform hook remains experimental, Stop is advisory, and V1 exposes no enforceable plan-transition event; the compatibility matrix states these limits explicitly.
 
-The core lifecycle expects Claude Code, Codex, or Grok Build, Bash, `jq`, Git, and Bun,
-plus the target project's own build and test tools. The publication path
-additionally expects an authenticated `gh`; it prefers `jj` where the
-repository is jj-colocated and uses Git directly everywhere else.
-Notion synchronization is optional — see
-[the specification plugin README](plugins/specification/README.md) for its
-transport-profile requirements.
+The core lifecycle expects Claude Code, Codex, or Grok Build, Bash, `jq`, Git, and Bun, plus the target project's own build and test tools. The publication path additionally expects an authenticated `gh`; it prefers `jj` where the repository is jj-colocated and uses Git directly everywhere else. Notion synchronization is optional — see [the specification plugin README](plugins/specification/README.md) for its transport-profile requirements.
 
-The source and manually maintained projection boundaries are documented in
-[Harness projections](docs/architecture/harness-projections.md).
+The source and manually maintained projection boundaries are documented in [Harness projections](docs/architecture/harness-projections.md).
 
 ## The lifecycle, end to end
 
-A work stream is born, executes, and retires through one continuous
-discipline:
+A work stream is born, executes, and retires through one continuous discipline:
 
-1. **Bootstrap.** The PM confirms a stable work ID, the resolver enforces the
-   `.state/` ignore gate, and a no-clobber bootstrap creates the
-   charter (`goal.md`), state (`state.md`), focus pointer
-   (`state/working.md`), and journal.
-2. **Charter.** `goal.md` owns the goal, scope, and numbered success criteria
-   (`SC-1`…) with expected evidence — so status churn can never drift the
-   definition of done. It also declares the stream's workspace anchors
-   (a git worktree by default; media projects and asset stores for
-   production work).
-3. **Lease.** The coordinator acquires the stream's on-disk lease before any
-   state write. Two sessions can never both believe they own a stream; an
-   expired lease yields only to an explicit, journaled takeover.
-4. **Specify and plan.** Specs carry provenance and approval binds to exact
-   content; plans are task tables with stable three-letter IDs, explicit
-   dependency graphs, and per-task acceptance.
-5. **Execute.** Every status change is journaled first, then reconciled into
-   the tables ("append first, reconcile second"). Workers return evidence
-   with their `capability_id`; only the lease holder writes state.
-6. **Decide.** Decisions record what they supersede, affect, invalidate, and
-   preserve. Acceptance triggers a blast-radius sweep that marks stale work
-   and spawns remediation, journaled as one sweep.
-7. **Review and approve.** Seven canonical review areas; every approval
-   carries the full binding tuple. Spec freshness is re-checked at named
-   moments (before planning, each dispatch batch, review, completion).
-8. **Pause and resume.** `essential:handover` persists everything into
-   `.state/` and refreshes the cross-tree overview;
-   `essential:takeover` resumes from those on-disk files, checks the lease,
-   and drives streams to their success criteria (`essential:doctor` owns
-   structural audits).
-9. **Promote and retire.** Stable knowledge promotes to versioned `docs/`
-   with provenance; every accepted decision gets an explicit disposition
-   (promote to ADR / product / production record, retain in receipt, or
-   archive); only then is it removed from the live index and permanently archived.
+1. **Bootstrap.** The PM confirms a stable work ID, the resolver enforces the `.state/` ignore gate, and a no-clobber bootstrap creates the charter (`goal.md`), state (`state.md`), focus pointer (`state/working.md`), and journal.
+2. **Charter.** `goal.md` owns the goal, scope, and numbered success criteria (`SC-1`…) with expected evidence — so status churn can never drift the definition of done. It also declares the stream's workspace anchors (a git worktree by default; media projects and asset stores for production work).
+3. **Lease.** The coordinator acquires the stream's on-disk lease before any state write. Two sessions can never both believe they own a stream; an expired lease yields only to an explicit, journaled takeover.
+4. **Specify and plan.** Specs carry provenance and approval binds to exact content; plans are task tables with stable three-letter IDs, explicit dependency graphs, and per-task acceptance.
+5. **Execute.** Every status change is journaled first, then reconciled into the tables ("append first, reconcile second"). Workers return evidence with their `capability_id`; only the lease holder writes state.
+6. **Decide.** Decisions record what they supersede, affect, invalidate, and preserve. Acceptance triggers a blast-radius sweep that marks stale work and spawns remediation, journaled as one sweep.
+7. **Review and approve.** Seven canonical review areas; every approval carries the full binding tuple. Spec freshness is re-checked at named moments (before planning, each dispatch batch, review, completion).
+8. **Pause and resume.** `essential:handover` persists everything into `.state/` and refreshes the cross-tree overview; `essential:takeover` resumes from those on-disk files, checks the lease, and drives streams to their success criteria (`essential:doctor` owns structural audits).
+9. **Promote and retire.** Stable knowledge promotes to versioned `docs/` with provenance; every accepted decision gets an explicit disposition (promote to ADR / product / production record, retain in receipt, or archive); only then is it removed from the live index and permanently archived.
 
 ### Golden development lifecycle
 
@@ -256,13 +137,11 @@ discipline:
 | 11. Publish | If no PR was already published, run `/coding:pr create` only when the GitHub and `gh` prerequisites are satisfied; use `/coding:pr update` for an existing PR. | It creates or updates draft PRs and monitors CI. A human decides when a green draft becomes ready. |
 | 12. Close or pause | After execution, review, and decision dispositions, set the work `reviewing` with its external landing or acceptance wait as a blocker. Coding work becomes `completed` on merge/default-branch evidence; non-coding work becomes `completed` on explicit acceptance plus a promotion receipt listing durable paths or evidenced `not required`. `/essential:takeover` checks the applicable landing evidence on a later run. Or run `/essential:handover`. | Every required executable leaf must be done. Coding work records its pull request(s); non-coding work records its reviewed deliverables and required accepter. Completion clears the resolved submission blocker and retains only independently unresolved blockers. A pause leaves the whole stream in `.state/works/<work-id>/`, ready for `/essential:takeover`. |
 
-When the target is a standalone or non-TypeScript repository, verify each
-selected skill against the repository's native commands before use.
+When the target is a standalone or non-TypeScript repository, verify each selected skill against the repository's native commands before use.
 
 ### Five-minute local-spec path
 
-Use a lowercase tracker-derived ID that will remain stable, such as
-`eng-421-checkout-refunds`:
+Use a lowercase tracker-derived ID that will remain stable, such as `eng-421-checkout-refunds`:
 
 ```text
 /essential:discover "Find delivery blind spots for checkout refunds" --work-id=eng-421-checkout-refunds --mode=blindspots --persist
@@ -271,11 +150,7 @@ Use a lowercase tracker-derived ID that will remain stable, such as
 /specification:implement-code --work-id=eng-421-checkout-refunds --repo=/absolute/path/to/target-project --defer-publication
 ```
 
-This path avoids Notion and remote publication entirely. It leaves verified
-code, work-local evidence, reviews, and the approved specification source.
-The deferred result tells you what remains (`needs_save`,
-`ready_for_finalization`, or `no_change`); follow stage 10 above. Add Notion
-or PR publication only after the local flow is understood.
+This path avoids Notion and remote publication entirely. It leaves verified code, work-local evidence, reviews, and the approved specification source. The deferred result tells you what remains (`needs_save`, `ready_for_finalization`, or `no_change`); follow stage 10 above. Add Notion or PR publication only after the local flow is understood.
 
 ## The plugins
 
@@ -292,30 +167,13 @@ or PR publication only after the local flow is understood.
 
 ## Work state and recovery
 
-- `.state/works/<work-id>/` is ignored coordination memory — an
-  operational projection rather than a record of record. It lives in the
-  default source tree only, so every worktree resolves to the same streams,
-  and it is self-contained: state, decisions, specification, and `artifacts/`
-  sit together under that one directory.
-- `working.md` is the short current-focus pointer; `state.md` is the complete
-  lifecycle, plan, task graph, and evidence index; `state/journal.md` is the
-  append-only causal record the tables are views over.
-- Tasks use stable IDs (`LFE`, `LFE01`) that are never renamed or reused;
-  removed scope becomes a cancelled tombstone. Every task shows a mark and
-  word (`- planned`, `⧗ working`, `✓ done`, `X failed`, `! blocked`,
-  `⊘ cancelled`); validity is a separate dimension.
-- To pause, run `/essential:handover`; to resume, `/essential:takeover`. The
-  pause writes nothing but state, so it always completes — a stream whose code
-  is still an uncommitted working copy is paused and resumed like any other.
-- `.state/` is ignored, so one reflexive `git clean -fdx` deletes it. Active
-  state is not byte-reconstructible: keep a copy outside the repository until
-  durable promotion and closure; `essential:doctor` checks a restored tree's
-  structural integrity before it is resumed.
-- Handover and takeover write only under the default source tree's
-  `.state/` (and the active tree's `docs/` at promotion). A continuation file anywhere else — `/tmp`, `.local/`, the repo
-  root — is a bug, including when output is too large for a response.
-- Full detail, including the lease and doctor tools:
-  [plugins/essential/README.md](plugins/essential/README.md).
+- `.state/works/<work-id>/` is ignored coordination memory — an operational projection rather than a record of record. It lives in the default source tree only, so every worktree resolves to the same streams, and it is self-contained: state, decisions, specification, and `artifacts/` sit together under that one directory.
+- `working.md` is the short current-focus pointer; `state.md` is the complete lifecycle, plan, task graph, and evidence index; `state/journal.md` is the append-only causal record the tables are views over.
+- Tasks use stable IDs (`LFE`, `LFE01`) that are never renamed or reused; removed scope becomes a cancelled tombstone. Every task shows a mark and word (`- planned`, `⧗ working`, `✓ done`, `X failed`, `! blocked`, `⊘ cancelled`); validity is a separate dimension.
+- To pause, run `/essential:handover`; to resume, `/essential:takeover`. The pause writes nothing but state, so it always completes — a stream whose code is still an uncommitted working copy is paused and resumed like any other.
+- `.state/` is ignored, so one reflexive `git clean -fdx` deletes it. Active state is not byte-reconstructible: keep a copy outside the repository until durable promotion and closure; `essential:doctor` checks a restored tree's structural integrity before it is resumed.
+- Handover and takeover write only under the default source tree's `.state/` (and the active tree's `docs/` at promotion). A continuation file anywhere else — `/tmp`, `.local/`, the repo root — is a bug, including when output is too large for a response.
+- Full detail, including the lease and doctor tools: [plugins/essential/README.md](plugins/essential/README.md).
 
 ## Agent team
 
@@ -425,33 +283,20 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 ## Completion checklist
 
-- The work ID, repository, and authoritative specification source are
-  unambiguous.
-- Specification approval names the exact specification content; plan and
-  review track task definitions directly from `state.md`, with reapproval on
-  any change.
-- Every stable task ID and edge in `state.md` is accounted for, with no cycle
-  or contradictory parent roll-up (`state-doctor` confirms), and every
-  required executable leaf is `✓ done` with current validity.
+- The work ID, repository, and authoritative specification source are unambiguous.
+- Specification approval names the exact specification content; plan and review track task definitions directly from `state.md`, with reapproval on any change.
+- Every stable task ID and edge in `state.md` is accounted for, with no cycle or contradictory parent roll-up (`state-doctor` confirms), and every required executable leaf is `✓ done` with current validity.
 - Target-native tests, lint, type checks, and builds pass where applicable.
-- Canonical review artifacts have no outstanding findings; approvals carry
-  their full binding tuples.
-- Notion reconciliation and verification completed when the specification is
-  Notion-backed.
-- Durable docs match delivered behavior; every accepted decision has its
-  completion-gate disposition.
-- Acceptance, receipts, and final work-state status are recorded before
-  cleanup.
+- Canonical review artifacts have no outstanding findings; approvals carry their full binding tuples.
+- Notion reconciliation and verification completed when the specification is Notion-backed.
+- Durable docs match delivered behavior; every accepted decision has its completion-gate disposition.
+- Acceptance, receipts, and final work-state status are recorded before cleanup.
 
 ## Testing
 
-One command validates this repository, with nothing to install: the Vitest
-command canonicalized in the Validation section of the root `AGENTS.md`.
+One command validates this repository, with nothing to install: the Vitest command canonicalized in the Validation section of the root `AGENTS.md`.
 
-That single command is the whole gate: alongside the unit tests it enforces the
-injected-payload byte budgets, the skill policy limits, agent-template stitching,
-documentation path resolution, and the preserved-Python inventory gate, and CI runs
-exactly it on Ubuntu and macOS.
+That single command is the whole gate: alongside the unit tests it enforces the injected-payload byte budgets, the skill policy limits, agent-template stitching, documentation path resolution, and the preserved-Python inventory gate, and CI runs exactly it on Ubuntu and macOS.
 
 The one check that stays outside, because it needs the installed CLI:
 
@@ -460,7 +305,6 @@ claude plugin validate --strict .
 grok plugin validate plugins/<p>
 ```
 
-Each runs against its installed CLI by hand before publishing a manifest
-change.
+Each runs against its installed CLI by hand before publishing a manifest change.
 
 Useful references: [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), [plugin installation and scopes](https://code.claude.com/docs/en/discover-plugins), [plugin reference](https://code.claude.com/docs/en/plugins-reference), and [xAI skills, plugins, and marketplaces](https://docs.x.ai/build/features/skills-plugins-marketplaces).

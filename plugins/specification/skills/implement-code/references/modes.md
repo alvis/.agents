@@ -1,20 +1,13 @@
 # Implementation mode bodies
 
-Load only the selected mode. All code-writing children receive exact work/spec
-pointers and return `generated_files`.
+Load only the selected mode. All code-writing children receive exact work/spec pointers and return `generated_files`.
 
 ## Child chains
 
-- **COMMIT_PLAN**: per runnable leaf task ID read from `state.md`,
-  `coding:write-code` →
-  `coding:review-code` → `coding:commit`.
-- **PI_ITERATE**: `coding:complete-code` → `coding:complete-test` →
-  `coding:fix` → `coding:review-code` → `coding:commit`. Unmarked missing work
-  routes to `coding:write-code`.
-- **DRAFT_THEN_ASK**: no coding; point to `specification:plan-code`. If the user
-  requests a lightweight draft, route to `coding:draft-code` then hand over.
-- **AUDIT_AND_COMPLETE**: baseline review → complete/write/fix gaps → final
-  review → commit.
+- **COMMIT_PLAN**: per runnable leaf task ID read from `state.md`, `coding:write-code` → `coding:review-code` → `coding:commit`.
+- **PI_ITERATE**: `coding:complete-code` → `coding:complete-test` → `coding:fix` → `coding:review-code` → `coding:commit`. Unmarked missing work routes to `coding:write-code`.
+- **DRAFT_THEN_ASK**: no coding; point to `specification:plan-code`. If the user requests a lightweight draft, route to `coding:draft-code` then hand over.
+- **AUDIT_AND_COMPLETE**: baseline review → complete/write/fix gaps → final review → commit.
 - **VERIFY_ONLY**: review only, no commit.
 - **FLAG_MISMATCH**: report stage/flag mismatch and ask for resolution.
 - **REFUSE**: report the matched stage rule; dispatch nothing.

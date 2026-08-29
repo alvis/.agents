@@ -1,28 +1,18 @@
 # Specification
 
-Specs with real provenance, and the pipeline that turns them into reviewed,
-delivered code. Depends on `coding` and `essential`. All spec, architecture,
-requirements, and Notion work routes to the `specification-expert` agent via
-`references/ROUTING.md`.
+Specs with real provenance, and the pipeline that turns them into reviewed, delivered code. Depends on `coding` and `essential`. All spec, architecture, requirements, and Notion work routes to the `specification-expert` agent via `references/ROUTING.md`.
 
 ## Source authority model
 
 Every workflow distinguishes three kinds of specification source:
 
-- **Reachable `repo:` local source** — authoritative at its exact path; an
-  approved work-local copy is content-equivalent, never a second authority.
-- **`local-approved:` / `inline-approved:`** — the approved work-local copy
-  becomes the active-work authority after content-equivalence verification.
-- **Notion-backed** — the canonical Notion spec (via its `.mdc` mirror) is
-  authoritative; its revision-bound readable copy and synchronization evidence
-  stay under the active work's `.state/`.
+- **Reachable `repo:` local source** — authoritative at its exact path; an approved work-local copy is content-equivalent, never a second authority.
+- **`local-approved:` / `inline-approved:`** — the approved work-local copy becomes the active-work authority after content-equivalence verification.
+- **Notion-backed** — the canonical Notion spec (via its `.mdc` mirror) is authoritative; its revision-bound readable copy and synchronization evidence stay under the active work's `.state/`.
 
 Approval always binds to exact content confirmed by direct comparison. For local or inline authority, the active work's `spec/` and `spec/provenance.json` record the approved contract, source kind, content hashes, and outputs. `spec/README.md` is the readable work-local contract and `reference.md` is optional for an intended consumer surface. For Notion authority, `goal.md` owns the canonical URL and accepted base while `spec/` plus `artifacts/spec-sync/` provide the verified work-local copy and receipt. Version-controlled `docs/**` remains durable project guidance, never a specification output.
 
-Specification owns the work-local specification assets it derives:
-`skills/spec-code/assets/capability-readme.template.md`,
-`skills/spec-code/assets/reference.template.md`, and
-`skills/spec-code/assets/provenance.template.json`.
+Specification owns the work-local specification assets it derives: `skills/spec-code/assets/capability-readme.template.md`, `skills/spec-code/assets/reference.template.md`, and `skills/spec-code/assets/provenance.template.json`.
 
 ## Skills
 
@@ -52,9 +42,7 @@ Materialize before planning or implementation:
 /specification:sync-spec <notion-page-ref> --work-id=<id> --mirror=.state/notion --transport-profile=/absolute/path/to/notion-sync-transport.json --mode=materialize
 ```
 
-Completion normally runs through `spec-code`/`implement-code`; for advanced
-recovery, run exactly one `--mode=complete` stage (`--stage=specification`
-after content approval, or `--stage=implementation` after clean review).
+Completion normally runs through `spec-code`/`implement-code`; for advanced recovery, run exactly one `--mode=complete` stage (`--stage=specification` after content approval, or `--stage=implementation` after clean review).
 
 The safe decision table:
 
@@ -68,23 +56,6 @@ The safe decision table:
 | changed | semantic change | Stop with three-copy evidence; resolve through specification completion, then repeat plan/implementation/review against the new base. |
 | no trustworthy base | any | Refuse publication; establish a verified baseline first. |
 
-Transport safety: a machine-local, secret-free transport profile pins the
-external executable by checksum and proves `conditional_update` /
-`conditional_create` independently; without the required capability the write
-refuses with `next_action: provide_conditional_transport`. Each run also takes
-a per-page lease under the shared transport root — that serializes local
-racers, while proven conditional writes remain the real cross-client guard.
-Never hand-edit the mirror. This marketplace owns the `specification:mdc` MDC
-body grammar: semantic MDC creation or change requires the explicit
-`--body-author=specification:mdc` selector through the complete operation
-chain. Other body dialects require their own explicitly selected
-`--body-author=<plugin:skill>` capability;
-byte-preserving materialization may omit the selector.
-Generate a starter profile with
-`bun run skills/sync-notion/scripts/validate-transport-profile.ts
---print-template` and attach real conformance evidence before use.
+Transport safety: a machine-local, secret-free transport profile pins the external executable by checksum and proves `conditional_update` / `conditional_create` independently; without the required capability the write refuses with `next_action: provide_conditional_transport`. Each run also takes a per-page lease under the shared transport root — that serializes local racers, while proven conditional writes remain the real cross-client guard. Never hand-edit the mirror. This marketplace owns the `specification:mdc` MDC body grammar: semantic MDC creation or change requires the explicit `--body-author=specification:mdc` selector through the complete operation chain. Other body dialects require their own explicitly selected `--body-author=<plugin:skill>` capability; byte-preserving materialization may omit the selector. Generate a starter profile with `bun run skills/sync-notion/scripts/validate-transport-profile.ts --print-template` and attach real conformance evidence before use.
 
-When a spec change lands mid-work, the revalidation sweep marks affected
-non-done tasks `! blocked`, marks affected done tasks `validity: stale` with
-remediation tasks, re-checks the charter's `SC-n` criteria, and journals the
-sweep — implementation resumes only after it.
+When a spec change lands mid-work, the revalidation sweep marks affected non-done tasks `! blocked`, marks affected done tasks `validity: stale` with remediation tasks, re-checks the charter's `SC-n` criteria, and journals the sweep — implementation resumes only after it.

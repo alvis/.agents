@@ -14,7 +14,4 @@ Explain which document a new contributor should read first and why.
 
 ## Reading rules
 
-State which documents are authoritative, how supersession is recorded, and
-where operational work state lives. Define any repository-specific term at
-its first meaningful use and state what the reader must do differently
-because of it.
+State which documents are authoritative, how supersession is recorded, and where operational work state lives. Define any repository-specific term at its first meaningful use and state what the reader must do differently because of it.

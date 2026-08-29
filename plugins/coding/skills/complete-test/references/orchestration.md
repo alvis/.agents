@@ -31,11 +31,7 @@ Batches:      1: auth/service, auth/controller, users/service   (450 lines, 3 fi
 Record the batch-to-file map in structured task-tracking capability (one todo per batch) so no source file is skipped. Dispatch all batches in a single message, at most 8 concurrent. Each batch subagent runs this loop **for each source file**:
 
 1. **Initial coverage check**: `vitest --coverage <spec path>`; note current coverage and the first uncovered line/branch.
-2. **Progressive writing loop** (repeat until statements, branches, functions, and lines are each 100%):
-   a. Write ONE test targeting a specific uncovered line/branch (AAA pattern, proper types, per standards).
-   b. Re-run the focused coverage command and parse the new numbers.
-   c. Decide: coverage increased → KEEP; coverage unchanged → KEEP only when the test provides distinct behavioral evidence, otherwise DELETE it and write a different one.
-   d. All four metrics at 100% → next file in the batch; otherwise repeat from (a).
+2. **Progressive writing loop** (repeat until statements, branches, functions, and lines are each 100%): a. Write ONE test targeting a specific uncovered line/branch (AAA pattern, proper types, per standards). b. Re-run the focused coverage command and parse the new numbers. c. Decide: coverage increased → KEEP; coverage unchanged → KEEP only when the test provides distinct behavioral evidence, otherwise DELETE it and write a different one. d. All four metrics at 100% → next file in the batch; otherwise repeat from (a).
 3. **Batch completion verification**: run coverage for all the batch's test files together; verify every source file is at 100% statements, branches, functions, and lines; count tests created vs deleted.
 4. **Standards compliance**: lint the created test files, fix type errors, verify documentation.
 
@@ -51,9 +47,7 @@ Each batch reports: per-file coverage (lines/branches/statements/functions), `te
 - same lines AND same behavioral aspect as another test;
 - artificial scenarios contributing neither coverage nor behavioral documentation;
 - wrapper-function tests without unique coverage or insight;
-- assertions over checked-in existence, absence, bytes, literals, inventories,
-  path layout, parity, or systematic properties — flag regardless of coverage
-  contribution (`TST-CORE-10`).
+- assertions over checked-in existence, absence, bytes, literals, inventories, path layout, parity, or systematic properties — flag regardless of coverage contribution (`TST-CORE-10`).
 
 The plan groups candidates by file, marks each `safe_to_remove` | `uncertain` | `keep`, and emits removal tasks (max 10 tests per task, least-risky first).
 
@@ -99,6 +93,4 @@ All green → hand off to the independent final test review. Every test-only cor
 
 Aggregate into one report covering: baseline coverage → batches executed, tests created/kept/deleted → redundancy candidates, removed, kept-essential → issues fixed → fixtures consolidated, unused files deleted → final verified coverage, all-passing status, efficiency metrics, and per-source statements/branches/functions/lines. If any metric remains below 100%, name its concrete blocker and report the run incomplete.
 
-Include the deduplicated `generated_files` from all subtasks. No child runs file
-sizing; after every artifact writer returns, the main agent checks only eligible work
-Markdown inside the target `.state/`.
+Include the deduplicated `generated_files` from all subtasks. No child runs file sizing; after every artifact writer returns, the main agent checks only eligible work Markdown inside the target `.state/`.
