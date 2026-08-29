@@ -155,6 +155,20 @@ describe("fn:stateBoard", () => {
     });
   });
 
+  it("should not draw a stream whose table it could not read as finished", () => {
+    // `every` is true over nothing, so a stream with no readable tasks used to
+    // sit on the rail as finished work while the same board tagged it working
+    const data = board([
+      { id: "unmeasured", tasks: [] },
+      { id: "finished", tasks: [DONE] },
+    ]);
+    const [rail] = blocksOf(data, "recent", "timeline");
+
+    expect(
+      (rail as { items: { state: string }[] }).items.map(({ state }) => state),
+    ).toStrictEqual(["pending", "done"]);
+  });
+
   it("should order the rail by when each stream was last written to", () => {
     const data = board([
       { id: "older", updated: "2026-08-01T00:00:00Z" },

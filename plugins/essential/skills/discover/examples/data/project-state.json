@@ -14,7 +14,7 @@
       },
       {
         "label": "Open tasks",
-        "value": "7"
+        "value": "6"
       },
       {
         "label": "Blocked",
@@ -22,7 +22,7 @@
       },
       {
         "label": "Read at",
-        "value": "2026-08-29 11:26Z"
+        "value": "2026-08-29 13:42Z"
       }
     ]
   },
@@ -124,17 +124,6 @@
                     "kind": "dim",
                     "text": " — working"
                   }
-                ],
-                [
-                  {
-                    "kind": "code",
-                    "text": "MOD"
-                  },
-                  " Batch 2 stage D: `/discover state` and `/discover implementation` with the merge quiz. [targets: plugins/essential/skills/discover]",
-                  {
-                    "kind": "dim",
-                    "text": " — working"
-                  }
                 ]
               ]
             },
@@ -214,8 +203,8 @@
             },
             {
               "label": "page-renderer",
-              "value": 12,
-              "of": 15,
+              "value": 15,
+              "of": 17,
               "note": "working"
             },
             {
@@ -260,7 +249,7 @@
             {
               "name": "PM",
               "role": "page-renderer",
-              "due": "**Batch 2 is the work the user gave instead of approving APR, and stage D is the"
+              "due": "**Batch 2 is delivered and independently reviewed.** All sixteen asks (DR1 – DR4"
             },
             {
               "name": "PM",
@@ -296,13 +285,13 @@
           "type": "timeline",
           "items": [
             {
-              "when": "2026-08-29T10:45:00Z",
+              "when": "2026-08-29T13:45:00Z",
               "title": [
                 {
                   "kind": "code",
                   "text": "page-renderer"
                 },
-                " — **Batch 2 is the work the user gave instead of approving APR, and stage D is the last of it.** Sixteen asks in four stages. Stages A, A′, B and C are delivered, driven and saved local-only as `08-renderer` … `13-observations` (D-72 – D-80, E-136 – E-151). **Stage D is the remaining work**: OT2 a `project-state` kind plus `--mode=state`, reading `.state/works/<id>/state.md` and excluding `.state/archive/` by location alone; OT6/OT7 an `implementation-notes` kind plus `--mode=implementation`, whose timeline classifies each entry and whose closing section is a merge quiz scored on the existing answer store. Both are modes on the existing skill (D-71). **Two foldings must be reported to the user**: the `.code-line` fix belongs to `08-renderer` and the drawer-bar fix to `10-boards`, and both were folded forward rather than restacked (D-80). R-47 stays open behind APR, which is now approved against the tree this batch produces."
+                " — **Batch 2 is delivered and independently reviewed.** All sixteen asks (DR1 – DR4, HB1 – HB2, CD1 – CD2, OT1 – OT7) are working in a rendered board, saved local-only as `08-renderer` … `14-discover-modes`, and the review batch 2 never had returned eighteen must-fix findings, all now closed by seeding the defect back (R-66 – R-83, E-158 – E-169). Nothing is pushed and no PR is open. **The work now waiting is the user's.** APR, deferred rather than cancelled, is approved against the tree this batch produced. **Five things owed at the gate:** whether `examples/data/project-state.json` should be built from a checked-in fixture tree rather than regenerated from the live `.state` (returned, not taken); the nineteen worth-considering findings declined for this pass; the two folded-forward fixes, still restackable because nothing is published, so the user may want `.code-line` moved back to `08-renderer` and the drawer-bar fix to `10-boards` (D-80); HB1's 21px card fix, neither confirmed fixed nor confirmed present since gate A; and the `project-state` board, never driven in a browser since the parser fixes changed what it reads. **R-47 stays open** — rewriting `references/presentation/components.md` as a JSON block catalogue is the one gap behind APR and was never in this batch."
               ],
               "state": "active",
               "tags": [
@@ -493,10 +482,10 @@
                   "text": "working"
                 },
                 {
-                  "text": "2026-08-29T10:45:00Z"
+                  "text": "2026-08-29T13:45:00Z"
                 },
                 {
-                  "text": "15"
+                  "text": "17"
                 }
               ]
             },
@@ -624,13 +613,6 @@
           "title": "The phase is spelled more than one way",
           "lead": "2 keys",
           "text": "Lifecycle status: 20260724-review-plugin-stack-1szr99, documentation-contract, test-cleanup-and-ci. Phase: page-renderer, specification-state, state-systems-clarity, sync-pr-stack. Every spelling is read, so this is a note about the record rather than a gap in the board: a board that refused to open because one stream used a different key would be useless exactly when it is needed."
-        },
-        {
-          "type": "callout",
-          "tone": "bad",
-          "title": "Some table rows could not be read",
-          "lead": "1 row",
-          "text": "A row of the wrong width is counted here rather than guessed at, because a nine-column table read as eight shifts every owner one column left. Those rows are absent from everything above."
         }
       ]
     }

@@ -18,6 +18,9 @@ const DISPATCHER = join(scripts, "render-page", "block.ts");
 /** the inline vocabulary, read for the list of run kinds it actually accepts. */
 const INLINE = join(scripts, "render-page", "types", "inline.ts");
 
+/** the reference whose mode table is how a reader reaches each board. */
+const PRESENTATION = join(scripts, "..", "references", "presentation.md");
+
 /**
  * elements whose reference is fetched without the reader doing anything.
  *
@@ -103,14 +106,16 @@ function fetchedRemotely(html: string): string[] {
  * every stylesheet the CLI layer ships only to the boards that need it.
  *
  * the marker is a rule the sheet opens with rather than the whole sheet,
- * because what is being asked is whether the bytes arrived at all. A quiz and
- * its gate share one sheet: a gate with no questions is still a gate and a
- * question with no gate is still asked, so either block pulls it in.
+ * because what is being asked is whether the bytes arrived at all. One block
+ * per sheet, never a list: the quiz row once read `["quiz", "gate"]`, and
+ * because the single board using either uses both, no fixture in the set could
+ * tell the disjunction from either half of it. A gate now refuses a page that
+ * asks no quiz questions, so the question alone decides the sheet.
  */
 const SHEETS = [
-  { types: ["observations"], marker: ".observation-tick{" },
-  { types: ["deviations"], marker: ".deviation-pair{" },
-  { types: ["quiz", "gate"], marker: ".quiz-option{" },
+  { type: "observations", marker: ".observation-tick{" },
+  { type: "deviations", marker: ".deviation-pair{" },
+  { type: "quiz", marker: ".quiz-option{" },
 ];
 
 /** collects every `type` and `kind` an authored board uses, at any depth. */
@@ -177,6 +182,43 @@ describe("the example board set", () => {
       expect(fetchedRemotely(html), file).toEqual([]);
   });
 
+  it("should emit no presentation marker on any board", async () => {
+    // `references/presentation/coverage.md` used to require a
+    // `data-presentation-pattern` on every demonstration and named a template
+    // test that read them; the test does not exist and the renderer stopped
+    // emitting them, so the document said both things at once. It now says
+    // there are none, and this is what holds that sentence true
+    const boards = await renderExamples();
+
+    for (const [file, html] of Object.entries(boards))
+      expect(html.includes("data-presentation-pattern"), file).toBe(false);
+  });
+
+  it("should account for every rendered board in the mode reference", async () => {
+    // the reference said fifteen action examples beside a fourteen-row mode
+    // table and explained the gap twenty-eight lines earlier. Counting words
+    // is not the check worth having: every board the run renders is either
+    // routed by a mode row, named as a convention board, or named as the one
+    // authored outside the modes, and nothing else is named at all
+    const prose = (await readFile(PRESENTATION, "utf8")).replaceAll(/\s+/gu, " ");
+    const named = [
+      ...[...prose.matchAll(/\| `[a-z]+` \| ([a-z/ ]+?) \|/gu)].map(
+        ([, action]) => action!.replaceAll(/[ /]/gu, "-"),
+      ),
+      ...(/four convention boards \(([a-z-, ]+)\)/u.exec(prose)?.[1] ?? "").split(
+        ", ",
+      ),
+      /([a-z-]+) has no mode row/u.exec(prose)?.[1] ?? "",
+    ];
+    const run = JSON.parse(await readFile(RUN, "utf8")) as {
+      boards: { out: string }[];
+    };
+
+    expect(named.sort()).toEqual(
+      run.boards.map(({ out }) => basename(out, ".html")).sort(),
+    );
+  });
+
   it("should render every block type the dispatcher handles", async () => {
     // read from the dispatcher rather than listed here: a hand-kept list is
     // one somebody forgets to extend, and a block type that reaches no board
@@ -206,7 +248,7 @@ describe("the example board set", () => {
         into,
       );
       for (const [index, sheet] of SHEETS.entries())
-        if (sheet.types.some((type) => into.block.has(type)))
+        if (into.block.has(sheet.type))
           drawn[index]!.add(basename(board.out));
     }
     const boards = await renderExamples();

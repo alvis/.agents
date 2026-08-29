@@ -45,8 +45,34 @@ const SUPPORT = ["dom-support.ts", "test-support.ts"];
 /** the pure renderer, which may not be one import away from the filesystem. */
 const PAGE = "render-page/page.ts";
 
+/**
+ * every way a module reaches the filesystem, the network or a shell without a
+ * static import naming it.
+ *
+ * a static specifier is only one of the ways in. `await import("node:fs")`
+ * carries no `from` clause, so the edge pattern never sees it; a bare `"fs"`
+ * is a specifier the `node:` prefix test read straight past; and `fetch` needs
+ * no import at all. Each of the three was seeded into a module the renderer
+ * reaches and left the whole suite green.
+ */
+const AMBIENT = [
+  /\bimport\s*\(/u,
+  /\brequire\s*\(/u,
+  /\bfetch\s*\(/u,
+  /\bXMLHttpRequest\b/u,
+  /\bWebSocket\b/u,
+  /\bEventSource\b/u,
+  /\bsendBeacon\s*\(/u,
+  /\bimportScripts\s*\(/u,
+  /\bBun\s*\./u,
+  /\bprocess\s*\./u,
+];
+
+/** a doc comment or a commented-out line, which say things code does not do. */
+const COMMENT = /\/\*[\s\S]*?\*\/|^[ \t]*\/\/[^\n]*$/gmu;
+
 /** how many edges the tree holds, as a graph read the way a bundler reads one. */
-const EDGES = 445;
+const EDGES = 446;
 
 /** one module against another. */
 interface Edge {
@@ -164,14 +190,22 @@ describe("render-page module graph", () => {
     expect(found).toStrictEqual([]);
   });
 
-  it("should keep the renderer itself off the filesystem", () => {
+  it("should keep the renderer off the filesystem, the network, and a shell", () => {
     // R4 — `renderPage` is pure and every read happens in the CLI layer. That
     // held as a claim about what the code does while `reference.ts` sat one
-    // value import away from `node:fs`, which is the whole distance
-    const reachable = closure([PAGE], false);
-    const touching = [...reachable]
-      .filter((file) => TREE.get(file)?.foreign.some((name) => name.startsWith("node:")))
-      .sort();
+    // value import away from `node:fs`, which is the whole distance. The rule
+    // that replaced it read static `node:` specifiers only, which is one of
+    // three ways in: no foreign specifier at all is the claim worth making
+    const touching = [...closure([PAGE], false)].sort().flatMap((file) => {
+      // said in a comment rather than done: every refusal on this board is
+      // about what a browser would fetch, so the words are all over the tree
+      const source = readFileSync(join(ROOT, file), "utf8").replace(COMMENT, " ");
+
+      return [
+        ...TREE.get(file)!.foreign,
+        ...AMBIENT.filter((reach) => reach.test(source)).map((reach) => reach.source),
+      ].map((what) => `${file}: ${what}`);
+    });
 
     expect(touching).toStrictEqual([]);
   });

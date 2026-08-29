@@ -2,19 +2,26 @@ import { describe, expect, it } from "vitest";
 
 import { parseStream } from "./parse.ts";
 
-/** the header the canonical task table opens with. */
+/** the row the canonical task table opens with. */
 const HEADER =
-  "| ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |\n" +
-  "| --- | --- | --- | --- | --- | --- | --- | --- | --- |";
+  "| ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |";
+
+/** the alignment rule beneath it, in the plainest of its spellings. */
+const RULE = "| --- | --- | --- | --- | --- | --- | --- | --- | --- |";
 
 /**
  * writes a state file out of the parts a case cares about
  * @param head the header block, without the leading heading
  * @param rows the task rows, already piped
+ * @param table the table's own header and alignment rule
  * @returns the file's text
  */
-function stateFile(head: string, rows: string[] = []): string {
-  return `# Work state\n\n${head}\n\n${HEADER}\n${rows.join("\n")}\n`;
+function stateFile(
+  head: string,
+  rows: string[] = [],
+  table: string[] = [HEADER, RULE],
+): string {
+  return `# Work state\n\n${head}\n\n${table.join("\n")}\n${rows.join("\n")}\n`;
 }
 
 /** one done task, in the canonical nine columns. */
@@ -144,6 +151,91 @@ describe("fn:parseStream", () => {
     expect(stream.tasks).toHaveLength(1);
     expect(stream.malformed).toBe(0);
     expect(stream.phase).toBe("working");
+  });
+
+  it("should keep reading past a blank line and an indented row", () => {
+    // ending the table at the first line that did not open with a pipe dropped
+    // every row after it and counted none of them, so the board's own note
+    // that some rows could not be read could never fire on the loss
+    const stream = parseStream(
+      "lambda",
+      stateFile("- Phase: `working`", [
+        DONE,
+        "",
+        "  | BBB01 | ⧗ | working | Indented by a hand | — | yes | Read | Bo | e: none |",
+        "| CCC01 | — | planned | After the gap | — | no | Read | Cy | e: none |",
+      ]),
+    );
+
+    expect(stream.tasks.map(({ id }) => id)).toStrictEqual([
+      "AAA01",
+      "BBB01",
+      "CCC01",
+    ]);
+    expect(stream.malformed).toBe(0);
+  });
+
+  it("should read a colon-aligned rule as a rule rather than as a task", () => {
+    // `| :--- | :---: |` is the GitHub-standard spelling and is exactly nine
+    // columns wide, so a rule recognised only as `| ---` passed the width check
+    // and became an open task, inventing work the stream does not have
+    const stream = parseStream(
+      "mu",
+      stateFile("- Phase: `working`", [DONE], [
+        HEADER,
+        "| :--- | :---: | :--- | :--- | :--- | :---: | :--- | :--- | ---: |",
+      ]),
+    );
+
+    expect(stream.tasks.map(({ id }) => id)).toStrictEqual(["AAA01"]);
+    expect(stream.malformed).toBe(0);
+  });
+
+  it("should read a reordered header by name rather than by position", () => {
+    // reading the columns off their positions put the status word in the mark
+    // column and shifted the owner, with nothing counted as unreadable — the
+    // same harm the width check exists to prevent, arriving through the header
+    const stream = parseStream(
+      "nu",
+      stateFile(
+        "- Phase: `working`",
+        [
+          "| DDD01 | working | ⧗ | Swap two columns | — | yes | Board reads it | Bo | e: none |",
+        ],
+        [
+          "| ID | Status | Mark | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |",
+          RULE,
+        ],
+      ),
+    );
+
+    expect(stream.tasks).toStrictEqual([
+      {
+        id: "DDD01",
+        mark: "⧗",
+        status: "working",
+        task: "Swap two columns",
+        owner: "Bo",
+        unblock: "",
+      },
+    ]);
+  });
+
+  it("should count every row of a table whose header it cannot read", () => {
+    const stream = parseStream(
+      "xi",
+      stateFile(
+        "- Phase: `working`",
+        [DONE],
+        [
+          "| ID | Mark | Status | Task | Depends on | Required | Acceptance | Assignee | Evidence / next action |",
+          RULE,
+        ],
+      ),
+    );
+
+    expect(stream.tasks).toStrictEqual([]);
+    expect(stream.malformed).toBe(1);
   });
 
   it("should read a file that has a header and no table at all", () => {

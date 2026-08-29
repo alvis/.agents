@@ -107,6 +107,21 @@ describe("fn:installQuiz", () => {
     expect(installQuiz()).toBeUndefined();
   });
 
+  it("should not clear a gate that has nothing to score", () => {
+    // `answered.length === asked.length` is true over nothing, so without the
+    // count beside it a gate with no questions under it reports a merge
+    // cleared on an answer nobody gave. The renderer refuses such a board, and
+    // this is the half of the guard that holds if one is ever built anyway
+    const { gate, progress, pass } = build([]);
+    const paint = installQuiz()!;
+
+    paint();
+
+    expect(gate.dataset.gateState).toBe("open");
+    expect(progress.textContent).toBe("0 of 0 answered so far.");
+    expect(pass.hidden).toBe(true);
+  });
+
   it("should count answers rather than verdicts while the reader is still going", () => {
     const { gate, progress } = build();
     const paint = installQuiz()!;

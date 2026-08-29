@@ -1,5 +1,5 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -16,24 +16,6 @@ import {
   patchFffd,
 } from "./vendor.ts";
 
-/**
- * walks up to the repository this spec is checked out in.
- *
- * the marker is the layout rather than a VCS directory, so the check holds in a
- * jj workspace, a git clone and a linked worktree alike.
- * @returns the absolute repository root
- */
-function repositoryRoot(): string {
-  let at = import.meta.dirname;
-  while (basename(at) !== "plugins") {
-    const up = dirname(at);
-    if (up === at) throw new Error("this spec is not under plugins/");
-    at = up;
-  }
-
-  return dirname(at);
-}
-
 /** a body that satisfies every Mermaid validator, so a test can break one at a time. */
 function bundle(extra = ""): string {
   const filler = "x".repeat(1_000_100);
@@ -47,12 +29,16 @@ async function scratch(): Promise<string> {
 describe("const:CACHE_ROOT", () => {
   it("should keep every downloaded bundle outside this repository", () => {
     // D-69 — a checkout carries no vendored copy of somebody else's minified
-    // JavaScript. Measured against the repository this spec sits in, so a cache
-    // that moved back inside it fails here rather than reading as a path shape
-    const root = repositoryRoot();
+    // JavaScript. Two measurements rather than one guess at where the checkout
+    // ends: this used to walk up to the nearest ancestor named `plugins`, and
+    // a tree one level more nested than this one reported a cache sitting
+    // inside the checkout as outside it. Where the bundles go is a place the
+    // spec can name, and no checkout lives there
+    const home = process.env.XDG_CACHE_HOME || join(homedir(), ".cache");
 
     for (const cache of [CACHE_ROOT, MERMAID_CACHE, PRISM_CACHE])
-      expect(relative(root, cache).startsWith("..")).toBe(true);
+      expect(relative(home, cache).startsWith(".."), cache).toBe(false);
+    expect(relative(home, import.meta.dirname).startsWith("..")).toBe(true);
   });
 
   it("should keep both bundles under the one root", () => {

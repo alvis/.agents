@@ -1,8 +1,18 @@
 /** the header keys a phase is written under, in the order they are looked for. */
 const PHASE_KEYS = ["Phase", "Lifecycle status"];
 
-/** how many columns the canonical task table has. */
-const COLUMNS = 9;
+/** the columns the board reads, spelled as the canonical header spells them. */
+const NEEDED = {
+  id: "ID",
+  mark: "Mark",
+  status: "Status",
+  task: "Task",
+  owner: "Owner",
+  evidence: "Evidence",
+};
+
+/** what an alignment rule's cells look like, in every spelling GitHub accepts. */
+const RULE = /^:?-+:?$/;
 
 /** one task, as the canonical table rows it. */
 export interface Task {
@@ -72,53 +82,93 @@ function header(lines: string[], key: string): string {
 /**
  * splits one table row into its cells
  * @param line the row, pipes and all
- * @returns the cells, or an empty array where the row is not the shape the
- *   canonical table has
+ * @returns the cells between the opening and closing pipe, or an empty array
+ *   where the line is not a row at all
  */
 function cells(line: string): string[] {
-  const parts = line.split("|");
-  // a leading and a trailing empty part, because the row opens and closes with
-  // a pipe; anything else is a row this cannot read rather than one it guesses
-  if (parts.length !== COLUMNS + 2) return [];
+  // a leading and a trailing empty part, because a row opens and closes with a
+  // pipe; the width itself is checked against the header rather than a constant
+  const parts = line.trim().split("|");
 
-  return parts.slice(1, -1).map((cell) => cell.trim());
+  return parts.length < 3 ? [] : parts.slice(1, -1).map((cell) => cell.trim());
+}
+
+/**
+ * whether a row is the alignment rule under a table's header
+ * @param row the row's cells
+ * @returns true where every cell is a rule
+ */
+function isRule(row: string[]): boolean {
+  return row.length > 0 && row.every((cell) => RULE.test(cell));
+}
+
+/**
+ * finds each column the board reads in a table's header row.
+ *
+ * by name rather than by position: a header written in a different order used
+ * to be read positionally, so owner, status and task all shifted while nothing
+ * was counted as unreadable — the exact harm the width check exists to
+ * prevent, arriving through the header instead of through a row.
+ * @param row the header row's cells
+ * @returns where each column sits, or undefined where one of them is missing
+ */
+function columns(row: string[]): Record<string, number> | undefined {
+  const at: Record<string, number> = {};
+  for (const [key, name] of Object.entries(NEEDED)) {
+    const index = row.findIndex(
+      (cell) => cell === name || cell.startsWith(`${name} `),
+    );
+    if (index < 0) return undefined;
+    at[key] = index;
+  }
+
+  return at;
 }
 
 /**
  * reads the task table out of a state file.
  *
- * the header row is found rather than assumed at a fixed offset, and every
- * later row is read until the table ends. A row of the wrong width is counted
- * instead of guessed at: a nine-column table read as eight silently shifts
- * every owner one column left, which is worse than saying a row was unreadable.
+ * the header is found by the alignment rule beneath it, which is what makes a
+ * row a table row in Markdown, and its columns are then located by name. Every
+ * later row is read until prose ends the table. A row that cannot be read is
+ * counted rather than guessed at and rather than dropped: the board draws that
+ * count as a data-quality note, so a table this cannot read says so instead of
+ * quietly reporting a stream with fewer tasks than it has.
  * @param lines the file, split into lines
  * @returns the tasks, and how many rows could not be read
  */
 function tasks(lines: string[]): [Task[], number] {
-  const start = lines.findIndex((line) => line.startsWith("| ID | Mark |"));
+  const start = lines.findIndex(
+    (line, index) =>
+      cells(line).length > 0 && isRule(cells(lines[index + 1] ?? "")),
+  );
   if (start < 0) return [[], 0];
 
+  const head = cells(lines[start]!);
+  const at = columns(head);
   const found: Task[] = [];
   let malformed = 0;
-  // the row after the header is the alignment rule, which is skipped by the
-  // same width check every other row goes through only if it happens to be
-  // narrow, so it is skipped by name instead
   for (const line of lines.slice(start + 1)) {
-    if (!line.startsWith("|")) break;
-    if (/^\|\s*-+\s*\|/.test(line)) continue;
+    const text = line.trim();
+    // a blank line inside the table is not the end of it, and neither is an
+    // indented row; taking either as the end dropped every row that followed
+    // and counted none of them
+    if (!text) continue;
+    if (!text.startsWith("|")) break;
     const row = cells(line);
-    if (row.length !== COLUMNS) {
+    if (isRule(row)) continue;
+    if (at === undefined || row.length !== head.length) {
       malformed += 1;
       continue;
     }
-    const [id, mark, status, task, , , , owner, evidence] = row as string[];
+    const evidence = row[at.evidence!]!;
     found.push({
-      id: id!,
-      mark: mark!,
-      status: status!,
-      task: task!,
-      owner: owner!,
-      unblock: /unblock:\s*(.+)$/.exec(evidence!)?.[1]?.trim() ?? "",
+      id: row[at.id!]!,
+      mark: row[at.mark!]!,
+      status: row[at.status!]!,
+      task: row[at.task!]!,
+      owner: row[at.owner!]!,
+      unblock: /unblock:\s*(.+)$/.exec(evidence)?.[1]?.trim() ?? "",
     });
   }
 

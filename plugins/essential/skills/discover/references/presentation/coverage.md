@@ -6,19 +6,21 @@ They do not reproduce that source or its branding. Each page uses only the
 patterns that fit its discovery job; the suite, not an individual page, is
 exhaustive.
 
-Every visible demonstration carries a space-separated
-`data-presentation-pattern` marker using the stable IDs below. The complete
-template test fails when any catalog pattern is absent or when an example
-invents an unknown marker. A marker is evidence only when the associated
-element visibly demonstrates the pattern—never add a marker as a placeholder.
+No board carries a `data-presentation-pattern` marker. The renderer emits none
+— `examples.spec.ts` asserts their absence — and the template test that once
+read them does not exist. The table below is therefore a record kept by hand of
+which board owns which pattern, read by people rather than by a script, and
+nothing fails when a row drifts. What does fail is `examples.spec.ts`, which
+renders the whole run and refuses a block type that reaches no board; that is
+the only coverage claim this suite makes mechanically.
 
 Catalog coverage answers “is every reusable pattern demonstrated somewhere?”
-It does not answer “is this action example complete?” The validator therefore
-also checks action-specific semantic hooks and minimum counts: full option
-frames and local reactions, horizon lanes and grounded ideas, ordered interview
-steps, source-to-target mappings, prototype variants, risk findings, and
-readiness gates. Rendered review remains the final quality check because a
-count cannot prove that two compositions are materially different.
+It does not answer “is this action example complete?” Nothing answers the
+second question mechanically: full option frames and local reactions, horizon
+lanes and grounded ideas, ordered interview steps, source-to-target mappings,
+prototype variants, risk findings, and readiness gates are all judged by
+opening the rendered board, because a count cannot prove that two compositions
+are materially different.
 
 Four convention examples sit beside the required fifteen to demonstrate the
 guided conventions — provenance pills, honest trade-offs, author annotation
@@ -37,9 +39,8 @@ pattern — a Now/Next/Later/Cut kanban strip whose lane membership and within-l
 order ARE the user's answer, dragged via the stage-3 `drag-probe` runtime with a
 per-card lane `<select>` keyboard fallback, serialized into the single generated
 prompt — and reuses `prompt-echo`, provenance pills, and the invented-data flag.
-The validator iterates the convention boards through a separate
-`CONVENTION_EXAMPLES` list, distinct from the required-15, so the representative
-stage stays unchanged.
+The convention boards sit in the run set beside the action boards; nothing
+separates the two groups but this document.
 
 Four action boards have no row below: `blind-spots.html`, `concept-primer.html`,
 `project-state.html`, and `implementation-notes.html`. The table's vocabulary is

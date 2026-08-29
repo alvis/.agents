@@ -16,9 +16,9 @@ that build is owed.
 
 | Column | What it is | Where it lived |
 | --- | --- | --- |
-| 🏛️ **Had** | The legacy pipeline: a composer plus a shared runtime. Removed | `scripts/build-artifact.ts`, `assets/html/discovery.js` (2,282 lines), `assets/html/discovery.css` (5,255 lines), 15 boards under `examples/src/` |
-| 🆕 **New** | The JSON renderer, as it stood when this was written: two files, four board kinds | `scripts/render-page.ts` (1,268 lines), `scripts/page-diagram.ts` (726 lines) |
-| 🔍 **Ref** | The single-file page held up as clearer to navigate | `examples/reference/` sibling; archived as `artifacts/rival-specimen.html` (1,007 lines) |
+| 🏛️ **Had** | The legacy pipeline: a composer plus a shared runtime. Removed | `scripts/build-artifact.ts`, `assets/html/discovery.js` (2,282 lines), `assets/html/discovery.css` (5,255 lines), 15 boards under `examples/src/` | <!-- doc-path-gate: ignore -->
+| 🆕 **New** | The JSON renderer, as it stood when this was written: two files, four board kinds | `scripts/render-page.ts` (1,268 lines), `scripts/page-diagram.ts` (726 lines) | <!-- doc-path-gate: ignore -->
+| 🔍 **Ref** | The single-file page held up as clearer to navigate | `examples/reference/` sibling; archived as `artifacts/rival-specimen.html` (1,007 lines) | <!-- doc-path-gate: ignore -->
 
 ## Legend
 
@@ -33,10 +33,10 @@ that build is owed.
 ## Three things to know before picking
 
 **1. The 📄 rows are the trap.** `references/features.md` §H presents a
-validation-mapping table crediting `scripts/build-artifact.ts` with a
+validation-mapping table crediting `scripts/build-artifact.ts` with a <!-- doc-path-gate: ignore -->
 `_validate()` that enforces the token whitelist, dual-theme completeness, stray
 hex, `${…}` literals and self-containment, and crediting
-`scripts/test-html-templates.ts` with asserting the board-set block, selection
+`scripts/test-html-templates.ts` with asserting the board-set block, selection <!-- doc-path-gate: ignore -->
 annotation, density scale and Mermaid wiring.
 
 No `_validate()` exists in `build-artifact.ts` — all 509 lines were read.
@@ -64,7 +64,7 @@ to have.
   not delivered.
 - **The reference page is ours.** Its embedded `WebResourceURL` decodes to the
   `prospector` repository (`.state/works/signal-to-execution/plan.html`), and its
-  HTML is byte-identical to `artifacts/rival-specimen.html`. It is not a
+  HTML is byte-identical to `artifacts/rival-specimen.html`. It is not a <!-- doc-path-gate: ignore -->
   third-party design, so its choices carry no external authority — only whatever
   merit they have on inspection.
 

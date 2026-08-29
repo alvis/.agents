@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { FORMATTERS, formatCodeBlocks, runFormatter } from "./format.ts";
 
-import type { FormatTools, FormatterSpec } from "./format.ts";
+import type { FormatOutcome, FormatTools, FormatterSpec } from "./format.ts";
 import type { Block, PageData } from "./types.ts";
 
 /** a run that records what it was asked, so a spec never needs this machine. */
 function fake(
   installed: string[],
-  run: (spec: FormatterSpec, code: string) => string | null = (_, code) =>
-    code.replaceAll("  ", " "),
+  run: (spec: FormatterSpec, code: string) => FormatOutcome = (_, code) => ({
+    formatted: code.replaceAll("  ", " "),
+  }),
 ): FormatTools & { asked: string[]; warnings: string[] } {
   const asked: string[] = [];
   const warnings: string[] = [];
@@ -51,21 +52,86 @@ describe("const:FORMATTERS", () => {
 
 describe("fn:runFormatter", () => {
   it("should return what the filter wrote", () => {
-    expect(runFormatter({ command: "cat", args: [] }, "a\nb\n")).toBe("a\nb\n");
+    expect(runFormatter({ command: "cat", args: [] }, "a\nb\n")).toStrictEqual({
+      formatted: "a\nb\n",
+    });
   });
 
   it("should decline rather than erase when the tool exits non-zero", () => {
     // `rustfmt` resolves on PATH through `rustup` on a machine with no toolchain
     // and fails on every input, so presence on PATH cannot be the whole probe
-    expect(runFormatter({ command: "false", args: [] }, "fn main() {}")).toBeNull();
+    expect(
+      runFormatter({ command: "false", args: [] }, "fn main() {}"),
+    ).toStrictEqual({ declined: "false is installed but refused the source" });
   });
 
   it("should decline a command that does not exist at all", () => {
-    expect(runFormatter({ command: "no-such-formatter", args: [] }, "x")).toBeNull();
+    expect(
+      runFormatter({ command: "no-such-formatter", args: [] }, "x"),
+    ).toStrictEqual({ declined: "no-such-formatter could not be run" });
   });
 
   it("should decline empty output rather than take it", () => {
-    expect(runFormatter({ command: "true", args: [] }, "x")).toBeNull();
+    expect(runFormatter({ command: "true", args: [] }, "x")).toStrictEqual({
+      declined: "true wrote nothing",
+    });
+  });
+
+  it("should decline output that lost words the author wrote", () => {
+    // a tool can stop halfway, print the prefix it managed and still exit 0;
+    // taking that fragment replaces the excerpt with a part of itself, and
+    // every selection then anchors onto code the board never shows
+    expect(
+      runFormatter(
+        { command: "sed", args: ["-n", "1p"] },
+        "const alpha = 1;\nconst beta = 2;\n",
+      ),
+    ).toStrictEqual({
+      declined: "sed exited 0 but dropped 3 words of the excerpt",
+    });
+  });
+
+  it("should count a single lost word in the singular", () => {
+    expect(
+      runFormatter({ command: "sed", args: ["-n", "1p"] }, "alpha\nbeta\n"),
+    ).toStrictEqual({
+      declined: "sed exited 0 but dropped 1 word of the excerpt",
+    });
+  });
+
+  it("should take output whose words were only re-cased", () => {
+    // `sql-formatter` upper-cases keywords, which is a formatting decision
+    // rather than a change to what the author wrote
+    expect(
+      runFormatter({ command: "tr", args: ["a-z", "A-Z"] }, "select 1"),
+    ).toStrictEqual({ formatted: "SELECT 1" });
+  });
+
+  it("should kill a formatter that never finishes", () => {
+    // without this the build waits forever on one wedged third-party binary,
+    // with nothing drawn and nothing said
+    expect(
+      runFormatter({ command: "sleep", args: ["2"] }, "x", 100),
+    ).toStrictEqual({
+      declined: "sleep did not finish within 0.1s and was killed",
+    });
+  });
+
+  it("should decline bytes that are not valid UTF-8", () => {
+    expect(
+      runFormatter(
+        { command: "bash", args: ["-c", "cat > /dev/null; printf '\\377'"] },
+        "x",
+      ),
+    ).toStrictEqual({
+      declined: "bash returned bytes that are not valid UTF-8",
+    });
+  });
+
+  it("should keep a replacement character the author wrote themselves", () => {
+    expect(runFormatter({ command: "cat", args: [] }, "a \uFFFD b")).toStrictEqual({
+      formatted: "a \uFFFD b",
+    });
   });
 });
 
@@ -145,12 +211,32 @@ describe("fn:formatCodeBlocks", () => {
   });
 
   it("should name the installed tool when it is the one that refused", () => {
-    const tools = fake(["rustfmt"], () => null);
+    const tools = fake(["rustfmt"], () => ({
+      declined: "rustfmt is installed but refused the source",
+    }));
     formatCodeBlocks(board([{ type: "code", language: "rust", code: "fn m(){}" }]), tools);
 
     expect(tools.warnings[0]).toBe(
       "rust: 1 excerpt left unformatted because rustfmt is installed but refused the source (first at sections[0].blocks[0])",
     );
+  });
+
+  it("should say why an excerpt was left alone, and leave it alone", () => {
+    // a formatter that hangs, truncates, or writes bytes that are not UTF-8 is
+    // still never allowed to fail the build: it costs one line on stderr and
+    // the author's own text, which is exactly what a missing formatter costs
+    const tools = fake(["rustfmt"], () => ({
+      declined: "rustfmt did not finish within 60s and was killed",
+    }));
+    const data = board([{ type: "code", language: "rust", code: "fn  m(){}" }]);
+    formatCodeBlocks(data, tools);
+
+    expect((data.sections[0].blocks[0] as { code: string }).code).toBe(
+      "fn  m(){}",
+    );
+    expect(tools.warnings).toStrictEqual([
+      "rust: 1 excerpt left unformatted because rustfmt did not finish within 60s and was killed (first at sections[0].blocks[0])",
+    ]);
   });
 
   it("should pass a language nobody formats through in silence", () => {
@@ -176,7 +262,7 @@ describe("fn:formatCodeBlocks", () => {
 
   it("should not leave a trailing newline the formatter added", () => {
     const data = board([{ type: "code", language: "json", code: "{}" }]);
-    formatCodeBlocks(data, fake(["prettier"], () => "{}\n"));
+    formatCodeBlocks(data, fake(["prettier"], () => ({ formatted: "{}\n" })));
 
     expect((data.sections[0].blocks[0] as { code: string }).code).toBe("{}");
   });

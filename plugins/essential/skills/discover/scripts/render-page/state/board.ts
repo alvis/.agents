@@ -169,11 +169,16 @@ function recentSection(streams: Stream[]): Section {
             { kind: "code" as const, text: stream.id },
             ` — ${stream.next || "no next action recorded"}`,
           ],
-          state: stream.tasks.every(isDone)
-            ? ("done" as const)
-            : stream.tasks.some((task) => task.status === "working")
-              ? ("active" as const)
-              : ("pending" as const),
+          // `every` is true over nothing, so a stream whose task table could
+          // not be read was drawn finished here while its own tag said it was
+          // working. `progressSection` already refuses to measure a stream it
+          // has no tasks for, and this agrees with it
+          state:
+            stream.tasks.length && stream.tasks.every(isDone)
+              ? ("done" as const)
+              : stream.tasks.some((task) => task.status === "working")
+                ? ("active" as const)
+                : ("pending" as const),
           tags: [stream.phase || "phase unrecorded"],
         })),
       },

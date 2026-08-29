@@ -1,7 +1,16 @@
 # Shared HTML components
 
-The component system is a small declarative contract implemented by
-`assets/html/discovery.css` and `assets/html/discovery.js`. It makes temporary
+**This catalog describes the retired hand-authored pipeline.** Boards are built
+now by the JSON renderer at `scripts/render-page.ts` from data under
+`examples/data/`; the composer, its shared runtime, its Tailwind injection and
+its marker-and-validator regime were all removed. What survives is the house
+vocabulary — what a decision question, a finding card or a board hub is — so
+read the patterns and disregard the paths, the build steps and the enforcement
+they cite. Every line still naming a deleted file is marked as history. Recasting
+this shelf as a catalogue of JSON blocks is owed and not yet done.
+
+The component system was a small declarative contract implemented by
+`assets/html/discovery.css` and `assets/html/discovery.js`. It makes temporary <!-- doc-path-gate: ignore -->
 discovery pages consistent enough to learn quickly without turning the examples
 into rigid templates.
 
@@ -46,7 +55,7 @@ The runtime uses `essential.discover.v1:<page-id>` for local state. Generated
 temporary previews should include a run-specific page ID so separate previews
 cannot recover one another's answers accidentally.
 
-Start by copying the modular starter scaffold `templates/src/page/` (its
+Start by copying the modular starter scaffold `templates/src/page/` (its <!-- doc-path-gate: ignore -->
 `page.html` shell plus starter `sections/`) into the session workspace — never
 hand-write this shell — then inspect the approved
 `examples/html/domain-explainer.html`. The top bar contains no search control:
@@ -119,7 +128,7 @@ stale `#anchor` links in the container.
 Sources and shells **never link scripts or stylesheets** — no CDN Tailwind tag,
 no `discovery.css` link, no `discovery.js` script, no `{{DISCOVERY_*_URL}}`
 placeholder, external or relatively linked. Keep only the inline
-`<style type="text/tailwindcss">` theme block. `scripts/build-artifact.ts`
+`<style type="text/tailwindcss">` theme block. `scripts/build-artifact.ts` <!-- doc-path-gate: ignore -->
 injects the Tailwind runtime plus discovery.css/js into the final files; a
 source that references any asset is rejected by both the builder and the
 validator.
@@ -1724,7 +1733,7 @@ Examples also expose semantic `data-*` hooks for the structural validator.
 These hooks name the job performed by an element—such as
 `data-option-frame`, `data-idea-card`, `data-interview-step`, or
 `data-readiness-gate`—and are never styling hooks. Their required counts live
-in `scripts/test-html-templates.ts` beside the executable check.
+in `scripts/test-html-templates.ts` beside the executable check. <!-- doc-path-gate: ignore -->
 
 A structural hook is valid only on a substantive visible element. For example,
 an option frame contains a credible artifact and its local reaction control; an

@@ -17,6 +17,7 @@ import {
   requireOneOf,
   requireString,
 } from "./validate.ts";
+import { usesBlock } from "./walk.ts";
 
 import type { PageAssets } from "./bundle.ts";
 import type { PageContext } from "./context.ts";
@@ -41,6 +42,9 @@ export function renderPage(data: PageData, assets: PageAssets): string {
     ids: freshIds(),
     files: assets.files ?? {},
     id,
+    // read through the same walk the files are, so a quiz behind a disclosure
+    // is one this sees
+    quizzed: usesBlock(data, "quiz"),
     // read from the data rather than collected as the sections draw, so a
     // block linking forward to a section is checked against the whole page
     sections: new Set(
