@@ -67,6 +67,15 @@ export const CONTENT_CSS = `
 .timeline li[data-state="done"]::before{border-color:var(--ui-positive); background:var(--ui-positive)}
 .timeline li[data-state="active"]::before{border-color:var(--ui-accent); background:var(--ui-accent-soft)}
 .moment-when{flex:none; min-width:4.5rem; font:700 .76rem/1.6 var(--font-mono); letter-spacing:.05em; color:var(--ui-faint)}
+/* the classification is a chip on the row rather than a second dot: the dot
+   already carries progress, and one marker cannot honestly carry both. Only a
+   classified rail takes the title rule, so a timeline written before this
+   still lays out exactly as it did */
+.moment-kind{flex:none; padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint); background:var(--ui-raised)}
+.timeline li[data-kind] .moment-title{flex:1 1 14rem; min-width:0}
+.timeline li[data-kind="discovery"] .moment-kind{border-color:var(--ui-accent); color:var(--ui-accent-ink); background:var(--ui-accent-soft)}
+.timeline li[data-kind="deviation"] .moment-kind{border-color:var(--ui-amber); color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
+.timeline li[data-kind="todo"] .moment-kind{border-color:var(--ui-critical); color:var(--ui-critical-ink); background:var(--ui-critical-soft)}
 .moment-state{flex:none; font:700 .72rem/1.7 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
 .moment-tags{display:inline-flex; flex-wrap:wrap; gap:.3rem}
 .moment-tags span{padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:9999px; font-size:.72rem; color:var(--ui-muted)}

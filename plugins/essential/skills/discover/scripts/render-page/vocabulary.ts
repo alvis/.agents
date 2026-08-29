@@ -36,6 +36,7 @@ export const QUESTION_TYPES = [
   "scale",
   "decision",
   "observations",
+  "quiz",
 ] as const;
 
 /** a question block, whichever affordance it uses. */
@@ -46,10 +47,12 @@ export type Question = Extract<Block, { type: (typeof QUESTION_TYPES)[number] }>
  *
  * a kind is not always its own contract. `observations` asks which of a set of
  * cards land, and an answer to that is a set of ticked values — the exact shape
- * a checklist already saves, restores, and joins into the reply. Saying so here
- * is what keeps `runtime/answer.ts` at the branches it has: a branch of its own
- * would be a copy of the checklist one, and two copies of a serialisation have
- * to stay identical forever or a saved answer stops restoring.
+ * a checklist already saves, restores, and joins into the reply; a `quiz` asks
+ * for one of several answers, which is a choice however differently it is
+ * scored. Saying so here is what keeps `runtime/answer.ts` at the branches it
+ * has: a branch of its own would be a copy of an existing one, and two copies
+ * of a serialisation have to stay identical forever or a saved answer stops
+ * restoring.
  *
  * the map is read at render time and emitted as `data-question-kind`, so the
  * runtime never consults it; every kind is listed, so a new one cannot inherit
@@ -62,6 +65,7 @@ export const ANSWER_KIND: Record<(typeof QUESTION_TYPES)[number], string> = {
   scale: "scale",
   decision: "decision",
   observations: "checklist",
+  quiz: "choice",
 };
 
 /**
@@ -82,6 +86,21 @@ export const MOMENT_STATE_LABEL = {
   done: "Done",
   active: "In progress",
   pending: "Not started",
+} as const;
+
+/**
+ * what a build-log entry is, and the word each classification shows.
+ *
+ * the four are not a scale and are not ranked: they say where an entry came
+ * from. `plan-confirmed` is the plan holding, `discovery` is what the code
+ * turned out to say, `deviation` is a departure the entry owes an account of,
+ * and `todo` is work the change is knowingly leaving behind.
+ */
+export const MOMENT_KIND_LABEL = {
+  "plan-confirmed": "Plan confirmed",
+  discovery: "Discovery",
+  deviation: "Deviation",
+  todo: "Still owed",
 } as const;
 
 /**

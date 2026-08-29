@@ -41,6 +41,13 @@ export function renderPage(data: PageData, assets: PageAssets): string {
     ids: freshIds(),
     files: assets.files ?? {},
     id,
+    // read from the data rather than collected as the sections draw, so a
+    // block linking forward to a section is checked against the whole page
+    sections: new Set(
+      (Array.isArray(data.sections) ? data.sections : []).map(
+        (section) => (section as Section | null)?.id ?? "",
+      ),
+    ),
     set: assets.set,
   };
   const sections = requireArray<Section>(data.sections, "sections")

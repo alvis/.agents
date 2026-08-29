@@ -26,6 +26,16 @@ export interface PageContext {
   /** the id of the board being drawn, which is what marks it as current */
   id: string;
   /**
+   * every section id the board declares, read from the data before any of it
+   * is drawn.
+   *
+   * `ids.section` cannot answer this: it fills as the sections render, so a
+   * block naming a section further down the page would be checked against a
+   * set that does not hold it yet. A block that links to a section is checked
+   * against what the author wrote, wherever the target sits.
+   */
+  sections: Set<string>;
+  /**
    * every board of the run, when this board was rendered as part of one.
    *
    * a hub indexes it and every board lists it; a board rendered on its own
@@ -43,5 +53,6 @@ export function emptyContext(): PageContext {
     ids: freshIds(),
     files: {},
     id: "page",
+    sections: new Set(),
   };
 }

@@ -1,9 +1,9 @@
 ---
 name: discover
-description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, to brainstorm approaches from cheapest to ambitious, interview about architecture, extract reference implementation semantics, make a disposable prototype before touching the real app, or check whether discovery is ready for a decision; researched option selection belongs to essential:decide."
+description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, to brainstorm approaches from cheapest to ambitious, interview about architecture, extract reference implementation semantics, make a disposable prototype before touching the real app, check whether discovery is ready for a decision, read the local state tree into an operations board, or account for a finished build against the plan it departed from; researched option selection belongs to essential:decide."
 requirements:
   intelligence: high
-argument-hint: "<problem> [--mode=blindspots|options|interview|reference|prototype|readiness] [--persist] [--work-id=<id>]"
+argument-hint: "<problem> [--mode=blindspots|options|interview|reference|prototype|readiness|state|implementation] [--persist] [--work-id=<id>]"
 ---
 
 # Discover
@@ -12,7 +12,7 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 
 ## Boundaries
 
-- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, extracting semantics from a reference, disposable prototypes, and readiness checks before planning.
+- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, and an account of a finished build for whoever has to merge it.
 - Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), choosing among already-grounded options (`essential:decide`), production UI design (`web:design`), or clear bounded implementation.
 - Never claim an unknown unknown has been found merely because it is plausible; record it as a hypothesis until evidence supports it.
 
@@ -52,7 +52,9 @@ The evidence ledger uses these fields:
    - `interview`: the user holds material intent or preferences not yet stated;
    - `reference`: a codebase, document, site, image, or example defines the desired semantics more precisely than prose;
    - `prototype`: the cheapest way to learn is a disposable artifact and the user has authorized creating it;
-   - `readiness`: existing evidence needs a plan/implementation go-no-go check.
+   - `readiness`: existing evidence needs a plan/implementation go-no-go check;
+   - `state`: the unknown is where work already in flight actually stands, and the local state tree is the only honest source for it;
+   - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it.
 3. **Load only the selected mode reference** and execute it:
    - [blindspots](references/blindspots.md)
    - [options](references/options.md)
@@ -60,6 +62,8 @@ The evidence ledger uses these fields:
    - [reference](references/reference.md)
    - [prototype](references/prototype.md)
    - [readiness](references/readiness.md)
+   - [state](references/state.md)
+   - [implementation](references/implementation.md)
 4. **Update the ledger.** Preserve provenance. Move an item between kinds only when evidence or a user decision justifies it; do not collapse inference into observed fact. Record rejected alternatives and why they were rejected when they would otherwise be rediscovered.
 5. **Choose the next probe or stop.** Continue only when another cheap probe can resolve a material unknown. Stop when all material items are resolved, explicitly deferred with an owner, or blocking; remaining assumptions must be low-impact and reversible.
 6. **Route the result.** Recommend exactly one next owner: another discovery mode, `essential:decide`, `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.

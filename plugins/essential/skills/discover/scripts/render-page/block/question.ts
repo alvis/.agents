@@ -16,8 +16,14 @@ import type { PageIds } from "../id.ts";
 import type { Choice, Option } from "../types.ts";
 import type { Question } from "../vocabulary.ts";
 
-/** the kinds drawn here; `observations` shares the shell and draws its own. */
-type Drawn = Exclude<Question, { type: "observations" }>;
+/**
+ * the kinds drawn here.
+ *
+ * `observations` and `quiz` open through `openQuestion` and then draw their
+ * own bodies, because neither is a control this dispatcher would recognise:
+ * one is a set of cards and the other carries an answer key.
+ */
+type Drawn = Exclude<Question, { type: "observations" | "quiz" }>;
 
 /** a question's identity and the markup down to the end of its ask. */
 interface Shell {

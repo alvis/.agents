@@ -1,15 +1,19 @@
 /**
  * the authored data format, in one place for every module that reads it.
  *
- * split by what a reader is looking for: the inline vocabulary, the shapes
- * blocks are built from, the block union itself, and the page around them.
- * This file re-exports all four, so no importer has to know which is which.
+ * split by what a reader is looking for: the inline vocabulary, the shapes a
+ * question is built from, the shapes everything else is built from, the two
+ * halves of the block union, and the page around them. This file re-exports
+ * every one of them, so no importer has to know which file holds which name —
+ * and no name reachable through here may be missing from it, because nothing
+ * in this repository type-checks the difference.
  */
 
-export { CHOICE_TAGS } from "./types/content.ts";
+export { CHOICE_TAGS } from "./types/answer.ts";
 export { PAGE_KINDS } from "./types/page.ts";
 
-export type { Block, Response } from "./types/block.ts";
+export type { Block } from "./types/block.ts";
+export type { QuestionBlock, Response } from "./types/question.ts";
 export type {
   CodeComment,
   CodeExcerpt,
@@ -18,18 +22,30 @@ export type {
   TokenSpan,
 } from "./types/code.ts";
 export type {
-  Cell,
   Choice,
-  Finding,
-  Metric,
   Observation,
   Option,
-  Pin,
-  Row,
+  QuizOption,
   ScalePoint,
+  Tag,
+} from "./types/answer.ts";
+export type {
+  Cell,
+  Column,
+  Definition,
+  Deviation,
+  Finding,
+  Lane,
+  Meter,
+  Metric,
+  Moment,
+  Person,
+  Pin,
+  Point,
+  Risk,
+  Row,
   Source,
   Step,
-  Tag,
   TreeItem,
   Viewport,
 } from "./types/content.ts";

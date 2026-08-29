@@ -1,6 +1,7 @@
 import { renderBoards } from "./block/board.ts";
 import { renderCallout } from "./block/callout.ts";
 import { renderCode, renderCodePair } from "./block/code.ts";
+import { renderDeviations } from "./block/deviation.ts";
 import { renderDisclosure } from "./block/disclosure.ts";
 import { renderEmbed } from "./block/embed.ts";
 import { renderFaq, renderGlossary } from "./block/definition.ts";
@@ -17,6 +18,7 @@ import { renderSvg } from "./block/svg.ts";
 import { renderTable } from "./block/table.ts";
 import { renderProbe } from "./block/probe.ts";
 import { renderQuestion } from "./block/question.ts";
+import { renderGate, renderQuiz } from "./block/quiz.ts";
 import { renderKanban, renderTimeline } from "./block/timeline.ts";
 import { renderTradeoffs } from "./block/tradeoff.ts";
 import { renderTree } from "./block/tree.ts";
@@ -84,6 +86,10 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
       return renderFailureMap(block, path);
     case "timeline":
       return renderTimeline(block, path);
+    case "deviations":
+      return renderDeviations(block, path);
+    case "gate":
+      return renderGate(block, path);
     case "tradeoffs":
       return renderTradeoffs(block, path);
     case "kanban":
@@ -104,6 +110,8 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
       return renderQuestion(block, path, page.ids);
     case "observations":
       return renderObservations(block, path, page.ids);
+    case "quiz":
+      return renderQuiz(block, path, page);
     default:
       throw new RenderError(
         `${path}.type: unknown block type ${JSON.stringify((block as { type: string }).type)}`,

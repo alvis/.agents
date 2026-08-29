@@ -1,0 +1,449 @@
+{
+  "kind": "implementation-notes",
+  "id": "implementation-notes-page-renderer-batch-2-v1",
+  "action": "Read the implementation notes",
+  "title": "Implementation notes — discover page renderer, batch 2",
+  "masthead": {
+    "eyebrow": "Implementation notes · discover page renderer",
+    "headline": "Four stages, eleven entries, and four places the code did not agree with the plan.",
+    "lede": "What was built against what was planned, written as it went. The deviations are here because each one is a judgement somebody has to agree with before this merges, and a note that only records the plan holding is a note nobody needs to read.",
+    "meta": [
+      {
+        "label": "Stages",
+        "value": "A–D"
+      },
+      {
+        "label": "Log entries",
+        "value": "11"
+      },
+      {
+        "label": "Deviations",
+        "value": "4"
+      },
+      {
+        "label": "Judgements needed",
+        "value": "2"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "label": "Every code line rendering on one row",
+      "ref": "headless Chrome, 13-line excerpt: clientHeight 52, scrollWidth 7005",
+      "level": "measured"
+    },
+    {
+      "label": "Suite at the close of stage C",
+      "ref": "bun test scripts/ — 1156 pass / 0 fail / 1990 expect across 63 files",
+      "level": "measured"
+    },
+    {
+      "label": "rustfmt refusing the excerpt it was handed",
+      "ref": "render stderr, one line, exit 0",
+      "level": "measured"
+    }
+  ],
+  "sections": [
+    {
+      "id": "outcome",
+      "label": "Outcome",
+      "eyebrow": "What this is",
+      "title": "What exists now that did not before.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "The short version",
+          "points": [
+            {
+              "lead": "The drawer became navigable.",
+              "text": "Three declared columns, a row that jumps to its question, an animated panel, and a scrolling strip of status chips in the bar that is always visible."
+            },
+            {
+              "lead": "Code blocks became readable.",
+              "text": "Every excerpt declares its language and is formatted before it renders; colour arrives as measured ranges rather than markup; and an author marks a selection by quoting the code, not by counting characters."
+            },
+            {
+              "lead": "Four boards were added and two modes with them.",
+              "text": "Blind spots, concept primer, project state and these notes. The last two are produced by discover modes rather than written by hand."
+            },
+            {
+              "lead": "Four judgements are open.",
+              "text": "They are in the deviations below. Two of them change how already-approved boards look."
+            }
+          ]
+        },
+        {
+          "type": "metrics",
+          "items": [
+            {
+              "label": "Boards",
+              "value": "15 → 19"
+            },
+            {
+              "label": "Page kinds",
+              "value": "15 → 19"
+            },
+            {
+              "label": "New block types",
+              "value": "5"
+            },
+            {
+              "label": "Suite",
+              "value": "1012 → 1156"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "log",
+      "label": "The log",
+      "eyebrow": "In order",
+      "title": "What happened, and which sort of thing each one was.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Four kinds of entry, and the difference between them is the point of the rail: a plan that held, something the code turned out to say, a departure that owes an account of itself, and work this change is knowingly leaving behind."
+        },
+        {
+          "type": "timeline",
+          "items": [
+            {
+              "when": "Stage A",
+              "kind": "plan-confirmed",
+              "state": "done",
+              "title": "Refs, drawer and hub landed as written: every question carries an author-chosen citation code, the drawer holds three columns, and a hub card is a link end to end.",
+              "tags": [
+                "OT1",
+                "DR1–DR4",
+                "HB1",
+                "HB2"
+              ]
+            },
+            {
+              "when": "Stage A",
+              "kind": "discovery",
+              "state": "done",
+              "title": "Four defects that unit tests and a code read had both passed were found only by driving the built boards — a grid that only looked like three columns, focus scrolling the sheet on open, a card 21px short, and chips overridden by a class the annotation sheet already owned.",
+              "tags": [
+                "drive, do not read"
+              ]
+            },
+            {
+              "when": "Stage A′",
+              "kind": "deviation",
+              "state": "done",
+              "title": "The status chips and the answer cards disagreed about the colour of the same answer, so one tone per disposition was imposed on both sides and two new hues were added for the option tags.",
+              "tags": [
+                "AC3",
+                "AC4"
+              ]
+            },
+            {
+              "when": "Stage B",
+              "kind": "plan-confirmed",
+              "state": "done",
+              "title": "Language became required, formatting runs before rendering, and a selection names the code it covers so reformatting cannot move it.",
+              "tags": [
+                "CD1",
+                "CD2",
+                "D-70"
+              ]
+            },
+            {
+              "when": "Stage B",
+              "kind": "discovery",
+              "state": "done",
+              "title": "rustfmt is on this machine's PATH and refuses the source it is handed, so the build passes the bytes through and says so on stderr rather than failing.",
+              "tags": [
+                "formatter probe"
+              ]
+            },
+            {
+              "when": "Stage C",
+              "kind": "plan-confirmed",
+              "state": "done",
+              "title": "The observations block, the blind-spots board and the concept primer landed, and the observation ticks reach the reply through the answer store every other question uses.",
+              "tags": [
+                "OT5",
+                "OT3",
+                "OT4"
+              ]
+            },
+            {
+              "when": "Stage C",
+              "kind": "discovery",
+              "state": "done",
+              "title": "Every line of every code block in every board was rendering side by side on one row, and had been since the excerpt was written. Measured in a browser, not read.",
+              "tags": [
+                "see Before and after"
+              ]
+            },
+            {
+              "when": "Stage D",
+              "kind": "deviation",
+              "state": "done",
+              "title": "The quiz was kept off the disposition machinery, because running it through the recommendation attribute would have printed the answer a reader missed into the reply they send back.",
+              "tags": [
+                "OT7"
+              ]
+            },
+            {
+              "when": "Stage D",
+              "kind": "deviation",
+              "state": "done",
+              "title": "The state mode became a second executable rather than a flag on the renderer, which is what keeps the renderer a pure function of its data.",
+              "tags": [
+                "OT2",
+                "N5"
+              ]
+            },
+            {
+              "when": "Stage D",
+              "kind": "deviation",
+              "state": "done",
+              "title": "Two type files were split at the 300-line ceiling, along the seam between what a reader answers and what a board only shows.",
+              "tags": [
+                "D-26"
+              ]
+            },
+            {
+              "when": "Still owed",
+              "kind": "todo",
+              "state": "pending",
+              "title": "The component reference is still prose about HTML rather than a catalogue of JSON blocks, and this batch has had no independent review.",
+              "tags": [
+                "R-47",
+                "review debt"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deviations",
+      "label": "Deviations",
+      "eyebrow": "Judgements",
+      "title": "Where the code did not agree with the plan.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Each of these is a choice taken in the moment against what the plan said. None of them is reversible for free once boards are written against it, which is why they are here rather than in the log."
+        },
+        {
+          "type": "deviations",
+          "items": [
+            {
+              "title": "The quiz does not use the disposition machinery",
+              "planned": "Scoring is the existing answer store and disposition machinery with a pass predicate on top.",
+              "found": "Disposition is read from `data-recommended`, and a question that recommends something prints `(recommended: X)` beside the answer in the copyable reply. A quiz scored that way would report a wrong answer as a disagreement and hand the reader the answer they missed, in the message they send to somebody else.",
+              "chose": "The quiz carries `data-correct`, read by the gate's runtime and by nothing else. The answer itself is stored as an ordinary choice, so it reaches the store, the chips and the reply by every path the other questions use.",
+              "revisit": "If the reply is ever asked to carry a score, the two have to meet, and this is the seam where they would."
+            },
+            {
+              "title": "The state mode is a second executable, not a renderer flag",
+              "planned": "A `--mode=state` that reads the `.state` tree.",
+              "found": "The renderer is a pure function of its data, and the module graph enforces it: nothing reachable from the page module may import a `node:` builtin. A `--state` flag on the render CLI would have put a directory walk one import away from that boundary.",
+              "chose": "`scripts/state-board.ts` reads the tree and writes ordinary page data; `render-page.ts` renders that data knowing nothing about where it came from. The board it produces is indistinguishable from a hand-written one.",
+              "revisit": "If a second data source ever wants the same treatment, the shape generalises; one is not yet a pattern."
+            },
+            {
+              "title": "Two type files were split rather than allowed to grow",
+              "planned": "Add a quiz block and a deviation shape to the existing type files.",
+              "found": "Adding them carried the content vocabulary to 344 lines and the block union to 339, over the 300 agreed at stage 1 and enforced by the module suite.",
+              "chose": "The seam that already existed was cut along: what a reader answers now lives apart from what a board only shows. Splitting also surfaced eight type names that were imported through the barrel and never exported by it — invisible in a repository with no type checker.",
+              "revisit": "Nothing. The split is the shape the files should have had."
+            },
+            {
+              "title": "The small-type floor had never covered most of the stylesheets",
+              "planned": "The floor test proves no text on any board is set below 0.72rem.",
+              "found": "It read one rendered board's inlined stylesheet. The per-format sheets are appended by the CLI layer only for the boards that draw those formats, so they sat outside the test entirely — and three rules in the code sheet and two in the observation sheet had been written under the floor.",
+              "chose": "The test now reads the style directory rather than a list, so a sheet added later is covered by being written. The six rules it found were raised to 0.72rem.",
+              "revisit": "This changes how already-driven code-pair and observation boards look. If the smaller sizes were deliberate, the floor is the thing to argue with, not the rules."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "code",
+      "label": "Before and after",
+      "eyebrow": "One line",
+      "title": "The rule that put every line of every excerpt on one row.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The excerpt sets `white-space: pre`, which preserves the newlines between lines. It does not make them break: between two inline-level boxes, a preserved newline is a break opportunity the layout is free to decline, and it declines. The fix is not to change the whitespace rule but to stop the lines being inline."
+        },
+        {
+          "type": "codepair",
+          "eyebrow": "PAIR 1 / 1",
+          "caption": "style/annotation.ts — the code-line rule",
+          "panels": [
+            {
+              "language": "css",
+              "label": "before",
+              "caption": "As written",
+              "code": ".code-line{display:inline-block;width:100%}\n.code-line.is-marked{background:var(--ui-amber-soft)}\n",
+              "selections": [
+                {
+                  "text": "inline-block",
+                  "note": "An inline-level box. The newline between one line and the next is a break opportunity, not a break, so thirteen lines laid out as one row 7005 pixels wide."
+                }
+              ]
+            },
+            {
+              "language": "css",
+              "label": "after",
+              "caption": "As it reads now",
+              "code": ".code-line{display:block;width:fit-content;min-width:100%}\n.code-line.is-marked{background:var(--ui-amber-soft)}\n",
+              "selections": [
+                {
+                  "text": "fit-content",
+                  "note": "Block-level, so each line takes its own row; sized to its content so a long line still stretches the scroller, with `min-width` keeping the highlight full-bleed on short ones."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "bad",
+          "lead": "How it survived",
+          "title": "Every test that could have caught this was reading strings",
+          "text": "The excerpt's markup was correct, its classes were correct, and the sheet contained exactly the rule it was asserted to contain. Nothing in the suite laid the page out, so nothing in the suite could see thirteen lines on one row. It was found by opening a board and measuring one element."
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "label": "Fold back",
+      "eyebrow": "Next",
+      "title": "What has to go back into the plan.",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            {
+              "lead": "The two folded-forward fixes need a call.",
+              "text": "The code-line rule belongs to the renderer change and the drawer-bar fix to the boards change, and both were folded forward into later commits rather than restacked. Nothing is pushed, so restacking is still free."
+            },
+            {
+              "lead": "The component reference is still the gap.",
+              "text": "It describes HTML components; the format it is meant to document is JSON blocks. It is the one thing standing between this tree and approval, and it is not in this batch."
+            },
+            {
+              "lead": "The raised type sizes want a look.",
+              "text": "Six rules moved up to the floor. Two of them are on boards that were already driven and approved at their old sizes."
+            },
+            {
+              "lead": "Batch two has had no independent review.",
+              "text": "The first batch's review found twenty-nine must-fix findings across three rounds. This one has had none."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "notes-fold-back",
+          "ref": "N1",
+          "label": "Anything else to fold back",
+          "ask": "What else from this build should go back into the plan before the next batch is written?",
+          "placeholder": "e.g. the drive-it-do-not-read-it rule, now that it has caught defects in four stages running"
+        }
+      ]
+    },
+    {
+      "id": "merge",
+      "label": "Before you merge",
+      "eyebrow": "Quiz",
+      "title": "Three things this change does that its shape does not show.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Not a formality. Each of these is a behaviour that reads one way in the diff and works another way at runtime, and each has a section above that explains it."
+        },
+        {
+          "type": "quiz",
+          "id": "quiz-reply-leak",
+          "ref": "Q1",
+          "label": "The quiz and the reply",
+          "ask": "Where does a wrong quiz answer show up in the reply the reader copies?",
+          "explains": "deviations",
+          "options": [
+            {
+              "value": "Nowhere — the reply records which answer was given, never whether it was right.",
+              "correct": true,
+              "because": "The answer key is an attribute the gate's runtime reads and nothing else does. The answer is stored and replied as an ordinary choice."
+            },
+            {
+              "value": "As a changed disposition, since the answer disagrees with the board.",
+              "because": "That is exactly what the recommendation attribute would have done — and it prints the recommended value beside the answer, handing the reader the answer they missed. It is why the quiz does not use it."
+            },
+            {
+              "value": "As a score line under the summary.",
+              "because": "The summary says where the board stands on its questions. It has no notion of a right answer, and adding one would put the key in the reply."
+            }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "quiz-code-line",
+          "ref": "Q2",
+          "label": "The code-line defect",
+          "ask": "What put every line of every code block on one row?",
+          "explains": "code",
+          "options": [
+            {
+              "value": "The lines were inline-level boxes, and a preserved newline between two of them is a break opportunity rather than a break.",
+              "correct": true,
+              "because": "`white-space: pre` preserves the newline; it does not force the layout to take it. Making the line block-level does."
+            },
+            {
+              "value": "The excerpt lost its trailing newlines when it was escaped.",
+              "because": "The newlines were all present in the markup. The defect was entirely in how the lines were laid out."
+            },
+            {
+              "value": "The highlighter emitted spans it never closed.",
+              "because": "Spans are emitted from measured offsets and closed at every boundary; unbalanced markup would have broken far more than the line breaks."
+            }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "quiz-state-read",
+          "ref": "Q3",
+          "label": "Where .state is read",
+          "ask": "Which code reads the `.state` tree when a project-state board is built?",
+          "explains": "log",
+          "options": [
+            {
+              "value": "A second executable that writes page data, which the renderer then renders without knowing where it came from.",
+              "correct": true,
+              "because": "That separation is what keeps the renderer a pure function of its data, and the module suite enforces it."
+            },
+            {
+              "value": "The render CLI, behind a --state flag.",
+              "because": "That would put a directory walk one import from the page module, which the module suite refuses: nothing reachable from it may import a node builtin."
+            },
+            {
+              "value": "The page runtime, which reads the tree when the board is opened.",
+              "because": "A board is a single self-contained file. It fetches nothing at all, which is the property that lets it be sent to somebody as an attachment."
+            }
+          ]
+        },
+        {
+          "type": "gate",
+          "title": "Merge readiness",
+          "pass": "Cleared. The three behaviours that read one way in the diff and work another way at runtime are the three you just named — merge it.",
+          "fail": "Not yet. Each question answered wrongly is listed below, linked to the section that explains it. Nothing here is a trick question; each one is a thing the diff genuinely does not show."
+        }
+      ]
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Implementation notes — discover page renderer, batch 2\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}"
+  }
+}

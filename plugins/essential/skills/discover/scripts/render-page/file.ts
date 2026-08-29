@@ -5,7 +5,9 @@ import { readSources } from "./source-file.ts";
 import { formatCodeBlocks } from "./format.ts";
 import { colourCodeBlocks, highlighterOnce } from "./prism.ts";
 import { CODE_CSS } from "./style/code.ts";
+import { DEVIATION_CSS } from "./style/deviation.ts";
 import { OBSERVATION_CSS } from "./style/observation.ts";
+import { QUIZ_CSS } from "./style/quiz.ts";
 import { codeExcerpts, usesBlock } from "./walk.ts";
 import { usesMermaid } from "./block/mermaid.ts";
 import { RenderError } from "./error.ts";
@@ -67,6 +69,11 @@ export async function renderFile(
     assets.css,
     ...(excerpts.length ? [CODE_CSS] : []),
     ...(usesBlock(data, "observations") ? [OBSERVATION_CSS] : []),
+    ...(usesBlock(data, "deviations") ? [DEVIATION_CSS] : []),
+    // either block, because a gate without questions is still a gate and a
+    // question without a gate is still asked; a board holding one and not the
+    // other would otherwise draw it unstyled
+    ...(usesBlock(data, "quiz") || usesBlock(data, "gate") ? [QUIZ_CSS] : []),
   ].join("\n\n");
   const html = renderPage(data, { ...assets, css, files, mermaid });
   await mkdir(dirname(outPath), { recursive: true });

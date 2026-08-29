@@ -10,41 +10,6 @@ export interface Metric {
   value: string;
 }
 
-/**
- * the closed tag vocabulary `questions.md` defines for a choice title, in the
- * order that reference lists them. A tag outside this set is refused rather
- * than drawn, because an unrecognised word in a badge reads as an endorsement
- * the page never made.
- */
-export const CHOICE_TAGS = [
-  "Architectural",
-  "Ideal",
-  "Recommended",
-  "Pragmatic",
-  "Hotfix",
-  "Workaround",
-] as const;
-
-/** one tag from `questions.md`'s closed vocabulary. */
-export type Tag = (typeof CHOICE_TAGS)[number];
-
-/** one selectable answer of a `choice` block. */
-export interface Choice {
-  /** the answer text, used both as the visible label and the recorded value */
-  value: string;
-  /** one sentence on when this answer is the right one */
-  summary?: string;
-  /**
-   * every applicable tag from `questions.md`'s vocabulary, drawn as badges
-   * beside the answer text in the order given
-   */
-  tags?: Tag[];
-  /** what choosing this answer buys, one clause per entry */
-  pros?: string[];
-  /** what choosing this answer costs, one clause per entry */
-  cons?: string[];
-}
-
 /** a verdict-carrying table cell. */
 export interface Cell {
   /** the cell's visible text */
@@ -85,43 +50,6 @@ export interface Finding {
   owner?: string;
   /** what the claim rests on, or the cheapest probe that would settle it */
   evidence?: string;
-}
-
-/** one selectable answer of a `checklist` block. */
-export interface Option {
-  /** the answer text, used both as the visible label and the recorded value */
-  value: string;
-  /** one sentence on what selecting this commits to */
-  summary?: string;
-}
-
-/**
- * one observation card a reader may tick.
- *
- * a finding states a risk the author already judged; an observation states
- * something they noticed and are asking the reader whether it lands. That is
- * why it carries no severity and does carry a tick: the reader's agreement is
- * the missing half of it.
- */
-export interface Observation {
-  /** the one-line claim, drawn as the card's title and recorded by a tick */
-  title: string;
-  /** the file it was noticed in, drawn as a mono chip */
-  file?: string;
-  /** what the code actually does, under `Found in code` */
-  found: Rich;
-  /** what that costs, under `Impact` */
-  impact: Rich;
-  /** who or what noticed it, drawn as a small round badge of its initials */
-  source?: string;
-}
-
-/** one position on a `scale` block's ordered scale. */
-export interface ScalePoint {
-  /** the recorded value for this position */
-  value: string;
-  /** the wording shown for this position; defaults to `value` */
-  label?: string;
 }
 
 /**
@@ -191,8 +119,40 @@ export interface Moment {
   title: Rich;
   /** progress, drawn as a word and a marker as well as a colour */
   state?: "done" | "active" | "pending";
+  /**
+   * what sort of entry this is, drawn as a word above the title.
+   *
+   * a build log is not a plan read back. Some of its entries confirm what was
+   * planned, some are what the code turned out to say, some are departures,
+   * and some are work still owed — and a rail that draws all four alike leaves
+   * a reader to re-derive the difference from the prose of every entry. It is
+   * optional, so every timeline written before this stays a rail of plain
+   * moments; the words each value draws are in `MOMENT_KIND_LABEL`.
+   */
+  kind?: "plan-confirmed" | "discovery" | "deviation" | "todo";
   /** what would make this moment worth rechecking */
   tags?: string[];
+}
+
+/**
+ * one departure from the plan, and what was done about it.
+ *
+ * four fields rather than a before-and-after pair, because a departure a
+ * reader can only see is not one they can judge: the choice taken and the
+ * condition that would reopen it are what turn a discrepancy into a decision
+ * somebody can agree or disagree with.
+ */
+export interface Deviation {
+  /** what the departure is about, drawn as its title */
+  title: string;
+  /** what the plan said would happen */
+  planned: Rich;
+  /** what the code turned out to say instead */
+  found: Rich;
+  /** the choice taken, which is the conservative one by construction */
+  chose: Rich;
+  /** what would make this worth reopening, where anything would */
+  revisit?: Rich;
 }
 
 /** one lane of a `kanban` block. */
