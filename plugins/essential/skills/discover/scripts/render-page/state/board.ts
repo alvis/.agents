@@ -1,3 +1,4 @@
+import { leadRuns, leadText } from "./lead.ts";
 import { readingSection } from "./reading.ts";
 
 import type { Block, Metric, PageData, Section } from "../types.ts";
@@ -132,7 +133,7 @@ function progressSection(streams: Stream[]): Section {
       people: owned.map((stream) => ({
         name: stream.owner,
         role: stream.id,
-        due: stream.next.slice(0, 80),
+        due: leadText(stream.next),
       })),
     });
 
@@ -167,7 +168,10 @@ function recentSection(streams: Stream[]): Section {
           when: stream.updated || "unrecorded",
           title: [
             { kind: "code" as const, text: stream.id },
-            ` — ${stream.next || "no next action recorded"}`,
+            " — ",
+            ...(stream.next
+              ? leadRuns(stream.next)
+              : [{ kind: "dim" as const, text: "no next action recorded" }]),
           ],
           // `every` is true over nothing, so a stream whose task table could
           // not be read was drawn finished here while its own tag said it was
