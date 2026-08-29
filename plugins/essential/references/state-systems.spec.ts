@@ -326,6 +326,21 @@ describe("project state-system contract", () => {
     },
   );
 
+  it("accepts a repo source with an approved work-local copy", async () => {
+    const work = await project("repo");
+    await mkdir(join(work, "spec"), { recursive: true });
+    await writeFile(join(work, "spec/README.md"), "# Repository specification\n");
+    const goal = join(work, "goal.md");
+    await writeFile(
+      goal,
+      (await readFile(goal, "utf8")).replace(
+        "Local materialization: None",
+        "Local materialization: [spec](spec/)",
+      ),
+    );
+    expect(specificationFindings(work)).toEqual([]);
+  });
+
   it("rejects canonical references that do not match their declared source kind", async () => {
     let work = await project("repo");
     const repoGoal = join(work, "goal.md");

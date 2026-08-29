@@ -1344,6 +1344,40 @@ def check_specification_provenance(
                 "Use `repo:<repository-relative-path>` and a portable repository revision identity.",
             )
             return
+        if local != "None":
+            local_links = markdown_link_spans(local)
+            if (
+                len(local_links) != 1
+                or local[: local_links[0][0]].strip()
+                or local[local_links[0][1] :].strip()
+                or local_links[0][3].strip() != "spec/"
+            ):
+                specification_issue(
+                    report,
+                    work,
+                    phase,
+                    "repository specification has no valid work-local spec/ materialization",
+                    "Link an approved repository copy as `[spec](spec/)` in goal.md or set Local materialization to None.",
+                )
+                return
+            if verification == "verified" and not (work_dir / "spec").is_dir():
+                specification_issue(
+                    report,
+                    work,
+                    phase,
+                    "verified repository specification is missing its work-local copy",
+                    "Write the approved repository copy under spec/ before marking it verified.",
+                )
+                return
+        if receipt != "None":
+            specification_issue(
+                report,
+                work,
+                phase,
+                "repository specification carries an external materialization receipt",
+                "Keep repository provenance in the active work state and set Materialization receipt to None.",
+            )
+            return
     elif source_kind == "inline":
         match = re.fullmatch(r"`([^`\r\n]+)`", canonical)
         identity = INLINE_SPECIFICATION_ID.fullmatch(match.group(1)) if match else None
@@ -1401,17 +1435,6 @@ def check_specification_provenance(
                     "Write both required inline work-local specification files before verification.",
                 )
                 return
-    if source_kind in {"repo", "none", "pending"} and (
-        local != "None" or receipt != "None"
-    ):
-        specification_issue(
-            report,
-            work,
-            phase,
-            "repository or unresolved authority carries external materialization anchors",
-            "Keep repository and unresolved provenance in the active work state and keep both external materialization fields None.",
-        )
-        return
     if verification == "verified" and re.fullmatch(
         r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z", verified_at
     ) is None:

@@ -23,8 +23,8 @@ Semantic comparison disregards only the declared volatile Notion
 `last_edited_time` line; exact comparison covers the full bytes, stable
 identity, path, and revision. Keep B read-only. A new verified exact state
 creates a new base directory and receipt; it never rewrites an existing receipt
-or base. `state.md` may point to the current receipt, but the main agent owns that
-pointer.
+or base. `goal.md` owns the current receipt pointer; `state.md` records sync status
+and links to the charter without repeating specification anchors.
 
 ## Materialize decision table
 
