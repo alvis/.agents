@@ -80,6 +80,7 @@ describe("fn:parseStream", () => {
 
     expect(stream).toStrictEqual({
       id: "delta",
+      claimed: "",
       phase: "",
       phaseKey: "",
       updated: "",
@@ -90,10 +91,29 @@ describe("fn:parseStream", () => {
     });
   });
 
-  it("should fall back to the directory name when the file names no work", () => {
+  it("should read a stream by the directory it was found in", () => {
     expect(parseStream("epsilon", stateFile("- Phase: `working`")).id).toBe(
       "epsilon",
     );
+  });
+
+  it("should carry a work id the file claims rather than answer to it", () => {
+    // obeying the header lets one stream take another's place on the board,
+    // or take the name of one the board excluded; the directory is what a
+    // stream is addressed by and a filesystem cannot hold two of one name
+    const stream = parseStream(
+      "epsilon",
+      stateFile("- Work ID: `page-renderer`\n- Phase: `working`"),
+    );
+
+    expect(stream.id).toBe("epsilon");
+    expect(stream.claimed).toBe("page-renderer");
+  });
+
+  it("should carry no claim where the file agrees with its directory", () => {
+    expect(
+      parseStream("epsilon", stateFile("- Work ID: `epsilon`")).claimed,
+    ).toBe("");
   });
 
   it("should read every task row and the alignment rule as none", () => {

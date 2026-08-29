@@ -183,10 +183,13 @@ function drawLines(
   tokens: Span[],
   placed: PlacedSelection[],
 ): string {
-  const lines = code.split("\n");
-  const marked = readHighlight(excerpt.highlight ?? [], `${path}.highlight`, lines.length);
-  const tied = readTies(excerpt.ties ?? [], `${path}.ties`, lines.length);
-  const commented = readComments(excerpt.comments ?? [], `${path}.comments`, lines.length);
+  // each row carries its own line break, so a line is what the author wrote
+  // rather than what a split left behind: `"a\nb\n"` is two lines, and
+  // splitting on the break makes it three, the last of them empty
+  const rows = code.match(/[^\n]*\n|[^\n]+/gu) ?? [];
+  const marked = readHighlight(excerpt.highlight ?? [], `${path}.highlight`, rows.length);
+  const tied = readTies(excerpt.ties ?? [], `${path}.ties`, rows.length);
+  const commented = readComments(excerpt.comments ?? [], `${path}.comments`, rows.length);
   // colour first and selection second, so a picked keyword reads as a keyword
   // that is picked rather than the other way round
   const spans = [
@@ -205,20 +208,21 @@ function drawLines(
   );
   let at = 0;
 
-  return lines
-    .map((line, index) => {
+  return rows
+    .map((row, index) => {
       const number = index + 1;
+      const line = row.replace(/\n$/u, "");
       const start = at;
-      at += line.length + 1;
+      at += row.length;
       const key = tied.get(number);
       const text = drawRun(code, spans, start, start + line.length, after);
       const drawn = marked.has(number) ? `<mark>${text}</mark>` : text;
       const classes = `code-line${marked.has(number) ? " is-marked" : ""}`;
-      // the newline lives inside the span rather than between two of them, so
-      // a copied excerpt still carries its line breaks and no stray text node
-      // sits between the line boxes; a block drops a trailing break rather
-      // than drawing the empty row it would otherwise leave
-      const own = `<span class="${classes}"${key ? syncAttribute("tie", key) : ""}>${drawn}\n</span>`;
+      // the break lives inside the span rather than between two of them, so a
+      // copied excerpt still carries its line breaks and no stray text node
+      // sits between the line boxes; the last row carries one only where the
+      // author wrote one, which is what the unmarked path emits too
+      const own = `<span class="${classes}"${key ? syncAttribute("tie", key) : ""}>${drawn}${row.slice(line.length)}</span>`;
 
       return `${own}${(commented.get(number) ?? []).join("")}`;
     })

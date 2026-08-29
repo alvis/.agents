@@ -51,31 +51,38 @@ const prettier = (parser: string): FormatterSpec => ({
  * tool most likely to already be installed. A language absent from this table
  * is not an error: it is a language nobody has a formatter for, and its
  * excerpts pass through in silence rather than nagging on every build.
+ *
+ * a `Map` rather than an object, because the key is a name the author wrote:
+ * an object answers `constructor`, `toString` and `valueOf` out of its own
+ * prototype, so those three languages would read back a function where this
+ * table promises a list.
  */
-export const FORMATTERS: Record<string, FormatterSpec[]> = {
-  bash: [{ command: "shfmt", args: [] }],
-  css: [prettier("css")],
-  go: [{ command: "gofmt", args: [] }],
-  graphql: [prettier("graphql")],
-  html: [prettier("html")],
-  javascript: [prettier("babel")],
-  json: [prettier("json")],
-  jsonc: [prettier("json")],
-  jsx: [prettier("babel")],
-  less: [prettier("less")],
-  markdown: [prettier("markdown")],
-  python: [
-    { command: "ruff", args: ["format", "-"] },
-    { command: "black", args: ["-q", "-"] },
-  ],
-  rust: [{ command: "rustfmt", args: ["--emit", "stdout"] }],
-  scss: [prettier("scss")],
-  shell: [{ command: "shfmt", args: [] }],
-  sql: [{ command: "sql-formatter", args: [] }],
-  tsx: [prettier("typescript")],
-  typescript: [prettier("typescript")],
-  yaml: [prettier("yaml")],
-};
+export const FORMATTERS = new Map<string, FormatterSpec[]>(
+  Object.entries({
+    bash: [{ command: "shfmt", args: [] }],
+    css: [prettier("css")],
+    go: [{ command: "gofmt", args: [] }],
+    graphql: [prettier("graphql")],
+    html: [prettier("html")],
+    javascript: [prettier("babel")],
+    json: [prettier("json")],
+    jsonc: [prettier("json")],
+    jsx: [prettier("babel")],
+    less: [prettier("less")],
+    markdown: [prettier("markdown")],
+    python: [
+      { command: "ruff", args: ["format", "-"] },
+      { command: "black", args: ["-q", "-"] },
+    ],
+    rust: [{ command: "rustfmt", args: ["--emit", "stdout"] }],
+    scss: [prettier("scss")],
+    shell: [{ command: "shfmt", args: [] }],
+    sql: [{ command: "sql-formatter", args: [] }],
+    tsx: [prettier("typescript")],
+    typescript: [prettier("typescript")],
+    yaml: [prettier("yaml")],
+  }),
+);
 
 /**
  * counts every word in a chunk of source, folded to lower case.
@@ -197,7 +204,7 @@ function choose(
   language: string,
   tools: FormatTools,
 ): FormatterSpec | undefined {
-  return FORMATTERS[language]?.find((spec) => tools.has(spec.command));
+  return FORMATTERS.get(language)?.find((spec) => tools.has(spec.command));
 }
 
 /**
@@ -231,13 +238,15 @@ export function formatCodeBlocks(
     // by its JSON path, and a refusal that reads beats a crash in the walk
     if (typeof excerpt?.code !== "string") continue;
     const language = excerpt.language;
-    if (typeof language !== "string" || !FORMATTERS[language]) continue;
+    if (typeof language !== "string") continue;
+    const candidates = FORMATTERS.get(language);
+    if (!candidates) continue;
     if (!chosen.has(language)) chosen.set(language, choose(language, tools));
     const spec = chosen.get(language);
     const outcome = spec
       ? tools.run(spec, excerpt.code)
       : {
-          declined: `none of ${FORMATTERS[language].map((one) => one.command).join(", ")} is installed`,
+          declined: `none of ${candidates.map((one) => one.command).join(", ")} is installed`,
         };
     if ("formatted" in outcome) {
       excerpt.code = outcome.formatted.replace(/\n$/, "");

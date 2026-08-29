@@ -53,6 +53,17 @@ export function readingSection(tree: Tree): Section {
         )
         .join(". ")}. Every spelling is read, so this is a note about the record rather than a gap in the board: a board that refused to open because one stream used a different key would be useless exactly when it is needed.`,
     });
+  const misnamed = tree.streams.filter((stream) => stream.claimed);
+  if (misnamed.length)
+    blocks.push({
+      type: "callout",
+      tone: "bad",
+      title: "A state file records a work id that is not its own",
+      lead: `${misnamed.length} stream${misnamed.length === 1 ? "" : "s"}`,
+      text: `${misnamed
+        .map((stream) => `${stream.id} records ${stream.claimed}`)
+        .join(". ")}. The directory name is what this board reads a stream by, because it is what a stream is addressed by and a filesystem cannot hold two of one name. A file claiming another name is drawn here rather than obeyed: obeying it lets one stream take another's place above, or take the name of one this board set aside.`,
+    });
   if (malformed)
     blocks.push({
       type: "callout",

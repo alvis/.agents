@@ -22,7 +22,11 @@ type Match = [start: number, end: number];
 const WHITESPACE = /\s/;
 
 /**
- * finds every place the text appears verbatim.
+ * finds every place the text appears verbatim, none of them overlapping.
+ *
+ * a search that stepped one character on would find `--` three times in
+ * `----`, where a reader counts two and no third run could be selected
+ * anyway: two selections cannot both wrap the same character.
  * @param code the excerpt to search
  * @param text the run being looked for
  * @returns each match, in order, as raw offsets
@@ -32,7 +36,7 @@ function matchExactly(code: string, text: string): Match[] {
   for (
     let at = code.indexOf(text);
     at !== -1;
-    at = code.indexOf(text, at + 1)
+    at = code.indexOf(text, at + text.length)
   )
     found.push([at, at + text.length]);
 
@@ -72,6 +76,11 @@ function fold(text: string): { text: string; map: number[] } {
  * re-indenting and re-wrapping are the two things a formatter does most. Folding
  * whitespace on both sides makes those invisible, while the map carries every
  * match back to real offsets so the highlight lands on the real characters.
+ *
+ * this is the only search, rather than a fallback for when a verbatim one
+ * found nothing: an excerpt holding `x = 1;` once and `x  =  1;` once reads as
+ * two of the same run, and counting only the verbatim one told the author
+ * their text had a single match while the other sat on the next line.
  * @param code the excerpt to search
  * @param text the run being looked for
  * @returns each match, in order, as raw offsets into `code`
@@ -100,8 +109,7 @@ function locate(selection: CodeSelection, code: string, at: string): Match {
     throw new RenderError(
       `${at}.text: is only whitespace, so it names no run of the excerpt`,
     );
-  const found = matchExactly(code, text);
-  const matches = found.length ? found : matchLoosely(code, text);
+  const matches = matchLoosely(code, text);
   if (!matches.length)
     throw new RenderError(
       `${at}.text: not found in the excerpt. selections are matched against the formatted text, so compare against the rendered block rather than the source as it was written`,

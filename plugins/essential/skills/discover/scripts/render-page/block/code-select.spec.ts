@@ -82,6 +82,29 @@ describe("fn:placeSelections", () => {
     );
   });
 
+  it("should count a run once however each copy is laid out", () => {
+    // whitespace is what a formatter moves, so an excerpt holding the same
+    // run twice reads as two matches; counting only the verbatim copy told
+    // the author their text matched once while the other sat on the next line
+    const mixed = "x = 1;\nx  =  1;";
+
+    expect(place([{ text: "x = 1;", occurrence: 2, note: "n" }], mixed)[0].start).toBe(7);
+  });
+
+  it("should count only the runs that could each be selected", () => {
+    // two selections cannot both wrap one character, so `--` appears twice in
+    // `----`, not three times; a search stepping one character on offered the
+    // author a third run straddling the two they can see
+    const rule = "a----b";
+
+    expect(() => place([{ text: "--", note: "n" }], rule)).toThrow(
+      new RenderError(
+        "blocks[0].selections[0].text: matches 2 runs of the excerpt, so it does not name one; set blocks[0].selections[0].occurrence to a number between 1 and 2",
+      ),
+    );
+    expect(place([{ text: "--", occurrence: 2, note: "n" }], rule)[0].start).toBe(3);
+  });
+
   it("should take the occurrence the author picked", () => {
     const [one] = place([{ text: "const", occurrence: 2, note: "n" }]);
 

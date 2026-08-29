@@ -53,18 +53,28 @@ export const PRISM_CACHE = join(
   `prism-${PRISM_VERSION}.cache.js`,
 );
 
-/** language names the grammar set knows under another spelling. */
-const ALIASES: Record<string, string> = {
-  jsonc: "json",
-  mjs: "javascript",
-  plaintext: "",
-  shell: "bash",
-  sh: "bash",
-  svg: "markup",
-  text: "",
-  xml: "markup",
-  zsh: "bash",
-};
+/**
+ * language names the grammar set knows under another spelling.
+ *
+ * a `Map` rather than an object, because the key is a name the author wrote:
+ * an object answers `constructor`, `toString` and `valueOf` out of its own
+ * prototype, so those three languages would be spelled as a function here.
+ * An empty spelling means the grammar set has none, which is not the same
+ * answer as having no entry at all.
+ */
+const ALIASES = new Map<string, string>(
+  Object.entries({
+    jsonc: "json",
+    mjs: "javascript",
+    plaintext: "",
+    shell: "bash",
+    sh: "bash",
+    svg: "markup",
+    text: "",
+    xml: "markup",
+    zsh: "bash",
+  }),
+);
 
 /** the shape a grammar's name has to have before it can become a class. */
 const KIND = /^[a-z][a-z0-9-]*$/;
@@ -176,8 +186,11 @@ export function evaluatePrism(source: string): Highlighter {
 
   return {
     tokenize: (code, language) => {
-      const name = language in ALIASES ? ALIASES[language] : language;
-      const grammar = name ? prism.languages[name] : undefined;
+      const name = ALIASES.get(language) ?? language;
+      const grammar =
+        name && Object.hasOwn(prism.languages, name)
+          ? prism.languages[name]
+          : undefined;
       if (!grammar || typeof code !== "string") return [];
       const out: TokenSpan[] = [];
       flattenTokens(prism.tokenize(code, grammar) as PrismNode, 0, out);

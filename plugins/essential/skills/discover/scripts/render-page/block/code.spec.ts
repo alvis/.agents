@@ -31,6 +31,24 @@ describe("fn:renderCode", () => {
     );
   });
 
+  it("should say the same thing marked up as it does plain", () => {
+    // marking a line is presentation, so an excerpt that gains a highlight
+    // must still read as the excerpt: a trailing break splits into a line
+    // that is not one, and the empty row it draws is a line nobody wrote
+    for (const code of ["a\nb", "a\nb\n", "a\nb\n\n", "a", "a\n"])
+      expect(
+        html({ code, highlight: [1] }).replace(/<[^>]*>/gu, ""),
+      ).toBe(code);
+  });
+
+  it("should refuse a line number past the last line the author wrote", () => {
+    expect(() => html({ code: "a\nb\n", highlight: [3] })).toThrow(
+      new RenderError(
+        "blocks[0].highlight[0]: line 3 is past the end of a 2-line excerpt",
+      ),
+    );
+  });
+
   it("should mark only the lines the author named", () => {
     const drawn = html({ highlight: [2] });
 
@@ -39,7 +57,9 @@ describe("fn:renderCode", () => {
   });
 
   it("should keep every newline, so the excerpt still reads as code", () => {
-    expect(html({ highlight: [1] }).match(/\n/g)).toHaveLength(3);
+    // every break the author wrote, and not one more: a three-line excerpt
+    // ending without a break has two
+    expect(html({ highlight: [1] }).match(/\n/g)).toHaveLength(2);
   });
 
   it("should tie every line of a run to one key", () => {
@@ -168,7 +188,7 @@ describe("fn:renderCode selections", () => {
     });
 
     expect(drawn).toContain(
-      '<span class="code-line"><span class="t-keyword">con</span><span class="t-keyword code-pick">st</span><span class="code-pick"> x</span><sup class="code-pick-mark">1</sup>\n</span>',
+      '<span class="code-line"><span class="t-keyword">con</span><span class="t-keyword code-pick">st</span><span class="code-pick"> x</span><sup class="code-pick-mark">1</sup></span>',
     );
   });
 
