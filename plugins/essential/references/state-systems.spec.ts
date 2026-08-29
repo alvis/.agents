@@ -105,7 +105,7 @@ function provenance(
   if (kind === "repo")
     return "- Source kind: `repo`\n- Canonical specification: `repo:requirements/demo.md`\n- Accepted revision/base: `blob-123`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`";
   if (kind === "inline")
-    return `- Source kind: \`inline\`\n- Canonical specification: \`inline-approved:sha256:${inlineHash}\`\n- Accepted revision/base: \`sha256:${inlineHash}\`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: \`verified\`\n- Last verified at: \`2026-08-27T12:00:00Z\``;
+    return `- Source kind: \`inline\`\n- Canonical specification: \`inline-approved:sha256:${inlineHash}\`\n- Accepted revision/base: \`sha256:${inlineHash}\`\n- Local materialization: [spec](spec/)\n- Materialization receipt: None\n- Last verification status: \`verified\`\n- Last verified at: \`2026-08-27T12:00:00Z\``;
   if (receiptBase === undefined)
     return "- Source kind: `external`\n- Canonical specification: [Exact document](https://example.com/specification/demo)\n- Accepted revision/base: `base-1`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `missing`\n- Last verified at: None";
   return `- Source kind: \`external\`\n- Canonical specification: [Exact document](https://example.com/specification/demo)\n- Accepted revision/base: \`base-1\`\n- Local materialization: [spec](spec/)\n- Materialization receipt: [receipt](artifacts/spec-sync/materializations/${receiptBase}.json)\n- Last verification status: \`verified\`\n- Last verified at: \`2026-08-27T12:00:00Z\``;
@@ -159,6 +159,14 @@ async function project(
           },
         ],
       }),
+    );
+  }
+  if (kind === "inline") {
+    await mkdir(join(work, "spec"), { recursive: true });
+    await writeFile(join(work, "spec/README.md"), "# Inline specification\n");
+    await writeFile(
+      join(work, "spec/provenance.json"),
+      JSON.stringify({ source_kind: "inline" }),
     );
   }
   return work;

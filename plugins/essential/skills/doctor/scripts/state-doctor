@@ -1356,14 +1356,60 @@ def check_specification_provenance(
                 "Use matching `inline-approved:sha256:<64-lowercase-hex>` and `sha256:<same-hash>` identities.",
             )
             return
-    if source_kind != "external" and (local != "None" or receipt != "None"):
+        local_links = markdown_link_spans(local)
+        if (
+            len(local_links) != 1
+            or local[: local_links[0][0]].strip()
+            or local[local_links[0][1] :].strip()
+            or local_links[0][3].strip() != "spec/"
+        ):
+            specification_issue(
+                report,
+                work,
+                phase,
+                "inline specification has no work-local spec/ materialization",
+                "Link the approved inline copy as `[spec](spec/)` in goal.md.",
+            )
+            return
+        if receipt != "None":
+            specification_issue(
+                report,
+                work,
+                phase,
+                "inline specification carries an external materialization receipt",
+                "Keep inline provenance in spec/provenance.json and set Materialization receipt to None.",
+            )
+            return
+        if verification == "verified":
+            spec_root = work_dir / "spec"
+            if not spec_root.is_dir():
+                specification_issue(
+                    report,
+                    work,
+                    phase,
+                    "verified inline specification is missing its work-local copy",
+                    "Write spec/README.md and spec/provenance.json before marking the inline source verified.",
+                )
+                return
+            required_files = (spec_root / "README.md", spec_root / "provenance.json")
+            if not all(path.is_file() for path in required_files):
+                specification_issue(
+                    report,
+                    work,
+                    phase,
+                    "verified inline specification is missing spec/README.md or spec/provenance.json",
+                    "Write both required inline work-local specification files before verification.",
+                )
+                return
+    if source_kind in {"repo", "none", "pending"} and (
+        local != "None" or receipt != "None"
+    ):
         specification_issue(
             report,
             work,
             phase,
-            "local or inline authority carries external materialization anchors",
-            "Keep local/inline provenance in the active work state and keep both "
-            "external materialization fields None.",
+            "repository or unresolved authority carries external materialization anchors",
+            "Keep repository and unresolved provenance in the active work state and keep both external materialization fields None.",
         )
         return
     if verification == "verified" and re.fullmatch(

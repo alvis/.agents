@@ -8,7 +8,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -67,7 +67,17 @@ function writeTemplate(
     readonly body?: string;
   } = {},
 ): string {
-  const template = resolve(pluginRoot, "agents", name);
+  const sourcePluginRoot =
+    basename(dirname(pluginRoot)) === "plugins"
+      ? pluginRoot
+      : resolve(pluginRoot, "plugins/coding");
+  const essentialRoot = resolve(sourcePluginRoot, "../essential");
+  mkdirSync(resolve(essentialRoot, "references"), { recursive: true });
+  writeFileSync(
+    resolve(essentialRoot, "references/state-systems.md"),
+    "state systems",
+  );
+  const template = resolve(sourcePluginRoot, "agents", name);
   mkdirSync(resolve(template, "frontmatter"), { recursive: true });
   writeFileSync(
     resolve(template, "frontmatter/meta.json"),
@@ -265,6 +275,10 @@ describe("agent stitching", () => {
     const direction = resolve(essential, "references/directions/lead-agent.md");
     mkdirSync(dirname(direction), { recursive: true });
     writeFileSync(direction, "direction");
+    writeFileSync(
+      resolve(essential, "references/state-systems.md"),
+      "state systems",
+    );
     const template = writeTemplate(resolve(root, "plugins/coding"), "lead", {
       body: `# Lead\n\nApply @essential:references/directions/lead-agent.md.\n${memory("lead")}`,
     });

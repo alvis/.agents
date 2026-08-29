@@ -908,10 +908,19 @@ describe("state-doctor stream and lifecycle tail parity", () => {
         ?.message,
     ).toContain("local specification copy bytes do not match");
   });
-  it("accepts inline authority without external materialization anchors", async () => {
+  it("accepts an inline authority with its work-local materialization", async () => {
+    await mkdir(join(workspace.workDir, "spec"), { recursive: true });
+    await writeFile(
+      join(workspace.workDir, "spec/README.md"),
+      "# Inline specification\n",
+    );
+    await writeFile(
+      join(workspace.workDir, "spec/provenance.json"),
+      JSON.stringify({ source_kind: "inline" }),
+    );
     await writeFile(
       join(workspace.workDir, "goal.md"),
-      "# Charter\n\n- Charter: `approved`\n- Charter revision: `1`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: `inline`\n- Canonical specification: `inline-approved:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n- Accepted revision/base: `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`\n",
+      "# Charter\n\n- Charter: `approved`\n- Charter revision: `1`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: `inline`\n- Canonical specification: `inline-approved:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n- Accepted revision/base: `sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n- Local materialization: [spec](spec/)\n- Materialization receipt: None\n- Last verification status: `verified`\n- Last verified at: `2026-08-27T12:00:00Z`\n",
     );
     expect(
       selected(workspace.run().findings, "specification-provenance"),
