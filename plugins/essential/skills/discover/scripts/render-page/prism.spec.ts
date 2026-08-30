@@ -143,6 +143,24 @@ describe("fn:evaluatePrism", () => {
     expect(prism.tokenize("const x", "zsh")).toHaveLength(1);
   });
 
+  it("should spell a language the way the alias table itself spells it", () => {
+    // the alias table is keyed by what the author wrote, so a plain object
+    // would spell `constructor` as a function and lose the grammar that is
+    // actually there under that name
+    const prism = evaluatePrism(TOY.replace("toy:", "constructor:"));
+
+    expect(prism.tokenize("const x", "constructor")).toHaveLength(1);
+  });
+
+  it("should measure nothing for a grammar only Object.prototype answers to", () => {
+    // the bundle publishes its grammars as a plain object too, and every one
+    // of these reads back a function from its prototype rather than a grammar
+    const prism = evaluatePrism(TOY);
+
+    for (const name of ["toString", "valueOf", "hasOwnProperty"])
+      expect(prism.tokenize("const x", name)).toStrictEqual([]);
+  });
+
   it("should refuse a bundle that publishes no tokenizer", () => {
     expect(() => evaluatePrism("var Prism = { languages: {} };")).toThrow(
       new RenderError(

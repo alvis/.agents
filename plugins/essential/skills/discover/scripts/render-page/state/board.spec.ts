@@ -20,6 +20,7 @@ const DONE: Task = {
 /** the stream every case below starts from. */
 const STREAM: Stream = {
   id: "alpha",
+  claimed: "",
   phase: "working",
   phaseKey: "Phase",
   updated: "2026-08-29T09:00:00Z",
@@ -33,14 +34,17 @@ const STREAM: Stream = {
  * builds a board out of the streams a case cares about
  * @param streams the streams on the board
  * @param excluded the streams it set aside
+ * @param project the project the tree was read from
  * @returns the page data
  */
 function board(
   streams: Partial<Stream>[] = [{}],
   excluded: Tree["excluded"] = [],
+  project = "sample",
 ): PageData {
   return stateBoard(
     {
+      project,
       streams: streams.map((stream) => ({ ...STREAM, ...stream })),
       excluded,
     },
@@ -75,6 +79,22 @@ describe("fn:stateBoard", () => {
 
     expect(html).toMatch(/^<!doctype html>/u);
     expect(html).toContain('data-kind="project-state"');
+  });
+
+  it("should tell two boards apart by the projects they were read from", () => {
+    // the id is what the runtime saves a reader's notes under, so one id for
+    // every tree this mode is pointed at is one set of notes for all of them:
+    // the annotations written against one project's blockers would come back
+    // on another's. It is also what a run lists a board by, so two of them
+    // under one id is a run refused for a duplicate no author ever wrote
+    expect(board([{}], [], "alpha").id).toBe("project-state-alpha");
+    expect(board([{}], [], "beta").id).toBe("project-state-beta");
+  });
+
+  it("should still name itself where the tree names no project", () => {
+    // a tree directly beneath the filesystem root has no directory to be
+    // named after, and there is only ever one of those to collide with
+    expect(board([{}], [], "").id).toBe("project-state");
   });
 
   it("should ask nothing, so its drawer offers no reply to send", () => {
@@ -197,6 +217,44 @@ describe("fn:stateBoard", () => {
     expect(JSON.stringify(blocksOf(board(), "reading", "callout"))).not.toContain(
       "spelled more than one way",
     );
+  });
+
+  it("should read a task status however the file capitalised it", () => {
+    // the row an operations board exists to surface is the blocked one, and
+    // `Blocked` typed with a capital read as ordinary work
+    const shouty = board([
+      {
+        tasks: [
+          { ...DONE, id: "AAA02", mark: "-", status: "Blocked", unblock: "ask Ada" },
+        ],
+      },
+    ]);
+
+    expect(JSON.stringify(blocksOf(shouty, "blocked", "table"))).toContain(
+      "AAA02",
+    );
+    expect(
+      JSON.stringify(blocksOf(board([{ tasks: [{ ...DONE, status: "Done" }] }]), "recent", "timeline"),
+      ),
+    ).toContain('"done"');
+  });
+
+  it("should name a file that records a work id other than its own", () => {
+    const said = JSON.stringify(
+      blocksOf(
+        board([{ id: "alpha", claimed: "beta" }]),
+        "reading",
+        "callout",
+      ),
+    );
+
+    expect(said).toContain("alpha records beta");
+  });
+
+  it("should say nothing about work ids where every file agrees", () => {
+    expect(
+      JSON.stringify(blocksOf(board(), "reading", "callout")),
+    ).not.toContain("work id that is not its own");
   });
 
   it("should report the rows it could not read, rather than quietly dropping them", () => {

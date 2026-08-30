@@ -121,7 +121,7 @@
       "blurb": "A working screen embedded in the board, driveable at the widths it was designed for."
     },
     {
-      "id": "project-state",
+      "id": "project-state-agents",
       "label": "Project state",
       "data": "project-state.json",
       "out": "project-state.html",

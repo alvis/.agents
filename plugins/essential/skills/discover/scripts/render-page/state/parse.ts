@@ -32,8 +32,18 @@ export interface Task {
 
 /** one workstream, as its `state.md` records it. */
 export interface Stream {
-  /** the work id, which is also its directory name */
+  /** the work id, which is its directory name */
   id: string;
+  /**
+   * the `Work ID` its file records, where that is not the directory name.
+   *
+   * the directory is what a stream is addressed by and a filesystem cannot
+   * hold two of one name, so it is the id. A file claiming another name is a
+   * fact about the record — obeyed, it would let one stream take another's
+   * place on the board, or take the name of one the board excludes — so it is
+   * carried and drawn beside the phase spelling rather than acted on.
+   */
+  claimed: string;
   /** the lifecycle phase it reports */
   phase: string;
   /**
@@ -54,6 +64,21 @@ export interface Stream {
   tasks: Task[];
   /** rows the table held that could not be read as tasks */
   malformed: number;
+}
+
+/**
+ * whether a word the record wrote is the word being asked about.
+ *
+ * the file's own spelling is what this board draws, so the folding happens at
+ * the comparison rather than in the data: a stream whose phase reads
+ * `Completed` is completed however it was typed, and a row whose status reads
+ * `Blocked` is the row an operations board exists to surface.
+ * @param recorded the value exactly as the file wrote it
+ * @param word the word being asked about, in lower case
+ * @returns true where the two are the same word
+ */
+export function says(recorded: string, word: string): boolean {
+  return recorded.toLowerCase() === word;
 }
 
 /**
@@ -190,10 +215,12 @@ function tasks(lines: string[]): [Task[], number] {
 export function parseStream(id: string, text: string): Stream {
   const lines = text.split("\n");
   const phaseKey = PHASE_KEYS.find((key) => header(lines, key)) ?? "";
+  const claimed = header(lines, "Work ID");
   const [found, malformed] = tasks(lines);
 
   return {
-    id: header(lines, "Work ID") || id,
+    id,
+    claimed: claimed === id ? "" : claimed,
     phase: phaseKey ? header(lines, phaseKey) : "",
     phaseKey,
     updated: header(lines, "Updated"),

@@ -44,6 +44,35 @@ afterEach(async () => {
 });
 
 describe("fn:readTree", () => {
+  it("should name the project by the directory that holds the tree", async () => {
+    await fixture(
+      root,
+      "Some Project/.state/works/one/state.md",
+      "# Work state\n\n- Phase: `working`\n",
+    );
+
+    const tree = await readTree(join(root, "Some Project/.state"), NOW);
+
+    // a slug, because the name becomes the board's id and the storage key
+    // beneath it, and neither is a place for a space or a leading dot
+    expect(tree.project).toBe("some-project");
+  });
+
+  it("should tell two trees apart by the projects they sit in", async () => {
+    for (const name of ["alpha", "beta"])
+      await fixture(
+        root,
+        `${name}/.state/works/one/state.md`,
+        "# Work state\n\n- Phase: `working`\n",
+      );
+
+    const named = [];
+    for (const name of ["alpha", "beta"])
+      named.push((await readTree(join(root, name, ".state"), NOW)).project);
+
+    expect(named).toStrictEqual(["alpha", "beta"]);
+  });
+
   it("should read every live workstream, in a fixed order", async () => {
     await stream("works/zulu", "working");
     await stream("works/alpha", "reviewing");
@@ -90,6 +119,15 @@ describe("fn:readTree", () => {
           "completed and last updated 2026-07-24T16:10:00Z, past the 3-day window",
       },
     ]);
+  });
+
+  it("should read a phase however the file capitalised it", async () => {
+    // the record's spelling is what the board draws, so the folding belongs
+    // at the comparison: a stream typed `Completed` that nobody has touched
+    // since July sat on the board as live work
+    await stream("works/shouty", "COMPLETED", "2026-07-24T16:10:00Z");
+
+    expect((await readTree(root, NOW)).streams).toStrictEqual([]);
   });
 
   it("should keep an unfinished stream however old it is", async () => {

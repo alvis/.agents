@@ -1,6 +1,6 @@
 {
   "kind": "project-state",
-  "id": "project-state",
+  "id": "project-state-agents",
   "action": "Read where the work stands",
   "title": "Project state",
   "masthead": {
@@ -22,7 +22,7 @@
       },
       {
         "label": "Read at",
-        "value": "2026-08-29 14:00Z"
+        "value": "2026-08-29 14:41Z"
       }
     ]
   },
@@ -203,8 +203,8 @@
             },
             {
               "label": "page-renderer",
-              "value": 15,
-              "of": 17,
+              "value": 16,
+              "of": 18,
               "note": "working"
             },
             {
@@ -249,7 +249,7 @@
             {
               "name": "PM",
               "role": "page-renderer",
-              "due": "Batch 2 is delivered and independently reviewed. …"
+              "due": "Batch 2 is delivered, independently reviewed, and driven. …"
             },
             {
               "name": "PM",
@@ -285,7 +285,7 @@
           "type": "timeline",
           "items": [
             {
-              "when": "2026-08-29T13:45:00Z",
+              "when": "2026-08-29T14:05:00Z",
               "title": [
                 {
                   "kind": "code",
@@ -294,7 +294,7 @@
                 " — ",
                 {
                   "kind": "mark",
-                  "text": "Batch 2 is delivered and independently reviewed."
+                  "text": "Batch 2 is delivered, independently reviewed, and driven."
                 },
                 {
                   "kind": "dim",
@@ -522,10 +522,10 @@
                   "text": "working"
                 },
                 {
-                  "text": "2026-08-29T13:45:00Z"
+                  "text": "2026-08-29T14:05:00Z"
                 },
                 {
-                  "text": "17"
+                  "text": "18"
                 }
               ]
             },

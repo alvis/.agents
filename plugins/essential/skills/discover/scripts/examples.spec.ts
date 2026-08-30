@@ -175,6 +175,25 @@ describe("the example board set", () => {
     }
   });
 
+  it("should render the same bytes twice, from two directories", async () => {
+    // a rendered board is reviewable only where a diff that shows a change is
+    // a change. Nothing in the render path reads a clock today, but three
+    // formatters run as subprocesses and the output directory is handed in,
+    // so a stamp, a random id or a leaked path would all land here. The two
+    // renders go to two temporary directories, which is why the comparison is
+    // by name: a directory that reached the bytes shows up as a difference
+    const [first, second] = [await renderExamples(), await renderExamples()];
+    const named = (boards: Record<string, string>): Map<string, string> =>
+      new Map(
+        Object.entries(boards).map(([file, html]) => [basename(file), html]),
+      );
+    const before = named(first);
+    const after = named(second);
+
+    expect([...after.keys()]).toStrictEqual([...before.keys()]);
+    for (const [name, html] of before) expect(after.get(name), name).toBe(html);
+  });
+
   it("should fetch nothing over the network, in any board", async () => {
     const boards = await renderExamples();
 

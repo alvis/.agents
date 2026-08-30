@@ -1,7 +1,7 @@
 import { lstat, readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
-import { parseStream } from "./parse.ts";
+import { parseStream, says } from "./parse.ts";
 
 import type { Stream } from "./parse.ts";
 
@@ -38,10 +38,31 @@ export interface Excluded {
 
 /** everything one `.state` tree had to say. */
 export interface Tree {
+  /** the project the tree was read from, named after its directory */
+  project: string;
   /** the streams the board draws */
   streams: Stream[];
   /** the ones it read and set aside, each with its reason */
   excluded: Excluded[];
+}
+
+/**
+ * names the project a tree was read from.
+ *
+ * the directory holding `.state` is the project, and its name is what a reader
+ * calls it. It is folded to a slug because it becomes both a board id and the
+ * storage key beneath it, and a key is not the place for a space or a leading
+ * dot. Two projects of one name under different parents still answer to one
+ * slug — a run holding both is refused by name, which is the right answer, and
+ * two rendered apart is the residue this cannot reach from a directory alone.
+ * @param stateDir the `.state` directory the tree was read from
+ * @returns the project's name as a slug, empty where it has no directory
+ */
+function projectOf(stateDir: string): string {
+  return basename(dirname(stateDir))
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, "-")
+    .replace(/^-+|-+$/gu, "");
 }
 
 /**
@@ -110,7 +131,7 @@ export async function readTree(stateDir: string, now: Date): Promise<Tree> {
       continue;
     }
     const stream = parseStream(entry, text);
-    if (stream.phase === "completed" && !withinGrace(stream, now)) {
+    if (says(stream.phase, "completed") && !withinGrace(stream, now)) {
       excluded.push({
         id: entry,
         reason: `completed and last updated ${stream.updated || "at an unrecorded time"}, past the ${GRACE_DAYS}-day window`,
@@ -120,5 +141,5 @@ export async function readTree(stateDir: string, now: Date): Promise<Tree> {
     streams.push(stream);
   }
 
-  return { streams, excluded };
+  return { project: projectOf(stateDir), streams, excluded };
 }

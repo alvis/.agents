@@ -14,8 +14,10 @@ const DARK_TOKENS = `
   --ui-amber:oklch(.82 .11 74); --ui-amber-soft:oklch(.31 .055 70); --ui-amber-ink:oklch(.92 .05 82);
   --ui-critical:oklch(.7 .15 30); --ui-critical-soft:oklch(.31 .07 30); --ui-critical-ink:oklch(.9 .06 34);
   --ui-focus:oklch(.79 .14 52); --ui-shadow:0 5px 18px oklch(.03 .01 62/.32);
-  --tag-architectural:oklch(.77 .075 200); --tag-architectural-soft:oklch(.285 .045 200); --tag-architectural-ink:oklch(.9 .048 200);
+  --tag-architectural:oklch(.77 .075 200); --tag-architectural-soft:oklch(.285 .045 200); --tag-architectural-ink:oklch(.87 .058 200);
   --tag-ideal:oklch(.74 .115 278); --tag-ideal-soft:oklch(.295 .055 278); --tag-ideal-ink:oklch(.9 .055 282);
+  --tag-pragmatic:oklch(.76 .12 334); --tag-pragmatic-soft:oklch(.3 .06 334); --tag-pragmatic-ink:oklch(.9 .06 334);
+  --tag-hotfix-ink:oklch(.87 .075 30);
 `.trim();
 
 /** the design tokens every rule reads, in both colour schemes. */
@@ -30,18 +32,22 @@ export const TOKEN_CSS = `
   --ui-critical:#b0402f; --ui-critical-soft:#f6e2dc; --ui-critical-ink:#7a2a1e;
   --ui-focus:#b85c3e; --ui-shadow:0 10px 26px rgba(45,41,32,.11);
   /* one triple per tag in questions.md's closed vocabulary, in that reference's
-     order. Four alias a family the page already owns, so they follow it into
-     dark without a second definition; teal and indigo are new, and are the only
-     two the dark block has to restate. Without these, Architectural, Ideal and
-     Pragmatic were the same accent as each other and Hotfix the same amber as
-     Workaround, so a badge said which vocabulary it came from and nothing more.
-     Recommended takes the positive family deliberately: agreeing with the page
-     is one colour, and a recommended option and a confirmed answer are the
-     same act seen before and after. */
+     order. Three alias a family the page already owns and follow it into dark
+     without a second definition; teal, indigo and plum belong to the tags, and
+     are what the dark block restates. Pragmatic is a plum rather than the
+     page's accent because accent, critical and amber are three warm hues
+     inside forty degrees of each other: in dark their inks sat 0.024 apart in
+     OKLab, one just-noticeable difference, so a Pragmatic badge and a Hotfix
+     badge were the same badge. Hotfix restates one ink in dark for the same
+     reason, which keeps that nudge on the badge rather than on every critical
+     callout. Recommended takes the positive family deliberately: agreeing with
+     the page is one colour, and a recommended option and a confirmed answer
+     are the same act seen before and after. token.spec.ts measures what a
+     reader can actually tell apart and holds it to a threshold. */
   --tag-architectural:#29777f; --tag-architectural-soft:#dff4f5; --tag-architectural-ink:#09565d;
   --tag-ideal:#5a60aa; --tag-ideal-soft:#eef0fe; --tag-ideal-ink:#3f4289;
   --tag-recommended:var(--ui-positive); --tag-recommended-soft:var(--ui-positive-soft); --tag-recommended-ink:var(--ui-positive-ink);
-  --tag-pragmatic:var(--ui-accent); --tag-pragmatic-soft:var(--ui-accent-soft); --tag-pragmatic-ink:var(--ui-accent-ink);
+  --tag-pragmatic:#8f4182; --tag-pragmatic-soft:#fce8f8; --tag-pragmatic-ink:#732668;
   --tag-hotfix:var(--ui-critical); --tag-hotfix-soft:var(--ui-critical-soft); --tag-hotfix-ink:var(--ui-critical-ink);
   --tag-workaround:var(--ui-amber); --tag-workaround-soft:var(--ui-amber-soft); --tag-workaround-ink:var(--ui-amber-ink);
   --radius-control:.85rem; --radius-card:1.25rem;

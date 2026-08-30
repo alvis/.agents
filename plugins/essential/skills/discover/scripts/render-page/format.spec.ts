@@ -41,12 +41,18 @@ describe("const:FORMATTERS", () => {
   it("should reach prettier first wherever prettier parses the language", () => {
     // prettier is the tool most likely to already be installed, so a language
     // it parses should never fall through to something rarer
-    expect(FORMATTERS.typescript[0].command).toBe("prettier");
-    expect(FORMATTERS.json[0].command).toBe("prettier");
-    expect(FORMATTERS.python.map(({ command }) => command)).toStrictEqual([
-      "ruff",
-      "black",
-    ]);
+    expect(FORMATTERS.get("typescript")?.[0].command).toBe("prettier");
+    expect(FORMATTERS.get("json")?.[0].command).toBe("prettier");
+    expect(FORMATTERS.get("python")?.map(({ command }) => command)).toStrictEqual(
+      ["ruff", "black"],
+    );
+  });
+
+  it("should hold no language Object.prototype lends it", () => {
+    // the table is a lookup keyed by what the author wrote, so a plain object
+    // would answer `constructor` with a function where this promises a list
+    for (const name of ["constructor", "toString", "valueOf", "hasOwnProperty"])
+      expect(FORMATTERS.get(name)).toBeUndefined();
   });
 });
 
@@ -145,6 +151,20 @@ describe("fn:formatCodeBlocks", () => {
     expect((data.sections[0].blocks[0] as { code: string }).code).toBe(
       "const a = 1;",
     );
+  });
+
+  it("should pass through a language only Object.prototype answers to", () => {
+    // the walk hands this an author-supplied name, so a plain lookup table
+    // reads a function back for `constructor` and crashes with a raw
+    // TypeError where an unknown language should pass through in silence
+    const tools = fake([]);
+    const data = board([
+      { type: "code", language: "constructor", code: "x  y" },
+    ]);
+    formatCodeBlocks(data, tools);
+
+    expect((data.sections[0].blocks[0] as { code: string }).code).toBe("x  y");
+    expect(tools.warnings).toStrictEqual([]);
   });
 
   it("should probe once a run rather than once a block", () => {

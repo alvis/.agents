@@ -1,4 +1,5 @@
 import { leadRuns, leadText } from "./lead.ts";
+import { says } from "./parse.ts";
 import { readingSection } from "./reading.ts";
 
 import type { Block, Metric, PageData, Section } from "../types.ts";
@@ -19,7 +20,7 @@ const BLOCKER_COLUMNS = ["Stream", "Task", "What is stuck", "Owner", "Unblock"];
  * @returns true where it is blocked
  */
 function isBlocked(task: Task): boolean {
-  return task.mark === "!" || task.status === "blocked";
+  return task.mark === "!" || says(task.status, "blocked");
 }
 
 /**
@@ -28,7 +29,7 @@ function isBlocked(task: Task): boolean {
  * @returns true where it is done
  */
 function isDone(task: Task): boolean {
-  return task.status === "done";
+  return says(task.status, "done");
 }
 
 /**
@@ -180,7 +181,7 @@ function recentSection(streams: Stream[]): Section {
           state:
             stream.tasks.length && stream.tasks.every(isDone)
               ? ("done" as const)
-              : stream.tasks.some((task) => task.status === "working")
+              : stream.tasks.some((task) => says(task.status, "working"))
                 ? ("active" as const)
                 : ("pending" as const),
           tags: [stream.phase || "phase unrecorded"],
@@ -211,7 +212,11 @@ export function stateBoard(tree: Tree, at: string): PageData {
 
   return {
     kind: "project-state",
-    id: "project-state",
+    // the tree the board was read from names it, because the id is also the
+    // key its reader's notes are saved under: one constant for every tree
+    // this mode is ever pointed at is one set of notes for all of them, and a
+    // run holding two state boards is refused for a duplicate no author wrote
+    id: tree.project ? `project-state-${tree.project}` : "project-state",
     action: "Read where the work stands",
     title: "Project state",
     masthead: {
