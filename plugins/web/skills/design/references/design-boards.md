@@ -51,7 +51,7 @@ One use of the graphical or structured user-input tool per board (never batch tw
 - The reviewer-ranked **#1 candidate is the stated safe default**, marked "(Recommended)" and listed first.
 - The final option is always an escape hatch: **"Another variant or mix — name the number(s)"** — this is how users pick #4+ or combine pieces, since all candidates stay numbered in the image.
 - **Mix-and-match loop**: build ONE merged tile from the named pieces, append it to the board (with its own rank assessment), re-present (A4), re-ask. Loop until an explicit pick.
-- **Record immediately** after each pick in the active work design child's decision-log section: every presented candidate's concrete design details, the chosen candidate, every rejected candidate with a one-line reason, the confirmation or auto-pick rationale, and any adjustment answers. Do not defer recording to the end of the run.
+- **Return immediately** after each pick every presented candidate's concrete design details, the chosen candidate, every rejected candidate with a one-line reason, the confirmation or auto-pick rationale, and any adjustment answers. The main agent records that delta in the active work design child's decision log; do not defer it to the end of the run.
 
 ### A6. Cleanup
 
@@ -201,4 +201,4 @@ After all content areas are picked, run ONE more board for the cross-cutting cho
 
 ### C5. `--quick` Mode
 
-When the run has `--quick`, `N`-variant area boards are still generated and ranked but not presented one-by-one: the reviewer-ranked #1 variant of every board is auto-picked, each pick and its rank rationale are recorded in the active work design child, and the full set is summarized at the sign-off gate so the user can overturn any pick.
+When the run has `--quick`, `N`-variant area boards are still generated and ranked but not presented one-by-one: the reviewer-ranked #1 variant of every board is auto-picked, each pick and its rank rationale are returned for the main agent to record in the active work design child, and the full set is summarized at the sign-off gate so the user can overturn any pick.

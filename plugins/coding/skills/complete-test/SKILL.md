@@ -8,8 +8,7 @@ argument-hint: "[scope] [--framework=<name>]"
 
 # Complete test
 
-Before any `jj` decision or command, follow
-`coding:references/jj.md`.
+Before any `jj` decision or command, follow `coding:references/jj.md`.
 
 Own test authoring and test-suite maintenance. Do not implement production behavior, rewrite a failing application fix, or create placeholders for unspecified features.
 
@@ -21,21 +20,12 @@ Own test authoring and test-suite maintenance. Do not implement production behav
 ## Inputs
 
 - Required: scope — files, package, feature, or explicit pending-test marker.
-- Optional: framework and existing test paths. Coverage is fixed at 100% for
-  statements, branches, functions, and lines in every selected source file.
+- Optional: framework and existing test paths. Coverage is fixed at 100% for statements, branches, functions, and lines in every selected source file.
 - Prerequisites: read project test scripts/configuration and the source under test before editing.
 
 ## State gate
 
-Before creating or materially rewriting a project artifact, read the absolute
-`state.md` path injected by Essential. If unavailable, stop artifact
-writes and report the missing contract. Resolve the active work root first.
-When delegated, start from the mission capsule's exact work root and relevant
-specification, review, and evidence paths. Read `state/working.md` only when the
-capsule lacks current navigation; read `state.md` only for resume, cross-slice
-dependency, or alignment work. Never write PM-owned work pointers or overviews.
-The caller/PM uses the resolver, asks only on `work_id_required`, and gives a
-delegated run the explicit resolved work ID/root.
+Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work root first. When delegated, start from the mission capsule's exact work root and relevant specification, review, and evidence paths. Read `state/working.md` only when the capsule lacks current navigation; read `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned work pointers or overviews. The main-agent caller uses the resolver, asks only on `work_id_required`, and gives a delegated run the explicit resolved work ID/root.
 
 ## Workflow
 
@@ -52,16 +42,8 @@ Load [references/orchestration.md](references/orchestration.md) for the full coo
 
 ## Verification
 
-Require passing focused and full suites, 100% statements, branches, functions,
-and lines in every selected source file, and no remaining owned pending markers.
-Report batches, files/cases added and removed, fixture migrations, focused/full
-commands, independent-review result, aggregate metrics, and all four per-source
-metrics. If any metric cannot reach 100%, report the concrete blocker and do not
-claim completion.
+Require passing focused and full suites, 100% statements, branches, functions, and lines in every selected source file, and no remaining owned pending markers. Report batches, files/cases added and removed, fixture migrations, focused/full commands, independent-review result, aggregate metrics, and all four per-source metrics. If any metric cannot reach 100%, report the concrete blocker and do not claim completion.
 
 ## Completion
 
-Return a concise test report. Do not claim production implementation, bug fixes, or coverage for code outside the selected scope.
-Return every created or materially rewritten path as `generated_files` to the
-PM. Do not run file sizing; after all artifact writers finish, the PM checks
-only eligible work Markdown inside the target `.state/`.
+Return a concise test report. Do not claim production implementation, bug fixes, or coverage for code outside the selected scope. Return every created or materially rewritten path as `generated_files` to the main agent. Do not run file sizing; after all artifact writers finish, the main agent checks only eligible work Markdown inside the target `.state/`.

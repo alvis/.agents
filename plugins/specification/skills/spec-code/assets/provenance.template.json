@@ -1,11 +1,11 @@
 {
   "schema": "specification-provenance-v1",
-  "source_kind": "<inline|local|notion>",
+  "source_kind": "<inline|local>",
   "source_locators": [
     "<stable source locator>"
   ],
-  "source_revision": "<git-blob-oid-or-notion-revision-or-empty>",
-  "carrier_revision": "<git-blob-oid-or-empty>",
+  "source_revision": "<git-blob-oid-or-empty>",
+  "materialization_revision": "<git-blob-oid-or-empty>",
   "approved_content_ref": "<durable reachable locator to approved content>",
   "body_author": {
     "capability_id": "<plugin>:<skill>",
@@ -15,21 +15,21 @@
     {
       "id": "<stable logical unit id>",
       "source_path": "<source section, block, or path>",
-      "output_path": "docs/specs/<capability>/README.md"
+      "output_path": "spec/README.md"
     },
     {
       "id": "<consumer reference logical unit id; remove when reference.md is absent>",
       "source_path": "<source interface section; remove when reference.md is absent>",
-      "output_path": "docs/specs/<capability>/reference.md"
+      "output_path": "spec/reference.md"
     }
   ],
   "outputs": [
     {
-      "path": "docs/specs/<capability>/README.md",
+      "path": "spec/README.md",
       "exact_sha256": "sha256:<64-lowercase-hex>"
     },
     {
-      "path": "docs/specs/<capability>/reference.md",
+      "path": "spec/reference.md",
       "exact_sha256": "sha256:<64-lowercase-hex>"
     }
   ],

@@ -1,13 +1,10 @@
 # DOCUMENT Mode — Codebase-Extraction Workflow
 
-DOCUMENT mode derives specification content from an existing codebase. It
-updates the active work specification and ultimately the versioned capability
-docs; it implies no remote destination.
+DOCUMENT mode derives specification content from an existing codebase. It updates the active work specification and provenance; it implies no remote destination.
 
 ## When DOCUMENT Mode Activates
 
-- A codebase exists but no authoritative capability specification is present,
-  OR
+- A codebase exists but no authoritative capability specification is present, OR
 - The instruction explicitly requests documentation of existing code.
 
 ## Step A — Analyze Existing Codebase (Step 1.3 in parent workflow)
@@ -68,37 +65,23 @@ DOCUMENT mode does NOT research; it extracts.
 
 ## Step G — Artifact generation
 
-- Generate work-local design evidence and a specification for the explicitly
-  selected destination based on code analysis.
+- Generate work-local design evidence and a specification for the explicitly selected destination based on code analysis.
 - Document actual implementation under template sections.
 - Fill all template sections with discovered information.
 - Note where the implementation differs from best practices (if relevant).
 - Apply transport and derivation metadata from `references/frontmatter.md`.
-- For a local or inline destination, author the work-local specification and
-  derive reviewed versioned capability docs directly. Do not search a Notion
-  database, create a remote page, author MDC, or claim a 1:1 remote mapping.
-- Only for an explicitly selected Notion destination, require the caller's
-  exact `--body-author=<plugin:skill>`; select `specification:mdc` for MDC,
-  author through that installed capability, and follow the transport flow
-  below.
+- For a local or inline destination, author and review the work-local specification directly. Do not search a Notion database, create a remote page, author MDC, or claim a 1:1 remote mapping.
+- Only for an explicitly selected Notion destination, require the caller's exact `--body-author=<plugin:skill>`; select `specification:mdc` for MDC, author through that installed capability, and follow the transport flow below.
 
 ## Notion sync considerations
 
 Only when the caller explicitly selects a Notion destination:
 
-- Preserve existing properties. Set or change a property only when the caller
-  supplies an explicit destination-owned mapping and the approved body-author
-  policy authorizes that value; this marketplace defines no status labels.
-- For a new page, author the explicit local transport path with its parent first
-  through the bound `body_author`, then
-  create it through `Skill(sync-notion)`, accept the canonical `ref` only from
-  its conformance-bound create output, and verification-pull that identity.
-- For an existing paired specification, delegate completion to
-  `Skill(sync-spec)`, which delegates transport and conflict mechanics to
-  `Skill(sync-notion)`.
+- Preserve existing properties. Set or change a property only when the caller supplies an explicit destination-owned mapping and the approved body-author policy authorizes that value; this marketplace defines no status labels.
+- For a new page, author the explicit local transport path with its parent first through the bound `body_author`, then create it through `Skill(sync-notion)`, accept the canonical `ref` only from its conformance-bound create output, and verification-pull that identity.
+- For an existing paired specification, delegate completion to `Skill(sync-spec)`, which delegates transport and conflict mechanics to `Skill(sync-notion)`.
 
-Do not infer a Notion destination from installed tooling, template metadata, a
-project convention, or the absence of a local source.
+Do not infer a Notion destination from installed tooling, template metadata, a project convention, or the absence of a local source.
 
 ## Examples
 
@@ -108,7 +91,7 @@ project convention, or the absence of a local source.
 # Extracts package name from package.json (e.g., "express-api").
 # Analyzes structure, extracts tech stack, documents architecture from code.
 # Identifies components, extracts API endpoints from route files.
-# Generates work-local evidence and reviewed versioned capability docs.
+# Generates work-local evidence and a reviewed specification.
 # No Notion database search, page creation, MDC, or remote sync occurs.
 ```
 
@@ -128,6 +111,6 @@ project convention, or the absence of a local source.
 # Partial-codebase DOCUMENT.
 # Analyzes auth-related files only.
 # Documents auth component architecture and API endpoints.
-# Produces a focused local capability specification and durable derivation.
+# Produces a focused local capability specification and work-local provenance.
 # Does not search or mutate a remote database.
 ```

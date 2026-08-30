@@ -72,6 +72,11 @@ export const leadAgentDirectionAlias =
   "@essential:references/directions/lead-agent.md";
 /** Plugin-relative path the alias resolves against an Essential root. */
 export const leadAgentDirectionPath = "references/directions/lead-agent.md";
+/** Reference alias injected into every stitched agent's state-system contract. */
+export const stateSystemsReferenceAlias =
+  "@essential:references/state-systems.md";
+/** Plugin-relative path of the injected state-system authority. */
+export const stateSystemsReferencePath = "references/state-systems.md";
 const metadataFields = new Set(["name", "description", "intelligence"]);
 const claudeDerivedFields = new Set([
   "name",
@@ -468,18 +473,20 @@ export function validateAgentContract(
 }
 
 function deriveEssentialRoot(templateDirectory: string): string | undefined {
+  const referencePaths = [leadAgentDirectionPath, stateSystemsReferencePath];
+  const hasReference = (root: string): boolean =>
+    referencePaths.some((path) => existsSync(resolve(root, path)));
   let current = realpathSync(templateDirectory);
   while (dirname(current) !== current) {
     if (basename(current) === "plugins") {
       const candidate = resolve(current, "essential");
-      if (existsSync(resolve(candidate, leadAgentDirectionPath)))
-        return candidate;
+      if (hasReference(candidate)) return candidate;
     }
     current = dirname(current);
   }
   const pluginRoot = resolve(realpathSync(templateDirectory), "../..");
   const cached = resolve(pluginRoot, "../../essential", basename(pluginRoot));
-  if (existsSync(resolve(cached, leadAgentDirectionPath))) return cached;
+  if (hasReference(cached)) return cached;
   return undefined;
 }
 
@@ -489,7 +496,12 @@ function resolveEssentialReferences(
   essentialRoot?: string,
   referenceRoot?: string,
 ): string {
-  if (!body.includes(leadAgentDirectionAlias)) return body;
+  const aliases = [
+    [leadAgentDirectionAlias, leadAgentDirectionPath],
+    [stateSystemsReferenceAlias, stateSystemsReferencePath],
+  ] as const;
+  const used = aliases.filter(([alias]) => body.includes(alias));
+  if (used.length === 0) return body;
   const root = essentialRoot
     ? realpathSync(essentialRoot)
     : deriveEssentialRoot(templateDirectory);
@@ -497,14 +509,15 @@ function resolveEssentialReferences(
     throw new AgentTemplateError(
       "agent template uses @essential references; pass --essential-root or place the template in an unambiguous source checkout",
     );
-  const direction = resolve(root, leadAgentDirectionPath);
-  if (!existsSync(direction))
-    throw new AgentTemplateError(
-      `missing Essential lead direction: ${direction}`,
-    );
-  return body.replaceAll(
-    leadAgentDirectionAlias,
-    `@${resolve(referenceRoot ?? root, leadAgentDirectionPath)}`,
+  for (const [, path] of used) {
+    const source = resolve(root, path);
+    if (!existsSync(source))
+      throw new AgentTemplateError(`missing Essential reference: ${source}`);
+  }
+  return used.reduce(
+    (resolvedBody, [alias, path]) =>
+      resolvedBody.replaceAll(alias, `@${resolve(referenceRoot ?? root, path)}`),
+    body,
   );
 }
 
@@ -527,6 +540,25 @@ function injectIntelligenceLine(body: string, intelligence: string): string {
   return `${title}\n\n${statement}\n${remainder}`;
 }
 
+/** Derive the cross-harness subagent access projection from its one authority. */
+function injectStateSystemAccess(body: string): string {
+  const source = resolve(
+    scriptDirectory,
+    "../../../references/state-systems.md",
+  );
+  const section = markdownSection(readFileSync(source, "utf8"), "Access boundary")[0];
+  if (section === undefined)
+    throw new AgentTemplateError(
+      `state-system authority has no Access boundary section: ${source}`,
+    );
+  const projection = `## Project state-system access\n\nSource: @essential:references/state-systems.md\n\n${section[1]!.trim()}\n`;
+  const memory = markdownSection(body, "Memory")[0];
+  if (memory === undefined) return `${body.trimEnd()}\n\n${projection}`;
+  const before = body.slice(0, memory.index).trimEnd();
+  const after = body.slice(memory.index).replace(/^\n+/, "");
+  return `${before}\n\n${projection}\n${after}`;
+}
+
 function template(
   templateDirectory: string,
   options: {
@@ -544,6 +576,7 @@ function template(
   ).replace(/^\n+/, "");
   validateAgentContract(sources, body);
   body = injectIntelligenceLine(body, String(sources.metadata.intelligence));
+  body = injectStateSystemAccess(body);
   return { sources, body };
 }
 

@@ -57,7 +57,6 @@ class Workspace {
   }
   async writeCharter(
     provenance = "approved",
-    specification = "None",
   ): Promise<void> {
     const path = join(this.workDir, "goal.md");
     if (provenance === "-") {
@@ -66,7 +65,7 @@ class Workspace {
     }
     await writeFile(
       path,
-      `# Charter\n\n- Charter: \`${provenance}\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Specification: ${specification}\n`,
+      `# Charter\n\n- Charter: \`${provenance}\`\n- Charter revision: \`1\`\n\n## Goal\n\nDemonstrate the doctor.\n\n## Specification provenance\n\n- Source kind: \`none\`\n- Canonical specification: None\n- Accepted revision/base: None\n- Local materialization: None\n- Materialization receipt: None\n- Last verification status: \`not-applicable\`\n- Last verified at: None\n`,
     );
   }
   async writeState(

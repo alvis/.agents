@@ -19,6 +19,7 @@ import {
   AgentTemplateError,
   leadAgentDirectionAlias,
   leadAgentDirectionPath,
+  stateSystemsReferencePath,
   loadAgentSources,
   stitchAgentDefinition,
   stitchCodexAgentDefinition,
@@ -428,6 +429,11 @@ export function installAgents(
     throw new AgentTemplateError(
       `missing Essential lead direction: ${sourceDirection}`,
     );
+  const sourceStateSystems = resolve(root, stateSystemsReferencePath);
+  if (!existsSync(sourceStateSystems))
+    throw new AgentTemplateError(
+      `missing Essential state-system authority: ${sourceStateSystems}`,
+    );
   const installedEssential = resolve(destination, ".essential");
   const staged = preflight(templates, harness, {
     essentialRoot: root,
@@ -440,10 +446,13 @@ export function installAgents(
     options.stdout ?? ((text: string) => process.stdout.write(text));
   try {
     const stagedDirection = resolve(stage, leadAgentDirectionPath);
+    const stagedStateSystems = resolve(stage, stateSystemsReferencePath);
     if (installsDirection) {
       mkdirSync(dirname(stagedDirection), { recursive: true });
       copyFileSync(sourceDirection, stagedDirection);
     }
+    mkdirSync(dirname(stagedStateSystems), { recursive: true });
+    copyFileSync(sourceStateSystems, stagedStateSystems);
     for (const [name, content] of staged)
       writeFileSync(resolve(stage, `${name}${suffix}`), content, "utf8");
     mkdirSync(destination, { recursive: true });
@@ -455,6 +464,12 @@ export function installAgents(
       replaceFile(stagedDirection, installedDirection);
       write(`installed: ${installedDirection}\n`);
     }
+    const installedStateSystems = resolve(
+      installedEssential,
+      stateSystemsReferencePath,
+    );
+    replaceFile(stagedStateSystems, installedStateSystems);
+    write(`installed: ${installedStateSystems}\n`);
     for (const [name] of staged) {
       const target = resolve(destination, `${name}${suffix}`);
       replaceFile(resolve(stage, basename(target)), target);

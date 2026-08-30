@@ -76,6 +76,7 @@ function sourceCheckout(): {
   const direction = resolve(essential, "references/directions/lead-agent.md");
   mkdirSync(dirname(direction), { recursive: true });
   writeFileSync(direction, "Lead direction.\n");
+  writeFileSync(resolve(essential, "references/state-systems.md"), "State systems.\n");
   writeTemplate(essential, "first-agent", true);
   writeTemplate(resolve(root, "plugins/coding"), "second-agent");
   return { root, essential };
@@ -155,6 +156,12 @@ describe("agent discovery and installation", () => {
     ).toContain(
       `@${resolve(destination, ".essential/references/directions/lead-agent.md")}`,
     );
+    expect(
+      readFileSync(resolve(destination, `second-agent${suffix}`), "utf8"),
+    ).toContain(`@${resolve(destination, ".essential/references/state-systems.md")}`);
+    expect(
+      readFileSync(resolve(destination, ".essential/references/state-systems.md"), "utf8"),
+    ).toBe("State systems.\n");
     expect(output.at(-1)).toContain("done — installed 2 agent(s)");
   });
 
