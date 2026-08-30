@@ -33,7 +33,7 @@ export const NOTE_CSS = `
 
 /* the pill follows the selection in document coordinates, so it is positioned
    absolutely against the page rather than fixed to the viewport */
-.selection-pill{position:absolute; z-index:70; padding:.32rem .6rem; border:1px solid var(--ui-accent); border-radius:999px; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font:700 .74rem/1.4 var(--font-body); box-shadow:0 6px 18px var(--ui-shadow); cursor:pointer}
+.selection-pill{position:absolute; z-index:70; padding:.32rem .6rem; border:1px solid var(--ui-accent); border-radius:999px; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font:700 .74rem/1.4 var(--font-body); box-shadow:var(--ui-shadow); cursor:pointer}
 
 .note-dialog{width:min(34rem,calc(100vw - 2rem)); padding:0; border:1px solid var(--ui-border-strong); border-radius:var(--radius-card); background:var(--ui-surface); color:var(--ui-ink)}
 .note-dialog::backdrop{background:rgba(20,20,19,.44)}

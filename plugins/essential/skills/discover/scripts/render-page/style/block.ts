@@ -21,7 +21,7 @@ td[data-verdict="good"]{color:var(--ui-positive-ink)} td[data-verdict="good"]::b
 td[data-verdict="mixed"]{color:var(--ui-amber-ink)} td[data-verdict="mixed"]::before{content:"~"}
 td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::before{content:"!"}
 
-.callout{max-width:70ch; padding:1.1rem 1.3rem; border:1px solid var(--ui-border); border-left:4px solid var(--ui-accent); border-radius:var(--radius-control); background:var(--ui-accent-soft)}
+.callout{max-width:70ch; padding:1.1rem 1.3rem; border:1px solid var(--ui-border); border-left:4px solid var(--tone-edge,var(--ui-accent)); border-radius:var(--radius-control); background:var(--tone-wash,var(--ui-accent-soft))}
 .callout h3{margin:0 0 .4rem; font-size:1rem; letter-spacing:-.01em}
 .callout p{margin:0; color:var(--ui-muted)}
 

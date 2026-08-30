@@ -2,9 +2,10 @@
 
 Use this direction when the question is where work already in flight stands.
 The page is an operations view of the local state tree: what is blocked and who
-has to move it, one lane per workstream, how far each has got, and what changed
-most recently. It answers "what is the state of things right now", which is the
-one question a hand-written status update is always slightly wrong about.
+has to move it, what every workstream still owes, how far each has got, and
+what changed most recently. It answers "what is the state of things right
+now", which is the one question a hand-written status update is always
+slightly wrong about.
 
 It is the only direction whose data is not authored. `state-board.ts` reads
 `.state` and writes the board data; `render-page.ts` renders it. That is a
@@ -24,9 +25,12 @@ the mode stops there rather than rendering an empty board.
 1. Put blockers first, each one naming its stream, the task, what is stuck, the
    owner, and the `unblock:` action recorded against it. When nothing is
    blocked, say so plainly — an empty section reads as a missing section.
-2. Draw a lane per live stream holding only its unfinished tasks, with the
-   owner and next action visible. A stream whose tasks are all done says that
-   instead of showing an empty lane.
+2. Give each live stream a group holding only its unfinished tasks, and let
+   both open: the stream for how it was read, and each task for every column
+   the table recorded against it. A row that shows an owner and a status but
+   cannot be opened sends the reader back to the tree for the rest, which is
+   the trip the board exists to save. A stream whose tasks are all done says
+   that instead of showing an empty group.
 3. Show how far each stream has got as a progress reading, and who owns each
    one. A stream with no tasks recorded has no meaningful proportion and is
    left out of the reading rather than shown at zero.
@@ -59,7 +63,9 @@ the mode stops there rather than rendering an empty board.
 - This board asks nothing and carries no reply. It is a report, and its drawer
   shows no unanswered count and no copy control — the reader's next move is in
   the state tree, not in a generated prompt.
-- Every section stays annotatable, so a reader can still mark a lane that looks
+- Every section stays annotatable, so a reader can still mark a row that looks
   wrong; the annotation is feedback on the reading, not an answer.
 - Keep it readable without JavaScript. Nothing on this board depends on the
-  runtime to convey its state.
+  runtime to convey its state, disclosure included: the groups and rows open
+  through native `details`, which print open and are already disclosures to a
+  screen reader.

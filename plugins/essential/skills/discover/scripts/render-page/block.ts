@@ -7,6 +7,7 @@ import { renderEmbed } from "./block/embed.ts";
 import { renderFaq, renderGlossary } from "./block/definition.ts";
 import { renderFindings } from "./block/finding.ts";
 import { renderImage } from "./block/image.ts";
+import { renderLedger } from "./block/ledger.ts";
 import { renderFailureMap, renderList, renderTldr } from "./block/list.ts";
 import { renderMermaid } from "./block/mermaid.ts";
 import { renderOwners, renderReadiness } from "./block/meter.ts";
@@ -94,6 +95,8 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
       return renderTradeoffs(block, path);
     case "kanban":
       return renderKanban(block, path);
+    case "ledger":
+      return renderLedger(block, path);
     case "findings":
       return renderFindings(block, path, page.ids);
     case "boards":

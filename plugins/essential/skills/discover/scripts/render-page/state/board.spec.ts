@@ -14,6 +14,10 @@ const DONE: Task = {
   status: "done",
   task: "Write the parser",
   owner: "Ada",
+  depends: "—",
+  required: "yes",
+  acceptance: "the table reads back",
+  evidence: "parse.spec.ts, 24 cases",
   unblock: "",
 };
 
@@ -148,20 +152,68 @@ describe("fn:stateBoard", () => {
     });
   });
 
-  it("should draw one lane per stream, holding only what it still owes", () => {
+  it("should draw one group per stream, holding only what it still owes", () => {
     const open = { ...DONE, id: "AAA02", mark: "⧗", status: "working" };
-    const lanes = JSON.stringify(
-      blocksOf(board([{ tasks: [DONE, open] }]), "lanes", "kanban"),
+    const drawn = JSON.stringify(
+      blocksOf(board([{ tasks: [DONE, open] }]), "owed", "ledger"),
     );
 
-    expect(lanes).toContain("AAA02");
-    expect(lanes).not.toContain("AAA01");
+    expect(drawn).toContain("AAA02");
+    expect(drawn).not.toContain("AAA01");
   });
 
-  it("should say a finished stream is finished rather than drawing an empty lane", () => {
-    expect(JSON.stringify(blocksOf(board(), "lanes", "kanban"))).toContain(
+  it("should count every task in a group's bar, not only the ones it draws", () => {
+    // the rows and the ratio disagree on purpose: a stream of ninety done rows
+    // and one working row would hide the working row, and the reader still has
+    // to be able to see that the ninety exist
+    const open = { ...DONE, id: "AAA02", mark: "⧗", status: "working" };
+    const [ledger] = blocksOf(board([{ tasks: [DONE, open] }]), "owed", "ledger");
+
+    expect(ledger).toMatchObject({
+      groups: [{ label: "alpha", progress: { done: 1, of: 2 } }],
+    });
+  });
+
+  it("should carry every column of a task row into the row it opens", () => {
+    // the whole point of the block: a card showed the id, the summary and the
+    // status, and a reader who wanted the acceptance criterion or the blocking
+    // dependency had to leave the board and go and read the state file
+    const stuck = {
+      ...DONE,
+      id: "AAA02",
+      mark: "!",
+      status: "blocked",
+      depends: "AAA01",
+      acceptance: "the key signs",
+      evidence: "tried twice; unblock: get the signing key",
+      unblock: "get the signing key",
+    };
+    const drawn = JSON.stringify(
+      blocksOf(board([{ tasks: [stuck] }]), "owed", "ledger"),
+    );
+
+    for (const carried of [
+      "AAA01",
+      "the key signs",
+      "tried twice",
+      "get the signing key",
+    ])
+      expect(drawn, carried).toContain(carried);
+  });
+
+  it("should say a finished stream is finished rather than drawing an empty group", () => {
+    expect(JSON.stringify(blocksOf(board(), "owed", "ledger"))).toContain(
       "every recorded task is done",
     );
+  });
+
+  it("should tell a stream with nothing left from one it could not read", () => {
+    // the two look identical from outside — no rows — and mean opposite things
+    const [ledger] = blocksOf(board([{ tasks: [] }]), "owed", "ledger");
+
+    expect(ledger).toMatchObject({
+      groups: [{ empty: "no task table could be read here" }],
+    });
   });
 
   it("should measure only the streams that have something to measure", () => {

@@ -125,10 +125,48 @@ describe("fn:parseStream", () => {
         mark: "✓",
         status: "done",
         task: "Write the parser",
+        depends: "—",
+        required: "yes",
+        acceptance: "Tests pass",
         owner: "Ada",
+        evidence: "e: suite green",
         unblock: "",
       },
     ]);
+  });
+
+  it("should leave a column the table does not have empty rather than absent", () => {
+    // the board draws whatever the record has, and a row missing a field it
+    // never asks about is a row the reader cannot tell from one that lost it.
+    // Requiring these three instead would have counted every row of a table
+    // written without them as unreadable, which is the reverse of the point
+    const stream = parseStream(
+      "omicron",
+      stateFile(
+        "- Phase: `working`",
+        ["| AAA01 | ✓ | done | Write the parser | Ada | e: suite green |"],
+        [
+          "| ID | Mark | Status | Task | Owner | Evidence / next action |",
+          "| --- | --- | --- | --- | --- | --- |",
+        ],
+      ),
+    );
+
+    expect(stream.tasks).toStrictEqual([
+      {
+        id: "AAA01",
+        mark: "✓",
+        status: "done",
+        task: "Write the parser",
+        depends: "",
+        required: "",
+        acceptance: "",
+        owner: "Ada",
+        evidence: "e: suite green",
+        unblock: "",
+      },
+    ]);
+    expect(stream.malformed).toBe(0);
   });
 
   it("should lift the unblock clause out of the evidence column", () => {
@@ -235,7 +273,11 @@ describe("fn:parseStream", () => {
         mark: "⧗",
         status: "working",
         task: "Swap two columns",
+        depends: "—",
+        required: "yes",
+        acceptance: "Board reads it",
         owner: "Bo",
+        evidence: "e: none",
         unblock: "",
       },
     ]);

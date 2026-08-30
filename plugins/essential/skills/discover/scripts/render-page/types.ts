@@ -49,6 +49,12 @@ export type {
   TreeItem,
   Viewport,
 } from "./types/content.ts";
+export type {
+  LedgerEntry,
+  LedgerFact,
+  LedgerGroup,
+  LedgerProgress,
+} from "./types/ledger.ts";
 export type { Rich, Run } from "./types/inline.ts";
 export type { BoardEntry, BoardSet } from "./types/set.ts";
 export type { PageData, PageKind, Section, Theme } from "./types/page.ts";

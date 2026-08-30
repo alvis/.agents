@@ -114,6 +114,7 @@ function fetchedRemotely(html: string): string[] {
 const SHEETS = [
   { type: "observations", marker: ".observation-tick{" },
   { type: "deviations", marker: ".deviation-pair{" },
+  { type: "ledger", marker: ".ledger-entry{" },
   { type: "quiz", marker: ".quiz-option{" },
 ];
 

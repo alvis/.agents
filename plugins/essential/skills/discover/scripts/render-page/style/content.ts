@@ -87,13 +87,18 @@ export const CONTENT_CSS = `
 .kanban-cards{margin:0; padding:0; list-style:none; display:grid; gap:.45rem}
 .kanban-card{padding:.5rem .65rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised); font-size:.88rem}
 
-/* the tone word carries the stance; these rules only repeat it in colour */
-.callout-tone{margin-right:.5rem; padding:.1rem .45rem; border:1px solid currentColor; border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
-.callout[data-tone="good"]{border-left-color:var(--ui-positive)}
-.callout[data-tone="good"] .callout-tone{color:var(--ui-positive-ink); background:var(--ui-positive-soft)}
-.callout[data-tone="bad"]{border-left-color:var(--ui-critical)}
-.callout[data-tone="bad"] .callout-tone{color:var(--ui-critical-ink); background:var(--ui-critical-soft)}
-.callout[data-tone="neutral"] .callout-tone{color:var(--ui-muted); background:var(--ui-surface)}
+/* the tone word carries the stance; these rules only repeat it in colour. A
+   tone paints the whole aside — edge and wash together — because an edge alone
+   over the accent wash reads as two stances at once, one of them the page's
+   default. The badge keeps the raised surface so it stays a chip against every
+   wash rather than dissolving into the family it names. */
+.callout-tone{margin-right:.5rem; padding:.1rem .45rem; border:1px solid currentColor; border-radius:.4rem; background:var(--ui-raised); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
+.callout[data-tone="good"]{--tone-edge:var(--ui-positive); --tone-wash:var(--ui-positive-soft)}
+.callout[data-tone="good"] .callout-tone{color:var(--ui-positive-ink)}
+.callout[data-tone="bad"]{--tone-edge:var(--ui-critical); --tone-wash:var(--ui-critical-soft)}
+.callout[data-tone="bad"] .callout-tone{color:var(--ui-critical-ink)}
+.callout[data-tone="neutral"]{--tone-edge:var(--ui-border-strong); --tone-wash:var(--ui-surface)}
+.callout[data-tone="neutral"] .callout-tone{color:var(--ui-muted)}
 
 /* the board-level trade-offs block. .tradeoff-panel rather than .tradeoffs,
    which the choice block's inline pros/cons strip already owns */

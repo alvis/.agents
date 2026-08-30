@@ -115,6 +115,30 @@ export const CALLOUT_TONE_LABEL = {
   bad: "Watch out",
 } as const;
 
+/**
+ * what a quiz says about the answer the reader gave.
+ *
+ * the verdict is a word before it is a colour, for the same reason a callout's
+ * tone is: red and green are one channel, and the reader who cannot use it is
+ * exactly the reader who most needs to be told they got it wrong. Neither
+ * label names the answer that was right — the gate sends a reader who missed
+ * one back to the section that explains it, which is the whole point of asking.
+ */
+export const QUIZ_MARK_LABEL = {
+  correct: "Correct",
+  wrong: "Not this one",
+} as const;
+
+/**
+ * the families a ledger row's pill and edge may take.
+ *
+ * unlike a callout's, this tone carries no word of its own: a ledger row draws
+ * the record's own status beside the pill, so the word is already there, and a
+ * second one from this module's vocabulary would be one more thing to keep
+ * true every time a record changed its wording.
+ */
+export const LEDGER_TONES = ["good", "busy", "bad", "neutral"] as const;
+
 /** text alignments a table column may request. */
 export const COLUMN_ALIGNMENTS = ["left", "center", "right"] as const;
 

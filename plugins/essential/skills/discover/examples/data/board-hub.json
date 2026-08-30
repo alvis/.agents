@@ -5,12 +5,12 @@
   "title": "Discover example boards",
   "masthead": {
     "eyebrow": "Board hub · example set",
-    "headline": "Fifteen boards, one chrome, fifteen different jobs.",
+    "headline": "Nineteen boards, one chrome, nineteen different jobs.",
     "lede": "Every board here is rendered from a JSON data file by the same builder, so what differs between them is what they are for rather than how they were made. Pick the one whose question matches yours.",
     "meta": [
       {
         "label": "Boards",
-        "value": "15"
+        "value": "19"
       },
       {
         "label": "Source",

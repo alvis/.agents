@@ -202,16 +202,16 @@ describe("const:TOKEN_CSS", () => {
     // itself resolved these very declarations to, read back off a canvas:
     // a conversion that drifts from a real renderer fails here first
     const painted = {
-      "oklch(.77 .075 200)": "#78c3c7",
-      "oklch(.285 .045 200)": "#053133",
-      "oklch(.74 .115 278)": "#9aa3f3",
-      "oklch(.9 .055 282)": "#d7daff",
-      "oklch(.74 .1 146)": "#81bc85",
-      "oklch(.27 .045 145)": "#182c18",
-      "oklch(.7 .15 30)": "#ed7665",
-      "oklch(.31 .07 30)": "#4e211a",
-      "oklch(.82 .11 74)": "#efb970",
-      "oklch(.92 .05 82)": "#f5e2c0",
+      "oklch(.78 .12 205)": "#3bcddc",
+      "oklch(.28 .06 205)": "#003137",
+      "oklch(.72 .18 305)": "#bf83fe",
+      "oklch(.87 .12 305)": "#e6c0ff",
+      "oklch(.78 .16 160)": "#3ad693",
+      "oklch(.285 .07 162)": "#00341f",
+      "oklch(.7 .19 22)": "#ff6367",
+      "oklch(.3 .09 22)": "#521518",
+      "oklch(.82 .15 78)": "#f9b73f",
+      "oklch(.92 .11 84)": "#ffdf8d",
     };
     for (const [css, expected] of Object.entries(painted))
       expect(

@@ -21,6 +21,7 @@ import type {
 } from "./content.ts";
 import type { CodeExcerpt } from "./code.ts";
 import type { Rich } from "./inline.ts";
+import type { LedgerGroup } from "./ledger.ts";
 import type { QuestionBlock } from "./question.ts";
 
 /** the content units a section body can hold in the walking skeleton. */
@@ -118,6 +119,16 @@ export type Block =
     }
   /** lanes whose membership is itself the claim */
   | { type: "kanban"; lanes: Lane[] }
+  /**
+   * grouped rows that open for the whole of what is recorded about them.
+   *
+   * a card can only carry what fits on it, so a record of nine columns per row
+   * reaches a lane as three of them and the reader goes back to the source for
+   * the rest. A ledger draws the same scannable line and keeps the remaining
+   * fields one disclosure away, in native `details` elements: no runtime, open
+   * when the page is printed, and already a disclosure to a screen reader.
+   */
+  | { type: "ledger"; groups: LedgerGroup[] }
   /**
    * what a direction buys, what it costs, and where it stops working.
    *

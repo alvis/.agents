@@ -6,7 +6,7 @@
   "masthead": {
     "eyebrow": "Operations",
     "headline": "Where every live workstream stands right now",
-    "lede": "One lane per stream, blockers first, and the record's own gaps stated rather than smoothed over. Archived streams are not here because this never looks in the directory they are in.",
+    "lede": "Blockers first, then what every stream still owes, with each row opening onto the whole of what the table recorded and the record's own gaps stated rather than smoothed over. Archived streams are not here because this never looks in the directory they are in.",
     "meta": [
       {
         "label": "Live streams",
@@ -22,7 +22,7 @@
       },
       {
         "label": "Read at",
-        "value": "2026-08-29 14:41Z"
+        "value": "2026-08-30 10:15Z"
       }
     ]
   },
@@ -43,138 +43,451 @@
       ]
     },
     {
-      "id": "lanes",
+      "id": "owed",
       "label": "Streams",
       "eyebrow": "Open work",
       "title": "What each stream still owes",
       "blocks": [
         {
-          "type": "kanban",
-          "lanes": [
+          "type": "ledger",
+          "groups": [
             {
               "label": "20260724-review-plugin-stack-1szr99",
-              "cards": [
-                [
-                  {
-                    "kind": "code",
-                    "text": "MON"
-                  },
-                  " Monitor PRs #55–#60 for author replies, new commits, or force-pushes; on change, diff against the reviewed heads. [targets: PRs 55–60]",
-                  {
-                    "kind": "dim",
-                    "text": " — planned"
-                  }
-                ],
-                [
-                  {
-                    "kind": "code",
-                    "text": "FUP"
-                  },
-                  " Re-review changed PR content; resolve findings that were addressed, reply where disposition is unclear, raise new findings only on new evidence. [targets: PRs 55–60]",
-                  {
-                    "kind": "dim",
-                    "text": " — planned"
-                  }
-                ],
-                [
-                  {
-                    "kind": "code",
-                    "text": "MRG"
-                  },
-                  " Confirm merge readiness bottom-up (#55 first) once findings are dispositioned; verify tests green and stack restacked. [targets: PRs 55–60]",
-                  {
-                    "kind": "dim",
-                    "text": " — planned"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "text",
+                  "text": "Poll PRs #55–#60 for author responses or new commits (task MON)."
+                }
+              ],
+              "progress": {
+                "done": 3,
+                "of": 6
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "active (from the Lifecycle status header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-07-24T16:10:00Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "PM"
+                },
+                {
+                  "label": "Next action",
+                  "value": "Poll PRs #55–#60 for author responses or new commits (task MON)."
+                }
+              ],
+              "entries": [
+                {
+                  "code": "MON",
+                  "title": "Monitor PRs #55–#60 for author replies, new commits, or force-pushes; on change, diff against the reviewed heads. [targets: PRs 55–60]",
+                  "status": "planned",
+                  "tone": "neutral",
+                  "facts": [
+                    {
+                      "label": "Mark",
+                      "value": "-"
+                    },
+                    {
+                      "label": "Owner",
+                      "value": "PM"
+                    },
+                    {
+                      "label": "Depends on",
+                      "value": "REV"
+                    },
+                    {
+                      "label": "Required",
+                      "value": "yes"
+                    },
+                    {
+                      "label": "Acceptance",
+                      "value": "Each new response or push is triaged within the monitoring session that sees it."
+                    },
+                    {
+                      "label": "Evidence",
+                      "value": "Run `gh pr view <n> --comments` and `gh pr diff <n>` per PR; compare to findings in goal.md."
+                    }
+                  ]
+                },
+                {
+                  "code": "FUP",
+                  "title": "Re-review changed PR content; resolve findings that were addressed, reply where disposition is unclear, raise new findings only on new evidence. [targets: PRs 55–60]",
+                  "status": "planned",
+                  "tone": "neutral",
+                  "facts": [
+                    {
+                      "label": "Mark",
+                      "value": "-"
+                    },
+                    {
+                      "label": "Owner",
+                      "value": "PM"
+                    },
+                    {
+                      "label": "Depends on",
+                      "value": "MON"
+                    },
+                    {
+                      "label": "Required",
+                      "value": "yes"
+                    },
+                    {
+                      "label": "Acceptance",
+                      "value": "SC-2…SC-5 each reach fixed/dispositioned; no silent drops."
+                    },
+                    {
+                      "label": "Evidence",
+                      "value": "Wait for MON to detect changes."
+                    }
+                  ]
+                },
+                {
+                  "code": "MRG",
+                  "title": "Confirm merge readiness bottom-up (#55 first) once findings are dispositioned; verify tests green and stack restacked. [targets: PRs 55–60]",
+                  "status": "planned",
+                  "tone": "neutral",
+                  "facts": [
+                    {
+                      "label": "Mark",
+                      "value": "-"
+                    },
+                    {
+                      "label": "Owner",
+                      "value": "PM"
+                    },
+                    {
+                      "label": "Depends on",
+                      "value": "FUP"
+                    },
+                    {
+                      "label": "Required",
+                      "value": "yes"
+                    },
+                    {
+                      "label": "Acceptance",
+                      "value": "SC-6: stack merged or explicitly parked with reasons recorded."
+                    },
+                    {
+                      "label": "Evidence",
+                      "value": "`coding:merge-pr` owns the mechanical merge if the user asks for it."
+                    }
+                  ]
+                }
+              ],
+              "empty": "every recorded task is done"
             },
             {
               "label": "documentation-contract",
-              "cards": [
-                [
-                  {
-                    "kind": "dim",
-                    "text": "every recorded task is done"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "text",
+                  "text": "Human review and merge draft PR #94; after merge evidence, mark the stream completed."
+                }
+              ],
+              "progress": {
+                "done": 19,
+                "of": 19
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "reviewing (from the Lifecycle status header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-07-29T16:28:58Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "PM"
+                },
+                {
+                  "label": "Next action",
+                  "value": "Human review and merge draft PR #94; after merge evidence, mark the stream completed."
+                }
+              ],
+              "entries": [],
+              "empty": "every recorded task is done"
             },
             {
               "label": "page-renderer",
-              "cards": [
-                [
-                  {
-                    "kind": "code",
-                    "text": "SMP"
-                  },
-                  " Render samples for at least four distinct presentation kinds. [targets: none]",
-                  {
-                    "kind": "dim",
-                    "text": " — working"
-                  }
-                ],
-                [
-                  {
-                    "kind": "code",
-                    "text": "APR"
-                  },
-                  " User reviews samples and approves or rejects. [targets: none]",
-                  {
-                    "kind": "dim",
-                    "text": " — working"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "mark",
+                  "text": "All nineteen changes are published, current, and green."
+                },
+                {
+                  "kind": "dim",
+                  "text": " …"
+                }
+              ],
+              "progress": {
+                "done": 18,
+                "of": 20
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "working (from the Phase header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-08-30T08:45:00Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "PM"
+                },
+                {
+                  "label": "Next action",
+                  "value": "**All nineteen changes are published, current, and green.** Every body, bound OID and authorization record now describes the tree that exists, under one test command on Bun and without a word of the user's own authorizations re-written (D-92, D-98). Hosted CI is `success` at all nineteen heads on both operating systems, and every change passes its own declared command in isolation (E-179, E-182). **What waits is the user's, and none of it is a leftover task:** APR, still deferred against the tree this batch produced; `TST-CORE-10`'s remaining indictment of tests already committed, now that change nineteen has cut the checkout-parity gates (R-87, D-97); and tag fills at 1.05 – 1.46 contrast, where deepening them repaints every approved board. **Eleven of the nineteen worth-considering findings are unrecoverable** (R-88). Two loose ends are named, not open questions: `examples/reference/` still ships with two citations (R-94), and the rebase onto `master` waits for the merge round with its collisions recorded (R-91, D-95)."
+                }
+              ],
+              "entries": [
+                {
+                  "code": "SMP",
+                  "title": "Render samples for at least four distinct presentation kinds. [targets: none]",
+                  "status": "working",
+                  "tone": "busy",
+                  "facts": [
+                    {
+                      "label": "Mark",
+                      "value": "⧗"
+                    },
+                    {
+                      "label": "Owner",
+                      "value": "tech-lead"
+                    },
+                    {
+                      "label": "Depends on",
+                      "value": "IMP"
+                    },
+                    {
+                      "label": "Required",
+                      "value": "yes"
+                    },
+                    {
+                      "label": "Acceptance",
+                      "value": "SC-7 samples exist and open from `file://`."
+                    },
+                    {
+                      "label": "Evidence",
+                      "value": "Dispatched to `tech-lead` with [artifacts/smp-brief.md](artifacts/smp-brief.md). Kinds: `ranked-options` and `architecture-board` done and PM-measured (E-5, E-12, E-13, E-14); `guided-interview` and `risk-context-report` queued as SMP-2 with four new block types and the SC-2 validation floor ([artifacts/smp-2-brief.md](artifacts/smp-2-brief.md))."
+                    }
+                  ]
+                },
+                {
+                  "code": "APR",
+                  "title": "User reviews samples and approves or rejects. [targets: none]",
+                  "status": "working",
+                  "tone": "busy",
+                  "facts": [
+                    {
+                      "label": "Mark",
+                      "value": "⧗"
+                    },
+                    {
+                      "label": "Owner",
+                      "value": "user"
+                    },
+                    {
+                      "label": "Depends on",
+                      "value": "BRD, MIG, DRV"
+                    },
+                    {
+                      "label": "Required",
+                      "value": "yes"
+                    },
+                    {
+                      "label": "Acceptance",
+                      "value": "User records approval; PM journals the decision."
+                    },
+                    {
+                      "label": "Evidence",
+                      "value": "**Deferred, not cancelled.** The user gave batch 2 instead of approving, so what is approved is the tree that batch produces rather than the one that reached this row. Both debts beside it are settled: the FND review is paid across three rounds, and the red team's eight bypasses are accepted rather than fixed (D-66). R-47 is closed under GAT; nothing structural stands behind this row."
+                    }
+                  ]
+                }
+              ],
+              "empty": "every recorded task is done"
             },
             {
               "label": "specification-state",
-              "cards": [
-                [
-                  {
-                    "kind": "code",
-                    "text": "REVIEW"
-                  },
-                  " Obtain an independent code-quality review and resolve all findings. [targets: reviews/code-quality.md, review.md]",
-                  {
-                    "kind": "dim",
-                    "text": " — reviewing"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "text",
+                  "text": "Obtain an independent review for draft PR #191; the current-head dispatch was unavailable, so keep the PR draft and do not merge."
+                }
+              ],
+              "progress": {
+                "done": 7,
+                "of": 8
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "reviewing (from the Phase header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-08-27T19:49:43Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "PM"
+                },
+                {
+                  "label": "Next action",
+                  "value": "Obtain an independent review for draft PR #191; the current-head dispatch was unavailable, so keep the PR draft and do not merge."
+                }
+              ],
+              "entries": [
+                {
+                  "code": "REVIEW",
+                  "title": "Obtain an independent code-quality review and resolve all findings. [targets: reviews/code-quality.md, review.md]",
+                  "status": "reviewing",
+                  "tone": "neutral",
+                  "facts": [
+                    {
+                      "label": "Mark",
+                      "value": "—"
+                    },
+                    {
+                      "label": "Owner",
+                      "value": "PM"
+                    },
+                    {
+                      "label": "Depends on",
+                      "value": "VALIDATE"
+                    },
+                    {
+                      "label": "Required",
+                      "value": "yes"
+                    },
+                    {
+                      "label": "Acceptance",
+                      "value": "Review records exact head, reviewer, verdict, and any fixes."
+                    },
+                    {
+                      "label": "Evidence",
+                      "value": "Current-head review at `ebb508e6f934e77b96ebb20932fd0670f5155c8` was not obtained because the bounded dispatch did not return; prior attempts against superseded heads are not used as evidence."
+                    }
+                  ]
+                }
+              ],
+              "empty": "every recorded task is done"
             },
             {
               "label": "state-systems-clarity",
-              "cards": [
-                [
-                  {
-                    "kind": "dim",
-                    "text": "every recorded task is done"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "text",
+                  "text": "Assign two independent black-zone reviewers to PR #194 and record approvals on the exact head; retain draft and merge/hold until then."
+                }
+              ],
+              "progress": {
+                "done": 6,
+                "of": 6
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "reviewing (from the Phase header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-08-27T23:03:43Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "repository reviewers"
+                },
+                {
+                  "label": "Next action",
+                  "value": "Assign two independent black-zone reviewers to PR #194 and record approvals on the exact head; retain draft and merge/hold until then."
+                }
+              ],
+              "entries": [],
+              "empty": "every recorded task is done"
             },
             {
               "label": "sync-pr-stack",
-              "cards": [
-                [
-                  {
-                    "kind": "dim",
-                    "text": "every recorded task is done"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "text",
+                  "text": "Review and merge draft PR #177 when desired; do not close this work before merge evidence exists."
+                }
+              ],
+              "progress": {
+                "done": 5,
+                "of": 5
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "reviewing (from the Phase header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-08-24T21:37:04Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "maintainer"
+                },
+                {
+                  "label": "Next action",
+                  "value": "Review and merge draft PR #177 when desired; do not close this work before merge evidence exists."
+                }
+              ],
+              "entries": [],
+              "empty": "every recorded task is done"
             },
             {
               "label": "test-cleanup-and-ci",
-              "cards": [
-                [
-                  {
-                    "kind": "dim",
-                    "text": "every recorded task is done"
-                  }
-                ]
-              ]
+              "note": [
+                {
+                  "kind": "text",
+                  "text": "PR #78 is a green draft awaiting review; mark "
+                },
+                {
+                  "kind": "code",
+                  "text": "completed"
+                },
+                {
+                  "kind": "text",
+                  "text": " on merge evidence."
+                }
+              ],
+              "progress": {
+                "done": 9,
+                "of": 9
+              },
+              "facts": [
+                {
+                  "label": "Phase",
+                  "value": "reviewing (from the Lifecycle status header)"
+                },
+                {
+                  "label": "Updated",
+                  "value": "2026-07-25T20:40:00Z"
+                },
+                {
+                  "label": "Next owner",
+                  "value": "reviewer"
+                },
+                {
+                  "label": "Next action",
+                  "value": "PR #78 is a green draft awaiting review; mark `completed` on merge evidence."
+                }
+              ],
+              "entries": [],
+              "empty": "every recorded task is done"
             }
           ]
         }
@@ -203,8 +516,8 @@
             },
             {
               "label": "page-renderer",
-              "value": 16,
-              "of": 18,
+              "value": 18,
+              "of": 20,
               "note": "working"
             },
             {
@@ -249,7 +562,7 @@
             {
               "name": "PM",
               "role": "page-renderer",
-              "due": "Batch 2 is delivered, independently reviewed, and driven. …"
+              "due": "All nineteen changes are published, current, and green. …"
             },
             {
               "name": "PM",
@@ -285,7 +598,7 @@
           "type": "timeline",
           "items": [
             {
-              "when": "2026-08-29T14:05:00Z",
+              "when": "2026-08-30T08:45:00Z",
               "title": [
                 {
                   "kind": "code",
@@ -294,7 +607,7 @@
                 " — ",
                 {
                   "kind": "mark",
-                  "text": "Batch 2 is delivered, independently reviewed, and driven."
+                  "text": "All nineteen changes are published, current, and green."
                 },
                 {
                   "kind": "dim",
@@ -522,10 +835,10 @@
                   "text": "working"
                 },
                 {
-                  "text": "2026-08-29T14:05:00Z"
+                  "text": "2026-08-30T08:45:00Z"
                 },
                 {
-                  "text": "18"
+                  "text": "20"
                 }
               ]
             },
