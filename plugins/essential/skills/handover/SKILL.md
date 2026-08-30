@@ -1,6 +1,6 @@
 ---
 name: handover
-description: Persist work stream state and update the global overview, both in the default source tree's centralized .state/, so the session can pause and any later session resume from the files on disk. Use when pausing coding work; this skill records continuity and does not execute the work.
+description: Persist validated MDC work-stream graphs and reconcile the project overview in the default source tree so a later session can resume safely. Use when pausing work; this skill records continuity and does not execute, publish, review, test, or land the work.
 requirements:
   intelligence: low
 argument-hint: "[work-id-filter]"
@@ -8,55 +8,82 @@ argument-hint: "[work-id-filter]"
 
 # Work Handover
 
-Refresh the work-stream memory under the **default source tree's** `.state/` — the resolver's `state_root`, the one tree that carries work state whichever worktree or workspace you are in — and update the global `.state/overview.md` beside it, so the session can stop here and a later one pick the work up exactly where it stands. `essential:takeover` owns resumption; it always resumes from the state files on disk.
+Pause work by transactionally refreshing typed state under the resolver's
+`state_root/.state/` and reconciling `overview.mdc`. `essential:takeover` owns
+resumption.
 
 ## Boundaries
 
-- Use for pausing work streams.
-- Handover is scoped to the streams it is pausing. All state already lives in one place — `state_root/.state/works/` — so there is no other tree's state to reach into and no cross-tree merge to perform. Refresh the selected streams and upsert their `overview.md` rows; leave every other stream's files and rows byte-for-byte alone.
-- Do not perform git history, push, PR, build, test, deployment, review, or implementation work.
-- Write to exactly two destinations: `state_root/.state/works/<work-id>/**` and `state_root/.state/overview.md`. Handover does not promote to `docs/` — promotion belongs to completion, not to a pause — and it creates no continuation file of its own: the state files *are* the continuation.
-- Never write a file because the report would be large. A long report is shortened to pointers into `.state/`, never spilled to disk; the persisted state on disk is already the durable outcome.
-- Do not assume `.state/` is committed.
-- Only the main agent may run this workflow because it writes `state/working.md` and reconciles work indexes and the overview.
+- Only the main agent runs this workflow and holds each selected stream lease.
+- Write only selected `.state/works/<work-id>/**/*.mdc` graphs and the shared
+  `.state/overview.mdc`. Native `lease.json` remains JSON.
+- Do not implement, build, test, review, publish, promote, or mutate history.
+- Do not read or write Markdown state. Report `migration_required` and direct
+  the user to `essential:doctor` migration.
+- A long report is shortened to graph pointers; it never creates another
+  continuation file.
 
-## Inputs
+## Inputs and gate
 
-- Optional `[work-id-filter]`; otherwise handle every work stream under `state_root/.state/works/`. A filter narrows the streams to refresh in full; it never invents a stream.
-- Persistence requires only a repository checkout and a resolvable workspace. A pause needs nothing external.
+An optional work-ID filter narrows continuable streams; it never creates one.
+Read the injected Essential `references/state.md` lifecycle, run its resolver,
+and stop on `work_id_required`, `requires_ignore`, or `migration_required`.
+Use its `state_root`, `work_dir`, `stateFile`, and `stateFormat`. Require
+`stateFormat: "mdc-v1"` before proceeding.
 
-## State gate
-
-Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Run the resolver: its `state_root` is the default source tree that carries every work stream and the global `.state/overview.md`, whichever tree this session is working in. Resolve the work root, conventions, naming, and ownership from that reference before reading or writing state. Handover never mints an empty work item. Hold each selected stream's on-disk main-agent lease before rewriting its state in steps 5–7 with the idempotent `state-lease ensure` verb — it renews a lease this session already holds and acquires a free one; a live foreign lease (`contended`) stops that stream with a report. Perform the rewrites through the lease-verified write path in Essential's `lease.md`, bump `State revision` on each main-agent rewrite, and release every lease at completion.
-
-Persistence always runs and always completes: it refreshes the current source tree's on-disk work state and the default tree's global `overview.md`. That is the whole outcome — a session can pause, close, and later resume from those files. Never terminate the run before the overview upsert.
+Acquire or renew each selected stream lease with the idempotent `state-lease
+ensure` verb. A live foreign lease stops that stream. Follow the injected
+Essential `references/lease.md` contract and release every lease after its graph
+and the overview commit or after a handled failure.
 
 ## Workflow
 
-1. List every `state_root/.state/works/<work-id>/` stream per the Essential contract — always the complete set, never narrowed by `[work-id-filter]`, because the overview upsert (step 7) must show every stream. For each stream, read `state.md` to record its phase, any separate `Blocked on:` value, and one-line headline. Partition the streams three ways: `planned` and `working` are **continuable**, whether runnable or currently blocked; `reviewing` is **awaiting landing** — its execution is finished and its applicable submission is recorded, so it is not continuable, but neither is it settled, and `essential:takeover` checks it for the applicable landing evidence; `completed` is an **index-only** row while it remains in `works/`. `archived` streams live outside `works/` and are not indexed here. None of these is an error. Then apply the optional `[work-id-filter]` to the continuable streams to derive the **selected** streams (all continuable streams when no filter is given); only the selected streams get a full refresh (steps 2–6). The filter never removes a stream from step 1 or the overview.
-2. For each selected stream, read `state/working.md` first when present, then `state.md`, its linked detail files, the four lazy overview files, `review.md`, relevant review areas, evidence, and the materialized working specification. From the `state.md` task table, determine which tasks are runnable, which are blocked, the current owner, and the next action; proceed on that reading, with no separate validation step. Treat repository and runtime evidence as authoritative over stale local memory. Any implementation detail that root state links is procedure keyed by existing task IDs, not plan authority.
-3. For each selected stream, gather todos, current revision/bookmark/branch, working-copy status, staged and unstaged changes, untracked files, recent commits, and each specification's location: inline raw text, a repository-relative path, or a Notion reference with its captured revision. Reconcile that source into the seven fields in the stream's `goal.md` `## Specification provenance`: source kind, canonical specification, accepted revision/base, optional local materialization, matching receipt, last verification status, and last verification time. A bootstrap-only pending shape must be resolved before active execution. Classify changed and planned files with the substates in [./templates/documents.md](templates/documents.md).
-4. For each selected stream, identify every material unresolved decision. Consult the user using [./directions/decision-consultation.md](directions/decision-consultation.md); route durable decision detail to `decisions/<slug>.md` and let the main agent reconcile `decisions.md`. Record low-impact reversible assumptions in `state.md` with evidence and recheck triggers.
-5. Generate one UTC ISO-8601 timestamp for the whole run. For each continuable stream, rewrite `state.md` as the complete work context: goal, full parent/subtask task table with marked status and evidence, phase, success criteria, decisions, dependencies, blockers, review dispositions, evidence, durable promotion, specification sync status linked to `goal.md`, and a prominent link to `state/working.md`. Include a `## Continuation` section persisting the current task ID, exact next owner, exact next action, a capability-level continuation intent describing the work type (never a fixed skill name), and the stream's **source anchor** — the revision the work assumes. State alone must be enough to route a resume and to tell a checkout which revision to be at. If eligible work Markdown requires splitting under the shared batch process, keep the original path as overview.
-6. For each selected stream, rewrite `state/working.md` to approximately 4,096 bytes through editorial discipline: current focus, current status, immediate handback point, and fast relative paths only. It is not a plan, history, or complete context. Do not mechanically size-gate it. Reconcile that stream's existing lazy `proposals.md`, `changes.md`, `decisions.md`, and `design.md` overview files from child metadata; never copy child details into an overview.
-7. Update the global `state_root/.state/overview.md`, following the canonical shape in [./templates/documents.md](templates/documents.md). Immediately before writing, re-read the current `overview.md` so a concurrent update from another session is not lost. Reconcile `## State systems` as exactly three presence rows: version-controlled documentation and local operational state are `configured`; external specification authority is `none`, `configured`, or `pending`. This is a presence inventory only; canonical URL, revision, copy, receipt, and verification anchors remain in each stream's `goal.md`.
-
-   Before removing a legacy global `Spec` cell, verify and persist its exact source in that stream's charter provenance. Then upsert one row per stream from step 1 — work ID, phase, blocker, headline, next action, `Location` (the checkout the stream is worked in: path plus kind and revision), and any `docs/` link in `Documentations` — excluding all specification links. Write the normalized overview once, atomically, and preserve every other row plus the authored `Goal` and `Requirements` sections byte-for-byte. If no `overview.md` exists yet, create it with the canonical `State systems` section. After this write the pause is complete and resumable from state files.
-8. Return every created or materially rewritten path — including the updated `overview.md` — in `generated_files`. Do not run file sizing; after all artifact writers finish, the main agent checks only eligible work Markdown inside the target `.state/` and coordinates any complete split round.
+1. Enumerate every typed stream root under `state_root/.state/works/` and load
+   it through the shared state decoder and validator. Never infer state from
+   filenames or visible MDC prose. Classify `planned` and `working` as
+   continuable, `reviewing` as awaiting landing, and `completed` as index-only.
+   Archived streams are outside `works/`.
+2. Apply the optional filter to continuable streams. For each selected stream,
+   read its decoded charter, task graph, events, revisions, unresolved
+   questions, records, review, submission, completion, and continuation. Treat
+   repository evidence as stronger than stale continuation prose.
+3. Reconcile returned worker deltas. Preserve task IDs and definitions, append
+   typed events, keep revisions monotonic, keep done terminal, update validity
+   separately, and refresh review/submission/completion only from exact
+   evidence. Resolve every discrepancy before writing.
+4. Set continuation to the current focus, handback point, exact next action,
+   next owner, source anchor, and fast relative graph paths. Keep historical
+   detail in events and records rather than copying it into continuation.
+5. Build the complete changed graph in a collision-safe staging directory.
+   Decode and validate it with the shared codec, then invoke the lease-verified
+   `state-write` path with that staged directory. It compares immutable refs,
+   definitions, append-only events, terminal statuses, and revisions; writes
+   children first; and writes `state.mdc` last.
+6. Re-read `overview.mdc`, reconcile every live stream row from validated roots,
+   and commit it last through the same validated project-graph path. Preserve
+   authored project identity and requirements. Environment and traps remain in
+   their linked documents.
+7. Release leases and return every materially rewritten path in
+   `generated_files`.
 
 ## Verification
 
-- Every selected stream's `state.md` (with its `## Continuation` fields) and `state/working.md` were refreshed and the global `overview.md` was upserted.
-- Handover touched only `state_root/.state/works/` and `state_root/.state/overview.md`; no unselected stream's files were rewritten.
-- `overview.md` now carries the canonical three-row `State systems` section and one up-to-date row per stream — each with its phase, blocker, `Location`, and documentation-only `Documentations` — and every row it did not own is unchanged.
-- A takeover could resume every continuable stream from the on-disk state alone — `## Continuation` names the current task, next owner, next action, and continuation intent.
-- No path outside the closed write set was created or rewritten: every entry in `generated_files` is under `state_root/.state/works/<work-id>/`, or is `state_root/.state/overview.md`. No continuation file was written anywhere else, and nothing was written because output was large.
-- Each selected stream's `state.md` is complete, internally consistent, and links `state/working.md`; the latter contains only current-focus summary and fast paths.
-- Every overview matches its children and canonical phase/task-status vocabularies.
-- Decisions, assumptions, deviations, blockers, review dispositions, evidence, promotion, and specification state are preserved per selected stream.
-- No secret, credential, absolute host path, path traversal, or symlink escape is present in the report.
-- Every held main-agent lease was released and each refreshed stream states its `State revision`.
+- Every selected root and the final project root decode and validate under
+  `essential.state/v1`.
+- State and plan revisions are monotonic; events are append-only; refs and task
+  definitions are immutable; done tasks remain done.
+- Continuation names a source anchor, owner, handback point, and next action.
+- `overview.mdc` agrees with every live stream and no unselected stream graph
+  changed.
+- Root documents were committed last; a failed write left the previous graph
+  authoritative.
+- No Markdown state, source code, durable docs, history, or remote system was
+  changed.
 
 ## Completion
 
-Use [./templates/output.md](templates/output.md). Report the working tree each stream is worked in, the `overview.md` path, the stream count, per-stream updated state paths and work directory, classification and decision counts, and `generated_files`. `handover: complete` reports the successful pause once persistence and the `overview.md` upsert land; reserve `handover: blocked` for a failure that prevents persistence itself. Examples live in [./examples/invocations.md](examples/invocations.md).
+Use [templates/output.md](templates/output.md) with the returned `.mdc` paths.
+Report each stream classification, blocker and next
+action, source anchor, revisions, lease disposition, `overview.mdc`, and
+`generated_files`. `handover: blocked` names the exact resolver, validation,
+lease, or transaction failure.

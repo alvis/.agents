@@ -123,15 +123,15 @@ get_repo_root_documents_context() {
   done
 
   # Reuse the resolver's selection semantics. Paths are pointers for the main
-  # session, not an instruction for every agent to load both files.
+  # session, not an instruction for every agent to load every listed file.
   local essential_root resolver_payload resolver_status work_dir
   essential_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
   resolver_payload="$("$essential_root/scripts/resolve-state-workspace" \
     --path "$repo_root" 2>/dev/null || true)"
   resolver_status="$(jq -r '.status // empty' <<<"$resolver_payload" 2>/dev/null || true)"
-  if [[ "$resolver_status" == "resolved" || "$resolver_status" == "requires_ignore" ]]; then
+  if [[ "$resolver_status" == "resolved" ]]; then
     work_dir="$(jq -r '.work_dir // empty' <<<"$resolver_payload")"
-    for name in goal.md state/working.md state.md; do
+    for name in goal.mdc state/working.mdc state.mdc; do
       path="$work_dir/$name"
       if [[ -f "$path" ]]; then
         rel="${path#"$repo_root"/}"
@@ -153,6 +153,10 @@ get_repo_root_documents_context() {
 
   if [[ -f "$repo_root/docs/design/README.md" ]]; then
     context+="- docs/design/README.md"$'\n'
+  fi
+
+  if [[ -f "$repo_root/docs/specs/README.md" ]]; then
+    context+="- docs/specs/README.md"$'\n'
   fi
 
   if [[ -n "$context" ]]; then

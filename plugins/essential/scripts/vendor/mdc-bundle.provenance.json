@@ -1,0 +1,14 @@
+{
+  "package": "@theriety/mdc@0.0.0",
+  "registryIntegrity": "sha512-DVMLaNGFVbL5Q2kTE9rEn6dwMOkH9bQwuDnntlKtrSyBt2s7fKQwLc22BAMCWxPVMN32KGrYe4M0ABprW00dJQ==",
+  "bundleTarget": "node-esm",
+  "bundleSize": 345520,
+  "bundleSha256": "3ffb3c5ce9db3140760dd0e901bb772acf3346669b62d7693aa2ac41ae7d631c",
+  "builder": "bun@1.3.14",
+  "runtimeDependencies": {
+    "yaml": "2.9.0",
+    "type-fest": "5.8.0",
+    "tagged-tag": "1.0.0"
+  },
+  "authority": "User-owned library; redistribution authorized in typed-mdc-state-dashboard/decisions/mdc-redistribution-authority.md"
+}

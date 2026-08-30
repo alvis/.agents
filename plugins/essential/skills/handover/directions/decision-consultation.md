@@ -1,16 +1,15 @@
 # Decision consultation
 
-Consult every unresolved material architecture, technology, product, security, data, migration, configuration, or scope decision before handover. Low-impact reversible assumptions may remain in `state.md` only with evidence, impact, and a recheck trigger.
+Consult unresolved material architecture, product, security, data, migration,
+configuration, or scope decisions before handover. Low-impact reversible
+assumptions may remain only as typed unresolved-question entities with evidence,
+impact, owner, and recheck condition.
 
-For each decision, present context and viable options with tradeoffs, always including:
+- Accepted: append a decision event, add or supersede the typed decision record,
+  reconcile affected tasks and validity, then stage the complete graph.
+- Deferred: keep the question, options, recommendation, owner or deadline, and
+  affected blocked refs in the unresolved document.
+- Rejected: preserve the alternative and rationale in the decision record.
 
-- **Perform research** — dispatch bounded research using [subagent-handover.md](../../../directions/subagent-handover.md), with the unresolved decision and evidence paths in Context. The researcher returns bounded proposed content and evidence; the main agent stores the lowercase child under `proposals/` with status `open`.
-- **Defer decision** — record owner/deadline, blocked tasks, and a pivot signal.
-
-Process outcomes:
-
-- Finalized: the main agent writes or updates `decisions/<semantic-slug>.md` with status, headline, rationale, alternatives, evidence, impact, and supersession, then reconciles `decisions.md` and affected `state.md` tasks.
-- Research: a delegated researcher returns the proposed child content, headline, status, and evidence; the main agent writes the `proposals/` child and reconciles `proposals.md`.
-- Deferred: the main agent keeps the question, options, recommendation, owner/deadline, and affected blocked tasks in `state.md`; it creates a decision child only when durable decision history already exists.
-
-If the user is unavailable, defer rather than decide. Batch five or more questions by dependency, placing blockers first. Every created or materially rewritten child belongs in `generated_files`; never update `state/working.md` from a delegated decision/research subtask.
+If the user is unavailable, defer rather than decide. A worker returns decision
+deltas; only the main agent stages, validates, and commits the graph.
