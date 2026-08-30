@@ -22,7 +22,7 @@
       },
       {
         "label": "Read at",
-        "value": "2026-08-29 13:42Z"
+        "value": "2026-08-29 14:00Z"
       }
     ]
   },
@@ -244,32 +244,32 @@
             {
               "name": "PM",
               "role": "documentation-contract",
-              "due": "Human review and merge draft PR #94; after merge evidence, mark the stream compl"
+              "due": "Human review and merge draft PR #94; after merge evidence, mark the stream completed."
             },
             {
               "name": "PM",
               "role": "page-renderer",
-              "due": "**Batch 2 is delivered and independently reviewed.** All sixteen asks (DR1 – DR4"
+              "due": "Batch 2 is delivered and independently reviewed. …"
             },
             {
               "name": "PM",
               "role": "specification-state",
-              "due": "Obtain an independent review for draft PR #191; the current-head dispatch was un"
+              "due": "Obtain an independent review for draft PR #191; the current-head dispatch was unavailable, so keep the PR draft and do not merge."
             },
             {
               "name": "repository reviewers",
               "role": "state-systems-clarity",
-              "due": "Assign two independent black-zone reviewers to PR #194 and record approvals on t"
+              "due": "Assign two independent black-zone reviewers to PR #194 and record approvals on the exact head; retain draft and merge/hold until then."
             },
             {
               "name": "maintainer",
               "role": "sync-pr-stack",
-              "due": "Review and merge draft PR #177 when desired; do not close this work before merge"
+              "due": "Review and merge draft PR #177 when desired; do not close this work before merge evidence exists."
             },
             {
               "name": "reviewer",
               "role": "test-cleanup-and-ci",
-              "due": "PR #78 is a green draft awaiting review; mark `completed` on merge evidence."
+              "due": "PR #78 is a green draft awaiting review; mark completed on merge evidence."
             }
           ]
         }
@@ -291,7 +291,15 @@
                   "kind": "code",
                   "text": "page-renderer"
                 },
-                " — **Batch 2 is delivered and independently reviewed.** All sixteen asks (DR1 – DR4, HB1 – HB2, CD1 – CD2, OT1 – OT7) are working in a rendered board, saved local-only as `08-renderer` … `14-discover-modes`, and the review batch 2 never had returned eighteen must-fix findings, all now closed by seeding the defect back (R-66 – R-83, E-158 – E-169). Nothing is pushed and no PR is open. **The work now waiting is the user's.** APR, deferred rather than cancelled, is approved against the tree this batch produced. **Five things owed at the gate:** whether `examples/data/project-state.json` should be built from a checked-in fixture tree rather than regenerated from the live `.state` (returned, not taken); the nineteen worth-considering findings declined for this pass; the two folded-forward fixes, still restackable because nothing is published, so the user may want `.code-line` moved back to `08-renderer` and the drawer-bar fix to `10-boards` (D-80); HB1's 21px card fix, neither confirmed fixed nor confirmed present since gate A; and the `project-state` board, never driven in a browser since the parser fixes changed what it reads. **R-47 stays open** — rewriting `references/presentation/components.md` as a JSON block catalogue is the one gap behind APR and was never in this batch."
+                " — ",
+                {
+                  "kind": "mark",
+                  "text": "Batch 2 is delivered and independently reviewed."
+                },
+                {
+                  "kind": "dim",
+                  "text": " …"
+                }
               ],
               "state": "active",
               "tags": [
@@ -305,7 +313,11 @@
                   "kind": "code",
                   "text": "state-systems-clarity"
                 },
-                " — Assign two independent black-zone reviewers to PR #194 and record approvals on the exact head; retain draft and merge/hold until then."
+                " — ",
+                {
+                  "kind": "text",
+                  "text": "Assign two independent black-zone reviewers to PR #194 and record approvals on the exact head; retain draft and merge/hold until then."
+                }
               ],
               "state": "done",
               "tags": [
@@ -319,7 +331,11 @@
                   "kind": "code",
                   "text": "specification-state"
                 },
-                " — Obtain an independent review for draft PR #191; the current-head dispatch was unavailable, so keep the PR draft and do not merge."
+                " — ",
+                {
+                  "kind": "text",
+                  "text": "Obtain an independent review for draft PR #191; the current-head dispatch was unavailable, so keep the PR draft and do not merge."
+                }
               ],
               "state": "pending",
               "tags": [
@@ -333,7 +349,11 @@
                   "kind": "code",
                   "text": "sync-pr-stack"
                 },
-                " — Review and merge draft PR #177 when desired; do not close this work before merge evidence exists."
+                " — ",
+                {
+                  "kind": "text",
+                  "text": "Review and merge draft PR #177 when desired; do not close this work before merge evidence exists."
+                }
               ],
               "state": "done",
               "tags": [
@@ -347,7 +367,11 @@
                   "kind": "code",
                   "text": "documentation-contract"
                 },
-                " — Human review and merge draft PR #94; after merge evidence, mark the stream completed."
+                " — ",
+                {
+                  "kind": "text",
+                  "text": "Human review and merge draft PR #94; after merge evidence, mark the stream completed."
+                }
               ],
               "state": "done",
               "tags": [
@@ -361,7 +385,19 @@
                   "kind": "code",
                   "text": "test-cleanup-and-ci"
                 },
-                " — PR #78 is a green draft awaiting review; mark `completed` on merge evidence."
+                " — ",
+                {
+                  "kind": "text",
+                  "text": "PR #78 is a green draft awaiting review; mark "
+                },
+                {
+                  "kind": "code",
+                  "text": "completed"
+                },
+                {
+                  "kind": "text",
+                  "text": " on merge evidence."
+                }
               ],
               "state": "done",
               "tags": [
@@ -375,7 +411,11 @@
                   "kind": "code",
                   "text": "20260724-review-plugin-stack-1szr99"
                 },
-                " — Poll PRs #55–#60 for author responses or new commits (task MON)."
+                " — ",
+                {
+                  "kind": "text",
+                  "text": "Poll PRs #55–#60 for author responses or new commits (task MON)."
+                }
               ],
               "state": "pending",
               "tags": [

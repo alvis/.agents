@@ -220,6 +220,39 @@ describe("fn:stateBoard", () => {
     expect(said).toContain("long-done: completed and stale");
   });
 
+  it("should draw a next action as an opening rather than as a fixed count", () => {
+    // the two places a next action is drawn cut it in opposite directions and
+    // neither could be read: the owner chip took 80 characters, so three of
+    // seven chips stopped inside a word, and the rail took all of it, so its
+    // longest entry ran to 1,307 characters beside a median of 110
+    const next = `Human review and merge draft PR #94. ${"Then more prose. ".repeat(40)}`;
+    const data = board([{ next }]);
+    const said = JSON.stringify([
+      ...blocksOf(data, "progress", "owners"),
+      ...blocksOf(data, "recent", "timeline"),
+    ]);
+
+    expect(said).toContain("Human review and merge draft PR #94.");
+    expect(said).not.toContain("Then more prose.");
+    expect(said).toContain("…");
+  });
+
+  it("should draw a state file's markup as meaning, not as punctuation", () => {
+    // there is no markup pass-through anywhere in this format, so a paragraph
+    // handed over verbatim arrived as literal asterisks and backticks: the
+    // board drew "**Batch 2 is delivered.**" exactly as the file writes it
+    const data = board([{ next: "Mark `completed` once **merged**." }]);
+    const said = JSON.stringify([
+      ...blocksOf(data, "progress", "owners"),
+      ...blocksOf(data, "recent", "timeline"),
+    ]);
+
+    expect(said).not.toContain("**");
+    expect(said).not.toContain("`");
+    expect(said).toContain('{"kind":"code","text":"completed"}');
+    expect(said).toContain('{"kind":"mark","text":"merged"}');
+  });
+
   it("should count the whole tree in the masthead", () => {
     const open = { ...DONE, id: "AAA02", mark: "⧗", status: "working" };
     const stuck = { ...DONE, id: "AAA03", mark: "!", status: "blocked" };
