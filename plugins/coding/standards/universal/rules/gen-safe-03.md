@@ -60,7 +60,7 @@ return resource;
 Before removal, trace every producer, caller, registration path, dynamic load,
 unsafe cast, and external input. Cite the exact producer test, then remove the
 guard and any helper, import, impossible-input test, or error mapping made
-unreachable. Preserve producer-contract tests and run focused tests, type checks,
+unreachable. Preserve producer-behavior tests and run focused tests, type checks,
 and lint.
 
 ## Guard Clauses for Boundary Values

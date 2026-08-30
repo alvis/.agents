@@ -93,12 +93,28 @@ describe("command-line argument handling", () => {
     [[], "the following arguments are required: files"],
     [["--unknown", "src/App.tsx"], "unrecognized arguments: --unknown"],
     [["--profile"], "argument --profile: expected one argument"],
+    [
+      ["--test-root", "--profile", "src/App.tsx"],
+      "argument --test-root: expected one argument",
+    ],
+    [
+      ["--test-pattern", "--profile", "src/App.tsx"],
+      "argument --test-pattern: expected one argument",
+    ],
+    [
+      ["--test-root=", "src/App.tsx"],
+      "argument --test-root: expected one argument",
+    ],
+    [
+      ["--test-pattern=", "src/App.tsx"],
+      "argument --test-pattern: expected one argument",
+    ],
   ])("preserves argparse errors for %j", (args, message) => {
     const result = runBun([process.execPath, "run", runner, ...args]);
     expect(result.exitCode).toBe(2);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe(
-      `usage: lint_profile_runner.ts [-h] [--profile PROFILE]\n                              [--coding-root CODING_ROOT]\n                              [--generic-scanner GENERIC_SCANNER]\n                              files [files ...]\nlint_profile_runner.ts: error: ${message}\n`,
+      `usage: lint_profile_runner.ts [-h] [--profile PROFILE]\n                              [--coding-root CODING_ROOT]\n                              [--generic-scanner GENERIC_SCANNER]\n                              [--test-root TEST_ROOT]\n                              [--test-pattern TEST_PATTERN]\n                              files [files ...]\nlint_profile_runner.ts: error: ${message}\n`,
     );
   });
   it("preserves argparse help output", () => {
@@ -106,12 +122,53 @@ describe("command-line argument handling", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe("");
     expect(result.stdout).toBe(
-      "usage: lint_profile_runner.ts [-h] [--profile PROFILE]\n                              [--coding-root CODING_ROOT]\n                              [--generic-scanner GENERIC_SCANNER]\n                              files [files ...]\n\npositional arguments:\n  files\n\noptions:\n  -h, --help            show this help message and exit\n  --profile PROFILE\n  --coding-root CODING_ROOT\n  --generic-scanner GENERIC_SCANNER\n",
+      "usage: lint_profile_runner.ts [-h] [--profile PROFILE]\n                              [--coding-root CODING_ROOT]\n                              [--generic-scanner GENERIC_SCANNER]\n                              [--test-root TEST_ROOT]\n                              [--test-pattern TEST_PATTERN]\n                              files [files ...]\n\npositional arguments:\n  files\n\noptions:\n  -h, --help            show this help message and exit\n  --profile PROFILE\n  --coding-root CODING_ROOT\n  --generic-scanner GENERIC_SCANNER\n  --test-root TEST_ROOT\n  --test-pattern TEST_PATTERN\n",
     );
   });
 });
 
 describe("profile-driven scanner execution", () => {
+  it("should forward compiler-test context for an explicit configured file", () => {
+    const root = temporaryRoot();
+    const generic = resolve(root, "coding/scripts/generic.ts");
+    writeScanner(generic, "generic");
+    const result = runBun(
+      [
+        process.execPath,
+        "run",
+        runner,
+        "--coding-root",
+        resolve(root, "coding"),
+        "--generic-scanner",
+        generic,
+        "--test-root",
+        root,
+        "--test-pattern",
+        "test-d/**/*.types.ts",
+        "--test-pattern",
+        "checks/**/*.check.ts",
+        "test-d/nested/order.types.ts",
+      ],
+      { cwd: root },
+    );
+    expect(result.exitCode, result.stderr).toBe(0);
+    const report = JSON.parse(result.stdout);
+    expect(report.scanner_runs[0].args).toEqual([
+      "test-d/nested/order.types.ts",
+      "--category",
+      "all",
+      "--before",
+      "5",
+      "--after",
+      "10",
+      "--test-root",
+      root,
+      "--test-pattern",
+      "test-d/**/*.types.ts",
+      "--test-pattern",
+      "checks/**/*.check.ts",
+    ]);
+  });
   it("runs generic and profile scanners once in order with eligible files", () => {
     const root = temporaryRoot();
     const scanner = resolve(root, "react/scripts/react.ts");

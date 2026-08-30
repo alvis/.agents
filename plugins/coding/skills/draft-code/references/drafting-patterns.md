@@ -31,16 +31,33 @@ placeholders below. Ambiguous plain `TODO:` markers are claimable by neither.
 
 ## Test placeholders
 
-- Use `describe.todo()` / `it.todo()` only while no interface exists yet; they
-  mark tests as pending without compile-time coupling and are completed later
-  by `coding:complete-test`.
-- As soon as an interface exists, write real test cases with assertions against
-  it. The suite fails red until implementation lands — that is the desired TDD
-  signal, not a defect.
+- Use `describe.todo()` / `it.todo()` while no callable runtime entrypoint
+  exists. They mark planned behavior as pending and are completed later by
+  `coding:complete-test`.
+- Once a public runtime stub is callable, write the smallest test that invokes
+  it and fails on missing behavior.
+- When the contract promises compiler-observable behavior permitted by
+  `TST-CORE-10`, use the project's configured type-test mechanism for the
+  smallest representative consumer case.
+  An acceptance case
+  compiles successfully; a rejection case uses the mechanism's
+  expected-diagnostic convention; overload resolution uses a representative
+  call; narrowing uses a representative predicate/assertion call and its
+  continuation; and a transformation compares representative consumer inputs
+  and outputs. Without the expected-diagnostic convention, leave a rejection
+  case
+  pending or isolate it outside the normal compilation graph until it can run
+  without making type diagnostics fail.
+- Do not enumerate type/interface members, exact signatures, schema fields,
+  export inventories, or barrel layout. Declaration shape alone receives no
+  test scaffold; type diagnostics and affected-consumer builds validate it.
+- Name unit test files `*.spec.ts`. A suite scoped to a function uses `describe('fn:functionName', ...)`; every case begins `it('should ...', ...)`.
 - Structure suites as one describe block per behavior, prepared for the
   arrange-act-assert pattern, with planned cases covering all functionality.
 - Draft supporting test utilities only as far as the scaffold needs: mock
   factories, fixture templates, and shared helpers.
+
+The skeleton phase is not a publication slice. Public shape, its first implementation, and the focused runtime or compiler-semantic tests its promises require ship as one feature surface.
 
 ## Examples
 
@@ -51,7 +68,7 @@ Draft a new service:
 # Creates:
 # - src/services/auth/types.ts (interfaces)
 # - src/services/auth/auth.service.ts (stubs)
-# - src/services/auth/auth.test.ts (test structure)
+# - src/services/auth/auth.spec.ts (runtime-behavior test structure)
 ```
 
 Draft an API endpoint:

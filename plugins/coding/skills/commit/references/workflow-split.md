@@ -25,7 +25,7 @@ Apply [workflow-plan-structure.md](./workflow-plan-structure.md). A path-prefix 
 For each candidate cluster, verify:
 
 - All files contribute to ONE conventional-commit scope
-- The cluster compiles + tests in isolation when applied on top of `main@origin`
+- The cluster compiles + passes applicable tests in isolation when applied on top of `main@origin`
 - No forward references to a later cluster
 
 If a file participates in multiple concerns, prefer splitting the file by hunk:
@@ -110,7 +110,16 @@ After EACH split + describe pair, run:
 jj log -r '@-..@' --no-graph
 ```
 
-After all splits, run the [SKILL.md](../SKILL.md) integrity verification and project scripts (unless `--no-verify`):
+After all splits, run the [SKILL.md](../SKILL.md) integrity verification and
+applicable project scripts for each cluster (unless `--no-verify`), including
+configured typecheck or equivalent diagnostics for all changed code, plus
+affected-consumer builds for changed public shape. Runtime tests apply only to
+runtime behavior; focused
+compile-time tests apply only to allowed compiler-semantic promises under
+`TST-CORE-10`. For a declaration-only cluster with neither test kind, run the
+diagnostics and consumer-build gates, then record both test gates as `SKIP (not
+applicable)`; do not run or invent a test. For example, a runtime-producing npm
+cluster may require:
 
 ```bash
 npm run lint
@@ -127,7 +136,7 @@ jj edit <change_id> && npm run build
 ## Hard rules
 
 - Cluster by domain, not path. Re-check against [workflow-plan-structure.md](./workflow-plan-structure.md).
-- Each cluster MUST compile + lint + test standalone.
+- Each cluster MUST compile/typecheck + lint + run applicable tests and affected-consumer builds standalone: runtime tests for runtime behavior, and focused compile-time tests only for allowed compiler-semantic promises under `TST-CORE-10`. A declaration-only cluster with neither test kind still runs its configured typecheck or equivalent diagnostics and affected-consumer builds; it must not receive a static-shape test.
 - Conventional regex enforced PER cluster before any `jj split` runs.
 - No forward references between clusters (a later cluster may depend on an earlier one; never the reverse).
 

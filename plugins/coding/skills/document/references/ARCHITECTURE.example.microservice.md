@@ -311,7 +311,7 @@ classDiagram
 
 ## 🔌 Extension Points
 
-The worker is explicitly designed to be extended by dropping a new adapter or handler into place. All extension seams are typed and covered by shared contract tests.
+The worker is explicitly designed to be extended by dropping a new adapter or handler into place. All extension seams are typed and covered by shared behavioral conformance suites that execute each real adapter.
 
 | Extension | Steps | Files Touched | Tests |
 | --- | --- | --- | --- |

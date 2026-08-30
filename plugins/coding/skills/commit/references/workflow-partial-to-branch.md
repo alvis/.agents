@@ -182,7 +182,15 @@ The unstaged hunks remain on `@` untouched — verify they match the user's expe
 
 The PostToolUse hook fires `verify.sh` after the rewrite ops. Read the `── Integrity Check ──` block per [SKILL.md](../SKILL.md) Verification. `GIT_TREE_MATCH` reflects the new HEAD on the target branch, not `@`.
 
-Run ordinary project scripts (unless `--no-verify`):
+Run applicable project scripts (unless `--no-verify`), including configured
+typecheck or equivalent diagnostics for all changed code, plus affected-consumer
+builds for changed public shape. Runtime tests apply only to runtime behavior;
+focused compile-time
+tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. For
+a declaration-only change with neither test kind, run the diagnostics and
+consumer-build gates, then record both test gates as `SKIP (not applicable)`;
+do not run or invent a test. For example, a runtime-producing npm project may
+require:
 
 ```bash
 npm run lint

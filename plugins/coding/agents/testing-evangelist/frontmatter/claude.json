@@ -3,5 +3,5 @@
   "permissionMode": "acceptEdits",
   "memory": "project",
   "maxTurns": 40,
-  "initialPrompt": "You can't write the test that proves a bug can't happen until there's code to cover. Greet the user and say plainly what you need: point you at the implementation, module, or behavior to test. Offer that you'll enumerate edge cases and author the suite test-first, then hand execution sweeps to Test Runner. Then wait; load your base standards and start only once real code is named."
+  "initialPrompt": "Focused tests need a concrete runtime behavior or a named compiler-observable expectation permitted by TST-CORE-10. Greet the user and ask them to name the task or behavior they want protected; offer to author the smallest case for that named surface. Then wait; once the work is named, load your base standards, exercise compiler behavior through representative consumer usage, and route declaration/signature inventories or layout to type diagnostics and affected-consumer builds. Follow TST-CORE-02: require a red case for pre-implementation or diagnosed-failure work; for already-correct behavior, retain an initially passing regression case only after sensitivity proof, implementation restoration, a green rerun, and an evidence report."
 }

@@ -2,7 +2,11 @@
 
 ## Intent
 
-Use `*.spec.ts` for unit, `*.spec.int.ts` for integration, `*.spec.e2e.ts` for end-to-end. Unit tests must stay isolated; integration tests must not rely on unit-style mocks.
+Use `*.spec.ts` for runtime unit tests, `*.spec.int.ts` for integration, and
+`*.spec.e2e.ts` for end-to-end. Configured compiler-test tools keep their own
+discovery conventions, such as tsd's `*.test-d.ts`; those files are not runtime
+unit tests. Unit tests must stay isolated; integration tests must not rely on
+unit-style mocks.
 
 ## Fix
 
@@ -21,12 +25,16 @@ user-service.spec.e2e.ts    // end-to-end test
 - Unit tests: `*.spec.ts` or `*.spec.tsx`
 - Integration tests: `*.spec.int.ts`
 - End-to-end tests: `*.spec.e2e.ts`
+- Compiler tests: the configured tool's discovered pattern, such as tsd's
+  `*.test-d.ts`
 
 **Test Isolation**: Unit tests (`.spec.ts`) must be fully isolated. Use mocks for databases, APIs, and services. Integration tests (`.spec.int.ts`) may use real internal dependencies and external services. **Mocking is NOT allowed in integration tests** - they must exercise real code paths.
 
 ## Edge Cases
 
 - When existing code matches prior violation patterns such as `user.test.ts`, refactor before adding new behavior.
+- Do not rename a configured compiler-test file to `*.spec.ts`; run it through
+  its type-test command rather than a runtime runner.
 
 ## Related
 

@@ -31,7 +31,7 @@ Initial picker with drag-drop and crop preview."
 jj new
 ```
 
-Hook prints `── Integrity Check ── PASS / PASS`. `npm run lint/test/build` all green. Report.
+Hook prints `── Integrity Check ── PASS / PASS`. Applicable lint, runtime or focused compiler test, and build gates are green; inapplicable test gates are reported `SKIP`. Report.
 
 ---
 
@@ -265,16 +265,16 @@ PASS. Report rewritten descendant metadata without invoking PR publication.
 
 User: "/coding:commit --reorder"
 
-Chain has UI before data:
+Chain has three independently shippable features outside the requested order:
 
 ```bash
 jj log -r 'main@origin..@'
-# abc123 feat(web): avatar picker UI
-# def456 feat(service): upload endpoint
-# ghi789 feat(data): avatar field
+# abc123 feat(user-profile): add avatar upload
+# def456 feat(auth): add password reset
+# ghi789 feat(audit): add log export
 ```
 
-Skill plans data → service → UI. User confirms.
+Skill plans audit export → password reset → avatar upload. User confirms.
 
 ```bash
 jj op log -n1 --no-graph -T 'self.id().short()'   # rollback: op88
@@ -293,16 +293,16 @@ PR states. The commit route does not republish or reparent the three open PRs.
 
 ---
 
-## 10. `--create-pr` — 3-PR stack with branch-prefix
+## 10. `--create-pr` — 3-PR stack of independent features with branch-prefix
 
-User: "/coding:commit --create-pr --branch-prefix feat-avatar"
+User: "/coding:commit --create-pr --branch-prefix platform-updates"
 
 Chain is already clean + linear (from prior `--reorder`). `coding:commit`
 finishes local history work, then delegates publication and hosted-CI
 convergence:
 
 ```text
-coding:pr create <resolved-stack: ghi789..abc123> --branch-prefix feat-avatar
+coding:pr create <resolved-stack: ghi789..abc123> --branch-prefix platform-updates
 ```
 
 `coding:pr create` owns bookmarks, pushes, PR title/body authoring, draft PRs,

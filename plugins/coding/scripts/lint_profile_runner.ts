@@ -205,6 +205,8 @@ interface Arguments {
   readonly profile?: string;
   readonly codingRoot: string;
   readonly genericScanner: string;
+  readonly testRoot?: string;
+  readonly testPatterns: readonly string[];
   readonly files: readonly string[];
 }
 type ParsedArguments =
@@ -213,14 +215,16 @@ type ParsedArguments =
   | { readonly kind: "help" };
 
 const program = basename(import.meta.url);
-const usage = `usage: ${program} [-h] [--profile PROFILE]\n${" ".repeat(program.length + 8)}[--coding-root CODING_ROOT]\n${" ".repeat(program.length + 8)}[--generic-scanner GENERIC_SCANNER]\n${" ".repeat(program.length + 8)}files [files ...]`;
-const help = `${usage}\n\npositional arguments:\n  files\n\noptions:\n  -h, --help            show this help message and exit\n  --profile PROFILE\n  --coding-root CODING_ROOT\n  --generic-scanner GENERIC_SCANNER\n`;
+const usage = `usage: ${program} [-h] [--profile PROFILE]\n${" ".repeat(program.length + 8)}[--coding-root CODING_ROOT]\n${" ".repeat(program.length + 8)}[--generic-scanner GENERIC_SCANNER]\n${" ".repeat(program.length + 8)}[--test-root TEST_ROOT]\n${" ".repeat(program.length + 8)}[--test-pattern TEST_PATTERN]\n${" ".repeat(program.length + 8)}files [files ...]`;
+const help = `${usage}\n\npositional arguments:\n  files\n\noptions:\n  -h, --help            show this help message and exit\n  --profile PROFILE\n  --coding-root CODING_ROOT\n  --generic-scanner GENERIC_SCANNER\n  --test-root TEST_ROOT\n  --test-pattern TEST_PATTERN\n`;
 
 function parseArgs(argv: readonly string[]): ParsedArguments {
   const here = import.meta.dirname;
   let profile: string | undefined;
   let codingRoot = resolve(here, "..");
   let genericScanner = resolve(here, "scan_potential_violations.ts");
+  let testRoot: string | undefined;
+  const testPatterns: string[] = [];
   const files: string[] = [];
   let positionalOnly = false;
   for (let index = 0; index < argv.length; index += 1) {
@@ -262,7 +266,41 @@ function parseArgs(argv: readonly string[]): ParsedArguments {
       index += 1;
     } else if (argument.startsWith("--generic-scanner="))
       genericScanner = argument.slice("--generic-scanner=".length);
-    else if (argument.startsWith("-"))
+    else if (argument === "--test-root") {
+      const value = argv[index + 1];
+      if (value === undefined || value.startsWith("-"))
+        return {
+          kind: "error",
+          message: "argument --test-root: expected one argument",
+        };
+      testRoot = value;
+      index += 1;
+    } else if (argument.startsWith("--test-root=")) {
+      const value = argument.slice("--test-root=".length);
+      if (value === "")
+        return {
+          kind: "error",
+          message: "argument --test-root: expected one argument",
+        };
+      testRoot = value;
+    } else if (argument === "--test-pattern") {
+      const value = argv[index + 1];
+      if (value === undefined || value.startsWith("-"))
+        return {
+          kind: "error",
+          message: "argument --test-pattern: expected one argument",
+        };
+      testPatterns.push(value);
+      index += 1;
+    } else if (argument.startsWith("--test-pattern=")) {
+      const value = argument.slice("--test-pattern=".length);
+      if (value === "")
+        return {
+          kind: "error",
+          message: "argument --test-pattern: expected one argument",
+        };
+      testPatterns.push(value);
+    } else if (argument.startsWith("-"))
       return {
         kind: "error",
         message: `unrecognized arguments: ${argument}`,
@@ -276,7 +314,14 @@ function parseArgs(argv: readonly string[]): ParsedArguments {
     };
   return {
     kind: "arguments",
-    value: { profile, codingRoot, genericScanner, files },
+    value: {
+      profile,
+      codingRoot,
+      genericScanner,
+      testRoot,
+      testPatterns,
+      files,
+    },
   };
 }
 
@@ -352,9 +397,14 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     ...process.env,
     CODING_LINT_STANDARD_ROOTS: standards.join(delimiter),
   };
+  const genericArgs = [
+    ...common,
+    ...(args.testRoot === undefined ? [] : ["--test-root", args.testRoot]),
+    ...args.testPatterns.flatMap((pattern) => ["--test-pattern", pattern]),
+  ];
   let [run, exitCode] = scannerResult(
     resolve(args.genericScanner),
-    common,
+    genericArgs,
     "generic",
     env,
   );

@@ -6,22 +6,24 @@ warning
 
 ## Intent
 
-Generated artifacts are isolated when practical. In a mixed implementation
-diff, every generated path is identifiable as generated and the rendered PR
-message names its source or generator, so reviewers can distinguish authored
-logic from derived output.
+Generated artifacts coupled to an implementing feature stay in that atomic
+feature diff. Every generated path is identifiable as generated and the
+rendered PR message names its source or generator, so reviewers can distinguish
+authored logic from derived output. Unrelated generated output is isolated.
 
 ## Scan
 
 Compare the classifier's generated paths with the implementation diff, Git
 attributes, and the rendered Generated Files section. Report unmarked paths,
 missing source or generator evidence, or generated output mixed with unrelated
-authored changes when separation is practical.
+authored changes. Do not report coupled generated contract output merely for
+shipping with the feature that implements it.
 
 ## Fix
 
-Move the generated output into a focused diff or mark every generated path and
-its source or generator in the selected PR message. Configure
+Keep coupled generated output with its implementing feature and mark every
+generated path and its source or generator in the selected PR message. Move
+only unrelated generated output into a focused diff. Configure
 `linguist-generated=true` when the repository supports it, without excluding
 the path from the PR file count.
 
@@ -33,6 +35,8 @@ the path from the PR file count.
   excluded from authored net LOC.
 - Snapshot-only changes may remain together when they are one reproducible
   generated surface.
+- A public schema, its generated client, and the endpoint that implements it
+  form one atomic feature surface; mark the generated client paths.
 
 ## Related
 

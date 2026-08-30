@@ -1,14 +1,14 @@
-import { isSpecFile } from "../scanlib/predicates.ts";
+import { jsTsTestFiles } from "../scanlib/predicates.ts";
 import { lineRule, withoutLineComment } from "./_line-rule.ts";
 
-/** Flags type-escape casts used as test doubles in spec files. */
+/** Flags type-escape casts used as test doubles in test files. */
 export const RULE = lineRule({
   id: "spec-escape-cast",
   label:
-    "`as unknown as` test-double cast — validate with `satisfies Partial<T>` first (TST-MOCK-09)",
+    "Type-escape test-double cast (`as unknown as` / `as never`) (TST-MOCK-09/TYP-TYPE-07)",
   order: 91,
-  appliesTo: isSpecFile,
-  ruleRefs: ["TST-MOCK-09"],
-  pattern: /\bas\s+unknown\s+as\b/,
+  appliesTo: jsTsTestFiles,
+  ruleRefs: ["TST-MOCK-09", "TYP-TYPE-07"],
+  pattern: /\bas\s+unknown\s+as\b|\bas\s+never\b/,
   code: withoutLineComment,
 });

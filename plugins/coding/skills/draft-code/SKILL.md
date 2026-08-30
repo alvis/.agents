@@ -15,7 +15,7 @@ Creates TypeScript-compliant production skeletons with explicit `TODO(implementa
 
 ## Boundaries
 
-- Use for: starting an already-specified implementation, or preparing typed production structure and test scaffolds for later completion.
+- Use for: starting an already-specified implementation, or preparing typed production structure and runtime-behavior or compiler-semantic test scaffolds for later completion.
 - Do not use for: implementing business logic or producing production-ready code (`coding:write-code`), writing complete tests with assertions beyond the scaffold (`coding:complete-test`), or modifying existing implementations (`coding:refactor` or `coding:fix`).
 - Reject when: the instruction is too vague to create meaningful types, the request is for implementation rather than a skeleton, the target directory does not exist, or the skeleton would conflict with existing code structure.
 
@@ -44,17 +44,18 @@ Apply these constitution standards while drafting:
 ## Workflow
 
 1. Parse the instruction into required types, interfaces, functions, and file structure. Read only the work-local design/spec children and durable architecture/design/spec paths named by the caller or mission capsule. For a direct or resume run, use `state/working.md` and `state.md` to discover those paths. Read neighboring modules for established patterns. Do not scan unrelated Markdown or fall back to root continuation/design files.
-2. Plan the structure before writing: file organization, type hierarchy, and test layout per the standards above.
+2. Plan the structure before writing: file organization, type hierarchy, and test layout for planned runtime behavior or compiler-observable semantics per the standards above.
 3. Draft type definitions (interfaces, type aliases, enums) and function stubs with JSDoc, marking every incomplete body with the canonical placeholders in [references/drafting-patterns.md](references/drafting-patterns.md) — `TODO(implementation):` comments plus the `IMPLEMENTATION:` sentinel throw wherever a value is expected.
-4. Draft the test structure: describe blocks per behavior, planned cases covering all functionality, and only the mock factories, fixtures, and helpers the skeleton needs. When no interface exists yet, use `describe.todo()`/`it.todo()`; once an interface exists, write real assertions that fail red until implementation — the desired TDD signal (details in references/drafting-patterns.md).
+4. Draft tests for planned runtime behavior through a callable public entrypoint and for compiler-observable behavior permitted by `TST-CORE-10` through representative consumer usage. Use `describe.todo()`/`it.todo()` until a runtime entrypoint is callable; once it is, write the smallest behavioral assertion that fails red for the missing implementation. Use the project's configured type-test mechanism for compiler semantics: acceptance cases compile, rejection cases use its expected-diagnostic convention, overload resolution and narrowing exercise representative calls, and transformations compare representative inputs and outputs. Keep a rejection case pending or outside the normal compilation graph when the configured mechanism cannot express its diagnostic. Declaration shape alone — members, signature or overload inventories, schemas, exports, or barrels — receives no test scaffold. Draft only the helpers and fixtures these cases need (details in references/drafting-patterns.md).
 5. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
 
 ## Verification
 
 - TypeScript compiles with no errors and all imports resolve (`npx tsc --noEmit` or the repository equivalent).
 - `npm run lint` (or equivalent) passes; file organization and naming match the standards above.
-- `npm run test` (or equivalent) runs without collection errors; scaffolded tests are pending or red exactly as designed.
+- Applicable repository-native test commands run without collection or configuration errors. Run a runtime command only when the project produces runtime behavior and configures a runtime framework; run a compile-time command only for an allowed compiler-semantic case. Runtime scaffolds are pending or red exactly as designed; runnable compiler-semantic cases pass through the configured expected-diagnostic convention, while unavailable cases remain pending or isolated from normal compilation.
 - Every placeholder uses a canonical form from references/drafting-patterns.md — no bare `TODO:` markers, which `coding:complete-code` refuses to claim.
+- The skeleton is internal: public shape reaches publication only with its first implementation and the focused runtime or compiler-semantic tests its promises require.
 
 ## Completion
 

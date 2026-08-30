@@ -1,4 +1,4 @@
-import { specFiles } from "../scanlib/predicates.ts";
+import { jsTsTestFiles } from "../scanlib/predicates.ts";
 import type { Rule } from "../scanlib/rule.ts";
 
 const pattern = /\.toBe\(\s*[{[]/g;
@@ -7,7 +7,7 @@ export const RULE: Rule = {
   id: "to-be-object-literal",
   label: "`.toBe(...)` against object/array literal (TST-DATA-06)",
   order: 125,
-  appliesTo: specFiles,
+  appliesTo: jsTsTestFiles,
   ruleRefs: ["TST-DATA-06"],
   scan: ({ path, lines, matches }) => {
     const text = lines.join("\n");

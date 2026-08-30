@@ -308,14 +308,22 @@ carry no reviewable lines; list them as not reviewed.
 
 ### Run the mechanical candidate scan
 
+Group changed files by owning project before scanning. Resolve each project's
+configured compiler-test mechanism and discovery patterns, then invoke the
+scanner once per group with that absolute project root and every applicable
+compiler-test glob. Never combine files owned by different test roots in one
+invocation:
+
 ```bash
 bash "${CODING_PR_SKILL_DIR}/scripts/review-scan.sh" \
-  <changed-files-in-review-tree> --category all --before 5 --after 10
+  <changed-files-owned-by-project> --category all --before 5 --after 10 \
+  --test-root <project-root> [--test-pattern <compiler-test-glob> ...]
 ```
 
-The wrapper resolves Python 3.13+ and may route repair through `coding:sync-tool`;
-surface a hard install failure rather than skipping silently. Candidates are
-advisory until confirmed against the rule they cite.
+The wrapper resolves the scanner from the installed PR skill and forwards every
+group's classification arguments. Surface a non-zero scanner failure rather
+than skipping silently. Candidates are advisory until confirmed against the
+rule they cite.
 
 ### Resolve the applicable standards
 

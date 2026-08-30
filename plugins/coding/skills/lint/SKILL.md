@@ -3,7 +3,7 @@ name: lint
 description: Enforce coding standards mechanically across a selected scope with batched linters and independent reviewers. Use when source files need lint-error correction, standards enforcement, or consistent formatting, including calls extended by another plugin's portable lint profile; behavior-changing repairs belong to fix.
 requirements:
   intelligence: medium
-argument-hint: "[specifier] [--scope=SCOPE] [--skip-unused] [--profile=ABSOLUTE_PATH]"
+argument-hint: "[specifier] [--scope=SCOPE] [--skip-unused] [--profile=ABSOLUTE_PATH] [--test-root=PROJECT_ROOT] [--test-pattern=GLOB ...]"
 ---
 
 # Linting
@@ -29,6 +29,7 @@ Apply generic coding standards mechanically. This skill owns file discovery, sco
   - `--scope`: `uncommitted` (default), `all`, or a focused section hint.
   - `--skip-unused`: bypass the pre-flight unused-code scan entirely.
   - `--profile=<absolute-path>`: internal extension contract for another plugin. Reject relative or unreadable paths.
+  - `--test-root=<project-root>` plus repeatable `--test-pattern=<compiler-test-glob>`: internal scanner classification contract. Resolve and pass these together when selected files include configured compiler tests whose paths do not follow built-in conventions.
 
 The caller forwards its original arguments unchanged and may append one profile. Direct calls without a profile apply generic checks to every eligible source file, regardless of framework.
 
@@ -56,11 +57,12 @@ You are the lead orchestrator: coordinate, delegate, and aggregate only — neve
    - `uncommitted`: union unstaged, staged, and untracked files, then apply the specifier.
    - `all` or a custom scope: resolve the specifier directly.
    - Always exclude ignored files, dependencies, generated output, and paths outside the repository.
+   - When the selected files include compiler tests, group files by owning project and resolve each project's configured type-test mechanism and discovery patterns before batching. Keep each batch within one project root, pass that absolute root as `--test-root` and every applicable compiler-test glob as a repeated `--test-pattern`, and never combine files owned by different test roots in one runner invocation; do not infer test status from filenames alone.
 3. Apply profile eligibility and exclusions when supplied. Stop cleanly if no files remain.
-4. Discover generic coding standards from active plugin context: collect the standard file paths listed under the "Plugin Constitution > Standards" sections of the system prompt (fall back to filesystem pattern search for `**/standards/**` when absent), select the set named by the linting Delegation Rule by matching names to filename stems (partial-stem matching tolerates renamed or split standards), and add testing standards when any target is a `*.spec.*` or `*.test.*` file. Add profile standards without replacing or duplicating generic standards. Pass standard paths to teammates as strings — the lead never reads their contents.
-5. Batch related files, with at most two files per batch.
+4. Discover generic coding standards from active plugin context: collect the standard file paths listed under the "Plugin Constitution > Standards" sections of the system prompt (fall back to filesystem pattern search for `**/standards/**` when absent), select the set named by the linting Delegation Rule by matching names to filename stems (partial-stem matching tolerates renamed or split standards), and add testing standards when any target is a `*.spec.*` or `*.test.*` file or matches a configured compiler-test pattern. Add profile standards without replacing or duplicating generic standards. Pass standard paths to teammates as strings — the lead never reads their contents.
+5. Batch related files that share one owning project root, with at most two files per batch.
 6. For each batch, delegate mechanical linting to a suitable available subagent that cannot delegate further (low-intelligence linters, max 4 concurrent — see the team reference for the full task contents and lifecycle):
-   - Run `bun run ${CODING_LINT_SKILL_DIR}/../../scripts/lint_profile_runner.ts [--profile=<absolute-path>] <files>` exactly once. The runner resolves Coding resources from its installed location.
+   - Run `bun run ${CODING_LINT_SKILL_DIR}/../../scripts/lint_profile_runner.ts [--profile=<absolute-path>] [--test-root=<project-root> --test-pattern=<compiler-test-glob> ...] <files>` exactly once. The runner resolves Coding resources from its installed location and forwards compiler-test classification only to the generic scanner.
    - The runner executes the generic scanner exactly once, then each profile scanner exactly once in declared order. Profile resources resolve relative to the absolute profile path.
    - Treat scanner output as advisory; confirm candidates against the matching rule before editing.
    - Apply generic and profile standards only within the requested scope.

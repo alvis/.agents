@@ -1,9 +1,13 @@
-import { basename, extname } from "node:path";
+import { basename, extname, matchesGlob } from "node:path";
+
+import type { ApplicabilityContext } from "./rule.ts";
 
 /** File extensions treated as plain source code. */
 export const SOURCE_SUFFIXES = new Set([
   ".ts",
   ".tsx",
+  ".mts",
+  ".cts",
   ".js",
   ".jsx",
   ".mjs",
@@ -14,7 +18,7 @@ export const PY_SUFFIXES = new Set([".py"]);
 /** Rust file extensions. */
 export const RUST_SUFFIXES = new Set([".rs"]);
 /** TypeScript-only extensions, used by rules that must not read JSX. */
-export const TS_SUFFIXES = new Set([".ts", ".tsx"]);
+export const TS_SUFFIXES = new Set([".ts", ".tsx", ".mts", ".cts"]);
 
 /**
  * Checks whether a path names a spec file by the `.spec.` marker.
@@ -30,17 +34,59 @@ export function isSpecFile(path: string): boolean {
 }
 
 /**
- * Checks whether a path names any kind of test file, spec or Python test.
+ * Checks whether a path names any supported test file.
  *
- * @param path - candidate file path
- * @returns true for spec-named sources and `test_*`/`*_test.py` files
+ * @param path - candidate file path, relative to the scanned root when patterns are supplied
+ * @param compilerTestPatterns - configured compiler-test discovery globs
+ * @returns true for specs, tsd declaration tests, and Python test files
  */
-export function isTestFile(path: string): boolean {
+export function isTestFile(
+  path: string,
+  compilerTestPatterns: readonly string[] = [],
+): boolean {
   const name = basename(path);
   return (
     isSpecFile(path) ||
+    isCompilerTestFile(path, compilerTestPatterns) ||
     (extname(path).toLowerCase() === ".py" &&
       (name.startsWith("test_") || name.endsWith("_test.py")))
+  );
+}
+
+/**
+ * Checks whether a path follows built-in or configured compiler-test discovery.
+ *
+ * @param path - candidate path relative to the configured test root
+ * @param compilerTestPatterns - configured compiler-test discovery globs
+ * @returns true when the path is a compiler test
+ */
+export function isCompilerTestFile(
+  path: string,
+  compilerTestPatterns: readonly string[] = [],
+): boolean {
+  let included = basename(path).endsWith(".test-d.ts");
+  for (const pattern of compilerTestPatterns) {
+    const negated = pattern.startsWith("!");
+    const glob = negated ? pattern.slice(1) : pattern;
+    if (glob !== "" && matchesGlob(path, glob)) included = !negated;
+  }
+  return included;
+}
+
+/**
+ * Restricts runtime-only rules to spec files outside compiler-test discovery.
+ *
+ * @param path - candidate filesystem path used to enforce spec naming
+ * @param context - configured compiler-test discovery for the normalized path
+ * @returns true when the source is a runtime spec rather than a compiler test
+ */
+export function runtimeSpecFiles(
+  path: string,
+  context: ApplicabilityContext,
+): boolean {
+  return (
+    isSpecFile(path) &&
+    !isCompilerTestFile(context.testPath, context.compilerTestPatterns)
   );
 }
 
@@ -55,13 +101,31 @@ export function sourceFiles(path: string): boolean {
 }
 
 /**
- * Predicate restricting a rule to spec-named files only.
+ * Predicate restricting a rule to every supported test-file convention.
  *
- * @param path - candidate file path
- * @returns true when the path is a spec file
+ * @param _path - candidate filesystem path, unused because context owns the normalized path
+ * @param context - configured test discovery for the current scan root
+ * @returns true when the normalized path is any supported test file
  */
-export function specFiles(path: string): boolean {
-  return isSpecFile(path);
+export function testFiles(
+  _path: string,
+  context: ApplicabilityContext,
+): boolean {
+  return isTestFile(context.testPath, context.compilerTestPatterns);
+}
+
+/**
+ * Predicate restricting a rule to JavaScript and TypeScript test files.
+ *
+ * @param path - candidate filesystem path used to enforce language scope
+ * @param context - configured test discovery for the current scan root
+ * @returns true when a JavaScript or TypeScript source is a supported test
+ */
+export function jsTsTestFiles(
+  path: string,
+  context: ApplicabilityContext,
+): boolean {
+  return sourceFiles(path) && testFiles(path, context);
 }
 
 /**
@@ -78,7 +142,7 @@ export function pythonFiles(path: string): boolean {
  * Predicate restricting a rule to TypeScript files, excluding JSX.
  *
  * @param path - candidate file path
- * @returns true when the extension is `.ts` or `.tsx`
+ * @returns true when the extension is a TypeScript source-module suffix
  */
 export function tsOnly(path: string): boolean {
   return TS_SUFFIXES.has(extname(path).toLowerCase());

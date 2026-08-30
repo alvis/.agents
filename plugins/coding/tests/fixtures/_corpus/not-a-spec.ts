@@ -1,5 +1,5 @@
 // non-spec source: hook-shaped text here must NOT trip test-hooks,
-// because the rule's appliesTo predicate gates on isSpecFile.
+// because the rule's appliesTo predicate uses supported test classification.
 export function registerHooks(): void {
   beforeEach(() => {
     prime();

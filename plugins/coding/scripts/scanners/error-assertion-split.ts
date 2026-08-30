@@ -1,4 +1,4 @@
-import { isSpecFile } from "../scanlib/predicates.ts";
+import { jsTsTestFiles } from "../scanlib/predicates.ts";
 import type { Rule } from "../scanlib/rule.ts";
 
 const instance =
@@ -11,7 +11,7 @@ export const RULE: Rule = {
   label:
     "Split error assertion — collapse to `expect(error).toEqual(new Error('…'))` (TST-DATA-07)",
   order: 92,
-  appliesTo: isSpecFile,
+  appliesTo: jsTsTestFiles,
   ruleRefs: ["TST-DATA-07"],
   scan: ({ path, lines, matches }) => {
     const codes = lines.map((line) => line.replace(/\/\/.*$/, ""));
