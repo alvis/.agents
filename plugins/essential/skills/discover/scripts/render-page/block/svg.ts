@@ -1,32 +1,26 @@
 import { RenderError } from "../error.ts";
 import { escapeHtml } from "../escape.ts";
 import { slugOf } from "../id.ts";
+import { readMarkup, writeMarkup } from "../markup.ts";
 import { optionalString, requireString } from "../validate.ts";
 
+import { cleanDrawing } from "./drawing.ts";
 import { pinFrame, renderPins } from "./pin.ts";
 
 import type { PageContext } from "../context.ts";
+import type { MarkupNode } from "../markup.ts";
 import type { Block } from "../types.ts";
 
-/** what disqualifies markup from being inlined, and why it is refused. */
-const REFUSALS: { pattern: RegExp; because: string }[] = [
-  {
-    pattern: /<script[\s>]/i,
-    because: "carries a <script>, which would run with the page's own origin",
-  },
-  {
-    pattern: /\son\w+\s*=/i,
-    because: "carries an inline event handler, which would run with the page's own origin",
-  },
-  {
-    pattern: /<foreignObject[\s>]/i,
-    because: "carries a <foreignObject>, which can hold arbitrary markup the rest of these checks do not see",
-  },
-  {
-    pattern: /(?:href|src)\s*=\s*["']?\s*(?:https?:|\/\/)/i,
-    because: "references something over the network, and a board must render with no requests at all",
-  },
-];
+/**
+ * names what a reader found sitting beside the drawing.
+ * @param node the node that should not have been there
+ * @returns a short description for the refusal
+ */
+function describe(node: MarkupNode): string {
+  if (node.kind !== "tag") return `the text ${JSON.stringify(node.text.trim().slice(0, 30))}`;
+
+  return `${/^[aeiou]/i.test(node.name) ? "an" : "a"} <${node.name}> element`;
+}
 
 /**
  * checks hand-authored markup and returns it ready to inline.
@@ -35,21 +29,40 @@ const REFUSALS: { pattern: RegExp; because: string }[] = [
  * because both put the same bytes into the page as markup and so both face the
  * same question: inlined SVG is same-origin markup, not an isolated image, so
  * anything executable inside it would be the page's problem.
+ *
+ * The drawing is parsed, judged, and written back out rather than scanned and
+ * passed through. A scan can only ever describe the bytes; three separate ways
+ * past one were found in a single read of the previous version, all of them the
+ * same mistake — an attribute the parser sees and the pattern does not, a
+ * character reference the parser resolves and the pattern does not, and markup
+ * after the drawing that the check never looked at. What goes into the page now
+ * is built from what was judged, so there is nothing left for those to be a gap
+ * between.
  * @param markup the file's contents, as read by the CLI layer
  * @param src the path the author wrote, named verbatim by every refusal
  * @param path JSON path of the block naming it
- * @returns the markup, trimmed and safe to inline
+ * @returns the drawing, rebuilt and safe to inline
  */
 export function inlineSvg(markup: string, src: string, path: string): string {
-  if (!/^\s*(?:<\?xml[^>]*\?>\s*|<!DOCTYPE[^>]*>\s*|<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(markup))
-    throw new RenderError(
-      `${path}: ${JSON.stringify(src)} does not begin with an <svg> element, so it is not a drawing this can inline`,
+  const refuse = (because: string): never => {
+    throw new RenderError(`${path}: ${JSON.stringify(src)} ${because}`);
+  };
+  const [root, ...beside] = readMarkup(markup, refuse).filter(
+    (node) => node.kind === "tag" || node.text.trim() !== "",
+  );
+  if (root?.kind !== "tag" || root.name.toLowerCase() !== "svg")
+    refuse(
+      "does not begin with an <svg> element, so it is not a drawing this can inline",
     );
-  for (const { pattern, because } of REFUSALS)
-    if (pattern.test(markup))
-      throw new RenderError(`${path}: ${JSON.stringify(src)} ${because}`);
+  // a document is one drawing, so anything after the root is markup the author
+  // put where nothing checked it — which is how an <iframe> holding an escaped
+  // <script> reached the page verbatim
+  if (beside.length)
+    refuse(
+      `carries ${describe(beside[0])} after its </svg>, and an inlined drawing is one element with nothing beside it`,
+    );
 
-  return markup.trim();
+  return writeMarkup(cleanDrawing([root], refuse));
 }
 
 /**

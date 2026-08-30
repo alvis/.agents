@@ -3,9 +3,10 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { buildAssets } from "./render-page/assets.ts";
+import { buildAssets } from "./render-page/bundle.ts";
 import { main } from "./render-page/cli.ts";
 import { RenderError } from "./render-page/error.ts";
+import { PAGE_KINDS } from "./render-page/types/page.ts";
 import { renderPage } from "./render-page/page.ts";
 import { CHOICE_TAGS } from "./render-page/types.ts";
 import { removeDirectory, temporaryDirectory } from "./test-support.ts";
@@ -87,7 +88,7 @@ function choicePage(
         label: "S",
         title: "T",
         blocks: [
-          { type: "choice", id: "c", label: "C", ask: "A", choices: [choice], ...overrides },
+          { type: "choice", id: "c", ref: "Q2", label: "C", ask: "A", choices: [choice], ...overrides },
         ],
       },
     ],
@@ -103,7 +104,7 @@ function choicePage(
 function choiceLabels(html: string): string[] {
   return [
     ...html.matchAll(
-      /<fieldset class="question" data-question data-question-kind="choice"[\s\S]*?<\/fieldset>/g,
+      /<fieldset class="question"[^>]*data-question-kind="choice"[\s\S]*?<\/fieldset>/g,
     ),
   ].flatMap((fieldset) =>
     [...fieldset[0].matchAll(/<label class="choice">[\s\S]*?<\/label>/g)].map(
@@ -188,6 +189,9 @@ function declarations(css: string): string[] {
     .map((part) => part.trim())
     .filter((part) => part.includes(":"));
 }
+
+/** the kinds a refusal quotes, in the order it quotes them. */
+const QUOTED_KINDS = PAGE_KINDS.map((kind) => JSON.stringify(kind)).join(", ");
 
 describe("fn:renderPage", () => {
   it("should emit a self-contained page with no external resource", async () => {
@@ -276,7 +280,9 @@ describe("fn:renderPage", () => {
     // SC-4: a button, not a hover target, controls the drawer
     expect(toggle).toContain('aria-expanded="false"');
     expect(toggle).toContain('aria-controls="drawer-panel"');
-    expect(html).toMatch(/<div class="drawer-panel" id="drawer-panel" hidden>/);
+    expect(html).toMatch(
+      /<div class="drawer-panel" id="drawer-panel" inert aria-hidden="true">/,
+    );
     // SC-4: the collapsed bar carries the action label and a true count
     expect(html).toContain(`>${data.action}</span>`);
     expect(html).toMatch(
@@ -360,15 +366,114 @@ describe("fn:renderPage", () => {
     const controls = /aria-controls="([^"]+)"/.exec(toggle)?.[1];
     const panel = new RegExp(`<div class="drawer-panel" id="${controls}"([^>]*)>`);
 
-    // SC-4: the control, its expanded state and the hidden panel must all
-    // name the same element, or the disclosure is announced but does nothing
+    // SC-4: the control, its expanded state and the closed panel must all
+    // name the same element, or the disclosure is announced but does nothing.
+    // The two closed-state attributes are asserted apart, because aria-hidden
+    // spells the word the other one used to carry and would pass for it
     expect(controls).toBeTruthy();
     expect(html).toMatch(panel);
-    expect(panel.exec(html)?.[1]).toContain("hidden");
+    expect(panel.exec(html)?.[1]).toMatch(/\binert\b/);
+    expect(panel.exec(html)?.[1]).toContain('aria-hidden="true"');
     expect(toggle).toMatch(/aria-expanded="false"/);
     // a button, never a hover target: hover fails touch, keyboard and readers
     expect(toggle).toMatch(/^<button type="button"/);
     expect(stylesheet(html)).not.toMatch(/\.drawer[^{]*:hover[^{]*\{[^}]*display/);
+  });
+
+  it("should draw no reply controls on a board that asks nothing", () => {
+    // HB2: a board can be all reading — the hub is one. Drawing the count, the
+    // reply and the copy button anyway offers a reader an empty message to
+    // send back, and a "0 unanswered" that can never become anything else
+    // the assertions read the markup, not the page: the runtime is inlined
+    // below it and names every one of these attributes in its own selectors,
+    // so a whole-page search would find them however the drawer was drawn
+    const markup = markupOf(
+      render(
+        page({
+          reply: undefined,
+          sections: [
+            {
+              id: "s",
+              label: "S",
+              title: "T",
+              blocks: [{ type: "callout", title: "h", text: "b" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(markup).not.toContain("data-unanswered-count");
+    expect(markup).not.toContain("data-reply-open");
+    expect(markup).not.toContain("data-copy");
+    expect(markup).not.toContain("data-reply-dialog");
+    expect(markup).not.toContain("data-chip-strip");
+    // the drawer itself stays: sections, notes and the scheme toggle are not
+    // about answering, and a reading board still needs them
+    expect(markup).toContain("data-drawer-toggle");
+    expect(markup).not.toContain('aria-describedby="drawer-count"');
+  });
+
+  it("should hold the bar's controls at its far end whether or not it asks", async () => {
+    const reading = render(
+      page({
+        reply: undefined,
+        sections: [
+          {
+            id: "s",
+            label: "S",
+            title: "T",
+            blocks: [{ type: "callout", title: "h", text: "b" }],
+          },
+        ],
+      }),
+    );
+    const asking = render(await loadExample());
+    const controls = /\.drawer-controls\{([^}]*)\}/.exec(stylesheet(asking))?.[1] ?? "";
+
+    // the scheme control and the expand hint belong at the far end of the bar.
+    // Carried there by the chip strip's flex-grow they arrive only on a board
+    // that draws a strip: the hub asks nothing, so it drew neither strip nor
+    // counters and the whole group collapsed back against the title. The group
+    // pushes itself instead, which is a rule the page cannot fail to emit
+    expect(controls).toMatch(/margin-inline-start:\s*auto/);
+    for (const html of [reading, asking]) {
+      const group =
+        /<div class="drawer-controls">([\s\S]*?)<\/div>/.exec(markupOf(html))?.[1] ?? "";
+
+      expect(group).toContain("data-scheme-toggle");
+      expect(group).toContain("data-drawer-toggle");
+    }
+    // and the strip, when there is one, still sits before them rather than
+    // being what puts them there
+    expect(markupOf(asking).indexOf("data-chip-strip")).toBeLessThan(
+      markupOf(asking).indexOf('<div class="drawer-controls">'),
+    );
+  });
+
+  it("should draw the run's other boards below the drawer's three columns", () => {
+    // the grid is what a reader opens the drawer for; the board set is where
+    // they go once they have finished with this board, so it reads as a footer
+    // rather than as the first thing between them and the sections they came
+    // for. Nothing pinned the order before, so it drifted to the top unnoticed
+    const markup = markupOf(
+      renderPage(page(), {
+        ...assets,
+        set: {
+          label: "Fixture run",
+          boards: [
+            { id: "fixture", label: "This board", href: "./fixture.html" },
+            { id: "other", label: "Other board", href: "./other.html" },
+          ],
+        },
+      }),
+    );
+    const sheet = markup.slice(markup.indexOf('<div class="drawer-sheet">'));
+
+    expect(sheet).toContain('<nav class="board-set"');
+    expect(sheet.indexOf('class="board-set"')).toBeGreaterThan(
+      sheet.indexOf('class="drawer-notes"'),
+    );
   });
 
   it("should escape author text in element content and in attributes", () => {
@@ -394,6 +499,7 @@ describe("fn:renderPage", () => {
               {
                 type: "note",
                 id: "n",
+      ref: "Q3",
                 label: "N",
                 ask: "A",
                 placeholder: '" onfocus="alert(1)',
@@ -510,11 +616,12 @@ describe("fn:renderPage", () => {
               {
                 type: "choice",
                 id: "c",
+                ref: "Q4",
                 label: "C",
                 ask: "A",
                 choices: [{ value: "only" }],
               },
-              { type: "note", id: "n", label: "N", ask: "A" },
+              { type: "note", id: "n", ref: "Q5", label: "N", ask: "A" },
               { type: "callout", title: "H", text: "B" },
               { type: "metrics", items: [{ label: "L", value: "V" }] },
             ],
@@ -536,8 +643,8 @@ describe("fn:renderPage", () => {
     expect(html).not.toMatch(/<\/p>\s*<dl class="metrics">/);
     // both questions still reach the count and the pre-rendered reply
     expect(html).toContain(">2 unanswered<");
-    expect(html).toContain("- **C:** unanswered");
-    expect(html).toContain("- **N:** unanswered");
+    expect(html).toContain("- **Q4 · C:** unanswered");
+    expect(html).toContain("- **Q5 · N:** unanswered");
   });
 
   it.each([...CHOICE_TAGS])("should draw the %s tag as a badge", (tag) => {
@@ -802,9 +909,12 @@ describe("fn:renderPage", () => {
   });
 
   it("should refuse an unsupported kind naming the offending field", () => {
-    expect(() => render(page({ kind: "triage-board" as never }))).toThrow(
+    // quoted from PAGE_KINDS rather than spelled out: the list grew from four
+    // to fifteen in stage 4, and a spelled-out copy fails on the growth
+    // rather than on the behaviour
+    expect(() => render(page({ kind: "mood-board" as never }))).toThrow(
       new RenderError(
-        'kind: required one of "ranked-options", "guided-interview", "risk-context-report", "architecture-board", received "triage-board"',
+        `kind: required one of ${QUOTED_KINDS}, received "mood-board"`,
       ),
     );
   });
@@ -851,6 +961,49 @@ describe("fn:main", () => {
     ).toBe(1);
     await removeDirectory(directory);
   });
+
+  it("should render a whole run from one invocation", async () => {
+    const directory = await temporaryDirectory();
+    const run = join(directory, "run.json");
+    await writeFile(
+      run,
+      JSON.stringify({
+        label: "One run",
+        boards: [
+          { id: "a", label: "A", data: "a.json", out: "a.html" },
+          { id: "b", label: "B", data: "b.json", out: "b.html" },
+        ],
+      }),
+      "utf8",
+    );
+    for (const id of ["a", "b"])
+      await writeFile(
+        join(directory, `${id}.json`),
+        JSON.stringify(page({ id })),
+        "utf8",
+      );
+    const out = join(directory, "out");
+
+    const code = await main(["--set", run, "-o", out]);
+
+    expect(code).toBe(0);
+    // one invocation, both boards, and each carrying the other
+    expect(await readFile(join(out, "a.html"), "utf8")).toContain(
+      'data-board-link="b"',
+    );
+    expect(await readFile(join(out, "b.html"), "utf8")).toContain(
+      'data-board-link="a"',
+    );
+    await removeDirectory(directory);
+  });
+
+  it("should reject a run invocation naming two run files", async () => {
+    expect(await main(["--set", "a.json", "b.json", "-o", "/tmp/out"])).toBe(2);
+  });
+
+  it("should report an unreadable run file", async () => {
+    expect(await main(["--set", "/nowhere/run.json", "-o", "/tmp/out"])).toBe(1);
+  });
 });
 
 describe("fn:renderPage kinds", () => {
@@ -867,9 +1020,12 @@ describe("fn:renderPage kinds", () => {
 
   it("should refuse an unknown kind, naming the field and quoting the value", () => {
     expect(() => render(page({ kind: "mood-board" } as Partial<PageData>)))
-      .toThrow(
-        'kind: required one of "ranked-options", "guided-interview", "risk-context-report", "architecture-board", received "mood-board"',
-      );
+      .toThrow(`kind: required one of ${QUOTED_KINDS}, received "mood-board"`);
+  });
+
+  it("should accept every kind it advertises", () => {
+    for (const kind of PAGE_KINDS)
+      expect(() => render(page({ kind }))).not.toThrow();
   });
 
   it("should render the architecture-board example end to end", async () => {
@@ -929,6 +1085,7 @@ describe("fn:renderPage validation floor", () => {
       withBlocks({
         type: "choice",
         id: undefined as never,
+      ref: "Q6",
         label: "L",
         ask: "A",
         choices: [{ value: "v" }],
@@ -940,6 +1097,7 @@ describe("fn:renderPage validation floor", () => {
       withBlocks({
         type: "choice",
         id: "c",
+      ref: "Q7",
         label: "" as never,
         ask: "A",
         choices: [{ value: "v" }],
@@ -951,6 +1109,7 @@ describe("fn:renderPage validation floor", () => {
       withBlocks({
         type: "choice",
         id: "c",
+      ref: "Q8",
         label: "L",
         ask: 0 as never,
         choices: [{ value: "v" }],
@@ -962,6 +1121,7 @@ describe("fn:renderPage validation floor", () => {
       withBlocks({
         type: "choice",
         id: "c",
+      ref: "Q9",
         label: "L",
         ask: "A",
         choices: [{ value: "v", summary: 3 as never }],
@@ -970,17 +1130,17 @@ describe("fn:renderPage validation floor", () => {
     ],
     [
       "note.id",
-      withBlocks({ type: "note", id: 1 as never, label: "L", ask: "A" }),
+      withBlocks({ type: "note", id: 1 as never, ref: "Q10", label: "L", ask: "A" }),
       "sections[0].blocks[0].id: required non-empty string, received 1",
     ],
     [
       "note.label",
-      withBlocks({ type: "note", id: "n", label: null as never, ask: "A" }),
+      withBlocks({ type: "note", id: "n", ref: "Q11", label: null as never, ask: "A" }),
       "sections[0].blocks[0].label: required non-empty string, received null",
     ],
     [
       "note.ask",
-      withBlocks({ type: "note", id: "n", label: "L", ask: undefined as never }),
+      withBlocks({ type: "note", id: "n", ref: "Q12", label: "L", ask: undefined as never }),
       "sections[0].blocks[0].ask: required non-empty string, received undefined",
     ],
     [
@@ -988,6 +1148,7 @@ describe("fn:renderPage validation floor", () => {
       withBlocks({
         type: "note",
         id: "n",
+      ref: "Q13",
         label: "L",
         ask: "A",
         placeholder: false as never,
@@ -998,11 +1159,6 @@ describe("fn:renderPage validation floor", () => {
       "masthead",
       { masthead: "not an object" as never },
       'masthead: required object, received "not an object"',
-    ],
-    [
-      "reply",
-      { reply: undefined as never },
-      "reply: required object, received undefined",
     ],
     [
       "sections",
@@ -1029,6 +1185,7 @@ describe("fn:renderPage validation floor", () => {
       withBlocks({
         type: "choice",
         id: "c",
+      ref: "Q14",
         label: "L",
         ask: "A",
         choices: [],
@@ -1037,6 +1194,27 @@ describe("fn:renderPage validation floor", () => {
     ],
   ])("should refuse a bad %s naming its path", (_field, overrides, message) => {
     expect(() => render(page(overrides))).toThrow(new RenderError(message));
+  });
+
+  it("should refuse a board that asks a question and carries no reply", () => {
+    // the reply is required by what the page asks, not by the page existing.
+    // The fixture has to hold a question, or this passes on a board that was
+    // never obliged to reply in the first place
+    expect(() =>
+      render(
+        page({
+          ...withBlocks({
+            type: "note",
+            id: "n",
+            ref: "N1",
+            label: "L",
+            ask: "A",
+            placeholder: "P",
+          }),
+          reply: undefined,
+        }),
+      ),
+    ).toThrow(new RenderError("reply: required object, received undefined"));
   });
 
   it("should refuse a row whose cell count does not match the columns", () => {
@@ -1061,6 +1239,49 @@ describe("fn:renderPage validation floor", () => {
     );
   });
 
+  it("should refuse a question with no citation code", () => {
+    // the code is how a reader names the question in the reply they send back,
+    // so a board that omits one asks for an answer nobody can cite
+    expect(() =>
+      render(page(withBlocks({ type: "note", id: "n", label: "L", ask: "A" } as never))),
+    ).toThrow(
+      new RenderError(
+        "sections[0].blocks[0].ref: required non-empty string, received undefined",
+      ),
+    );
+  });
+
+  it.each([
+    ["too long for the chip", "DECISION-1"],
+    ["not starting on a letter or digit", "-D1"],
+    ["holding a character outside the grammar", "D.1"],
+  ])("should refuse a citation code %s", (_why, ref) => {
+    expect(() =>
+      render(page(withBlocks({ type: "note", id: "n", ref, label: "L", ask: "A" }))),
+    ).toThrow(
+      new RenderError(
+        `sections[0].blocks[0].ref: citation code ${JSON.stringify(ref)} must match [A-Za-z0-9][A-Za-z0-9-]{0,5} — it is drawn inside a chip, so it has to stay short`,
+      ),
+    );
+  });
+
+  it("should refuse a duplicate citation code naming the second occurrence", () => {
+    // two questions sharing a code make every citation ambiguous, and the
+    // chip strip draws the same square twice with different answers behind it
+    expect(() =>
+      render(
+        page(
+          withBlocks(
+            { type: "note", id: "one", ref: "D1", label: "First", ask: "A" },
+            { type: "note", id: "two", ref: "D1", label: "Second", ask: "A" },
+          ),
+        ),
+      ),
+    ).toThrow(
+      new RenderError('sections[0].blocks[1].ref: duplicate citation code "D1"'),
+    );
+  });
+
   it("should refuse a duplicate question id naming the second occurrence", () => {
     // two questions sharing an id share one radio group, so one answer
     // silently overwrites the other and {{answers}} loses a line
@@ -1072,7 +1293,7 @@ describe("fn:renderPage validation floor", () => {
               id: "s",
               label: "S",
               title: "T",
-              blocks: [{ type: "note", id: "gate", label: "First", ask: "A" }],
+              blocks: [{ type: "note", id: "gate", ref: "Q15", label: "First", ask: "A" }],
             },
             {
               id: "t",
@@ -1083,6 +1304,7 @@ describe("fn:renderPage validation floor", () => {
                 {
                   type: "choice",
                   id: "gate",
+                  ref: "Q16",
                   label: "Second",
                   ask: "A",
                   choices: [{ value: "v" }],
@@ -1138,7 +1360,7 @@ describe("fn:renderPage validation floor", () => {
               id: "s",
               label: "S",
               title: "T",
-              blocks: [{ type: "note", id: "gate#1", label: "L", ask: "A" }],
+              blocks: [{ type: "note", id: "gate#1", ref: "Q17", label: "L", ask: "A" }],
             },
           ],
         }),
@@ -1193,7 +1415,7 @@ describe("fn:renderPage validation floor", () => {
             id: "risk_map-2",
             label: "S",
             title: "T",
-            blocks: [{ type: "note", id: "next_step-1", label: "L", ask: "A" }],
+            blocks: [{ type: "note", id: "next_step-1", ref: "Q18", label: "L", ask: "A" }],
           },
         ],
       }),
@@ -1216,7 +1438,7 @@ describe("fn:renderPage validation floor", () => {
             id: "gate",
             label: "S",
             title: "T",
-            blocks: [{ type: "note", id: "gate", label: "L", ask: "A" }],
+            blocks: [{ type: "note", id: "gate", ref: "Q19", label: "L", ask: "A" }],
           },
         ],
       }),
@@ -1240,7 +1462,7 @@ describe("fn:renderPage validation floor", () => {
             id: "drawer-panel",
             label: "S",
             title: "T",
-            blocks: [{ type: "note", id: "drawer-count", label: "L", ask: "A" }],
+            blocks: [{ type: "note", id: "drawer-count", ref: "Q20", label: "L", ask: "A" }],
           },
         ],
       }),
@@ -1278,6 +1500,7 @@ const NEW_BLOCKS = {
   checklist: {
     type: "checklist",
     id: "controls",
+      ref: "Q21",
     label: "Launch controls",
     ask: "Which must show measured containment?",
     options: [
@@ -1289,6 +1512,7 @@ const NEW_BLOCKS = {
   scale: {
     type: "scale",
     id: "confidence",
+      ref: "Q22",
     label: "Containment confidence",
     ask: "How ready is the containment path?",
     points: [
@@ -1300,6 +1524,7 @@ const NEW_BLOCKS = {
   decision: {
     type: "decision",
     id: "rollout",
+      ref: "Q23",
     label: "Rollout plan",
     ask: "Approve the staged rollout behind a flag, or ask for a change.",
     placeholder: "For example: hold the flag open for a week.",
@@ -1433,6 +1658,7 @@ describe("fn:renderPage new blocks", () => {
         withBlocks({
           type: "scale",
           id: "one",
+      ref: "Q24",
           label: "L",
           ask: "A",
           points: [{ value: "only" }],
@@ -1535,12 +1761,112 @@ describe("fn:renderPage new blocks", () => {
     expect(css).toMatch(
       /\.choices\{[^}]*minmax\(min\(17rem,100%\),1fr\)/,
     );
-    // the drawer's grid shares the defect and the fix; .metrics is exempt at
-    // 13rem, which already fits the narrowest column the page can produce
+    // DR1: the drawer's grid is three declared columns rather than as many as
+    // fit, so its tracks carry no minimum of their own to overflow with — and
+    // the narrowest viewport gets one column rather than three slivers.
+    // .metrics is exempt at 13rem, which already fits the narrowest column
     expect(css).toMatch(
-      /\.drawer-grid\{[^}]*minmax\(min\(17rem,100%\),1fr\)/,
+      /\.drawer-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width:40rem\)\{\.drawer-grid\{grid-template-columns:minmax\(0,1fr\)\}\}/,
     );
     expect(css).not.toMatch(/minmax\(1[4-9]rem,1fr\)/);
+  });
+
+  it("should stretch a board card to the row it shares", () => {
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
+
+    // HB1 moved the border and the background from the list item onto the
+    // anchor, and an anchor is not stretched by the grid the item is in: a
+    // card with a shorter blurb stood 21px short of its neighbours, driven at
+    // 1440px on the hub. The item hands its height down instead
+    expect(css).toContain(".board-index li{display:grid}");
+    expect(css).not.toMatch(/\.board-card\{display:block/);
+  });
+
+  it("should fade only the end of the chip strip that hides a chip", () => {
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
+    const strip = /\.chip-strip\{([^}]*)\}/.exec(css)?.[1] ?? "";
+
+    // masked at both ends unconditionally, the first chip lay under a gradient
+    // from the moment the page loaded, which on a 2rem square reads as a
+    // half-drawn code rather than as the start of a row. The runtime says which
+    // end is cutting one off and the mask follows it
+    expect(strip).not.toContain("mask-image");
+    expect(css).toMatch(
+      /\.chip-strip\[data-overflow="start"\]\{[^}]*mask-image:linear-gradient\(90deg,transparent,#000 1\.4rem\)/,
+    );
+    expect(css).toMatch(
+      /\.chip-strip\[data-overflow="end"\]\{[^}]*mask-image:linear-gradient\(90deg,#000 calc\(100% - 1\.4rem\),transparent\)/,
+    );
+    expect(css).toMatch(/\.chip-strip\[data-overflow="both"\]\{[^}]*mask-image:/u);
+    // the current chip's ring is a box-shadow, which draws outside the border
+    // box and is clipped on all four sides by the scroller it sits in
+    expect(strip).toContain("padding:2px");
+  });
+
+  it("should give a chip the colour of the control that set it", () => {
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.decision))));
+    const status = (name: string): string =>
+      new RegExp(`\\.q-chip\\[data-status="${name}"\\]\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+    const verdict = (name: string): string =>
+      new RegExp(
+        `\\.verdict\\[data-verdict="${name}"\\]\\[aria-pressed="true"\\]\\{([^}]*)\\}`,
+      ).exec(css)?.[1] ?? "";
+
+    // approving is agreeing with the board and changing is overriding it, and
+    // the strip has to say the same thing the card does. Confirmed and answered
+    // were the wrong way round, so an approved decision showed a green button
+    // over an accent chip, and a changed one an accent button under an amber
+    expect(status("confirmed")).toContain("background:var(--ui-positive-soft)");
+    expect(status("changed")).toContain("background:var(--ui-amber-soft)");
+    expect(status("answered")).toContain("background:var(--ui-accent-soft)");
+    expect(verdict("approve")).toContain("background:var(--ui-positive-soft)");
+    expect(verdict("change")).toContain("background:var(--ui-amber-soft)");
+    // the two nobody has settled stay empty: a dashed edge says so in a way a
+    // pale fill does not
+    expect(status("suggested")).not.toContain("background:");
+    expect(status("unanswered")).not.toContain("background:");
+  });
+
+  it("should colour a marked option by whether it follows the recommendation", () => {
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
+    const scope = '.question:has(input[type="radio"][data-recommended]) ';
+    const against = `${scope}.choice:has(input[type="radio"]:checked)`;
+    const with_ = `${scope}.choice:has(input[type="radio"][data-recommended]:checked)`;
+
+    expect(css).toContain(`${against}{border-color:var(--ui-amber)`);
+    expect(css).toContain(`${with_}{border-color:var(--ui-positive)`);
+    // :has() takes its argument's specificity, so the narrower-looking rule is
+    // not the more specific one: green only wins because it sits under the same
+    // .question:has(...) scope the amber rule does and adds one class to it
+    expect(css.indexOf(with_)).toBeGreaterThan(css.indexOf(against));
+    // a checklist reuses .choice with checkboxes and can never match a
+    // recommendation, so neither rule may reach it
+    expect(css).toContain(".choice:has(input:checked){border-color:var(--ui-accent)");
+  });
+
+  it("should give every option tag its own colour", () => {
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
+
+    // three of the six shared the accent and two more the amber, so a badge
+    // said a tag was present without saying which one
+    for (const tag of CHOICE_TAGS) {
+      const slug = tag.toLowerCase();
+      expect(css).toContain(
+        `.badge[data-tag="${tag}"]{border-color:var(--tag-${slug}); background:var(--tag-${slug}-soft); color:var(--tag-${slug}-ink)}`,
+      );
+    }
+    // the vocabulary is closed and refused at build time, so the bare rule is
+    // reached by nothing; a word the page cannot colour is not endorsed either
+    expect(css).toMatch(/\.badge\{[^}]*border:1px solid var\(--ui-border-strong\)/);
+    // six triples, and the six base tones are six different colours
+    const tones = CHOICE_TAGS.map(
+      (tag) =>
+        new RegExp(`--tag-${tag.toLowerCase()}:([^;]+);`).exec(css)?.[1] ?? tag,
+    );
+    expect(new Set(tones).size).toBe(CHOICE_TAGS.length);
   });
 });
 
@@ -1557,7 +1883,7 @@ describe("fn:renderPage single-reply round trip", () => {
           NEW_BLOCKS.decision,
           NEW_BLOCKS.steps,
           NEW_BLOCKS.findings,
-          { type: "note", id: "constraint", label: "Constraint", ask: "A" },
+          { type: "note", id: "constraint", ref: "Q25", label: "Constraint", ask: "A" },
         ],
       },
     ],
@@ -1581,7 +1907,9 @@ describe("fn:renderPage single-reply round trip", () => {
       "Constraint",
     ])
       expect(html).toMatch(
-        new RegExp(`- \\*\\*${label}:\\*\\* (unanswered|recommended [^<]*; not yet confirmed)`),
+        // the citation code precedes every label, so a recipient reading the
+        // reply can name the question the same way the board draws it
+        new RegExp(`- \\*\\*[A-Za-z0-9-]+ · ${label}:\\*\\* (unanswered|recommended [^<]*; not yet confirmed)`),
       );
     // nothing on a freshly rendered page has been marked, so no group that
     // would claim otherwise may appear
@@ -1684,82 +2012,82 @@ describe("fn:renderPage new-block validation", () => {
     ],
     [
       "checklist.id",
-      { type: "checklist", id: undefined, label: "L", ask: "A", options: [{ value: "v" }] },
+      { type: "checklist", id: undefined, ref: "Q26", label: "L", ask: "A", options: [{ value: "v" }] },
       "sections[0].blocks[0].id: required non-empty string, received undefined",
     ],
     [
       "checklist.label",
-      { type: "checklist", id: "c", label: 3, ask: "A", options: [{ value: "v" }] },
+      { type: "checklist", id: "c", ref: "Q27", label: 3, ask: "A", options: [{ value: "v" }] },
       "sections[0].blocks[0].label: required non-empty string, received 3",
     ],
     [
       "checklist.ask",
-      { type: "checklist", id: "c", label: "L", ask: "", options: [{ value: "v" }] },
+      { type: "checklist", id: "c", ref: "Q28", label: "L", ask: "", options: [{ value: "v" }] },
       'sections[0].blocks[0].ask: required non-empty string, received ""',
     ],
     [
       "checklist.options",
-      { type: "checklist", id: "c", label: "L", ask: "A", options: [] },
+      { type: "checklist", id: "c", ref: "Q29", label: "L", ask: "A", options: [] },
       "sections[0].blocks[0].options: required non-empty array, received []",
     ],
     [
       "checklist.options[i].value",
-      { type: "checklist", id: "c", label: "L", ask: "A", options: [{ value: 0 }] },
+      { type: "checklist", id: "c", ref: "Q30", label: "L", ask: "A", options: [{ value: 0 }] },
       "sections[0].blocks[0].options[0].value: required non-empty string, received 0",
     ],
     [
       "checklist.options[i].summary",
-      { type: "checklist", id: "c", label: "L", ask: "A", options: [{ value: "v", summary: 9 }] },
+      { type: "checklist", id: "c", ref: "Q31", label: "L", ask: "A", options: [{ value: "v", summary: 9 }] },
       "sections[0].blocks[0].options[0].summary: required non-empty string, received 9",
     ],
     [
       "scale.id",
-      { type: "scale", id: 4, label: "L", ask: "A", points: [{ value: "v" }] },
+      { type: "scale", id: 4, ref: "Q32", label: "L", ask: "A", points: [{ value: "v" }] },
       "sections[0].blocks[0].id: required non-empty string, received 4",
     ],
     [
       "scale.label",
-      { type: "scale", id: "s2", label: null, ask: "A", points: [{ value: "v" }] },
+      { type: "scale", id: "s2", ref: "Q33", label: null, ask: "A", points: [{ value: "v" }] },
       "sections[0].blocks[0].label: required non-empty string, received null",
     ],
     [
       "scale.ask",
-      { type: "scale", id: "s2", label: "L", ask: undefined, points: [{ value: "v" }] },
+      { type: "scale", id: "s2", ref: "Q34", label: "L", ask: undefined, points: [{ value: "v" }] },
       "sections[0].blocks[0].ask: required non-empty string, received undefined",
     ],
     [
       "scale.points",
-      { type: "scale", id: "s2", label: "L", ask: "A", points: [] },
+      { type: "scale", id: "s2", ref: "Q35", label: "L", ask: "A", points: [] },
       "sections[0].blocks[0].points: required non-empty array, received []",
     ],
     [
       "scale.points[i].value",
-      { type: "scale", id: "s2", label: "L", ask: "A", points: [{ value: {} }] },
+      { type: "scale", id: "s2", ref: "Q36", label: "L", ask: "A", points: [{ value: {} }] },
       "sections[0].blocks[0].points[0].value: required non-empty string, received {}",
     ],
     [
       "scale.points[i].label",
-      { type: "scale", id: "s2", label: "L", ask: "A", points: [{ value: "v", label: 7 }] },
+      { type: "scale", id: "s2", ref: "Q37", label: "L", ask: "A", points: [{ value: "v", label: 7 }] },
       "sections[0].blocks[0].points[0].label: required non-empty string, received 7",
     ],
     [
       "decision.id",
-      { type: "decision", id: "", label: "L", ask: "A" },
+      { type: "decision", id: "", ref: "Q38", label: "L", ask: "A" },
       'sections[0].blocks[0].id: required non-empty string, received ""',
     ],
     [
       "decision.label",
-      { type: "decision", id: "d", label: [], ask: "A" },
+      { type: "decision", id: "d", ref: "Q39", label: [], ask: "A" },
       "sections[0].blocks[0].label: required non-empty string, received []",
     ],
     [
       "decision.ask",
-      { type: "decision", id: "d", label: "L", ask: 6 },
+      { type: "decision", id: "d", ref: "Q40", label: "L", ask: 6 },
       "sections[0].blocks[0].ask: required non-empty string, received 6",
     ],
     [
       "decision.placeholder",
-      { type: "decision", id: "d", label: "L", ask: "A", placeholder: 1 },
+      { type: "decision", id: "d", ref: "Q41", label: "L", ask: "A", placeholder: 1 },
       "sections[0].blocks[0].placeholder: required non-empty string, received 1",
     ],
   ])("should refuse a bad %s naming its path", (_field, block, message) => {
@@ -1797,15 +2125,21 @@ describe("fn:renderPage examples", () => {
     expect(data.sections.length).toBeGreaterThanOrEqual(5);
     expect(kinds).toStrictEqual(new Set(["choice", "note", "checklist", "scale"]));
     expect(html).toContain(`>${questions.length} unanswered<`);
+    // each question reaches the reply under the exact code its JSON declares,
+    // which is what makes the code worth citing back at the board
     for (const question of questions)
       expect(html).toMatch(
         new RegExp(
-          `- \\*\\*${question.label}:\\*\\* (unanswered|recommended [^<]*; not yet confirmed)`,
+          `- \\*\\*${question.ref} · ${question.label}:\\*\\* (unanswered|recommended [^<]*; not yet confirmed)`,
         ),
       );
     // no id may repeat, or one answer would overwrite another silently
     const ids = [...html.matchAll(/data-question-id="([^"]+)"/g)].map((id) => id[1]);
     expect(new Set(ids).size).toBe(ids.length);
+    // and no code may repeat, or a citation would name two questions at once
+    const refs = [...html.matchAll(/data-question-ref="([^"]+)"/g)].map((ref) => ref[1]);
+    expect(refs).toHaveLength(questions.length);
+    expect(new Set(refs).size).toBe(refs.length);
     expect(html).not.toMatch(/https?:\/\//i);
   });
 
@@ -2068,5 +2402,100 @@ describe("fn:renderPage rich text", () => {
         } as never),
       ),
     ).toThrow("sections[0].blocks[0].text[1].kind: required one of");
+  });
+});
+
+describe("fn:renderPage Mermaid runtime", () => {
+  /** builds a board whose only graph sits behind a disclosure. */
+  function nested(): PageData {
+    return page({
+      sections: [
+        {
+          id: "s",
+          label: "S",
+          title: "T",
+          blocks: [
+            {
+              type: "disclosure",
+              summary: "Working",
+              blocks: [
+                { type: "mermaid", source: "graph TD; a-->b;", alt: "a to b" },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  it("should carry the runtime for a graph behind a disclosure", () => {
+    const html = renderPage(nested(), { ...assets, mermaid: "/* drawn */" });
+
+    expect(html).toContain("/* drawn */");
+    expect(html).toContain("data-mermaid");
+  });
+
+  it("should refuse a graph behind a disclosure when given no runtime", () => {
+    expect(() => render(nested())).toThrow(
+      /draws with Mermaid but was given no Mermaid runtime/,
+    );
+  });
+
+  it("should carry no runtime for a board that draws no graph", () => {
+    const html = renderPage(
+      page({
+        sections: [
+          {
+            id: "s",
+            label: "S",
+            title: "T",
+            blocks: [
+              {
+                type: "disclosure",
+                summary: "Working",
+                blocks: [{ type: "prose", text: "no graph here" }],
+              },
+            ],
+          },
+        ],
+      }),
+      { ...assets, mermaid: "/* drawn */" },
+    );
+
+    expect(html).not.toContain("/* drawn */");
+  });
+});
+
+describe("fn:renderPage malformed blocks", () => {
+  /** builds a board whose blocks, at one level or the other, are not a list. */
+  function broken(where: "section" | "disclosure"): PageData {
+    const inner = "not-an-array" as unknown as PageData["sections"][number]["blocks"];
+
+    return page({
+      sections: [
+        {
+          id: "s",
+          label: "S",
+          title: "T",
+          blocks:
+            where === "section"
+              ? inner
+              : [{ type: "disclosure", summary: "Working", blocks: inner }],
+        },
+      ],
+    });
+  }
+
+  // the walk that decides which files to read and whether to carry the graph
+  // runtime runs before any of this is validated, so a shape the renderer
+  // refuses by name must not crash that walk first: it did, with a TypeError
+  // naming a function body rather than the board
+  it.each([
+    ["a section", "section", "sections[0].blocks"],
+    ["a disclosure", "disclosure", "sections[0].blocks[0].blocks"],
+  ])("should name the path when %s holds blocks that are not a list", (_, where, at) => {
+    expect(() => render(broken(where as "section" | "disclosure"))).toThrow(
+      new RegExp(`${at.replace(/[[\]]/g, "\\$&")}: required (?:non-empty )?array`),
+    );
   });
 });

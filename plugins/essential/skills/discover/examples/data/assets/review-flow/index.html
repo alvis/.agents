@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Review flow — merge duplicates</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1>Feedback queue</h1>
+      <p class="count"><output id="count">4</output> open threads</p>
+    </header>
+
+    <main>
+      <ul class="threads" id="threads">
+        <li class="thread" data-group="cursor">
+          <p class="who">Priya · api/cursor.ts</p>
+          <p class="what">Cursor resets to zero when the consumer reconnects mid-batch.</p>
+          <button type="button" class="merge" data-group="cursor">Merge 2 alike</button>
+        </li>
+        <li class="thread" data-group="cursor">
+          <p class="who">Omar · api/cursor.ts</p>
+          <p class="what">Reconnect drops the offset — same one Priya hit, I think.</p>
+        </li>
+        <li class="thread" data-group="retry">
+          <p class="who">Bea · worker/retry.ts</p>
+          <p class="what">Backoff is uncapped, so a poisoned message waits an hour.</p>
+        </li>
+        <li class="thread" data-group="docs">
+          <p class="who">Kit · README.md</p>
+          <p class="what">Setup step 3 names a flag that was renamed last week.</p>
+        </li>
+      </ul>
+
+      <p class="hint" id="hint">Merging keeps the earliest thread and folds the rest into it.</p>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,6 +1,35 @@
 import type { Block } from "./block.ts";
 import type { Metric, Source } from "./content.ts";
 
+/**
+ * every presentation kind the renderer accepts.
+ *
+ * the list lives beside the page type rather than in the shared vocabulary
+ * because it is the one vocabulary the page type itself is written in: kept
+ * apart, the union and the list it validates against drift, and nothing in
+ * this repository would report it.
+ */
+export const PAGE_KINDS = [
+  "architecture-board",
+  "board-hub",
+  "brainstorm-spectrum",
+  "build-journal",
+  "change-walkthrough",
+  "domain-explainer",
+  "guided-interview",
+  "interactive-prototype",
+  "plan-review",
+  "ranked-options",
+  "readiness-check",
+  "risk-context-report",
+  "semantics-map",
+  "specimen-board",
+  "triage-board",
+] as const;
+
+/** one presentation kind. */
+export type PageKind = (typeof PAGE_KINDS)[number];
+
 /** one numbered section of the page. */
 export interface Section {
   /** unique anchor the drawer's section navigation links to */
@@ -40,11 +69,7 @@ export interface Theme {
 /** the whole presentation, as authored in the data file. */
 export interface PageData {
   /** presentation kind; every kind shares one chrome and differs by content */
-  kind:
-    | "ranked-options"
-    | "guided-interview"
-    | "risk-context-report"
-    | "architecture-board";
+  kind: PageKind;
   /** stable identifier for the page, emitted as `data-page-id` */
   id: string;
   /** the action label the collapsed drawer carries */
@@ -68,8 +93,15 @@ export interface PageData {
   sections: Section[];
   /** what the page rests on, listed in a footer beneath the last section */
   sources?: Source[];
-  /** the single copyable reply the drawer hosts */
-  reply: {
+  /**
+   * the single copyable reply the drawer hosts.
+   *
+   * optional, because a board that asks nothing has nothing to reply with: an
+   * index of other boards is read and left, and a drawer offering to copy an
+   * empty reply invites the reader to send one. A board holding any question
+   * must carry it, and is refused without it.
+   */
+  reply?: {
     /** heading shown above the reply */
     heading: string;
     /**

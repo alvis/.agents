@@ -1,0 +1,282 @@
+{
+  "kind": "triage-board",
+  "id": "triage-board-beacon-r7-v1",
+  "action": "Triage board",
+  "title": "R7 backlog triage — Beacon on-call platform",
+  "masthead": {
+    "eyebrow": "Triage · Beacon R7",
+    "headline": "Nineteen items, eleven weeks of capacity, and four things being dropped on purpose.",
+    "lede": "Triage is only honest if the dropped column is visible. Everything below is placed, including the work that is not being done, and each drop says what it costs.",
+    "meta": [
+      {
+        "label": "Items",
+        "value": "19"
+      },
+      {
+        "label": "Capacity",
+        "value": "11 engineer-weeks"
+      },
+      {
+        "label": "Committed",
+        "value": "9.5 weeks"
+      },
+      {
+        "label": "Dropped",
+        "value": "4 items"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "lanes",
+      "label": "Placement",
+      "eyebrow": "The board",
+      "title": "Where each item landed.",
+      "blocks": [
+        {
+          "type": "kanban",
+          "lanes": [
+            {
+              "label": "In R7",
+              "cards": [
+                "Alert dedup and flap suppression",
+                "Escalation policy editor — read path",
+                [{ "kind": "code", "text": "POST /incidents" }, " idempotency keys"],
+                "Pager delivery retry with capped backoff",
+                "Incident timeline export"
+              ]
+            },
+            {
+              "label": "Next release",
+              "cards": [
+                "Escalation policy editor — write path",
+                "Schedule overrides UI",
+                "Slack thread mirroring",
+                "Per-team notification quiet hours",
+                "Runbook attachment search"
+              ]
+            },
+            {
+              "label": "Needs a decision first",
+              "cards": [
+                "Multi-region pager failover",
+                "On-call handover checklist",
+                [{ "kind": "term", "text": "Alert grouping", "definition": "collapsing alerts that share a cause into one incident, as opposed to deduplication, which collapses repeats of the same alert." }, " by service topology"],
+                "Retention policy for resolved incidents"
+              ]
+            },
+            {
+              "label": "Dropped for R7",
+              "cards": [
+                "Mobile push notifications",
+                "SLA breach forecasting",
+                "Custom alert severity taxonomy",
+                "Incident postmortem templates"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "The dropped lane is not a backlog",
+          "tone": "bad",
+          "lead": "It is a decision, and it has a cost.",
+          "text": "Mobile push was asked for by two teams; dropping it means the pager stays the only path and the SMS bill stays where it is. Naming that here is what makes the drop reviewable rather than quietly deferred."
+        }
+      ]
+    },
+    {
+      "id": "findings",
+      "label": "What drove it",
+      "eyebrow": "Observations",
+      "title": "The five observations that decided the placement.",
+      "blocks": [
+        {
+          "type": "findings",
+          "filters": true,
+          "items": [
+            {
+              "id": "T-1",
+              "title": "Flapping alerts are 61% of paged volume",
+              "severity": "critical",
+              "text": "Across July, 61% of pages were repeats of an alert that had resolved and refired within ten minutes. On-call engineers are being woken by state that has already corrected itself.",
+              "owner": "Beacon core",
+              "evidence": "Paging log, 1–31 Jul, grouped by alert fingerprint."
+            },
+            {
+              "id": "T-2",
+              "title": "Duplicate incident creation on client retry",
+              "severity": "critical",
+              "text": "The incident endpoint is not idempotent, so a client retry after a timeout creates a second incident with its own escalation. Seen 34 times in July, twice during a real outage.",
+              "owner": "Beacon core",
+              "evidence": "Incidents sharing a title and a creation window under 5s."
+            },
+            {
+              "id": "T-3",
+              "title": "Escalation editing is a support ticket",
+              "severity": "elevated",
+              "text": "There is no write path, so every escalation policy change goes through support. Median turnaround is two working days, which means teams do not change policies they should change.",
+              "owner": "Beacon web",
+              "evidence": "Support queue, tag escalation-change, 92 tickets since April."
+            },
+            {
+              "id": "T-4",
+              "title": "Pager retry is uncapped",
+              "severity": "elevated",
+              "text": "A failing provider is retried with unbounded backoff, so a page can arrive an hour after the incident. The delivery looks successful in the logs.",
+              "owner": "Beacon core",
+              "evidence": "Two incidents in June where the page landed after the resolution."
+            },
+            {
+              "id": "T-5",
+              "title": "No agreement on what a severity means",
+              "severity": "watch",
+              "text": "Four teams use the same four severity labels to mean four different things. This is why the custom taxonomy request keeps returning, and why building it now would encode the disagreement rather than settle it.",
+              "owner": "Unassigned",
+              "evidence": "Comparison of four teams' runbooks."
+            },
+            {
+              "id": "T-6",
+              "title": "Timeline export already works for the two teams that asked",
+              "severity": "clear",
+              "text": "The CSV path shipped in R6 and covers both stated use cases. It is in R7 only to add the JSON shape one team asked for, which is half a day.",
+              "owner": "Beacon web",
+              "evidence": "Confirmed with both teams, 20 Aug."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "risks",
+      "label": "Risks",
+      "eyebrow": "What this placement costs",
+      "title": "What could go wrong with this triage.",
+      "blocks": [
+        {
+          "type": "risk-matrix",
+          "caption": "Risks created by the R7 placement, not by the items themselves",
+          "rows": [
+            {
+              "risk": "Dedup suppresses a real repeat and an outage goes unpaged",
+              "severity": "critical",
+              "likelihood": "Low, but only if the suppression window stays short",
+              "mitigation": "Ten-minute window, and a suppressed alert still opens the incident — it only skips the page. Shadow-run for a week before enabling."
+            },
+            {
+              "risk": "Idempotency keys break the two clients that do not send them",
+              "severity": "high",
+              "likelihood": "Certain unless the key is optional at first",
+              "mitigation": "Accept requests without a key for one release, logging each, then require it."
+            },
+            {
+              "risk": "Severity disagreement resurfaces as a blocker mid-release",
+              "severity": "medium",
+              "likelihood": "Likely — it has twice",
+              "mitigation": [
+                "Placed in ",
+                { "kind": "mark", "text": "needs a decision first" },
+                " rather than dropped, with the decision owner named."
+              ]
+            },
+            {
+              "risk": "Dropping mobile push pushes two teams onto a workaround we then have to support",
+              "severity": "medium",
+              "likelihood": "Moderate",
+              "mitigation": "Tell both teams before the release rather than after, so the workaround is theirs by choice."
+            },
+            {
+              "risk": "Committed 9.5 of 11 weeks leaves no room for an incident",
+              "severity": "low",
+              "likelihood": "Historically about one per release",
+              "mitigation": "The 1.5-week margin is the incident budget, and it is not allocated to anything."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "label": "The one that bites",
+      "eyebrow": "Failure map",
+      "title": "If dedup suppresses a real page.",
+      "blocks": [
+        {
+          "type": "failure-map",
+          "failure": "A genuine, ongoing outage is suppressed as a flap and nobody is paged.",
+          "prevent": [
+            "Suppress only within ten minutes of a resolution of the same fingerprint.",
+            "Never suppress an alert whose severity increased since the last firing.",
+            [
+              "Shadow-run for one week: log what ",
+              { "kind": "mark", "text": "would" },
+              " have been suppressed and review it against the paging log."
+            ]
+          ],
+          "detect": [
+            "An incident open longer than the suppression window with zero pages sent raises its own alert.",
+            "Weekly report of suppressed-then-refired fingerprints, reviewed by the on-call lead.",
+            "The incident is still created and still visible on the board, so the dashboard shows it even when the page does not fire."
+          ],
+          "contain": [
+            "Suppression is a single flag per alert rule, and turning it off takes effect on the next evaluation.",
+            "Suppressed pages are queued rather than discarded, so disabling the flag delivers what was held.",
+            "The runbook names the flag by path, so the on-call engineer does not have to find it under pressure."
+          ]
+        },
+        {
+          "type": "choice",
+          "id": "triage-severity",
+          "ref": "C1",
+          "label": "Severity taxonomy",
+          "ask": "The severity disagreement (T-5) is placed as needing a decision. Who should make it?",
+          "recommendation": "The on-call lead, because the disagreement is about what wakes someone up, and that is the only lane where the four teams' definitions actually collide. A working group would produce a taxonomy nobody is accountable for.",
+          "choices": [
+            {
+              "value": "The on-call lead decides and the teams adopt",
+              "summary": "One definition, imposed, revisable after a release.",
+              "tags": ["Recommended", "Pragmatic"],
+              "pros": ["Settles in days rather than months", "Accountable to the people being paged"],
+              "cons": ["At least one team will find their meaning changed under them"]
+            },
+            {
+              "value": "A working group across the four teams",
+              "summary": "Agreement first, adoption second.",
+              "tags": ["Ideal"],
+              "pros": ["Nobody has a definition imposed on them"],
+              "cons": ["This has been attempted twice and produced no decision", "Blocks R8 as well as R7"]
+            },
+            {
+              "value": "Per-team taxonomies, mapped at the boundary",
+              "summary": "Each team keeps its own words; Beacon translates.",
+              "tags": ["Architectural"],
+              "pros": ["No team has to change anything"],
+              "cons": ["The mapping is a permanent artefact somebody has to own", "Cross-team escalation becomes ambiguous again"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Paging log, 1–31 July, grouped by alert fingerprint",
+      "ref": "beacon-analytics · pages_by_fingerprint",
+      "level": "measured"
+    },
+    {
+      "label": "Support queue, escalation-change tag, since April",
+      "ref": "support · tag:escalation-change",
+      "level": "measured"
+    },
+    {
+      "label": "Incident-per-release rate used to size the margin",
+      "ref": "last six releases",
+      "level": "estimated"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Beacon R7 triage\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{provenance}}"
+  }
+}

@@ -40,6 +40,7 @@
         {
           "type": "choice",
           "id": "execution-boundary",
+          "ref": "C1",
           "label": "Execution boundary",
           "ask": "What experience should the API promise once the invoice is submitted?",
           "choices": [
@@ -90,6 +91,7 @@
         {
           "type": "scale",
           "id": "latency-tolerance",
+          "ref": "S2",
           "label": "Tolerated wait before the caller gets an ID",
           "ask": "How long may the synchronous part of finalization take before the caller is handed a job ID?",
           "points": [
@@ -177,6 +179,7 @@
         {
           "type": "choice",
           "id": "idempotency-identity",
+          "ref": "C3",
           "label": "Idempotency identity",
           "ask": "Which stable identity should suppress duplicate effects?",
           "choices": [
@@ -227,6 +230,7 @@
         {
           "type": "checklist",
           "id": "guarded-effects",
+          "ref": "K4",
           "label": "Effects the identity must guard",
           "ask": "Which effects must be suppressed on a retry that carries the same identity?",
           "options": [
@@ -283,6 +287,7 @@
         {
           "type": "choice",
           "id": "retention-window",
+          "ref": "C5",
           "label": "Replay retention",
           "ask": "How long should the input and effect ledger remain replayable?",
           "choices": [
@@ -333,6 +338,7 @@
         {
           "type": "scale",
           "id": "replay-autonomy",
+          "ref": "S6",
           "label": "Operator autonomy on replay",
           "ask": "How much may an operator replay without an engineer present?",
           "points": [
@@ -369,6 +375,7 @@
         {
           "type": "choice",
           "id": "incident-ownership",
+          "ref": "C7",
           "label": "Incident ownership",
           "ask": "Who is paged when the queue is healthy but the invoices are wrong?",
           "choices": [
@@ -418,6 +425,7 @@
         {
           "type": "note",
           "id": "runbook-handoff",
+          "ref": "N8",
           "label": "Runbook handoff",
           "ask": "Where does the handoff between those two owners have to be explicit, and who writes it down?",
           "placeholder": "e.g. platform escalates to billing once the queue drains but the ledger still shows unfinished effects"
@@ -438,6 +446,7 @@
         {
           "type": "note",
           "id": "page-worthy-consequence",
+          "ref": "N9",
           "label": "First page-worthy consequence",
           "ask": "Describe the first consequence that should page an operator.",
           "placeholder": "e.g. a customer has been charged but has no invoice document twenty minutes later"
@@ -445,6 +454,7 @@
         {
           "type": "checklist",
           "id": "paging-signals",
+          "ref": "K10",
           "label": "Signals that may page",
           "ask": "Which signals are allowed to page, once the consequence above is named?",
           "options": [
@@ -469,6 +479,7 @@
         {
           "type": "note",
           "id": "unresolved-threshold",
+          "ref": "N11",
           "label": "Anything this interview cannot settle",
           "ask": "What still has to be measured or decided elsewhere before the contract can be written?",
           "placeholder": "leave blank if nothing remains"

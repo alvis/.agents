@@ -262,6 +262,7 @@
         {
           "type": "checklist",
           "id": "measured-containment",
+          "ref": "K1",
           "label": "Controls that must show measured containment",
           "ask": "Which controls must be proven by measurement — not by design review — before any customer sees generated prose?",
           "options": [
@@ -290,6 +291,7 @@
         {
           "type": "choice",
           "id": "exposure-gate",
+          "ref": "C2",
           "label": "Exposure gate",
           "ask": "Choose the evidence threshold that controls customer exposure.",
           "choices": [
@@ -340,6 +342,7 @@
         {
           "type": "note",
           "id": "external-constraint",
+          "ref": "N3",
           "label": "Constraint that changes this gate",
           "ask": "What customer, regulatory, or operating constraint changes the gate you just chose?",
           "placeholder": "e.g. a tenant contract that forbids any generated prose over their records"

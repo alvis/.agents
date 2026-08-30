@@ -5,3 +5,10 @@ node_modules/
 # validates their shape, and writes them here; they regenerate on demand and
 # are far above jj's 1MiB snapshot limit, so they are cache, never source
 plugins/essential/skills/discover/assets/html/vendor/*.cache.js
+
+# rendered example boards. examples/data/ is the source; one
+# `render-page.ts --set examples/data/run.json` rebuilds every board from it,
+# and examples.spec.ts renders the whole set on each run to prove it still
+# does. Committing the HTML too would duplicate its own data, and the Mermaid
+# board alone is 3.5MB
+plugins/essential/skills/discover/examples/html/

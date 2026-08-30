@@ -63,7 +63,7 @@ function answered(line: AnswerLine, disposition: Disposition): string {
       ? ` _(recommended: ${line.recommended.join(", ")})_`
       : "";
 
-  return `- **${line.label}:** ${line.value}${against}`;
+  return `- **${line.ref} · ${line.label}:** ${line.value}${against}`;
 }
 
 /**
@@ -76,7 +76,7 @@ function unresolved(line: AnswerLine): string {
     ? `recommended ${line.recommended.join(", ")}; not yet confirmed`
     : "unanswered";
 
-  return `- **${line.label}:** ${suggestion}`;
+  return `- **${line.ref} · ${line.label}:** ${suggestion}`;
 }
 
 /**

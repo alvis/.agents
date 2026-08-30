@@ -1,9 +1,9 @@
 import { escapeHtml } from "../escape.ts";
+import { readCssValue } from "../css-value.ts";
 import { RenderError } from "../error.ts";
 import { renderInline } from "../inline.ts";
 import { provenancePill, readProvenance } from "../provenance.ts";
 import {
-  optionalString,
   requireArray,
   requireFilledArray,
   requireObject,
@@ -32,7 +32,13 @@ function readColumn(column: string | Column, path: string): Column {
     );
   return {
     label: requireString(column.label, `${path}.label`),
-    width: optionalString(column.width, `${path}.width`),
+    // a width lands in a `style` attribute, so escaping it is necessary and
+    // not sufficient: `escapeHtml` makes it a safe attribute and says nothing
+    // about the declaration inside it
+    width:
+      column.width === undefined
+        ? undefined
+        : readCssValue(requireString(column.width, `${path}.width`), `${path}.width`),
     align:
       column.align === undefined
         ? undefined

@@ -1,0 +1,187 @@
+{
+  "kind": "build-journal",
+  "id": "build-journal-geofence-alerts-v1",
+  "action": "Build journal",
+  "title": "Build journal — geofence breach alerts",
+  "masthead": {
+    "eyebrow": "Build journal · fleet platform",
+    "headline": "Nine days, six steps, and one of them cost four times its estimate.",
+    "lede": "A record of what was built and in what order, written as it went. The estimates are left in place beside the actuals, because a journal that quietly corrects them stops being useful for the next estimate.",
+    "meta": [
+      {
+        "label": "Span",
+        "value": "18–27 Aug"
+      },
+      {
+        "label": "Estimated",
+        "value": "5 days"
+      },
+      {
+        "label": "Actual",
+        "value": "9 days"
+      },
+      {
+        "label": "Shipped",
+        "value": "Behind a flag"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "shape",
+      "label": "Outcome",
+      "eyebrow": "Where it landed",
+      "title": "What exists now that did not before.",
+      "blocks": [
+        {
+          "type": "metrics",
+          "items": [
+            { "label": "Zones supported", "value": "Polygon + radius" },
+            { "label": "Evaluation latency", "value": "p99 41ms" },
+            { "label": "Vehicles per tick", "value": "12,400" },
+            { "label": "False breaches", "value": "0 in 72h" }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            {
+              "lead": "Breach detection is stateful.",
+              "text": "A vehicle inside a zone does not re-alert every tick; it alerts on the transition and again on exit, which is the whole reason step 3 took as long as it did."
+            },
+            {
+              "lead": "Zones are evaluated against the last known position, not a live stream.",
+              "text": "A vehicle out of coverage for twenty minutes is not treated as having left its zone. It is treated as unknown, and unknown is not an alert."
+            },
+            {
+              "lead": "Nothing is enabled yet.",
+              "text": "The flag is off for every fleet. Turning it on is a separate decision with its own board."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "log",
+      "label": "The log",
+      "eyebrow": "Day by day",
+      "title": "What happened, in order.",
+      "blocks": [
+        {
+          "type": "timeline",
+          "items": [
+            {
+              "when": "18 Aug",
+              "title": "Zone storage and the polygon test",
+              "state": "done",
+              "tags": ["0.5d est", "0.5d actual"]
+            },
+            {
+              "when": "19 Aug",
+              "title": [
+                "Point-in-polygon with ",
+                { "kind": "code", "text": "@turf/boolean-point-in-polygon" },
+                " rather than a hand-rolled ray cast"
+              ],
+              "state": "done",
+              "tags": ["dependency chosen", "0.5d"]
+            },
+            {
+              "when": "20–23 Aug",
+              "title": "Transition state — the four days",
+              "state": "done",
+              "tags": ["1d est", "4d actual", "see below"]
+            },
+            {
+              "when": "24 Aug",
+              "title": "Batch evaluation against the position table",
+              "state": "done",
+              "tags": ["1d est", "1d actual"]
+            },
+            {
+              "when": "25–26 Aug",
+              "title": "Alert routing, reusing the notification port",
+              "state": "done",
+              "tags": ["1d est", "2d actual"]
+            },
+            {
+              "when": "27 Aug",
+              "title": "Flag, runbook, and a 72-hour shadow run",
+              "state": "active",
+              "tags": ["1d est", "in progress"]
+            },
+            {
+              "when": "Next",
+              "title": "Enable for one fleet, with the fleet's consent",
+              "state": "pending",
+              "tags": ["not scheduled"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "overrun",
+      "label": "The overrun",
+      "eyebrow": "20–23 Aug",
+      "title": "Why transition state cost four days instead of one.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The estimate assumed a vehicle is either inside a zone or outside it. Neither the GPS nor the network agrees: positions arrive late, out of order, and sometimes twice. The first implementation alerted on every reordered pair."
+        },
+        {
+          "type": "code",
+          "language": "typescript",
+          "caption": "What replaced the naive comparison",
+          "code": "/** how far out of order a position may arrive and still be trusted. */\nconst SKEW_MS = 90 * 1000;\n\n/**\n * folds one position into a vehicle's zone membership.\n *\n * a position older than the one already recorded is dropped rather than\n * applied: applying it would move the vehicle backwards through a boundary\n * it never crossed, and every such move is an alert somebody is woken by.\n * @param state the membership as last known\n * @param fix the position that just arrived\n * @returns the new membership, and any transition it caused\n */\nexport function fold(state: Membership, fix: Fix): Folded {\n  if (fix.at <= state.at) return { state, transition: undefined };\n  if (fix.at - state.at > SKEW_MS && !fix.trusted)\n    return { state, transition: undefined };\n\n  const inside = zonesContaining(fix.point);\n  const entered = inside.filter((zone) => !state.inside.has(zone));\n  const left = [...state.inside].filter((zone) => !inside.includes(zone));\n\n  return {\n    state: { at: fix.at, inside: new Set(inside) },\n    transition: entered.length || left.length ? { entered, left } : undefined,\n  };\n}",
+          "highlight": [14, 15, 16],
+          "comments": [
+            {
+              "line": 14,
+              "at": "fold",
+              "severity": "medium",
+              "text": "Dropping an older fix silently is right for alerting and wrong for the position history, which is written by a different path. Worth stating in the function's own docs that this is not the historian."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "The estimate was not wrong about the work",
+          "tone": "neutral",
+          "lead": "It was wrong about the data.",
+          "text": "Point-in-polygon really was half a day. What cost four was discovering that the position feed is unordered — which is written down nowhere, and which the next person to build against it will also discover this way unless this journal is read."
+        },
+        {
+          "type": "note",
+          "id": "journal-feed-docs",
+          "ref": "N1",
+          "label": "Feed ordering",
+          "ask": "Where should the fact that the position feed is unordered be written down so the next build does not rediscover it?",
+          "placeholder": "e.g. the feed's own README, the platform data catalogue, a doc comment on the client"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Evaluation latency, shadow run 27 Aug",
+      "ref": "fleet-metrics · geofence_eval_ms",
+      "level": "measured"
+    },
+    {
+      "label": "Out-of-order rate on the position feed",
+      "ref": "sampled over 6 hours, 21 Aug",
+      "level": "measured"
+    },
+    {
+      "label": "Vehicles per tick at current fleet size",
+      "ref": "extrapolated from the two largest fleets",
+      "level": "estimated"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Build journal — geofence breach alerts\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}"
+  }
+}

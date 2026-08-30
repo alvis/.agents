@@ -1,6 +1,6 @@
-import { SCHEMA, emptyState } from "./store.ts";
+import { SCHEMA, emptyState } from "./store-state.ts";
 
-import type { SavedAnswer, SavedExcerpt, SavedState } from "./store.ts";
+import type { SavedAnswer, SavedExcerpt, SavedState } from "./store-state.ts";
 
 /**
  * reads one saved answer, or nothing when its shape is not usable

@@ -70,9 +70,12 @@ async function draw(mermaid: Mermaid, figure: HTMLElement, index: number): Promi
     // complete and is missing a claim. So the failure is shown, the written
     // alternative stops being screen-reader-only, and the source is opened —
     // between them a reader can still get everything the graph was to say
-    canvas.innerHTML = `<p class="mermaid-error">This diagram could not be drawn: ${
-      (error as Error).message
-    }</p>`;
+    // Mermaid quotes the offending line of the board's own source back in its
+    // message, so this string is author-controlled and cannot go near innerHTML
+    const notice = document.createElement("p");
+    notice.className = "mermaid-error";
+    notice.textContent = `This diagram could not be drawn: ${(error as Error).message}`;
+    canvas.replaceChildren(notice);
     figure.dataset.mermaidState = "failed";
     alt?.classList.remove("sr-only");
     if (details) details.open = true;

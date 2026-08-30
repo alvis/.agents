@@ -1,0 +1,238 @@
+{
+  "kind": "change-walkthrough",
+  "id": "change-walkthrough-alert-dedup-v1",
+  "action": "Change walkthrough",
+  "title": "Change walkthrough — alert dedup and flap suppression",
+  "masthead": {
+    "eyebrow": "Walkthrough · Beacon core",
+    "headline": "Four files, read in the order that makes them make sense.",
+    "lede": "Not the diff order and not alphabetical: the fingerprint comes first because nothing below it means anything until you know what two alerts have to share to be the same alert.",
+    "meta": [
+      {
+        "label": "Files",
+        "value": "4 changed"
+      },
+      {
+        "label": "Lines",
+        "value": "+186 / −41"
+      },
+      {
+        "label": "Behind a flag",
+        "value": "Yes, off"
+      },
+      {
+        "label": "Reviewer",
+        "value": "On-call lead"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "orientation",
+      "label": "Orientation",
+      "eyebrow": "Before the diff",
+      "title": "What changed, in one paragraph.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": [
+            "An alert that resolves and refires within ten minutes now suppresses its ",
+            { "kind": "mark", "text": "page" },
+            " while still opening its incident. The suppression is decided by a ",
+            { "kind": "tie", "text": "fingerprint", "key": "fingerprint" },
+            " — the tuple that says two alerts are the same alert — and held in a small ",
+            { "kind": "tie", "text": "recent-resolution window", "key": "window" },
+            " rather than in a table."
+          ]
+        },
+        {
+          "type": "tree",
+          "title": "The four files, in reading order",
+          "root": "services/beacon",
+          "items": [
+            { "name": "src/alert/fingerprint.ts", "note": "new — what makes two alerts the same" },
+            { "name": "src/alert/suppress.ts", "note": "new — the ten-minute window" },
+            { "name": "src/alert/dispatch.ts", "note": "changed — the only caller" },
+            { "name": "src/alert/dispatch.spec.ts", "note": "changed — six new cases" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fingerprint",
+      "label": "Fingerprint",
+      "eyebrow": "1 of 3",
+      "title": "What makes two alerts the same alert.",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "typescript",
+          "caption": "src/alert/fingerprint.ts — new file",
+          "code": "/** the fields that decide two alerts are the same alert. */\nconst IDENTITY = [\"rule\", \"service\", \"instance\"] as const;\n\n/**\n * builds the fingerprint two alerts must share to be treated as one.\n * @param alert the alert as the rule engine produced it\n * @returns a stable key, safe to compare and to log\n */\nexport function fingerprintOf(alert: Alert): string {\n  return IDENTITY.map((field) => alert[field] ?? \"\").join(\"\\u0000\");\n}\n\n/**\n * reports whether an alert has escalated since it last fired.\n * @param alert the alert now\n * @param previous the same fingerprint's last firing\n * @returns true when this firing is worse than the last one\n */\nexport function escalated(alert: Alert, previous: Alert): boolean {\n  return RANK[alert.severity] > RANK[previous.severity];\n}",
+          "highlight": [2, 10],
+          "ties": [
+            { "key": "fingerprint", "lines": [1, 2, 9, 10, 11] }
+          ],
+          "comments": [
+            {
+              "line": 2,
+              "at": "IDENTITY",
+              "severity": "high",
+              "text": [
+                "This excludes ",
+                { "kind": "code", "text": "region" },
+                ". Two instances of the same service in different regions failing for different reasons will share a fingerprint, and the second one's page will be suppressed."
+              ]
+            },
+            {
+              "line": 10,
+              "at": "fingerprintOf",
+              "severity": "low",
+              "text": "The NUL joiner is right — a hyphen would collide for a service literally named with one. Worth a line of comment saying so, because the next reader will try to simplify it."
+            },
+            {
+              "line": 20,
+              "at": "escalated",
+              "severity": "medium",
+              "text": "Nothing calls this yet. It is used in suppress.ts below, but the ordering means a reader meets it without a reason — consider moving it there."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "window",
+      "label": "Window",
+      "eyebrow": "2 of 3",
+      "title": "The ten minutes, and what happens after them.",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "typescript",
+          "caption": "src/alert/suppress.ts — new file",
+          "code": "/** how long after a resolution a refiring is treated as a flap. */\nconst WINDOW_MS = 10 * 60 * 1000;\n\n/** the last resolution of each fingerprint, oldest evicted first. */\nconst recent = new Map<string, Resolution>();\n\n/**\n * decides whether this firing should page.\n * @param alert the alert now\n * @param at the moment it fired\n * @returns whether to page, and why not when it declines\n */\nexport function shouldPage(alert: Alert, at: number): Verdict {\n  const key = fingerprintOf(alert);\n  const last = recent.get(key);\n  if (!last) return { page: true };\n  if (at - last.at > WINDOW_MS) return { page: true };\n  if (escalated(alert, last.alert)) return { page: true, because: \"escalated\" };\n\n  return { page: false, because: \"flap\" };\n}",
+          "highlight": [2, 17],
+          "ties": [
+            { "key": "window", "lines": [1, 2, 17] },
+            { "key": "fingerprint", "lines": [14] }
+          ],
+          "comments": [
+            {
+              "line": 5,
+              "at": "recent",
+              "severity": "critical",
+              "text": [
+                "This is process-local. Beacon runs four dispatch replicas, so a refiring that lands on a different replica will page anyway — and, worse, the suppression rate will look like ",
+                { "kind": "mark", "text": "75% of what it is" },
+                " in the metrics. Either move the window to Redis or state the per-replica behaviour in the runbook."
+              ]
+            },
+            {
+              "line": 5,
+              "at": "recent",
+              "severity": "medium",
+              "text": "Also unbounded. \"oldest evicted first\" is in the comment but not in the code — nothing evicts anything."
+            },
+            {
+              "line": 18,
+              "at": "escalated",
+              "severity": "low",
+              "text": "Good: an escalation always pages, even inside the window. This is the case the shadow run should be checked against most closely."
+            }
+          ]
+        },
+        {
+          "type": "disclosure",
+          "summary": "The dispatch change, which is four lines",
+          "blocks": [
+            {
+              "type": "code",
+              "language": "typescript",
+              "caption": "src/alert/dispatch.ts — changed",
+              "code": "export async function dispatch(alert: Alert, at: number): Promise<void> {\n  const incident = await openIncident(alert);\n\n  const verdict = flags.flapSuppression ? shouldPage(alert, at) : { page: true };\n  incident.suppressed = !verdict.page;\n  if (!verdict.page) return;\n\n  await page(incident);\n}",
+              "highlight": [4, 5, 6],
+              "comments": [
+                {
+                  "line": 5,
+                  "at": "incident.suppressed",
+                  "severity": "low",
+                  "text": "This is the line that makes the whole thing reviewable after the fact: the incident still exists and still records that it did not page."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "findings",
+      "label": "Findings",
+      "eyebrow": "3 of 3",
+      "title": "What this review found.",
+      "blocks": [
+        {
+          "type": "findings",
+          "filters": true,
+          "items": [
+            {
+              "id": "W-1",
+              "title": "The window is per-replica",
+              "severity": "critical",
+              "text": "Four dispatch replicas each keep their own map, so roughly three quarters of flaps still page and the suppression metric under-reports by the same factor. This is the finding that decides whether the change ships as written.",
+              "owner": "Beacon core",
+              "evidence": "src/alert/suppress.ts:5 — a module-level Map."
+            },
+            {
+              "id": "W-2",
+              "title": "Region is not part of the fingerprint",
+              "severity": "elevated",
+              "text": "Same service, two regions, two unrelated failures: the second is suppressed. Adding region is a one-line change and narrows suppression, which is the safe direction.",
+              "owner": "Beacon core",
+              "evidence": "src/alert/fingerprint.ts:2."
+            },
+            {
+              "id": "W-3",
+              "title": "The recent map never evicts",
+              "severity": "elevated",
+              "text": "One entry per fingerprint ever seen, held for the life of the process. Bounded in practice by the number of alert rules, which is 3,400 today and not obviously bounded tomorrow.",
+              "owner": "Beacon core",
+              "evidence": "No eviction path in the file."
+            },
+            {
+              "id": "W-4",
+              "title": "Escalation always pages",
+              "severity": "clear",
+              "text": "An alert that refires worse than it resolved pages regardless of the window. This is the behaviour the on-call lead asked for and it is implemented correctly.",
+              "owner": "Beacon core",
+              "evidence": "src/alert/suppress.ts:18, covered by two of the six new tests."
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "id": "walkthrough-verdict",
+          "ref": "D1",
+          "label": "Review verdict",
+          "ask": "Hold this change until the window is shared across replicas (W-1), rather than shipping it flagged-off with a per-replica window?",
+          "placeholder": "If shipping flagged-off is acceptable, say what the shadow run should measure instead."
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Replica count for the dispatch service",
+      "ref": "beacon-dispatch · deployment.yaml",
+      "level": "measured"
+    },
+    {
+      "label": "Alert rule count",
+      "ref": "beacon · rules table, 26 Aug",
+      "level": "measured"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Walkthrough — alert dedup and flap suppression\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}"
+  }
+}

@@ -1,0 +1,299 @@
+{
+  "kind": "plan-review",
+  "id": "plan-review-feedback-threads-v1",
+  "action": "Plan review",
+  "title": "Plan review — merge duplicate feedback threads",
+  "masthead": {
+    "eyebrow": "Plan review · feedback threads",
+    "headline": "Six steps, three owners, and one of them is in the wrong order.",
+    "lede": "This board is laid out to be argued with. The sequence, the owner of each step, and the risk each one carries are stated separately, because a plan usually fails at a seam between two of the three.",
+    "meta": [
+      {
+        "label": "Steps",
+        "value": "6"
+      },
+      {
+        "label": "Span",
+        "value": "3 weeks"
+      },
+      {
+        "label": "Reversible until",
+        "value": "Step 4"
+      },
+      {
+        "label": "Review owner",
+        "value": "You"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "shape",
+      "label": "The plan",
+      "eyebrow": "Sequence",
+      "title": "What is proposed, in order.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "The plan in three sentences",
+          "points": [
+            {
+              "lead": "Detect duplicates before merging any.",
+              "text": "A week of running the similarity pass in shadow, writing candidate pairs to a table nobody acts on, so the threshold is chosen from real pairs rather than from a guess."
+            },
+            {
+              "lead": "Merge is a link, not a deletion.",
+              "text": "A merged thread keeps its own row and gains a pointer to the survivor. Unmerging is deleting the pointer, which is what makes the whole thing reversible."
+            },
+            {
+              "lead": "The irreversible step is last and separate.",
+              "text": "Collapsing merged threads out of the index is step 6, one release after everything else, and it is the only step that cannot be undone by a flag."
+            }
+          ]
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "1 · Shadow the similarity pass",
+              "text": "Run it nightly against the last 90 days of threads, writing candidate pairs to a review table. Nothing merges. One week.",
+              "state": "done"
+            },
+            {
+              "title": "2 · Choose the threshold from the shadow output",
+              "text": "Pick the score above which pairs are genuinely the same complaint, by reading a sample of 200 pairs rather than by tuning against a metric.",
+              "state": "current"
+            },
+            {
+              "title": "3 · Ship the merge pointer, off by default",
+              "text": "Schema, API and the unmerge path, all behind a flag. No thread is merged by this release.",
+              "state": "todo"
+            },
+            {
+              "title": "4 · Enable for one workspace",
+              "text": "The internal workspace first, for two weeks, with every merge reviewable and reversible from the UI.",
+              "state": "todo"
+            },
+            {
+              "title": "5 · Enable for everyone",
+              "text": "Flag on by default. Unmerge stays available and stays used — if nobody unmerges anything, the threshold is probably too conservative.",
+              "state": "todo"
+            },
+            {
+              "title": "6 · Collapse merged threads out of the index",
+              "text": "The only irreversible step: merged threads stop appearing as separate rows in search. One release later, deliberately.",
+              "state": "todo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "owners",
+      "label": "Owners",
+      "eyebrow": "Routing",
+      "title": "Who holds each step.",
+      "blocks": [
+        {
+          "type": "owners",
+          "people": [
+            {
+              "name": "Bea Nowak",
+              "initials": "BN",
+              "role": "Steps 1–3, similarity and schema",
+              "due": "Step 3 by 11 Sep"
+            },
+            {
+              "name": "Feedback web",
+              "role": "Steps 4–5, the unmerge UI",
+              "due": "Blocked on step 3"
+            },
+            {
+              "name": "Search platform",
+              "initials": "SP",
+              "role": "Step 6, index collapse",
+              "due": "Not scheduled — see the risk below"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Step 6 has an owner who has not agreed to it",
+          "tone": "bad",
+          "lead": "Search platform was named, not asked.",
+          "text": "Every other step sits with a team that has scheduled it. Step 6 is the irreversible one, it belongs to a team with its own roadmap, and the plan currently assumes their availability. That assumption is the plan's weakest joint."
+        },
+        {
+          "type": "table",
+          "columns": [
+            { "label": "Step", "width": "34%" },
+            { "label": "Reversible by", "width": "32%" },
+            { "label": "Cost of reversing", "width": "34%" }
+          ],
+          "rows": [
+            [
+              { "text": "1 · Shadow pass" },
+              { "text": "Stopping the job" },
+              { "text": "None — nothing downstream reads it", "verdict": "good" }
+            ],
+            [
+              { "text": "2 · Threshold" },
+              { "text": "Changing a number" },
+              { "text": "None until step 4", "verdict": "good" }
+            ],
+            [
+              { "text": "3 · Merge pointer" },
+              { "text": "Flag off, then drop the column" },
+              { "text": "One migration, no data loss", "verdict": "good" }
+            ],
+            [
+              { "text": "4 · One workspace" },
+              { "text": "Flag off; pointers remain but are ignored" },
+              { "text": "Readers see threads unmerge under them", "verdict": "mixed" }
+            ],
+            [
+              { "text": "5 · Everyone" },
+              { "text": "Flag off" },
+              { "text": "Same, at a scale people will notice", "verdict": "mixed" }
+            ],
+            [
+              { "text": "6 · Index collapse" },
+              { "text": "Rebuilding the index from the pointer table" },
+              { "text": "Hours of reindexing, and search is degraded throughout", "verdict": "bad" }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "risks",
+      "label": "Risks",
+      "eyebrow": "Per step",
+      "title": "What each step could cost.",
+      "blocks": [
+        {
+          "type": "risk-matrix",
+          "rows": [
+            {
+              "risk": "The threshold is chosen against the shadow sample and is wrong for a workspace unlike it",
+              "severity": "high",
+              "likelihood": "Moderate — the sample is one product's threads",
+              "mitigation": "Step 4 is a different workspace on purpose, and the threshold is per-workspace configurable before step 5."
+            },
+            {
+              "risk": "Merging loses a reply that was only on the folded thread",
+              "severity": "critical",
+              "likelihood": "Low if merge is a pointer",
+              "mitigation": [
+                "The folded thread keeps its rows; the merge writes ",
+                { "kind": "code", "text": "merged_into" },
+                " and nothing else. No delete path is added in this plan at all."
+              ]
+            },
+            {
+              "risk": "Search platform cannot take step 6 this quarter",
+              "severity": "medium",
+              "likelihood": "Likely — it is not on their roadmap",
+              "mitigation": "None currently. This is the open item this review is meant to settle."
+            },
+            {
+              "risk": "Nobody unmerges anything and the threshold is silently too conservative",
+              "severity": "low",
+              "likelihood": "Moderate",
+              "mitigation": "Unmerge rate is reported weekly; a rate of zero after two weeks triggers a threshold review rather than a celebration."
+            }
+          ]
+        },
+        {
+          "type": "disclosure",
+          "summary": "Why step 6 exists at all, given it is the only irreversible one",
+          "blocks": [
+            {
+              "type": "prose",
+              "text": "Without it, a merged thread still appears in search as its own result, so the duplicate the reader was meant to stop seeing is still the first thing they see. Steps 1 to 5 make merging safe; step 6 is what makes it useful."
+            },
+            {
+              "type": "prose",
+              "text": "It could be made reversible by keeping the collapsed rows in a second index, at roughly the storage cost of the index itself. That has not been priced, and pricing it is a reasonable outcome of this review."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "label": "Your review",
+      "eyebrow": "Questions",
+      "title": "Three things this plan needs from you.",
+      "blocks": [
+        {
+          "type": "probe",
+          "id": "plan-order",
+          "label": "Step order",
+          "items": [
+            "Shadow the similarity pass",
+            "Choose the threshold",
+            "Ship the merge pointer, off",
+            "Enable for one workspace",
+            "Enable for everyone",
+            "Collapse the index"
+          ]
+        },
+        {
+          "type": "decision",
+          "id": "plan-step-six",
+          "ref": "D1",
+          "label": "Step 6 ownership",
+          "ask": "Approve the plan on the condition that step 6 is not scheduled until search platform has accepted it, and steps 1–5 proceed regardless?",
+          "placeholder": "If you would rather hold the whole plan until step 6 has an owner, say so."
+        },
+        {
+          "type": "checklist",
+          "id": "plan-conditions",
+          "ref": "K2",
+          "label": "Conditions",
+          "ask": "Which conditions should be attached to the approval?",
+          "options": [
+            {
+              "value": "Per-workspace threshold before step 5",
+              "summary": "The single global threshold does not survive contact with a second product."
+            },
+            {
+              "value": "Price the reversible index before step 6",
+              "summary": "Know what the second index costs before accepting an irreversible step."
+            },
+            {
+              "value": "Weekly unmerge-rate report from step 4",
+              "summary": "A rate of zero is a signal, not a success."
+            },
+            {
+              "value": "No delete path in this plan, ever",
+              "summary": "Merging never removes rows; a separate plan may argue for deletion."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Shadow pass output, 90 days of threads",
+      "ref": "feedback-analytics · duplicate_candidates",
+      "level": "measured"
+    },
+    {
+      "label": "Reindex duration used to size the cost of reversing step 6",
+      "ref": "search platform, last full rebuild",
+      "level": "estimated"
+    },
+    {
+      "label": "Search platform availability this quarter",
+      "ref": "assumed by this plan; not confirmed",
+      "level": "assumed"
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Plan review — merge duplicate feedback threads\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\n{{caveats}}"
+  }
+}

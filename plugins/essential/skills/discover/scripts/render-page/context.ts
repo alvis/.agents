@@ -1,4 +1,7 @@
+import { freshIds } from "./id.ts";
+
 import type { PageIds } from "./id.ts";
+import type { BoardSet } from "./types/set.ts";
 
 /**
  * everything a block needs that is not the block.
@@ -20,6 +23,15 @@ export interface PageContext {
    * reaching for the disk itself.
    */
   files: Record<string, string>;
+  /** the id of the board being drawn, which is what marks it as current */
+  id: string;
+  /**
+   * every board of the run, when this board was rendered as part of one.
+   *
+   * a hub indexes it and every board lists it; a board rendered on its own
+   * has neither, which is why this is optional rather than an empty set.
+   */
+  set?: BoardSet;
 }
 
 /**
@@ -28,12 +40,8 @@ export interface PageContext {
  */
 export function emptyContext(): PageContext {
   return {
-    ids: {
-      finding: new Set(),
-      probe: new Set(),
-      question: new Set(),
-      section: new Set(),
-    },
+    ids: freshIds(),
     files: {},
+    id: "page",
   };
 }

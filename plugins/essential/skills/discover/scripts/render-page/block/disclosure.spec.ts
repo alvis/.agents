@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { renderBlock } from "../block.ts";
 import { RenderError } from "../error.ts";
+import { freshIds } from "../id.ts";
 
 import type { PageContext } from "../context.ts";
 import type { Block } from "../types.ts";
@@ -12,7 +13,7 @@ import type { Block } from "../types.ts";
  */
 function context(): PageContext {
   return {
-    ids: { finding: new Set(), question: new Set(), section: new Set() },
+    ids: freshIds(),
     files: {},
   };
 }

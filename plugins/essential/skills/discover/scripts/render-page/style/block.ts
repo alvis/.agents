@@ -71,4 +71,26 @@ td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::bef
 .finding[data-severity="clear"]{border-left-style:dotted; border-left-color:var(--ui-positive)}
 .finding[data-severity="clear"] .finding-severity{color:var(--ui-positive-ink); background:var(--ui-positive-soft)}
 .finding[data-severity="clear"] .finding-severity::before{content:"+"}
+
+/* the hub's whole content: one card per board, sized by the blurb rather than
+   by a column count, so a run of three and a run of fifteen both read as a
+   list of things rather than a grid with holes in it */
+.board-index{display:grid; gap:.7rem; grid-template-columns:repeat(auto-fill,minmax(min(18rem,100%),1fr)); margin:0; padding:0; list-style:none}
+/* the card is the anchor, so the whole box is the target and the hit area is
+   the shape the reader sees. The list item keeps no styling of its own, or the
+   border would sit a pixel outside whatever the pointer and the focus ring
+   agree is the card — but it does have to hand its full height down, because
+   the grid stretches the item and a shorter blurb would otherwise leave one
+   card standing 21px short of the row it sits in */
+.board-index li{display:grid}
+.board-card{padding:.85rem .95rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface); color:var(--ui-ink); text-decoration:none}
+.board-card:hover{border-color:var(--ui-border-strong); background:var(--ui-raised)}
+.board-card:focus-visible{outline:2px solid var(--ui-focus); outline-offset:3px}
+.board-card[aria-current="page"]{border-color:var(--ui-accent); background:var(--ui-accent-soft)}
+.board-card-name{display:block; font:700 1rem/1.35 var(--font-display)}
+.board-card:hover .board-card-name{text-decoration:underline}
+/* the card the reader is already on links nowhere useful, so it says so in
+   words rather than only in colour */
+.board-card[aria-current="page"] .board-card-name::after{content:" — you are here"; color:var(--ui-accent-ink); font:600 .78rem/1.4 var(--font-body)}
+.board-card-blurb{display:block; margin:.35rem 0 0; color:var(--ui-muted); font:.86rem/1.55 var(--font-body)}
 `.trim();

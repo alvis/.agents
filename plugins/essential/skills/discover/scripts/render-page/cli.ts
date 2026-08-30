@@ -1,54 +1,8 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 
-import { readSources } from "./asset.ts";
-import { buildAssets } from "./assets.ts";
-import { usesMermaid } from "./block/mermaid.ts";
-import { RenderError } from "./error.ts";
-import { renderPage } from "./page.ts";
-import { getMermaidRuntime } from "./vendor.ts";
-
-import type { PageAssets } from "./assets.ts";
-import type { PageData } from "./types.ts";
-
-/**
- * reads a data file, renders it, and writes the resulting page.
- *
- * assets are taken rather than built, so rendering a set of boards bundles
- * the runtime once instead of once a board.
- * @param dataPath path to the JSON data file
- * @param outPath path the rendered HTML is written to
- * @param assets the stylesheet and scripts every page carries
- * @returns the rendered document
- */
-export async function renderFile(
-  dataPath: string,
-  outPath: string,
-  assets: PageAssets,
-): Promise<string> {
-  const source = await readFile(dataPath, "utf8").catch(() => {
-    throw new RenderError(`cannot read data file: ${dataPath}`);
-  });
-  let data: PageData;
-  try {
-    data = JSON.parse(source) as PageData;
-  } catch (error) {
-    throw new RenderError(
-      `${dataPath} is not valid JSON: ${(error as Error).message}`,
-    );
-  }
-  // every read happens here, so `renderPage` stays a pure function of what
-  // it is handed: files resolve against the data file's own directory, and
-  // the Mermaid bundle is fetched only for a board that actually draws with it
-  const files = await readSources(data, dirname(dataPath));
-  const mermaid = usesMermaid(data)
-    ? await getMermaidRuntime({})
-    : undefined;
-  const html = renderPage(data, { ...assets, files, mermaid });
-  await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, html, "utf8");
-  return html;
-}
+import { buildAssets } from "./bundle.ts";
+import { renderFile } from "./file.ts";
+import { renderRun } from "./run.ts";
 
 /**
  * runs the command line interface.
@@ -56,27 +10,41 @@ export async function renderFile(
  * @returns the process exit code
  */
 export async function main(argv = Bun.argv.slice(2)): Promise<number> {
-  const usage = "usage: bun scripts/render-page.ts <data.json> -o <out.html>";
-  const output = argv.indexOf("-o");
-  const target = output === -1 ? "" : (argv[output + 1] ?? "");
+  const usage =
+    "usage: bun scripts/render-page.ts <data.json> -o <out.html>\n" +
+    "       bun scripts/render-page.ts --set <run.json> -o <out-dir>";
+  const set = argv.indexOf("--set");
+  const rest = set === -1 ? argv : argv.filter((_, index) => index !== set);
+  const output = rest.indexOf("-o");
+  const target = output === -1 ? "" : (rest[output + 1] ?? "");
   const positional =
     output === -1
-      ? argv
-      : argv.filter((_, index) => index !== output && index !== output + 1);
+      ? rest
+      : rest.filter((_, index) => index !== output && index !== output + 1);
+  const subject = set === -1 ? "data file" : "run file";
   const complaint =
     output === -1
-      ? "missing the -o <out.html> flag"
+      ? `missing the -o ${set === -1 ? "<out.html>" : "<out-dir>"} flag`
       : !target || target.startsWith("-")
         ? `-o needs an output path, received ${JSON.stringify(target)}`
         : positional.length !== 1
-          ? `expected exactly one data file, received ${positional.length}`
+          ? `expected exactly one ${subject}, received ${positional.length}`
           : "";
   if (complaint) {
     console.error(`${usage}\nrender-page.ts: error: ${complaint}`);
     return 2;
   }
   try {
-    await renderFile(resolve(positional[0]), resolve(target), await buildAssets());
+    // a run renders every board with one set of assets and one board list, so
+    // it is a mode of its own rather than a loop the caller writes
+    if (set === -1)
+      await renderFile(
+        resolve(positional[0]),
+        resolve(target),
+        await buildAssets(),
+      );
+    else await renderRun(resolve(positional[0]), resolve(target));
+
     return 0;
   } catch (error) {
     console.error(`render-page.ts: error: ${(error as Error).message}`);

@@ -1,0 +1,182 @@
+{
+  "kind": "board-hub",
+  "id": "board-hub-examples-v1",
+  "action": "Board hub",
+  "title": "Discover example boards",
+  "masthead": {
+    "eyebrow": "Board hub · example set",
+    "headline": "Fifteen boards, one chrome, fifteen different jobs.",
+    "lede": "Every board here is rendered from a JSON data file by the same builder, so what differs between them is what they are for rather than how they were made. Pick the one whose question matches yours.",
+    "meta": [
+      {
+        "label": "Boards",
+        "value": "15"
+      },
+      {
+        "label": "Source",
+        "value": "One JSON file each"
+      },
+      {
+        "label": "Network requests",
+        "value": "Zero"
+      },
+      {
+        "label": "Read at",
+        "value": "500px and up"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "boards",
+      "label": "The set",
+      "eyebrow": "Index",
+      "title": "Every board in the set, and what it is for.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The sidebar carries the same list on every board, so this index is not the only way back. It exists because a name alone does not say when a direction is the right one, and the blurb does."
+        },
+        {
+          "type": "boards"
+        }
+      ]
+    },
+    {
+      "id": "workspace",
+      "label": "How it works",
+      "eyebrow": "Orientation",
+      "title": "These pages are a reading surface, not a record.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "Three things worth knowing before you read one",
+          "points": [
+            {
+              "lead": "Every board is one file.",
+              "text": "Styles, scripts, pictures and diagrams are inlined. A board opens from disk, survives being emailed, and makes no network request."
+            },
+            {
+              "lead": "Answers stay in the browser.",
+              "text": "What you type or select is kept under the board's own id and nothing is sent anywhere. The board's job is to produce a reply you copy back."
+            },
+            {
+              "lead": "Nothing here is the source of truth.",
+              "text": "A board renders a position at a moment. The work's own ledger outlives it, and a board that disagrees with the ledger is the stale one."
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            {
+              "lead": "Read with scripting off",
+              "text": "and the content is all still there — the questions become plain form controls and the reply template stays visible. Interaction is an improvement, not a requirement."
+            },
+            {
+              "lead": "Answer as you read",
+              "text": "rather than at the end. Arrow keys move between questions and a letter picks an option, so a long board does not turn into a scroll-back exercise."
+            },
+            {
+              "lead": "Copy the reply",
+              "text": "from the drawer at the bottom. It states where the board stands, what you confirmed or changed, and any passage you annotated."
+            }
+          ]
+        },
+        {
+          "type": "disclosure",
+          "summary": "What happens to an answer after you copy the reply",
+          "blocks": [
+            {
+              "type": "prose",
+              "text": "Nothing automatic. The reply is text; pasting it back into the conversation is what makes it count. Until then it lives only in this browser, and clearing site data clears it."
+            },
+            {
+              "type": "prose",
+              "text": "That is the whole storage model, and it is deliberate: a board that quietly synchronised somewhere would be a system to operate rather than a page to read."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pick",
+      "label": "Choosing one",
+      "eyebrow": "Guide",
+      "title": "Which board matches the decision in front of you?",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Ranked options, unless the shape of the problem is still unsettled. It is the only board that puts complete alternatives side by side with what each one costs, which is what a decision needs; the others either come before that point or after it."
+        },
+        {
+          "type": "table",
+          "caption": "What each board is for, and what it will not do",
+          "columns": [
+            "Board",
+            "When it fits",
+            "What it will not do"
+          ],
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": "Ranked options"
+                },
+                {
+                  "text": "The decision has more than one defensible answer and you want them compared."
+                },
+                {
+                  "text": "Assumes the option set is already known",
+                  "verdict": "mixed"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "Domain explainer"
+                },
+                {
+                  "text": "The vocabulary is unfamiliar and no option would mean much yet."
+                },
+                {
+                  "text": "Produces understanding rather than a decision",
+                  "verdict": "mixed"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "Readiness check"
+                },
+                {
+                  "text": "The direction is settled and the question is whether to start now."
+                },
+                {
+                  "text": "Says nothing about whether the direction is the right one",
+                  "verdict": "mixed"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "Triage board"
+                },
+                {
+                  "text": "There is more work than capacity and the question is what to drop."
+                },
+                {
+                  "text": "Only useful once the items exist and are understood",
+                  "verdict": "mixed"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

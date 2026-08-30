@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import { RenderError } from "./error.ts";
-import { isRemote, mimeOf, resolveSrc } from "./reference.ts";
+import { remoteHref } from "./href.ts";
+import { mimeOf } from "./reference.ts";
+import { resolveSrc } from "./resolve-src.ts";
 
 /** references that need no network, so the sweep leaves them alone. */
 const SELF_CONTAINED = /^(?:data:|about:blank$|#|$)/i;
@@ -121,7 +123,7 @@ function refuseRemote(document: string, path: string): void {
       ([, , reference]) => reference,
     );
     for (const reference of [source, link, ...styled])
-      if (reference && !SELF_CONTAINED.test(reference) && isRemote(reference))
+      if (reference && !SELF_CONTAINED.test(reference) && remoteHref(reference))
         throw new RenderError(
           `${path}: the packed document still loads ${JSON.stringify(reference)} over the network, and a board must render with no requests at all`,
         );

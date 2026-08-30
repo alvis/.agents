@@ -9,10 +9,15 @@ import type { AnswerLine } from "./reply.ts";
 export interface SummaryTargets {
   /** the list of one row per question */
   list: HTMLElement;
-  /** the live region carrying the unanswered tally */
-  count: HTMLElement;
-  /** the element holding the rendered reply */
-  reply: HTMLElement;
+  /**
+   * the live region carrying the unanswered tally.
+   *
+   * absent on a board that asks nothing, which draws no reply half at all
+   * rather than a count that can only ever read zero.
+   */
+  count: HTMLElement | null;
+  /** the element holding the rendered reply, absent for the same reason */
+  reply: HTMLElement | null;
 }
 
 /**
@@ -35,28 +40,47 @@ export function paintSummary(
   probes: ProbeOrder[] = [],
 ): void {
   targets.list.replaceChildren(
-    ...lines.map(({ label, value }, index) => {
+    ...lines.map(({ ref, label, value }, index) => {
       const row = document.createElement("li");
       row.dataset.answered = String(Boolean(value));
       row.dataset.touched = String(touched.has(ids[index]));
 
+      // the row is an anchor to the card it summarises, so a reader who has
+      // scrolled past a question reaches it from the drawer rather than
+      // hunting for it. A real href, not a click handler, so it keeps every
+      // affordance a link has: the status bar preview, open-in-new-tab, and a
+      // working jump on a page whose script never booted
+      const jump = document.createElement("a");
+      jump.className = "summary-jump";
+      jump.setAttribute("href", `#qs-${ids[index]}`);
+
+      const code = document.createElement("span");
+      code.className = "summary-ref";
+      code.textContent = ref;
+
       const name = document.createElement("span");
+      name.className = "summary-name";
       name.textContent = label;
 
       const shown = document.createElement("span");
       shown.className = "value";
       shown.textContent = value || "—";
 
-      row.append(name, shown);
+      jump.append(code, name, shown);
+      row.append(jump);
 
       return row;
     }),
   );
 
-  const tally = `${countUnanswered(lines)} unanswered`;
-  // rewriting an identical live region re-announces it on every keystroke
-  if (targets.count.textContent !== tally) targets.count.textContent = tally;
-  targets.count.dataset.settled = String(countUnanswered(lines) === 0);
+  if (targets.count) {
+    const tally = `${countUnanswered(lines)} unanswered`;
+    // rewriting an identical live region re-announces it on every keystroke
+    if (targets.count.textContent !== tally) targets.count.textContent = tally;
+    targets.count.dataset.settled = String(countUnanswered(lines) === 0);
+  }
+
+  if (!targets.reply) return;
 
   // the stored template arrives with its provenance and caveats already
   // filled, because neither moves as the reader answers

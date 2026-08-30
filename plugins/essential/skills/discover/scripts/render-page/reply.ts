@@ -56,6 +56,7 @@ export function renderReply(data: PageData): string {
   // with scripting off is not handed a differently shaped reply from one with
   // it on — and so the two can never drift apart as the grouping changes
   const lines: AnswerLine[] = questionsOf(data.sections).map((block, index) => ({
+    ref: block.ref,
     label: block.label,
     value: "",
     response: responseOf(block, `question[${index}]`),
