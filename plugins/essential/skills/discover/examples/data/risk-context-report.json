@@ -1,0 +1,329 @@
+{
+  "kind": "risk-context-report",
+  "id": "risk-context-report-case-summary-v1",
+  "action": "Risk context report",
+  "title": "AI case summaries — the risk position before the first cohort",
+  "masthead": {
+    "eyebrow": "Risk context report · AI case summaries",
+    "headline": "The model is only the final hop.",
+    "lede": "The dangerous failure is not a wrong summary. It is a confident summary built from evidence the viewer is no longer authorized to see, with no record of what it was built from.",
+    "meta": [
+      {
+        "label": "Findings",
+        "value": "4 material"
+      },
+      {
+        "label": "Worst credible",
+        "value": "Authorization race"
+      },
+      {
+        "label": "Evidence cache",
+        "value": "15-minute TTL"
+      },
+      {
+        "label": "Gate",
+        "value": "Awaiting your answer"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "reality-gap",
+      "eyebrow": "Framing",
+      "label": "Reality gap",
+      "title": "What changes the task",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Frame",
+            "What it asks for",
+            "What it misses"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Apparent task"
+              },
+              {
+                "text": "Improve summary accuracy: tune the prompt, add citations, evaluate representative cases, ship behind a flag."
+              },
+              {
+                "text": "Treats the model as the whole system",
+                "verdict": "bad"
+              }
+            ],
+            [
+              {
+                "text": "Operational reality"
+              },
+              {
+                "text": "Prove the evidence is still authorized at render time, not only at generation time."
+              },
+              {
+                "text": "Retrieval, caches, audit and fallback all cross the customer boundary",
+                "verdict": "good"
+              }
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Decision-changing insight",
+          "text": "Offline factuality scores cannot establish launch safety if the online request can assemble evidence the viewer no longer has permission to see."
+        }
+      ]
+    },
+    {
+      "id": "evidence-ledger",
+      "eyebrow": "Evidence",
+      "label": "Findings",
+      "title": "Four material findings, each with evidence and a probe",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "title": "AUTH-07 — revocation and derived-cache invalidation are separate paths",
+              "severity": "critical",
+              "text": "The permission consumer clears retrieval keys; the summary worker keeps its evidence bundle until TTL expiry. A user can lose access and still receive a generated claim derived from the revoked record for up to fifteen minutes.",
+              "owner": "Identity platform",
+              "evidence": "Permission event trace, staging run 1842 — single tenant, no cross-region delay, 2 days old"
+            },
+            {
+              "title": "TRACE-03 — the audit event stores the summary, not the evidence snapshot",
+              "severity": "elevated",
+              "text": "summary_generated records case ID, model, and output hash but omits evidence IDs and the authorization version. During an incident, operators cannot distinguish a model error from an authorization race, or reproduce what the model saw.",
+              "owner": "Trust engineering",
+              "evidence": "Audit schema at commit 4c1b9e2 — the production sink transform was not inspected"
+            },
+            {
+              "title": "EVAL-12 — citations can be present while the claim overstates the source",
+              "severity": "watch",
+              "text": "The current evaluator checks citation existence and lexical overlap, not whether uncertainty or chronology was preserved. A qualified agent note can become a definitive customer-facing diagnosis while still pointing at the correct record.",
+              "owner": "Applied quality",
+              "evidence": "Summary evaluation rubric v3 — no uncertainty-preservation dimension, 3 weeks old"
+            },
+            {
+              "title": "FALL-01 — the source-only fallback renders and is permission-correct",
+              "severity": "clear",
+              "text": "The containment path exists behind its own flag and returns the source timeline with no generated prose. What is not yet proven is that it survives a failure injected mid-request rather than before the request begins.",
+              "owner": "Support operations",
+              "evidence": "Fallback integration suite — passes today, but has no mid-request fault injection"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": "Prioritized by worst-credible impact. Severity and likelihood are review assessments, not measured rates; each mitigation is routed to a named owner."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Finding",
+            "Likelihood",
+            "Mitigation",
+            "Owner"
+          ],
+          "rows": [
+            [
+              {
+                "text": "AUTH-07 authorization / cache race"
+              },
+              {
+                "text": "Likely — async revocation against a 15-minute cache",
+                "verdict": "bad"
+              },
+              {
+                "text": "Authorization-version binding plus derived-cache invalidation"
+              },
+              {
+                "text": "Identity platform"
+              }
+            ],
+            [
+              {
+                "text": "TRACE-03 audit event lacks lineage"
+              },
+              {
+                "text": "Certain in any dispute or incident",
+                "verdict": "bad"
+              },
+              {
+                "text": "Persist evidence IDs and the authorization snapshot in the audit event"
+              },
+              {
+                "text": "Trust engineering"
+              }
+            ],
+            [
+              {
+                "text": "EVAL-12 citation overstatement"
+              },
+              {
+                "text": "Possible — passes today's lexical checks",
+                "verdict": "mixed"
+              },
+              {
+                "text": "Grade entailment, uncertainty, and chronology with disagreement review"
+              },
+              {
+                "text": "Applied quality"
+              }
+            ],
+            [
+              {
+                "text": "FALL-01 fallback under partial failure"
+              },
+              {
+                "text": "Unproven — never exercised mid-request",
+                "verdict": "mixed"
+              },
+              {
+                "text": "Inject timeouts at retrieval, generation, citation assembly, and render"
+              },
+              {
+                "text": "Support operations"
+              }
+            ],
+            [
+              {
+                "text": "Review capacity at cohort scale"
+              },
+              {
+                "text": "Hypothesis — 1,800/day produced against 120/day reviewed",
+                "verdict": "mixed"
+              },
+              {
+                "text": "One-day shadow queue before promising a human-review control"
+              },
+              {
+                "text": "Support enablement"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "risk-paths",
+      "eyebrow": "Amplification",
+      "label": "Risk paths",
+      "title": "Small gaps combine into customer-visible failures",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Neither path below needs a model error. Each is built entirely from behaviour the system exhibits today."
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Permission revoked",
+              "text": "The permission consumer clears the retrieval keys it owns.",
+              "state": "done"
+            },
+            {
+              "title": "Evidence cache survives",
+              "text": "The summary worker's bundle is untouched and stays valid until its TTL expires.",
+              "state": "current"
+            },
+            {
+              "title": "Summary states the claim",
+              "text": "Generation runs against evidence the viewer may no longer see, and renders it as prose.",
+              "state": "todo"
+            },
+            {
+              "title": "Audit lacks lineage",
+              "text": "The recorded event names the model and the output, not the evidence set.",
+              "state": "todo"
+            },
+            {
+              "title": "Incident cannot reconstruct",
+              "text": "Nobody can prove afterwards whether this was a model error or an authorization race.",
+              "state": "todo"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Prevent, detect, contain",
+          "text": "Prevent by binding the authorization version and evidence IDs to every generated result. Detect by measuring entailment, permission races, fallback entry, and review backlog. Contain by disabling generated prose while keeping the source timeline available. Shipping one layer and deferring the others silently is the failure mode."
+        }
+      ]
+    },
+    {
+      "id": "launch-gate",
+      "eyebrow": "Your decision",
+      "label": "Launch gate",
+      "title": "What must be true before the first cohort?",
+      "blocks": [
+        {
+          "type": "checklist",
+          "id": "measured-containment",
+          "label": "Controls that must show measured containment",
+          "ask": "Which controls must be proven by measurement — not by design review — before any customer sees generated prose?",
+          "options": [
+            {
+              "value": "Authorization-version binding",
+              "summary": "Reject stale evidence and invalidate derived caches after revocation."
+            },
+            {
+              "value": "Reconstructable lineage",
+              "summary": "Persist the evidence and authorization snapshot behind every result."
+            },
+            {
+              "value": "Fallback drill",
+              "summary": "Prove containment at every mid-request failure boundary."
+            },
+            {
+              "value": "Review-capacity shadow",
+              "summary": "Measure workload and severity latency before calling review a control."
+            },
+            {
+              "value": "Entailment grading",
+              "summary": "Grade uncertainty preservation and chronology, not citation existence."
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "id": "exposure-gate",
+          "label": "Exposure gate",
+          "ask": "Choose the evidence threshold that controls customer exposure.",
+          "choices": [
+            {
+              "value": "Block on containment and lineage",
+              "summary": "Permit a cohort only after the revocation and replay probes pass.",
+              "recommended": true
+            },
+            {
+              "value": "Internal shadow first",
+              "summary": "Collect online evidence with no generated prose visible to customers."
+            },
+            {
+              "value": "Restricted cohort with review",
+              "summary": "Requires an explicit review SLA and a capacity proof."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "id": "external-constraint",
+          "label": "Constraint that changes this gate",
+          "ask": "What customer, regulatory, or operating constraint changes the gate you just chose?",
+          "placeholder": "e.g. a tenant contract that forbids any generated prose over their records"
+        },
+        {
+          "type": "callout",
+          "title": "Decision rule",
+          "text": "A launch blocker needs a named owner, a measurable pass signal, and a tested rollback. Do not downgrade a blocker to a nice-to-have in order to unblock exposure."
+        }
+      ]
+    }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Risk position — AI case summaries\n\nTreat the trust boundary, not the model, as the thing you are building. The dangerous failure is a confident summary that no longer has the right to exist.\n\nDecisions taken on this page:\n\n{{answers}}\n\nAny replay counts or sampled-signal figures on this board are illustrative shapes, not measured rates. Report what containment is proven and what still blocks the first cohort."
+  }
+}
