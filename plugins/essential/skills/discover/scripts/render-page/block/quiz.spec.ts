@@ -91,6 +91,21 @@ describe("fn:renderQuiz", () => {
     );
   });
 
+  it("should give every option the verdict it would earn, as a word", () => {
+    const drawn = draw();
+
+    // both verdicts are in the page before anything is answered, and the sheet
+    // shows only the one whose option the reader chose. A verdict computed at
+    // answer time would be a verdict a reader with scripting off never gets
+    expect(drawn).toContain(
+      'data-correct /><span class="quiz-value">Nowhere \u2014 the reply records the answer, never whether it was right</span><span class="quiz-mark">Correct</span>',
+    );
+    expect(drawn).toContain('<span class="quiz-mark">Not this one</span>');
+    // and neither verdict names the answer that was right: a reader who missed
+    // one is sent to the section, which is what the question was asked for
+    expect(drawn.match(/quiz-mark/gu)).toHaveLength(2);
+  });
+
   it("should give every option in one question the same radio name", () => {
     expect(draw().match(/name="quiz-reply"/gu)).toHaveLength(2);
   });

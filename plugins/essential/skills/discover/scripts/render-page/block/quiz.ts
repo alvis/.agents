@@ -9,6 +9,7 @@ import {
   requireObject,
   requireString,
 } from "../validate.ts";
+import { QUIZ_MARK_LABEL } from "../vocabulary.ts";
 
 import type { PageContext } from "../context.ts";
 import type { Block, QuizOption } from "../types.ts";
@@ -40,6 +41,12 @@ function renderOption(
   const note = because
     ? `<span class="quiz-because">${escapeHtml(because)}</span>`
     : "";
+  // every option carries its own verdict, and the sheet shows only the one the
+  // reader chose. Emitting the verdict on the option rather than on the
+  // question is what lets a static page say `Correct` at all: nothing computes
+  // it, and a reader with scripting off is told exactly what a reader with it
+  // on is told
+  const mark = `<span class="quiz-mark">${QUIZ_MARK_LABEL[correct ? "correct" : "wrong"]}</span>`;
 
   // the question's own id, unprefixed, because that is what every other
   // question names its controls with. A name is what groups radios, and the
@@ -48,7 +55,7 @@ function renderOption(
   // where each answer silently erased the other and the reply lost a line
   return [
     correct,
-    `<label class="quiz-option"><input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(value)}"${correct ? " data-correct" : ""} /><span class="quiz-value">${escapeHtml(value)}</span>${note}</label>`,
+    `<label class="quiz-option"><input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(value)}"${correct ? " data-correct" : ""} /><span class="quiz-value">${escapeHtml(value)}</span>${mark}${note}</label>`,
   ];
 }
 

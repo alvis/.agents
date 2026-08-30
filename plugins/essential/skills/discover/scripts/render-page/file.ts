@@ -6,6 +6,7 @@ import { formatCodeBlocks } from "./format.ts";
 import { colourCodeBlocks, highlighterOnce } from "./prism.ts";
 import { CODE_CSS } from "./style/code.ts";
 import { DEVIATION_CSS } from "./style/deviation.ts";
+import { LEDGER_CSS } from "./style/ledger.ts";
 import { OBSERVATION_CSS } from "./style/observation.ts";
 import { QUIZ_CSS } from "./style/quiz.ts";
 import { codeExcerpts, usesBlock } from "./walk.ts";
@@ -70,6 +71,7 @@ export async function renderFile(
     ...(excerpts.length ? [CODE_CSS] : []),
     ...(usesBlock(data, "observations") ? [OBSERVATION_CSS] : []),
     ...(usesBlock(data, "deviations") ? [DEVIATION_CSS] : []),
+    ...(usesBlock(data, "ledger") ? [LEDGER_CSS] : []),
     // the gate rides on the question: `renderGate` refuses a page that asks
     // none, so a board holding a gate holds a quiz and one test covers both
     ...(usesBlock(data, "quiz") ? [QUIZ_CSS] : []),

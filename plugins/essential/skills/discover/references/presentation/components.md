@@ -326,6 +326,20 @@ Who each piece of work is routed to: `people` of
 
 Lanes whose membership is itself the claim: `lanes` of `{ label, cards }`.
 
+#### `ledger`
+
+Grouped rows that open for the whole of what is recorded about them: `groups`
+of `{ label, note?, progress?, facts, entries, empty? }`, each entry
+`{ code, title, status, tone?, facts }`, and each fact a `{ label, value }`
+pair. `progress` is `{ done, of }` and draws as a bar beside the group name;
+`tone` is `good`, `busy`, `bad` or `neutral`.
+
+Where a `kanban` card carries only what fits on it, a ledger keeps the rest one
+disclosure away, in native `details` elements — no runtime, open when the page
+is printed, and already a disclosure to a screen reader. Use it when the record
+behind each row has more fields than a card can hold and the reader will want
+them one row at a time.
+
 #### `timeline`
 
 A dated or timestamped rail of moments: `items` of
@@ -554,6 +568,7 @@ never has to search for it.
 | excerpts, selections, ties, comments | `scripts/render-page/types/code.ts` |
 | inline runs | `scripts/render-page/types/inline.ts` |
 | the content sub-shapes | `scripts/render-page/types/content.ts` |
+| ledger groups, rows and facts | `scripts/render-page/types/ledger.ts` |
 | the diagram graph | `scripts/render-page/diagram/shape.ts` |
 | the run set | `scripts/render-page/types/set.ts` |
 

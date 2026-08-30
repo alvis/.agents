@@ -1,36 +1,14 @@
 import { leadRuns, leadText } from "./lead.ts";
-import { says } from "./parse.ts";
+import { ledgerSection } from "./ledger.ts";
+import { isBlocked, isDone, says } from "./parse.ts";
 import { readingSection } from "./reading.ts";
 
 import type { Block, Metric, PageData, Section } from "../types.ts";
-import type { Stream, Task } from "./parse.ts";
+import type { Stream } from "./parse.ts";
 import type { Tree } from "./read.ts";
 
 /** the table the blocker section draws, when there is anything to draw. */
 const BLOCKER_COLUMNS = ["Stream", "Task", "What is stuck", "Owner", "Unblock"];
-
-/**
- * whether a task is stuck.
- *
- * both the mark and the status are read, because the two can disagree — a row
- * marked `!` whose status still says `working` is exactly the row an
- * operations board exists to surface, and reading only one of the two columns
- * would let it pass as ordinary work.
- * @param task the task
- * @returns true where it is blocked
- */
-function isBlocked(task: Task): boolean {
-  return task.mark === "!" || says(task.status, "blocked");
-}
-
-/**
- * whether a task is finished
- * @param task the task
- * @returns true where it is done
- */
-function isDone(task: Task): boolean {
-  return says(task.status, "done");
-}
 
 /**
  * draws what is stuck, first, because it is why this board gets opened
@@ -70,40 +48,6 @@ function blockerSection(streams: Stream[]): Section {
             text: "No task in any live stream carries a blocked mark or a blocked status. Everything below is either running or waiting on its turn.",
           },
         ],
-  };
-}
-
-/**
- * draws one lane per workstream, holding only its unfinished tasks.
- *
- * the finished ones are counted in the next section rather than drawn here: a
- * lane of ninety done rows and one working row hides the working row, and the
- * question this section answers is what each stream still owes.
- * @param streams the streams on the board
- * @returns the section
- */
-function laneSection(streams: Stream[]): Section {
-  const lanes = streams.map((stream) => {
-    const open = stream.tasks.filter((task) => !isDone(task));
-
-    return {
-      label: stream.id,
-      cards: open.length
-        ? open.map((task) => [
-            { kind: "code" as const, text: task.id },
-            ` ${task.task}`,
-            { kind: "dim" as const, text: ` — ${task.status}` },
-          ])
-        : [[{ kind: "dim" as const, text: "every recorded task is done" }]],
-    };
-  });
-
-  return {
-    id: "lanes",
-    label: "Streams",
-    eyebrow: "Open work",
-    title: "What each stream still owes",
-    blocks: [{ type: "kanban", lanes }],
   };
 }
 
@@ -222,12 +166,12 @@ export function stateBoard(tree: Tree, at: string): PageData {
     masthead: {
       eyebrow: "Operations",
       headline: "Where every live workstream stands right now",
-      lede: "One lane per stream, blockers first, and the record's own gaps stated rather than smoothed over. Archived streams are not here because this never looks in the directory they are in.",
+      lede: "Blockers first, then what every stream still owes, with each row opening onto the whole of what the table recorded and the record's own gaps stated rather than smoothed over. Archived streams are not here because this never looks in the directory they are in.",
       meta,
     },
     sections: [
       blockerSection(tree.streams),
-      laneSection(tree.streams),
+      ledgerSection(tree.streams),
       progressSection(tree.streams),
       recentSection(tree.streams),
       readingSection(tree),

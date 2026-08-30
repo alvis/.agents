@@ -14,12 +14,21 @@ export const QUIZ_CSS = `
 .quiz-option{display:grid; grid-template-columns:auto 1fr; gap:.2rem .7rem; padding:.7rem .85rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-canvas); cursor:pointer}
 .quiz-option input{grid-row:1; margin:.2rem 0 0}
 .quiz-value{grid-row:1}
-/* the rationale is hidden until this question is answered, so reading it is
-   never a way of finding the answer without giving one */
-.quiz-because{grid-column:2; display:none; color:var(--ui-muted); font-size:.86rem}
-.quiz-options:has(input:checked) .quiz-option:has(input:checked) .quiz-because{display:block}
-.quiz-option:has(input:checked){border-color:var(--ui-accent); box-shadow:inset 3px 0 0 var(--ui-accent)}
+/* the verdict and the rationale are both hidden until this option is the one
+   chosen, so reading either is never a way of finding the answer without
+   giving one, and no unanswered question ships a verdict nobody reached */
+.quiz-mark{grid-column:2; display:none; font:700 .72rem/1.55 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
+.quiz-because{grid-column:2; display:none; margin-top:.15rem; color:var(--ui-muted); font-size:.86rem}
+.quiz-option:has(input:checked) .quiz-mark,
+.quiz-option:has(input:checked) .quiz-because{display:block}
 .quiz-option:has(input:checked) .quiz-value{font-weight:600}
+/* the answer is right or it is wrong, and the option says which in a word, a
+   fill and an edge. The accent state it used to take said only that something
+   had been chosen, which is the one thing the reader already knew */
+.quiz-option:has(input:checked[data-correct]){border-color:var(--ui-positive); background:var(--ui-positive-soft); box-shadow:inset 3px 0 0 var(--ui-positive)}
+.quiz-option:has(input:checked[data-correct]) .quiz-mark{color:var(--ui-positive-ink)}
+.quiz-option:has(input:checked:not([data-correct])){border-color:var(--ui-critical); background:var(--ui-critical-soft); box-shadow:inset 3px 0 0 var(--ui-critical)}
+.quiz-option:has(input:checked:not([data-correct])) .quiz-mark{color:var(--ui-critical-ink)}
 
 .gate{margin-top:1rem; padding:1.1rem 1.2rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-card); background:var(--ui-surface)}
 .gate-title{margin:0; font-family:var(--font-display); font-size:1.05rem; font-weight:560; letter-spacing:-.01em}

@@ -1,7 +1,7 @@
 /** the header keys a phase is written under, in the order they are looked for. */
 const PHASE_KEYS = ["Phase", "Lifecycle status"];
 
-/** the columns the board reads, spelled as the canonical header spells them. */
+/** the columns a row must have to be read at all, as the header spells them. */
 const NEEDED = {
   id: "ID",
   mark: "Mark",
@@ -9,6 +9,20 @@ const NEEDED = {
   task: "Task",
   owner: "Owner",
   evidence: "Evidence",
+};
+
+/**
+ * the columns the board draws where a table has them.
+ *
+ * wanted rather than needed, because requiring them would count every row of a
+ * table written without them as unreadable — and this board is opened when
+ * something has already gone wrong, which is the worst moment to hide six
+ * streams behind a column one of them omitted.
+ */
+const WANTED = {
+  depends: "Depends on",
+  required: "Required",
+  acceptance: "Acceptance",
 };
 
 /** what an alignment rule's cells look like, in every spelling GitHub accepts. */
@@ -26,6 +40,14 @@ export interface Task {
   task: string;
   /** who it sits with */
   owner: string;
+  /** what it waits on, where the table records dependencies */
+  depends: string;
+  /** whether the record calls it required, in the record's own wording */
+  required: string;
+  /** what would show it is finished, where the table records that */
+  acceptance: string;
+  /** the evidence column entire, which is where the next action is written */
+  evidence: string;
   /** the `unblock:` clause, where the evidence column carries one */
   unblock: string;
 }
@@ -82,6 +104,29 @@ export function says(recorded: string, word: string): boolean {
 }
 
 /**
+ * whether a task is stuck.
+ *
+ * both the mark and the status are read, because the two can disagree — a row
+ * marked `!` whose status still says `working` is exactly the row an operations
+ * board exists to surface, and reading only one of the two columns would let it
+ * pass as ordinary work.
+ * @param task the task
+ * @returns true where it is blocked
+ */
+export function isBlocked(task: Task): boolean {
+  return task.mark === "!" || says(task.status, "blocked");
+}
+
+/**
+ * whether a task is finished
+ * @param task the task
+ * @returns true where it is done
+ */
+export function isDone(task: Task): boolean {
+  return says(task.status, "done");
+}
+
+/**
  * reads one `- Key: value` header line.
  *
  * the first occurrence, not the last: two streams in this tree repeat their
@@ -135,16 +180,20 @@ function isRule(row: string[]): boolean {
  * was counted as unreadable — the exact harm the width check exists to
  * prevent, arriving through the header instead of through a row.
  * @param row the header row's cells
- * @returns where each column sits, or undefined where one of them is missing
+ * @returns where each column sits, or undefined where a needed one is missing
  */
 function columns(row: string[]): Record<string, number> | undefined {
+  const find = (name: string): number =>
+    row.findIndex((cell) => cell === name || cell.startsWith(`${name} `));
   const at: Record<string, number> = {};
   for (const [key, name] of Object.entries(NEEDED)) {
-    const index = row.findIndex(
-      (cell) => cell === name || cell.startsWith(`${name} `),
-    );
+    const index = find(name);
     if (index < 0) return undefined;
     at[key] = index;
+  }
+  for (const [key, name] of Object.entries(WANTED)) {
+    const index = find(name);
+    if (index >= 0) at[key] = index;
   }
 
   return at;
@@ -186,13 +235,22 @@ function tasks(lines: string[]): [Task[], number] {
       malformed += 1;
       continue;
     }
-    const evidence = row[at.evidence!]!;
+    // a wanted column the header did not have reads as an empty cell rather
+    // than as a missing field, so every task has the same shape however the
+    // stream that wrote it chose to lay its table out
+    const cell = (key: string): string =>
+      at[key] === undefined ? "" : row[at[key]!]!;
+    const evidence = cell("evidence");
     found.push({
-      id: row[at.id!]!,
-      mark: row[at.mark!]!,
-      status: row[at.status!]!,
-      task: row[at.task!]!,
-      owner: row[at.owner!]!,
+      id: cell("id"),
+      mark: cell("mark"),
+      status: cell("status"),
+      task: cell("task"),
+      owner: cell("owner"),
+      depends: cell("depends"),
+      required: cell("required"),
+      acceptance: cell("acceptance"),
+      evidence,
       unblock: /unblock:\s*(.+)$/.exec(evidence)?.[1]?.trim() ?? "",
     });
   }

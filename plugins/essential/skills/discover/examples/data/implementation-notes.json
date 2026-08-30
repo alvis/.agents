@@ -358,7 +358,7 @@
       "id": "merge",
       "label": "Before you merge",
       "eyebrow": "Quiz",
-      "title": "Three things this change does that its shape does not show.",
+      "title": "Five things this change does that its shape does not show.",
       "blocks": [
         {
           "type": "prose",
@@ -434,9 +434,55 @@
           ]
         },
         {
+          "type": "quiz",
+          "id": "quiz-colour-ranges",
+          "ref": "Q4",
+          "label": "Where colour comes from",
+          "ask": "A rendered board shows a coloured code excerpt. What produced the colour?",
+          "explains": "outcome",
+          "options": [
+            {
+              "value": "The builder measured it and wrote the spans into the file; nothing on the page parses anything.",
+              "correct": true,
+              "because": "Tokenising runs over already-escaped text before the page is written, so an excerpt ships as measured ranges and a palette. A board fetches nothing and runs no parser to be readable."
+            },
+            {
+              "value": "A highlighter inlined into the page, which tokenises each excerpt when the board is opened.",
+              "because": "That is the shape this could have taken, and it would put a parser between an author's bytes and the markup — the one place escaping must not be decided a second time. The highlighter runs in the builder and never ships."
+            },
+            {
+              "value": "A stylesheet that colours by selector, so neither a parser nor a script is needed.",
+              "because": "CSS cannot tell that a word is a keyword. Something has to tokenise; the only question is when, and the answer is before the file is written."
+            }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "quiz-per-board-sheets",
+          "ref": "Q5",
+          "label": "What a board's stylesheet is",
+          "ask": "Two boards in one run come from the same renderer. Why can a CSS rule be in one of them and not in the other?",
+          "explains": "deviations",
+          "options": [
+            {
+              "value": "Each format's sheet is appended only to the boards whose data actually uses that format.",
+              "correct": true,
+              "because": "A board holding no excerpt, no card and no departure carries none of their bytes. It is also why a floor test that read one rendered board's stylesheet was measuring almost none of them."
+            },
+            {
+              "value": "The renderer drops rules that no element on the finished page matches.",
+              "because": "Nothing prunes CSS here. The sheets are chosen before the page is assembled, from the blocks the data holds rather than from the markup it produces."
+            },
+            {
+              "value": "The two boards declare different themes, and a theme decides which rules ship.",
+              "because": "A theme sets custom property values. Which rules are present at all is decided by the block types the board draws."
+            }
+          ]
+        },
+        {
           "type": "gate",
           "title": "Merge readiness",
-          "pass": "Cleared. The three behaviours that read one way in the diff and work another way at runtime are the three you just named — merge it.",
+          "pass": "Cleared. The five behaviours that read one way in the diff and work another way at runtime are the five you just named — merge it.",
           "fail": "Not yet. Each question answered wrongly is listed below, linked to the section that explains it. Nothing here is a trick question; each one is a thing the diff genuinely does not show."
         }
       ]
