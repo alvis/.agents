@@ -119,6 +119,20 @@
       "data": "interactive-prototype.json",
       "out": "interactive-prototype.html",
       "blurb": "A working screen embedded in the board, driveable at the widths it was designed for."
+    },
+    {
+      "id": "project-state",
+      "label": "Project state",
+      "data": "project-state.json",
+      "out": "project-state.html",
+      "blurb": "Where every live workstream stands right now, read from the state tree rather than written by hand."
+    },
+    {
+      "id": "implementation-notes-page-renderer-batch-2-v1",
+      "label": "Implementation notes",
+      "data": "implementation-notes.json",
+      "out": "implementation-notes.html",
+      "blurb": "What was built against what was planned, the departures each one owes an account of, and a quiz on what a merger has to understand first."
     }
   ]
 }

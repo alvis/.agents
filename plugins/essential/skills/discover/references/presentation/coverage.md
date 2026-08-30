@@ -1,6 +1,6 @@
 # Presentation pattern coverage
 
-The thirteen action examples form a coverage suite for the reusable components,
+The fifteen action examples form a coverage suite for the reusable components,
 compositions, and layouts distilled from the approved design reference.
 They do not reproduce that source or its branding. Each page uses only the
 patterns that fit its discovery job; the suite, not an individual page, is
@@ -20,7 +20,7 @@ steps, source-to-target mappings, prototype variants, risk findings, and
 readiness gates. Rendered review remains the final quality check because a
 count cannot prove that two compositions are materially different.
 
-Four convention examples sit beside the required thirteen to demonstrate the
+Four convention examples sit beside the required fifteen to demonstrate the
 guided conventions — provenance pills, honest trade-offs, author annotation
 pins, and the multi-board hub — and their `specimen-scope` theming. They
 introduce the pattern IDs `provenance-pill`, `provenance-row`,
@@ -38,8 +38,16 @@ order ARE the user's answer, dragged via the stage-3 `drag-probe` runtime with a
 per-card lane `<select>` keyboard fallback, serialized into the single generated
 prompt — and reuses `prompt-echo`, provenance pills, and the invented-data flag.
 The validator iterates the convention boards through a separate
-`CONVENTION_EXAMPLES` list, distinct from the required-13, so the representative
+`CONVENTION_EXAMPLES` list, distinct from the required-15, so the representative
 stage stays unchanged.
+
+Four action boards have no row below: `blind-spots.html`, `concept-primer.html`,
+`project-state.html`, and `implementation-notes.html`. The table's vocabulary is
+the `data-presentation-pattern` marker set, which the JSON renderer no longer
+emits, so a row for them could only be invented. The gap is the table's, not the
+boards': what each of the four demonstrates is stated in its own direction under
+[actions/](actions/), and `examples.spec.ts` is what actually fails when a block
+type reaches no board.
 
 | Action example               | Component and composition coverage                                                                                                                                                                                                                                                                                                                  |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -115,7 +123,7 @@ When adding or replacing a page:
 1. start with the discovery action's information need, not the catalog order;
 2. add, remove, or rearrange components for the clearest task-specific UX;
 3. preserve the shared annotation and one-prompt contract;
-4. keep every catalog ID represented somewhere across the thirteen examples;
+4. keep every catalog ID represented somewhere across the fifteen examples;
 5. move coverage deliberately and update this table when a pattern changes
    owner; and
 6. keep the action-specific structural hooks aligned with the visible

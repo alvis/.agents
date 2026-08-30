@@ -20,15 +20,17 @@ const ROOT = resolve(import.meta.dirname, "..");
 /**
  * everything the tree hangs from.
  *
- * three roots rather than one, because the page runtime is reached by the
- * bundler from a path it is handed rather than by an import anything could
- * follow: read from the executable alone, thirty modules that ship in every
- * board look like code nobody calls.
+ * four roots rather than one. The page runtime is reached by the bundler from
+ * a path it is handed rather than by an import anything could follow, so read
+ * from the render executable alone, thirty modules that ship in every board
+ * look like code nobody calls; and the state board is a second executable,
+ * which is what keeps reading `.state` out of the renderer's own tree.
  */
 const ROOTS = [
   "render-page.ts",
   "render-page/runtime/boot.ts",
   "render-page/runtime/main.ts",
+  "state-board.ts",
 ];
 
 /**
@@ -44,7 +46,7 @@ const SUPPORT = ["dom-support.ts", "test-support.ts"];
 const PAGE = "render-page/page.ts";
 
 /** how many edges the tree holds, as a graph read the way a bundler reads one. */
-const EDGES = 412;
+const EDGES = 445;
 
 /** one module against another. */
 interface Edge {

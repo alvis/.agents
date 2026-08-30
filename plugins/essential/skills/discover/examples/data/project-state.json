@@ -1,0 +1,638 @@
+{
+  "kind": "project-state",
+  "id": "project-state",
+  "action": "Read where the work stands",
+  "title": "Project state",
+  "masthead": {
+    "eyebrow": "Operations",
+    "headline": "Where every live workstream stands right now",
+    "lede": "One lane per stream, blockers first, and the record's own gaps stated rather than smoothed over. Archived streams are not here because this never looks in the directory they are in.",
+    "meta": [
+      {
+        "label": "Live streams",
+        "value": "7"
+      },
+      {
+        "label": "Open tasks",
+        "value": "7"
+      },
+      {
+        "label": "Blocked",
+        "value": "0"
+      },
+      {
+        "label": "Read at",
+        "value": "2026-08-29 11:26Z"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "blocked",
+      "label": "Blocked",
+      "eyebrow": "First",
+      "title": "Nothing is blocked",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "good",
+          "title": "No stuck work",
+          "lead": "Clear",
+          "text": "No task in any live stream carries a blocked mark or a blocked status. Everything below is either running or waiting on its turn."
+        }
+      ]
+    },
+    {
+      "id": "lanes",
+      "label": "Streams",
+      "eyebrow": "Open work",
+      "title": "What each stream still owes",
+      "blocks": [
+        {
+          "type": "kanban",
+          "lanes": [
+            {
+              "label": "20260724-review-plugin-stack-1szr99",
+              "cards": [
+                [
+                  {
+                    "kind": "code",
+                    "text": "MON"
+                  },
+                  " Monitor PRs #55–#60 for author replies, new commits, or force-pushes; on change, diff against the reviewed heads. [targets: PRs 55–60]",
+                  {
+                    "kind": "dim",
+                    "text": " — planned"
+                  }
+                ],
+                [
+                  {
+                    "kind": "code",
+                    "text": "FUP"
+                  },
+                  " Re-review changed PR content; resolve findings that were addressed, reply where disposition is unclear, raise new findings only on new evidence. [targets: PRs 55–60]",
+                  {
+                    "kind": "dim",
+                    "text": " — planned"
+                  }
+                ],
+                [
+                  {
+                    "kind": "code",
+                    "text": "MRG"
+                  },
+                  " Confirm merge readiness bottom-up (#55 first) once findings are dispositioned; verify tests green and stack restacked. [targets: PRs 55–60]",
+                  {
+                    "kind": "dim",
+                    "text": " — planned"
+                  }
+                ]
+              ]
+            },
+            {
+              "label": "documentation-contract",
+              "cards": [
+                [
+                  {
+                    "kind": "dim",
+                    "text": "every recorded task is done"
+                  }
+                ]
+              ]
+            },
+            {
+              "label": "page-renderer",
+              "cards": [
+                [
+                  {
+                    "kind": "code",
+                    "text": "SMP"
+                  },
+                  " Render samples for at least four distinct presentation kinds. [targets: none]",
+                  {
+                    "kind": "dim",
+                    "text": " — working"
+                  }
+                ],
+                [
+                  {
+                    "kind": "code",
+                    "text": "APR"
+                  },
+                  " User reviews samples and approves or rejects. [targets: none]",
+                  {
+                    "kind": "dim",
+                    "text": " — working"
+                  }
+                ],
+                [
+                  {
+                    "kind": "code",
+                    "text": "MOD"
+                  },
+                  " Batch 2 stage D: `/discover state` and `/discover implementation` with the merge quiz. [targets: plugins/essential/skills/discover]",
+                  {
+                    "kind": "dim",
+                    "text": " — working"
+                  }
+                ]
+              ]
+            },
+            {
+              "label": "specification-state",
+              "cards": [
+                [
+                  {
+                    "kind": "code",
+                    "text": "REVIEW"
+                  },
+                  " Obtain an independent code-quality review and resolve all findings. [targets: reviews/code-quality.md, review.md]",
+                  {
+                    "kind": "dim",
+                    "text": " — reviewing"
+                  }
+                ]
+              ]
+            },
+            {
+              "label": "state-systems-clarity",
+              "cards": [
+                [
+                  {
+                    "kind": "dim",
+                    "text": "every recorded task is done"
+                  }
+                ]
+              ]
+            },
+            {
+              "label": "sync-pr-stack",
+              "cards": [
+                [
+                  {
+                    "kind": "dim",
+                    "text": "every recorded task is done"
+                  }
+                ]
+              ]
+            },
+            {
+              "label": "test-cleanup-and-ci",
+              "cards": [
+                [
+                  {
+                    "kind": "dim",
+                    "text": "every recorded task is done"
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "progress",
+      "label": "Progress",
+      "eyebrow": "Rolled up",
+      "title": "How far each stream has run",
+      "blocks": [
+        {
+          "type": "readiness",
+          "items": [
+            {
+              "label": "20260724-review-plugin-stack-1szr99",
+              "value": 3,
+              "of": 6,
+              "note": "active"
+            },
+            {
+              "label": "documentation-contract",
+              "value": 19,
+              "of": 19,
+              "note": "reviewing"
+            },
+            {
+              "label": "page-renderer",
+              "value": 12,
+              "of": 15,
+              "note": "working"
+            },
+            {
+              "label": "specification-state",
+              "value": 7,
+              "of": 8,
+              "note": "reviewing"
+            },
+            {
+              "label": "state-systems-clarity",
+              "value": 6,
+              "of": 6,
+              "note": "reviewing"
+            },
+            {
+              "label": "sync-pr-stack",
+              "value": 5,
+              "of": 5,
+              "note": "reviewing"
+            },
+            {
+              "label": "test-cleanup-and-ci",
+              "value": 9,
+              "of": 9,
+              "note": "reviewing"
+            }
+          ]
+        },
+        {
+          "type": "owners",
+          "people": [
+            {
+              "name": "PM",
+              "role": "20260724-review-plugin-stack-1szr99",
+              "due": "Poll PRs #55–#60 for author responses or new commits (task MON)."
+            },
+            {
+              "name": "PM",
+              "role": "documentation-contract",
+              "due": "Human review and merge draft PR #94; after merge evidence, mark the stream compl"
+            },
+            {
+              "name": "PM",
+              "role": "page-renderer",
+              "due": "**Batch 2 is the work the user gave instead of approving APR, and stage D is the"
+            },
+            {
+              "name": "PM",
+              "role": "specification-state",
+              "due": "Obtain an independent review for draft PR #191; the current-head dispatch was un"
+            },
+            {
+              "name": "repository reviewers",
+              "role": "state-systems-clarity",
+              "due": "Assign two independent black-zone reviewers to PR #194 and record approvals on t"
+            },
+            {
+              "name": "maintainer",
+              "role": "sync-pr-stack",
+              "due": "Review and merge draft PR #177 when desired; do not close this work before merge"
+            },
+            {
+              "name": "reviewer",
+              "role": "test-cleanup-and-ci",
+              "due": "PR #78 is a green draft awaiting review; mark `completed` on merge evidence."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recent",
+      "label": "Recent",
+      "eyebrow": "By last write",
+      "title": "What was touched, most recent first",
+      "blocks": [
+        {
+          "type": "timeline",
+          "items": [
+            {
+              "when": "2026-08-29T10:45:00Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "page-renderer"
+                },
+                " — **Batch 2 is the work the user gave instead of approving APR, and stage D is the last of it.** Sixteen asks in four stages. Stages A, A′, B and C are delivered, driven and saved local-only as `08-renderer` … `13-observations` (D-72 – D-80, E-136 – E-151). **Stage D is the remaining work**: OT2 a `project-state` kind plus `--mode=state`, reading `.state/works/<id>/state.md` and excluding `.state/archive/` by location alone; OT6/OT7 an `implementation-notes` kind plus `--mode=implementation`, whose timeline classifies each entry and whose closing section is a merge quiz scored on the existing answer store. Both are modes on the existing skill (D-71). **Two foldings must be reported to the user**: the `.code-line` fix belongs to `08-renderer` and the drawer-bar fix to `10-boards`, and both were folded forward rather than restacked (D-80). R-47 stays open behind APR, which is now approved against the tree this batch produces."
+              ],
+              "state": "active",
+              "tags": [
+                "working"
+              ]
+            },
+            {
+              "when": "2026-08-27T23:03:43Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "state-systems-clarity"
+                },
+                " — Assign two independent black-zone reviewers to PR #194 and record approvals on the exact head; retain draft and merge/hold until then."
+              ],
+              "state": "done",
+              "tags": [
+                "reviewing"
+              ]
+            },
+            {
+              "when": "2026-08-27T19:49:43Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "specification-state"
+                },
+                " — Obtain an independent review for draft PR #191; the current-head dispatch was unavailable, so keep the PR draft and do not merge."
+              ],
+              "state": "pending",
+              "tags": [
+                "reviewing"
+              ]
+            },
+            {
+              "when": "2026-08-24T21:37:04Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "sync-pr-stack"
+                },
+                " — Review and merge draft PR #177 when desired; do not close this work before merge evidence exists."
+              ],
+              "state": "done",
+              "tags": [
+                "reviewing"
+              ]
+            },
+            {
+              "when": "2026-07-29T16:28:58Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "documentation-contract"
+                },
+                " — Human review and merge draft PR #94; after merge evidence, mark the stream completed."
+              ],
+              "state": "done",
+              "tags": [
+                "reviewing"
+              ]
+            },
+            {
+              "when": "2026-07-25T20:40:00Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "test-cleanup-and-ci"
+                },
+                " — PR #78 is a green draft awaiting review; mark `completed` on merge evidence."
+              ],
+              "state": "done",
+              "tags": [
+                "reviewing"
+              ]
+            },
+            {
+              "when": "2026-07-24T16:10:00Z",
+              "title": [
+                {
+                  "kind": "code",
+                  "text": "20260724-review-plugin-stack-1szr99"
+                },
+                " — Poll PRs #55–#60 for author responses or new commits (task MON)."
+              ],
+              "state": "pending",
+              "tags": [
+                "active"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reading",
+      "label": "Reading",
+      "eyebrow": "Provenance",
+      "title": "How this board read the record",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Stream",
+            "Phase key used",
+            "Phase",
+            "Updated",
+            "Tasks"
+          ],
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "20260724-review-plugin-stack-1szr99"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Lifecycle status"
+                    }
+                  ]
+                },
+                {
+                  "text": "active"
+                },
+                {
+                  "text": "2026-07-24T16:10:00Z"
+                },
+                {
+                  "text": "6"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "documentation-contract"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Lifecycle status"
+                    }
+                  ]
+                },
+                {
+                  "text": "reviewing"
+                },
+                {
+                  "text": "2026-07-29T16:28:58Z"
+                },
+                {
+                  "text": "19"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "page-renderer"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Phase"
+                    }
+                  ]
+                },
+                {
+                  "text": "working"
+                },
+                {
+                  "text": "2026-08-29T10:45:00Z"
+                },
+                {
+                  "text": "15"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "specification-state"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Phase"
+                    }
+                  ]
+                },
+                {
+                  "text": "reviewing"
+                },
+                {
+                  "text": "2026-08-27T19:49:43Z"
+                },
+                {
+                  "text": "8"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "state-systems-clarity"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Phase"
+                    }
+                  ]
+                },
+                {
+                  "text": "reviewing"
+                },
+                {
+                  "text": "2026-08-27T23:03:43Z"
+                },
+                {
+                  "text": "6"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "sync-pr-stack"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Phase"
+                    }
+                  ]
+                },
+                {
+                  "text": "reviewing"
+                },
+                {
+                  "text": "2026-08-24T21:37:04Z"
+                },
+                {
+                  "text": "5"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "test-cleanup-and-ci"
+                    }
+                  ]
+                },
+                {
+                  "text": [
+                    {
+                      "kind": "code",
+                      "text": "Lifecycle status"
+                    }
+                  ]
+                },
+                {
+                  "text": "reviewing"
+                },
+                {
+                  "text": "2026-07-25T20:40:00Z"
+                },
+                {
+                  "text": "9"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "neutral",
+          "title": "The phase is spelled more than one way",
+          "lead": "2 keys",
+          "text": "Lifecycle status: 20260724-review-plugin-stack-1szr99, documentation-contract, test-cleanup-and-ci. Phase: page-renderer, specification-state, state-systems-clarity, sync-pr-stack. Every spelling is read, so this is a note about the record rather than a gap in the board: a board that refused to open because one stream used a different key would be useless exactly when it is needed."
+        },
+        {
+          "type": "callout",
+          "tone": "bad",
+          "title": "Some table rows could not be read",
+          "lead": "1 row",
+          "text": "A row of the wrong width is counted here rather than guessed at, because a nine-column table read as eight shifts every owner one column left. Those rows are absent from everything above."
+        }
+      ]
+    }
+  ]
+}

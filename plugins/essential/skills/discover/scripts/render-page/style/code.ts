@@ -34,19 +34,19 @@ export const CODE_CSS = `
    shaded, which matters most where a marked line is already shaded */
 .code-pick{background:var(--ui-accent-soft); box-shadow:inset 0 -2px 0 var(--ui-accent)}
 .code-pick-mark{margin-left:.1em; padding:0 .3em; border-radius:.7em; background:var(--ui-accent);
-  color:var(--ui-canvas); font:700 .62rem/1.5 var(--font-body); vertical-align:.45em}
+  color:var(--ui-canvas); font:700 .72rem/1.4 var(--font-body); vertical-align:.45em}
 .code-notes{margin:0; padding-left:1.6rem; display:grid; gap:.4rem; font-size:.9rem; color:var(--ui-muted)}
 .code-notes li::marker{color:var(--ui-accent); font-weight:700}
 .code-note-body{color:var(--ui-ink)}
 
 .code-path{margin:0 0 -.2rem; display:flex; align-items:baseline; justify-content:space-between; gap:.75rem}
 .code-path-file{font:.78rem/1.4 var(--font-mono); color:var(--ui-muted); overflow-wrap:anywhere}
-.code-path-language{font:700 .68rem/1.4 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
+.code-path-language{font:700 .72rem/1.4 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 /* the panel already names its language, so the excerpt does not say it twice */
 .code-path + .code[data-language]::before{display:none}
 
 .code-pair{margin:0; display:grid; gap:.6rem}
-.code-eyebrow{margin:0; font:700 .68rem/1.4 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ui-faint)}
+.code-eyebrow{margin:0; font:700 .72rem/1.4 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ui-faint)}
 .code-pair-title{font:600 1rem/1.4 var(--font-body); color:var(--ui-ink)}
 .code-panels{display:grid; gap:.75rem; align-items:start}
 .code-panel{display:grid; gap:.35rem; min-width:0}

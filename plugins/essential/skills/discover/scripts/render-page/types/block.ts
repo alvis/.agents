@@ -2,37 +2,26 @@ import type { DiagramBlock } from "../diagram/shape.ts";
 
 import type {
   Cell,
-  Choice,
   Column,
   Definition,
+  Deviation,
   Finding,
   Lane,
   Meter,
   Metric,
   Moment,
-  Observation,
-  Option,
   Person,
   Pin,
   Point,
   Risk,
   Row,
-  ScalePoint,
   Step,
   TreeItem,
   Viewport,
 } from "./content.ts";
 import type { CodeExcerpt } from "./code.ts";
 import type { Rich } from "./inline.ts";
-
-/**
- * how the reply reads a question's answer.
- *
- * a decision is something the reader settles; a follow-up is something they may
- * ask for. The reply keeps them apart so an untouched optional question is
- * never reported as a refusal, nor an unasked follow-up as an instruction.
- */
-export type Response = "decision" | "follow-up";
+import type { QuestionBlock } from "./question.ts";
 
 /** the content units a section body can hold in the walking skeleton. */
 export type Block =
@@ -57,48 +46,6 @@ export type Block =
     }
   /** a layered node-and-edge graph, drawn as inline SVG at natural size */
   | DiagramBlock
-  /**
-   * a single-answer question; `id` names its radio group and must be unique.
-   * `recommendation` states which answer the page recommends and why —
-   * `questions.md` requires a material decision to explain the recommendation,
-   * and a `Recommended` badge states which without stating why
-   */
-  | {
-      type: "choice";
-      response?: Response;
-      id: string;
-      /** the citation code drawn on its chip and beside it, e.g. `D4` */
-      ref: string;
-      label: string;
-      ask: string;
-      choices: Choice[];
-      recommendation?: string;
-    }
-  /**
-   * a yes/no or single-option question, answered by pressing Approve or
-   * Change; `id` becomes the note textarea's document id
-   */
-  | {
-      type: "decision";
-      response?: Response;
-      id: string;
-      /** the citation code drawn on its chip and beside it, e.g. `D4` */
-      ref: string;
-      label: string;
-      ask: string;
-      placeholder?: string;
-    }
-  /** a free-text question; `id` becomes the textarea's document id */
-  | {
-      type: "note";
-      response?: Response;
-      id: string;
-      /** the citation code drawn on its chip and beside it, e.g. `D4` */
-      ref: string;
-      label: string;
-      ask: string;
-      placeholder?: string;
-    }
   /** an ordered sequence with numbered markers */
   | { type: "steps"; items: Step[] }
   /**
@@ -109,31 +56,6 @@ export type Block =
    * shrinks and the counts on the chips keep meaning what they say.
    */
   | { type: "findings"; items: Finding[]; filters?: boolean }
-  /** a multi-select question; its answer is a set, joined by `", "` */
-  | {
-      type: "checklist";
-      response?: Response;
-      id: string;
-      /** the citation code drawn on its chip and beside it, e.g. `D4` */
-      ref: string;
-      label: string;
-      ask: string;
-      options: Option[];
-    }
-  /**
-   * numbered cards the reader ticks where one lands, each naming what was
-   * seen, where, and what it costs
-   */
-  | {
-      type: "observations";
-      response?: Response;
-      id: string;
-      /** the citation code drawn on its chip and beside it, e.g. `O2` */
-      ref: string;
-      label: string;
-      ask: string;
-      items: Observation[];
-    }
   /** a bulleted or numbered list, each item optionally led by its claim */
   | { type: "list"; ordered?: boolean; items: Point[] }
   /** an executive summary of two to four strong-lead bullets */
@@ -170,6 +92,30 @@ export type Block =
     }
   /** a dated or timestamped rail of moments */
   | { type: "timeline"; items: Moment[] }
+  /**
+   * where the build departed from the plan, one entry per departure.
+   *
+   * the plan and the code are drawn against each other rather than in one
+   * paragraph, because the comparison is the claim: a reader checking whether
+   * a departure was reasonable reads the two columns, not a sentence that has
+   * already reconciled them for them.
+   */
+  | { type: "deviations"; title?: string; items: Deviation[] }
+  /**
+   * the merge verdict, filled from every quiz question on the page.
+   *
+   * it ships showing the unanswered state rather than being built by the
+   * runtime, so a board read with scripting off still says plainly that the
+   * quiz decides whether to merge instead of showing an empty box.
+   */
+  | {
+      type: "gate";
+      title: string;
+      /** what the reader may do once every question is right */
+      pass: Rich;
+      /** what they should do first while any is wrong */
+      fail: Rich;
+    }
   /** lanes whose membership is itself the claim */
   | { type: "kanban"; lanes: Lane[] }
   /**
@@ -272,14 +218,5 @@ export type Block =
    * reported back as a ranking somebody made.
    */
   | { type: "probe"; id: string; label: string; items: string[] }
-  /** an ordered scale; its answer carries the chosen ordinal position */
-  | {
-      type: "scale";
-      response?: Response;
-      id: string;
-      /** the citation code drawn on its chip and beside it, e.g. `D4` */
-      ref: string;
-      label: string;
-      ask: string;
-      points: ScalePoint[];
-    };
+  /** every question the reader answers, which the reply reads back */
+  | QuestionBlock;

@@ -99,6 +99,20 @@ function fetchedRemotely(html: string): string[] {
   return found;
 }
 
+/**
+ * every stylesheet the CLI layer ships only to the boards that need it.
+ *
+ * the marker is a rule the sheet opens with rather than the whole sheet,
+ * because what is being asked is whether the bytes arrived at all. A quiz and
+ * its gate share one sheet: a gate with no questions is still a gate and a
+ * question with no gate is still asked, so either block pulls it in.
+ */
+const SHEETS = [
+  { types: ["observations"], marker: ".observation-tick{" },
+  { types: ["deviations"], marker: ".deviation-pair{" },
+  { types: ["quiz", "gate"], marker: ".quiz-option{" },
+];
+
 /** collects every `type` and `kind` an authored board uses, at any depth. */
 function vocabularyOf(node: unknown, into: Record<string, Set<string>>): void {
   if (Array.isArray(node)) {
@@ -149,7 +163,7 @@ describe("the example board set", () => {
   it("should render every board the run declares", async () => {
     const boards = await renderExamples();
 
-    expect(Object.keys(boards)).toHaveLength(17);
+    expect(Object.keys(boards)).toHaveLength(19);
     for (const [file, html] of Object.entries(boards)) {
       expect(html, file).toMatch(/^<!doctype html>/u);
       expect(html.length, file).toBeGreaterThan(50_000);
@@ -179,26 +193,31 @@ describe("the example board set", () => {
 
   it("should carry a format's sheet only into a board that draws it", async () => {
     // the sheets are appended per board, which is what keeps a board holding
-    // no card and no excerpt at exactly the bytes it rendered before either
-    // format existed. Named from the data rather than by hand, so a second
-    // board authoring the block moves the expectation with it
+    // no card, no excerpt and no departure at exactly the bytes it rendered
+    // before those formats existed. Every conditional sheet is checked, not
+    // one of them: the first was written against one sheet and the two added
+    // beside it inherited no cover at all
     const run = readRun(await readFile(RUN, "utf8"), RUN);
-    const drawn = new Set<string>();
+    const drawn = SHEETS.map(() => new Set<string>());
     for (const board of run.boards) {
       const into = { block: new Set<string>(), run: new Set<string>() };
       vocabularyOf(
         JSON.parse(await readFile(join(dirname(RUN), board.data), "utf8")),
         into,
       );
-      if (into.block.has("observations")) drawn.add(basename(board.out));
+      for (const [index, sheet] of SHEETS.entries())
+        if (sheet.types.some((type) => into.block.has(type)))
+          drawn[index]!.add(basename(board.out));
     }
     const boards = await renderExamples();
-    const carrying = Object.entries(boards)
-      .filter(([, html]) => html.includes(".observation-tick{"))
-      .map(([file]) => basename(file));
+    for (const [index, sheet] of SHEETS.entries()) {
+      const carrying = Object.entries(boards)
+        .filter(([, html]) => html.includes(sheet.marker))
+        .map(([file]) => basename(file));
 
-    expect(drawn.size).toBeGreaterThan(0);
-    expect(carrying.sort()).toEqual([...drawn].sort());
+      expect(drawn[index]!.size, sheet.marker).toBeGreaterThan(0);
+      expect(carrying.sort(), sheet.marker).toEqual([...drawn[index]!].sort());
+    }
   });
 
   it("should use every inline run kind the format accepts", async () => {

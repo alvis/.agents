@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -582,11 +582,25 @@ describe("fn:renderPage", () => {
   });
 
   it("should set no text below the small-type floor", async () => {
-    const css = stylesheet(render(await loadExample()));
+    // every sheet, not only the one a board inlines. The per-format sheets are
+    // appended by the CLI layer for the boards that draw those formats, so a
+    // size set in one of them sat outside this floor entirely — which is how
+    // three rules came to be written under it. Read from the directory rather
+    // than from a list here, so a sheet added later is covered by writing it
+    const sheets = await readdir(join(discover, "scripts/render-page/style"));
+    const css = [
+      stylesheet(render(await loadExample())),
+      ...(await Promise.all(
+        sheets.map((sheet) =>
+          readFile(join(discover, "scripts/render-page/style", sheet), "utf8"),
+        ),
+      )),
+    ].join("\n");
     const undersized = [...css.matchAll(/font(?:-size)?:[^;}]*?([\d.]+)rem/g)]
       .map((match) => Number(match[1]))
       .filter((size) => size < 0.72);
 
+    expect(sheets.length).toBeGreaterThan(10);
     // 0.72rem is 11.5px; below that the mono face stops being legible
     expect(undersized).toStrictEqual([]);
   });

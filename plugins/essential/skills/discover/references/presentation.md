@@ -7,27 +7,32 @@ source of truth after answers and annotations are transferred back.
 
 ## Choose a directional action
 
-| Discovery mode | Directional action    | Best fit                                                                |
-| -------------- | --------------------- | ----------------------------------------------------------------------- |
-| `blindspots`   | risk/context report   | Interacting risks, constraints, actors, or failure surfaces             |
-| `blindspots`   | domain explainer      | An unfamiliar mechanism must become understandable before deciding      |
-| `blindspots`   | blind spots           | A short request leaves its hard decisions to whoever reads it           |
-| `blindspots`   | concept primer        | One idea must be learned well enough to ask a professional for it       |
-| `options`      | ranked options        | Viable approaches or experiential directions need in-context comparison |
-| `options`      | brainstorm spectrum   | The user should react to a deliberately broad solution space            |
-| `interview`    | guided interview      | Several coupled questions need visible supporting context               |
-| `reference`    | semantics map         | Terms, relationships, or observable behavior must map into the target   |
-| `prototype`    | interactive prototype | A disposable interaction is the cheapest useful probe                   |
-| `readiness`    | readiness check       | Evidence, assumptions, blockers, and the next owner need one view       |
-| `readiness`    | plan review           | A drafted plan's judgment calls need user confirmation before hand-off  |
-| `readiness`    | change walkthrough    | A finished change needs to be genuinely understood before it merges     |
+| Discovery mode   | Directional action    | Best fit                                                                |
+| ---------------- | --------------------- | ----------------------------------------------------------------------- |
+| `blindspots`     | risk/context report   | Interacting risks, constraints, actors, or failure surfaces             |
+| `blindspots`     | domain explainer      | An unfamiliar mechanism must become understandable before deciding      |
+| `blindspots`     | blind spots           | A short request leaves its hard decisions to whoever reads it           |
+| `blindspots`     | concept primer        | One idea must be learned well enough to ask a professional for it       |
+| `options`        | ranked options        | Viable approaches or experiential directions need in-context comparison |
+| `options`        | brainstorm spectrum   | The user should react to a deliberately broad solution space            |
+| `interview`      | guided interview      | Several coupled questions need visible supporting context               |
+| `reference`      | semantics map         | Terms, relationships, or observable behavior must map into the target   |
+| `prototype`      | interactive prototype | A disposable interaction is the cheapest useful probe                   |
+| `readiness`      | readiness check       | Evidence, assumptions, blockers, and the next owner need one view       |
+| `readiness`      | plan review           | A drafted plan's judgment calls need user confirmation before hand-off  |
+| `readiness`      | change walkthrough    | A finished change needs to be genuinely understood before it merges     |
+| `state`          | project state         | Work already in flight, read from the state tree rather than retold     |
+| `implementation` | implementation notes  | A finished change owes its merger an account of what it departed from   |
 
 **Lifecycle actions.** plan-review, build-journal, and change-walkthrough serve
 the plan → implementation → change lifecycle and are also reached by direct
 request ("review this plan", "log the build deviations", "walk me through the
 change"). plan-review is the interview-over-a-plan; guided-interview remains the
 pre-planning interview. build-journal has no mode row because it is authored
-during implementation rather than chosen as a discovery mode.
+during implementation rather than chosen as a discovery mode. implementation-notes
+is the journal's counterpart at the end: the journal asks the author's reviewer
+to triage each divergence, the notes ask the merger to prove they understood
+it.
 
 These actions are directions, not page schemas. Add, remove, reorder, combine,
 or redesign components to deliver the clearest experience for the actual
@@ -51,7 +56,7 @@ committed, so the data is what to read and one `--set` run is what to look at.
 Every action example follows that contract while changing its content density
 and its blocks to fit the action.
 
-Together, the thirteen action examples and four convention boards
+Together, the fifteen action examples and four convention boards
 (specimen-board, board-hub, architecture-board, triage-board) must cover the
 complete reusable pattern catalog. Use the
 [presentation coverage map](presentation/coverage.md) to see which action owns
@@ -78,7 +83,7 @@ not yours to author, reproduce, or opt out of. What you author is the board's
 `kind`, `masthead`, `sections`, `sources`, and `reply`, and inside each section
 the ordered `blocks` that carry the content. That division is what keeps every
 board on the shared contract without a scaffold to copy or placeholders to
-fill. The fifteen boards under `examples/data/` are the working catalogue of
+fill. The nineteen boards under `examples/data/` are the working catalogue of
 what the format can be asked to do.
 
 ## Shared interaction contract
@@ -224,7 +229,7 @@ scripts/render-page.ts --set <run>.json -o <dir>
 
 A run file names each board's data, its output, and the label and blurb the set
 list shows for it, so the cross-links are derived once rather than repeated in
-fifteen places. The set block appears in every board's drawer, not only on a
+nineteen places. The set block appears in every board's drawer, not only on a
 hub, and stays hidden below two entries — so a single-board run shows nothing
 and the author does nothing differently.
 

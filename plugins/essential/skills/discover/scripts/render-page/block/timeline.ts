@@ -7,7 +7,7 @@ import {
   requireOneOf,
   requireString,
 } from "../validate.ts";
-import { MOMENT_STATE_LABEL } from "../vocabulary.ts";
+import { MOMENT_KIND_LABEL, MOMENT_STATE_LABEL } from "../vocabulary.ts";
 
 import type { Block, Lane, Moment } from "../types.ts";
 
@@ -15,6 +15,11 @@ import type { Block, Lane, Moment } from "../types.ts";
 const STATES = Object.keys(
   MOMENT_STATE_LABEL,
 ) as (keyof typeof MOMENT_STATE_LABEL)[];
+
+/** the classifications a moment may carry. */
+const KINDS = Object.keys(
+  MOMENT_KIND_LABEL,
+) as (keyof typeof MOMENT_KIND_LABEL)[];
 
 /**
  * draws a dated or timestamped rail of moments
@@ -35,15 +40,20 @@ export function renderTimeline(
         moment.state === undefined
           ? undefined
           : requireOneOf(moment.state, STATES, `${at}.state`);
+      const kind =
+        moment.kind === undefined
+          ? undefined
+          : requireOneOf(moment.kind, KINDS, `${at}.kind`);
       const tags = requireArray<string>(moment.tags ?? [], `${at}.tags`)
         .map(
           (tag, tagIndex) =>
             `<span>${escapeHtml(requireString(tag, `${at}.tags[${tagIndex}]`))}</span>`,
         )
         .join("");
-      // the state is a word in the row, not only a dot: a rail read in
-      // greyscale otherwise reports every moment as the same moment
-      return `<li${state ? ` data-state="${state}"` : ""}><span class="moment-when">${when}</span><span class="moment-title">${renderInline(moment.title, `${at}.title`)}</span>${state ? `<span class="moment-state">${MOMENT_STATE_LABEL[state]}</span>` : ""}${tags ? `<span class="moment-tags">${tags}</span>` : ""}</li>`;
+      // both the state and the classification are words in the row, not only a
+      // dot and a colour: a rail read in greyscale otherwise reports every
+      // moment as the same moment, and a departure as a confirmation
+      return `<li${state ? ` data-state="${state}"` : ""}${kind ? ` data-kind="${kind}"` : ""}><span class="moment-when">${when}</span>${kind ? `<span class="moment-kind">${MOMENT_KIND_LABEL[kind]}</span>` : ""}<span class="moment-title">${renderInline(moment.title, `${at}.title`)}</span>${state ? `<span class="moment-state">${MOMENT_STATE_LABEL[state]}</span>` : ""}${tags ? `<span class="moment-tags">${tags}</span>` : ""}</li>`;
     })
     .join("");
   return `<ol class="timeline">${moments}</ol>`;

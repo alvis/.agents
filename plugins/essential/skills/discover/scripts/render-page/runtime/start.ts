@@ -12,6 +12,7 @@ import { installNoteDialog } from "./note-dialog.ts";
 import { rowsOf } from "./note-view.ts";
 import { installNotes } from "./notes.ts";
 import { installProbes } from "./probe.ts";
+import { installQuiz } from "./quiz.ts";
 import { installReplyDialog } from "./reply-dialog.ts";
 import { installSectionSpy } from "./spy.ts";
 import { installTies } from "./tie.ts";
@@ -100,6 +101,15 @@ export function start(): void {
   /** redraws the bulk-approve offer; set once the drawer's controls exist */
   let repaintBulk: (() => void) | undefined;
 
+  /**
+   * rescores the merge gate; absent on every board that holds no gate.
+   *
+   * wired into the same refresh the drawer is, rather than to its own listener,
+   * so the verdict can never be drawn from a set of answers the drawer has
+   * already moved past.
+   */
+  const repaintGate = installQuiz();
+
   /** reads where every ordering probe stands; set once the probes are wired */
   let readProbes: (() => ProbeOrder[]) | undefined;
 
@@ -138,6 +148,7 @@ export function start(): void {
     // the offer has to shrink as the reader answers, or it keeps promising to
     // fill gaps that are no longer there
     repaintBulk?.();
+    repaintGate?.();
 
     if (persist)
       saveState(store, pageId, {

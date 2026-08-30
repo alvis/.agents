@@ -21,12 +21,12 @@ export const OBSERVATION_CSS = `
 .observation-title{flex:1 1 12rem; min-width:0; margin:0; font-family:var(--font-display); font-size:1rem; font-weight:560; letter-spacing:-.01em}
 /* the source badge: a circle, so it reads as an avatar rather than as another
    tag competing with the citation code at the top of the card */
-.observation-source{flex:0 0 auto; display:grid; place-items:center; width:1.75rem; height:1.75rem; border:1px solid var(--ui-border-strong); border-radius:50%; background:var(--ui-surface); color:var(--ui-muted); font:600 .68rem/1 var(--font-mono); letter-spacing:.02em}
+.observation-source{flex:0 0 auto; display:grid; place-items:center; width:1.75rem; height:1.75rem; border:1px solid var(--ui-border-strong); border-radius:50%; background:var(--ui-surface); color:var(--ui-muted); font:600 .72rem/1 var(--font-mono); letter-spacing:.02em}
 .observation-file{margin:.35rem 0 0; color:var(--ui-faint); font:.78rem/1.4 var(--font-mono); overflow-wrap:anywhere}
 /* the two labels are the same two questions of every card, so they are set as
    a column a reader can run down rather than as leads inside the prose */
 .observation-detail{display:grid; gap:.15rem .9rem; margin:.75rem 0 0}
-.observation-detail dt{color:var(--ui-faint); font:700 .66rem/1.5 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
+.observation-detail dt{color:var(--ui-faint); font:700 .72rem/1.5 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
 .observation-detail dd{margin:0 0 .5rem; color:var(--ui-muted)}
 .observation-detail dd:last-of-type{margin-bottom:0}
 @media (min-width:34rem){
