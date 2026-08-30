@@ -9,7 +9,14 @@
 export { CHOICE_TAGS } from "./types/content.ts";
 export { PAGE_KINDS } from "./types/page.ts";
 
-export type { Block, CodeComment, CodeTie, Response } from "./types/block.ts";
+export type { Block, Response } from "./types/block.ts";
+export type {
+  CodeComment,
+  CodeExcerpt,
+  CodeSelection,
+  CodeTie,
+  TokenSpan,
+} from "./types/code.ts";
 export type {
   Cell,
   Choice,

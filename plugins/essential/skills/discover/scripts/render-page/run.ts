@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 
 import { buildAssets } from "./bundle.ts";
 import { renderFile } from "./file.ts";
+import { highlighterOnce } from "./prism.ts";
 import { RenderError } from "./error.ts";
 import { readBoardEntry } from "./set.ts";
 import {
@@ -116,9 +117,12 @@ export async function renderRun(
   const written: string[] = [];
   // one at a time rather than in parallel: a refusal names one board, and a
   // run that fails halfway should have stopped at the board it names
+  // one highlighter for the whole run: the bundle is read, hashed and evaluated
+  // once however many of the boards turn out to hold code
+  const highlight = highlighterOnce();
   for (const board of run.boards) {
     const out = join(outDir, board.out);
-    await renderFile(resolve(base, board.data), out, { ...assets, set });
+    await renderFile(resolve(base, board.data), out, { ...assets, set }, highlight);
     written.push(out);
   }
 

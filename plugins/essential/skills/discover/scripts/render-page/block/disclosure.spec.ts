@@ -43,9 +43,11 @@ describe("fn:renderBlock disclosure", () => {
   });
 
   it("should draw whole blocks, not only text", () => {
-    const drawn = html({ blocks: [{ type: "code", code: "x" }] });
+    const drawn = html({
+      blocks: [{ type: "code", language: "ts", code: "x" }],
+    });
 
-    expect(drawn).toContain('<pre class="code">');
+    expect(drawn).toContain('<pre class="code" data-language="ts">');
   });
 
   it("should nest, so a long aside can fold its own detail away", () => {

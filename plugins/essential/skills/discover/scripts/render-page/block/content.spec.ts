@@ -65,17 +65,27 @@ describe("fn:renderBlock tldr", () => {
 
 describe("fn:renderBlock code", () => {
   it("should escape the excerpt rather than pass any markup through", () => {
-    const drawn = html({ type: "code", code: '<script>alert("x")</script>' });
+    const drawn = html({
+      type: "code",
+      language: "html",
+      code: '<script>alert("x")</script>',
+    });
 
-    // no highlighter and no token spans: the only path from data to page is
-    // through escapeHtml, so a code block cannot put an element on the page
+    // the excerpt is sliced on raw offsets and each slice escaped as it is
+    // written, so every span the builder emits wraps text that is already
+    // escaped and no author byte reaches the page as markup
     expect(drawn).toContain("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;");
     expect(drawn).not.toContain("<script>");
   });
 
   it("should name its language and pair a caption with the excerpt", () => {
     const bare = html({ type: "code", language: "ts", code: "x" });
-    const captioned = html({ type: "code", code: "x", caption: "From replay.ts" });
+    const captioned = html({
+      type: "code",
+      language: "ts",
+      code: "x",
+      caption: "From replay.ts",
+    });
 
     expect(bare).toContain('data-language="ts"');
     expect(bare).not.toContain("<figure");
