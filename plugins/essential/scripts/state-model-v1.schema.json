@@ -1,0 +1,1242 @@
+{
+  "$defs": {
+    "Anchor": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "git",
+            "jj",
+            "media-project",
+            "asset-store",
+            "requirements-authority"
+          ]
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "revisionSemantics": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "kind", "locator", "revisionSemantics"],
+      "type": "object"
+    },
+    "Attempt": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "outcome": {
+          "enum": ["pass", "fail", "partial"]
+        }
+      },
+      "required": ["outcome", "at"],
+      "type": "object"
+    },
+    "Boundary": {
+      "additionalProperties": false,
+      "properties": {
+        "in": {
+          "items": {
+            "$ref": "#/$defs/Statement"
+          },
+          "type": "array"
+        },
+        "out": {
+          "items": {
+            "$ref": "#/$defs/Statement"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "in", "out"],
+      "type": "object"
+    },
+    "Charter": {
+      "additionalProperties": false,
+      "properties": {
+        "anchors": {
+          "items": {
+            "$ref": "#/$defs/Anchor"
+          },
+          "type": "array"
+        },
+        "boundary": {
+          "$ref": "#/$defs/Boundary"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/Statement"
+          },
+          "type": "array"
+        },
+        "revision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "specification": {
+          "$ref": "#/$defs/SpecificationProvenance"
+        },
+        "successCriteria": {
+          "items": {
+            "$ref": "#/$defs/SuccessCriterion"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ref",
+        "revision",
+        "goal",
+        "requirements",
+        "boundary",
+        "successCriteria",
+        "specification",
+        "anchors"
+      ],
+      "type": "object"
+    },
+    "Completion": {
+      "additionalProperties": false,
+      "properties": {
+        "completedAt": {
+          "type": "string"
+        },
+        "decisionDispositions": {
+          "items": {
+            "$ref": "#/$defs/DecisionDisposition"
+          },
+          "type": "array"
+        },
+        "landing": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "type": "array"
+        },
+        "outlives": {
+          "items": {
+            "$ref": "#/$defs/OutlivesItem"
+          },
+          "type": "array"
+        },
+        "promotion": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PathPromotion"
+            },
+            {
+              "$ref": "#/$defs/NoPromotionRequired"
+            }
+          ]
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "completedAt",
+        "landing",
+        "promotion",
+        "outlives",
+        "decisionDispositions"
+      ],
+      "type": "object"
+    },
+    "Continuation": {
+      "additionalProperties": false,
+      "properties": {
+        "fastPaths": {
+          "items": {
+            "$ref": "#/$defs/Locator"
+          },
+          "type": "array"
+        },
+        "focus": {
+          "type": "string"
+        },
+        "handback": {
+          "type": "string"
+        },
+        "nextAction": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "taskRefs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ref",
+        "focus",
+        "handback",
+        "nextAction",
+        "taskRefs",
+        "fastPaths"
+      ],
+      "type": "object"
+    },
+    "DecisionDisposition": {
+      "additionalProperties": false,
+      "properties": {
+        "carrier": {
+          "$ref": "#/$defs/Locator"
+        },
+        "decisionRef": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "adr",
+            "product-record",
+            "production-record",
+            "work-receipt",
+            "expired-archive"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "decisionRef", "kind", "carrier"],
+      "type": "object"
+    },
+    "Deliverable": {
+      "additionalProperties": false,
+      "properties": {
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "reviewed": {
+          "type": "boolean"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "title", "locator", "reviewed"],
+      "type": "object"
+    },
+    "DocumentationRef": {
+      "additionalProperties": false,
+      "properties": {
+        "capabilityRef": {
+          "type": "string"
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "title", "locator"],
+      "type": "object"
+    },
+    "EnvironmentClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "type": "array"
+        },
+        "observedAt": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "validity": {
+          "$ref": "#/$defs/Validity"
+        }
+      },
+      "required": ["ref", "statement", "observedAt", "evidence"],
+      "type": "object"
+    },
+    "Event": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "type": "string"
+        },
+        "capabilityId": {
+          "type": "string"
+        },
+        "eventType": {
+          "enum": ["status", "decision", "revision", "sync", "sweep", "lease"]
+        },
+        "evidenceRefs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "invalidates": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "stateRevision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "subjectRef": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "timestamp",
+        "actor",
+        "capabilityId",
+        "eventType",
+        "stateRevision",
+        "subjectRef",
+        "summary",
+        "evidenceRefs",
+        "invalidates"
+      ],
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "disposition": {
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/Locator"
+          },
+          "type": "array"
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "observedAt": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "summary", "locator", "inputs"],
+      "type": "object"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "type": "array"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "recheckCondition": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "riskAcceptance": {
+          "$ref": "#/$defs/Locator"
+        },
+        "severity": {
+          "enum": ["critical", "high", "medium", "low", "info"]
+        },
+        "status": {
+          "enum": ["open", "fixed", "acknowledged", "deferred", "skipped"]
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "status", "summary", "evidence"],
+      "type": "object"
+    },
+    "Locator": {
+      "additionalProperties": false,
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        }
+      },
+      "required": ["uri"],
+      "type": "object"
+    },
+    "NoPromotionRequired": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "mode": {
+          "enum": ["not-required"]
+        },
+        "paths": {
+          "maxItems": 0,
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "mode", "paths", "evidence"],
+      "type": "object"
+    },
+    "OutlivesItem": {
+      "additionalProperties": false,
+      "properties": {
+        "carrier": {
+          "$ref": "#/$defs/Locator"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "summary", "owner", "carrier"],
+      "type": "object"
+    },
+    "PathPromotion": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": ["paths"]
+        },
+        "paths": {
+          "items": {
+            "$ref": "#/$defs/Locator"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "mode", "paths"],
+      "type": "object"
+    },
+    "Project": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/Statement"
+          },
+          "type": "array"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "specification": {
+          "$ref": "#/$defs/SpecificationProvenance"
+        },
+        "title": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "slug",
+        "title",
+        "goal",
+        "requirements",
+        "specification",
+        "updatedAt"
+      ],
+      "type": "object"
+    },
+    "ProjectStateDocumentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "items": {
+            "$ref": "#/$defs/EnvironmentClaim"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": ["project"]
+        },
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "schemaVersion": {
+          "enum": [1]
+        },
+        "streams": {
+          "items": {
+            "$ref": "#/$defs/Stream"
+          },
+          "type": "array"
+        },
+        "traps": {
+          "items": {
+            "$ref": "#/$defs/Trap"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "kind",
+        "project",
+        "streams",
+        "environment",
+        "traps"
+      ],
+      "type": "object"
+    },
+    "PullRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "headRevision": {
+          "type": "string"
+        },
+        "mergedRevision": {
+          "type": "string"
+        },
+        "number": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["draft", "open", "merged", "closed"]
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "number",
+        "url",
+        "repository",
+        "headRevision",
+        "status"
+      ],
+      "type": "object"
+    },
+    "Question": {
+      "additionalProperties": false,
+      "properties": {
+        "answer": {
+          "type": "string"
+        },
+        "awaitingUser": {
+          "type": "boolean"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "resolvedAt": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "waitingSince": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "text", "owner", "waitingSince", "awaitingUser"],
+      "type": "object"
+    },
+    "RecordRef": {
+      "additionalProperties": false,
+      "properties": {
+        "affects": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "effectiveFrom": {
+          "type": "string"
+        },
+        "headline": {
+          "type": "string"
+        },
+        "invalidates": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": ["proposal", "change", "decision", "design"]
+        },
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "originRef": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "preserves": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "provenance": {
+          "items": {
+            "$ref": "#/$defs/Locator"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "relationshipStatements": {
+          "items": {
+            "$ref": "#/$defs/Statement"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "open",
+            "accepted",
+            "rejected",
+            "withdrawn",
+            "pending",
+            "applied",
+            "reverted",
+            "superseded",
+            "proposed",
+            "draft",
+            "approved",
+            "implemented",
+            "promoted"
+          ]
+        },
+        "supersedes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "targetRef": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "kind",
+        "status",
+        "headline",
+        "owner",
+        "createdAt",
+        "locator",
+        "targetRef",
+        "provenance",
+        "supersedes",
+        "affects",
+        "invalidates",
+        "preserves",
+        "relationshipStatements"
+      ],
+      "type": "object"
+    },
+    "Review": {
+      "additionalProperties": false,
+      "properties": {
+        "areas": {
+          "items": {
+            "$ref": "#/$defs/ReviewArea"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "areas"],
+      "type": "object"
+    },
+    "ReviewArea": {
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "anyOf": [
+            {
+              "enum": [
+                "alignment",
+                "correctness",
+                "security",
+                "quality",
+                "testing",
+                "docs",
+                "style"
+              ]
+            },
+            {
+              "pattern": "^[a-z0-9-]+:[a-z0-9-]+$"
+            }
+          ],
+          "type": "string"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "reviewedAt": {
+          "type": "string"
+        },
+        "reviewedRevision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "reviewedTaskRefs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "taskDefinitionHash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        "validity": {
+          "$ref": "#/$defs/Validity"
+        }
+      },
+      "required": [
+        "ref",
+        "area",
+        "reviewedAt",
+        "reviewedRevision",
+        "reviewedTaskRefs",
+        "taskDefinitionHash",
+        "findings"
+      ],
+      "type": "object"
+    },
+    "Revision": {
+      "additionalProperties": false,
+      "properties": {
+        "approver": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": ["plan", "charter"]
+        },
+        "number": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "specificationBaseId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "what": {
+          "type": "string"
+        },
+        "why": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "kind",
+        "number",
+        "timestamp",
+        "what",
+        "why",
+        "approver"
+      ],
+      "type": "object"
+    },
+    "SpecificationProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/Locator"
+          },
+          "type": "array"
+        },
+        "state": {
+          "enum": ["none", "pending", "linked"]
+        }
+      },
+      "required": ["state", "entries"],
+      "type": "object"
+    },
+    "Statement": {
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "relation": {
+          "enum": ["affects", "invalidates", "preserves"]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "text"],
+      "type": "object"
+    },
+    "Stream": {
+      "additionalProperties": false,
+      "properties": {
+        "blockedOn": {
+          "type": "string"
+        },
+        "charter": {
+          "$ref": "#/$defs/Charter"
+        },
+        "charterRevision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "charterStatus": {
+          "enum": ["approved", "reconstructed", "absent"]
+        },
+        "completion": {
+          "$ref": "#/$defs/Completion"
+        },
+        "continuation": {
+          "$ref": "#/$defs/Continuation"
+        },
+        "documentations": {
+          "items": {
+            "$ref": "#/$defs/DocumentationRef"
+          },
+          "type": "array"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/Event"
+          },
+          "type": "array"
+        },
+        "location": {
+          "$ref": "#/$defs/Locator"
+        },
+        "phase": {
+          "enum": ["planned", "working", "reviewing", "completed", "archived"]
+        },
+        "planRevision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "projectRef": {
+          "type": "string"
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/Question"
+          },
+          "type": "array"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/RecordRef"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "repositoryRevision": {
+          "type": "string"
+        },
+        "review": {
+          "$ref": "#/$defs/Review"
+        },
+        "reviewState": {
+          "type": "string"
+        },
+        "revisions": {
+          "items": {
+            "$ref": "#/$defs/Revision"
+          },
+          "type": "array"
+        },
+        "stateRevision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "submission": {
+          "$ref": "#/$defs/Submission"
+        },
+        "syncState": {
+          "type": "string"
+        },
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/Task"
+          },
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "workId": {
+          "type": "string"
+        },
+        "writtenUnder": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "projectRef",
+        "workId",
+        "phase",
+        "charterStatus",
+        "charterRevision",
+        "planRevision",
+        "stateRevision",
+        "writtenUnder",
+        "syncState",
+        "reviewState",
+        "updatedAt",
+        "tasks",
+        "events",
+        "revisions",
+        "questions",
+        "records",
+        "documentations"
+      ],
+      "type": "object"
+    },
+    "StreamStateDocumentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "maxItems": 0,
+          "type": "array"
+        },
+        "kind": {
+          "enum": ["stream"]
+        },
+        "projectRef": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "enum": [1]
+        },
+        "stream": {
+          "$ref": "#/$defs/Stream"
+        },
+        "traps": {
+          "maxItems": 0,
+          "type": "array"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "kind",
+        "projectRef",
+        "stream",
+        "environment",
+        "traps"
+      ],
+      "type": "object"
+    },
+    "Submission": {
+      "additionalProperties": false,
+      "properties": {
+        "accepter": {
+          "type": "string"
+        },
+        "deliverables": {
+          "items": {
+            "$ref": "#/$defs/Deliverable"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "enum": ["coding", "non-coding"]
+        },
+        "pullRequests": {
+          "items": {
+            "$ref": "#/$defs/PullRequest"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "kind", "pullRequests", "deliverables"],
+      "type": "object"
+    },
+    "SuccessCriterion": {
+      "additionalProperties": false,
+      "properties": {
+        "expectedEvidence": {
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^SC-[1-9][0-9]*$",
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "id", "text", "expectedEvidence"],
+      "type": "object"
+    },
+    "Task": {
+      "additionalProperties": false,
+      "properties": {
+        "acceptanceRefs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "attempt": {
+          "$ref": "#/$defs/Attempt"
+        },
+        "dependsOn": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "disposition": {
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "parentRef": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "retry": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "planned",
+            "working",
+            "done",
+            "failed",
+            "blocked",
+            "cancelled"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "targets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "unblock": {
+          "type": "string"
+        },
+        "validity": {
+          "$ref": "#/$defs/Validity"
+        }
+      },
+      "required": [
+        "ref",
+        "id",
+        "summary",
+        "targets",
+        "dependsOn",
+        "required",
+        "acceptanceRefs",
+        "status",
+        "evidence"
+      ],
+      "type": "object"
+    },
+    "Trap": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "cause": {
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "symptom": {
+          "type": "string"
+        },
+        "validity": {
+          "$ref": "#/$defs/Validity"
+        },
+        "verifiedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["ref", "symptom", "cause", "action", "evidence"],
+      "type": "object"
+    },
+    "Validity": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "reason": {
+              "type": "string"
+            },
+            "state": {
+              "enum": ["stale"]
+            }
+          },
+          "required": ["state", "reason"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "reason": {
+              "type": "string"
+            },
+            "state": {
+              "enum": ["unknown"]
+            }
+          },
+          "required": ["state", "reason"],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$id": "https://theriety.dev/schemas/essential.state/v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ProjectStateDocumentV1"
+    },
+    {
+      "$ref": "#/$defs/StreamStateDocumentV1"
+    }
+  ],
+  "title": "StateDashboardDocumentV1"
+}
