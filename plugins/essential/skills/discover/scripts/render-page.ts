@@ -204,14 +204,19 @@ textarea{width:100%; min-height:6rem; padding:.7rem .85rem; border:1px solid var
 /* SC-4 — bottom drawer at every width; collapsed it is a status bar. */
 .drawer{position:fixed; z-index:60; inset:auto 0 0; border-top:1px solid var(--ui-border-strong); background:var(--ui-surface); box-shadow:0 -8px 26px rgba(45,41,32,.14); padding-bottom:env(safe-area-inset-bottom)}
 /* the bar wraps from the start; the live count is a sibling of the control so
-   the button's accessible name never changes under the reader */
-.drawer-bar{display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; min-height:var(--bar); padding:.5rem var(--pad)}
+   the button's accessible name never changes under the reader.
+   WCAG 2.2 SC 2.5.8 — the bar carries no block padding and the control
+   stretches, so the control *is* the 48px bar rather than a text-height band
+   floating inside it. Putting the vertical padding back on this rule shrinks
+   the target to its content height; it belongs on .drawer-toggle. */
+.drawer-bar{display:flex; flex-wrap:wrap; gap:.4rem 1rem; align-items:center; min-height:var(--bar); padding-inline:var(--pad); cursor:pointer}
 .drawer-toggle{
   display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; flex:1 1 auto;
-  padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer;
+  align-self:stretch; min-height:var(--bar); padding:.5rem 0;
+  border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer;
 }
 .drawer-action{font:700 .72rem/1.2 var(--font-mono); letter-spacing:.11em; text-transform:uppercase}
-.drawer-count{display:inline-flex; gap:.4rem; align-items:center; padding:.15rem .6rem; border:1px solid var(--ui-accent); border-radius:9999px; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font:700 .72rem/1.5 var(--font-mono)}
+.drawer-count{display:inline-flex; gap:.4rem; align-items:center; margin-block:.5rem; padding:.15rem .6rem; border:1px solid var(--ui-accent); border-radius:9999px; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font:700 .72rem/1.5 var(--font-mono)}
 .drawer-count[data-settled="true"]{border-color:var(--ui-positive); background:var(--ui-positive-soft); color:var(--ui-positive-ink)}
 .drawer-hint{margin-left:auto; color:var(--ui-muted); font:600 .72rem/1.2 var(--font-mono); letter-spacing:.08em; text-transform:uppercase}
 .drawer-panel{max-height:min(62vh,32rem); overflow-y:auto; border-top:1px solid var(--ui-border); padding:1.2rem var(--pad) 1.6rem}
@@ -254,6 +259,19 @@ export const PAGE_JS = `
     else if(opener){opener.focus(); opener=null;}
   }
   toggle.addEventListener("click",function(){setExpanded(toggle.getAttribute("aria-expanded")!=="true");});
+  // the whole collapsed bar is the pointer target, not just the button inside
+  // it. Purely additive: the button stays the semantic control, so keyboard and
+  // screen-reader paths are untouched and the bar gets no role or tabindex.
+  // Bound to the bar alone, never the panel, or reading the expanded drawer
+  // would collapse it; and a click that merely ends a text selection is not a
+  // press, so it must not toggle either.
+  drawer.querySelector("[data-drawer-bar]").addEventListener("click",function(event){
+    if(event.target.closest("button,a,input,textarea,select"))return;
+    var selection=window.getSelection();
+    if(selection&&!selection.isCollapsed)return;
+    setExpanded(toggle.getAttribute("aria-expanded")!=="true");
+    toggle.focus();
+  });
   document.addEventListener("keydown",function(event){
     if(event.key==="Escape"&&toggle.getAttribute("aria-expanded")==="true"){setExpanded(false); toggle.focus();}
   });
@@ -522,7 +540,7 @@ ${data.masthead.meta?.length ? renderMetrics(data.masthead.meta, "masthead.meta"
 ${sections}
 </main>
 <div class="drawer" data-drawer>
-<div class="drawer-bar">
+<div class="drawer-bar" data-drawer-bar>
 <button type="button" class="drawer-toggle" data-drawer-toggle aria-expanded="false" aria-controls="drawer-panel" aria-describedby="drawer-count">
 <span class="drawer-action">${escapeHtml(action)}</span>
 <span class="drawer-hint" data-drawer-hint>Expand</span>
