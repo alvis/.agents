@@ -5,7 +5,8 @@ import { readSources } from "./source-file.ts";
 import { formatCodeBlocks } from "./format.ts";
 import { colourCodeBlocks, highlighterOnce } from "./prism.ts";
 import { CODE_CSS } from "./style/code.ts";
-import { codeExcerpts } from "./walk.ts";
+import { OBSERVATION_CSS } from "./style/observation.ts";
+import { codeExcerpts, usesBlock } from "./walk.ts";
 import { usesMermaid } from "./block/mermaid.ts";
 import { RenderError } from "./error.ts";
 import { renderPage } from "./page.ts";
@@ -59,7 +60,14 @@ export async function renderFile(
   const mermaid = usesMermaid(data)
     ? await getMermaidRuntime()
     : undefined;
-  const css = excerpts.length ? `${assets.css}\n\n${CODE_CSS}` : assets.css;
+  // a sheet per feature the board actually uses, appended in a fixed order.
+  // The alternative is one stylesheet carrying every format, which would make
+  // each of these boards heavier for the formats it does not draw
+  const css = [
+    assets.css,
+    ...(excerpts.length ? [CODE_CSS] : []),
+    ...(usesBlock(data, "observations") ? [OBSERVATION_CSS] : []),
+  ].join("\n\n");
   const html = renderPage(data, { ...assets, css, files, mermaid });
   await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, html, "utf8");

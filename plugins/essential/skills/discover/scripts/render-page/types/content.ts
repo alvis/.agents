@@ -95,6 +95,27 @@ export interface Option {
   summary?: string;
 }
 
+/**
+ * one observation card a reader may tick.
+ *
+ * a finding states a risk the author already judged; an observation states
+ * something they noticed and are asking the reader whether it lands. That is
+ * why it carries no severity and does carry a tick: the reader's agreement is
+ * the missing half of it.
+ */
+export interface Observation {
+  /** the one-line claim, drawn as the card's title and recorded by a tick */
+  title: string;
+  /** the file it was noticed in, drawn as a mono chip */
+  file?: string;
+  /** what the code actually does, under `Found in code` */
+  found: Rich;
+  /** what that costs, under `Impact` */
+  impact: Rich;
+  /** who or what noticed it, drawn as a small round badge of its initials */
+  source?: string;
+}
+
 /** one position on a `scale` block's ordered scale. */
 export interface ScalePoint {
   /** the recorded value for this position */

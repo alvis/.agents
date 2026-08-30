@@ -22,6 +22,7 @@ export type {
   Choice,
   Finding,
   Metric,
+  Observation,
   Option,
   Pin,
   Row,

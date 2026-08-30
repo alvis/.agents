@@ -1,0 +1,170 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #16202b;
+  background: #f6f7f9;
+}
+
+.bar {
+  padding: 0.9rem 1rem 0.7rem;
+  border-bottom: 1px solid #dfe3e8;
+  background: #fff;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.reading {
+  margin: 0.2rem 0 0;
+  color: #63707e;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+main {
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.tracks {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.track h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #63707e;
+}
+
+.stage {
+  overflow: hidden;
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
+  background: #fff;
+  height: 96px;
+  display: flex;
+  align-items: center;
+}
+
+.panel {
+  width: 62%;
+  height: 62px;
+  margin-left: 0.5rem;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 0.8rem;
+  font-weight: 600;
+  transform: translateX(-115%);
+  opacity: 0.35;
+}
+
+.panel.in {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.cheap {
+  transition:
+    transform 500ms linear,
+    opacity 500ms linear;
+}
+
+.label {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: #63707e;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+fieldset {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+}
+
+legend {
+  padding: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #63707e;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+}
+
+.duration {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+}
+
+.duration input {
+  flex: 1 1 auto;
+  min-width: 90px;
+}
+
+output {
+  font-variant-numeric: tabular-nums;
+  color: #63707e;
+}
+
+button {
+  justify-self: start;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #1f6feb;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1a5fd0;
+}
+
+.hint {
+  margin: 0;
+  color: #63707e;
+  font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition-duration: 1ms !important;
+  }
+}

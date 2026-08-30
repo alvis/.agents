@@ -10,15 +10,14 @@ import {
   requireObject,
   requireString,
 } from "../validate.ts";
+import { ANSWER_KIND } from "../vocabulary.ts";
 
 import type { PageIds } from "../id.ts";
-import type { Block, Choice, Option } from "../types.ts";
+import type { Choice, Option } from "../types.ts";
+import type { Question } from "../vocabulary.ts";
 
-/** every block type this module draws. */
-type Question = Extract<
-  Block,
-  { type: "choice" | "checklist" | "scale" | "decision" | "note" }
->;
+/** the kinds drawn here; `observations` shares the shell and draws its own. */
+type Drawn = Exclude<Question, { type: "observations" }>;
 
 /** a question's identity and the markup down to the end of its ask. */
 interface Shell {
@@ -29,20 +28,22 @@ interface Shell {
 }
 
 /**
- * draws the shell all five questions share.
+ * draws the shell every question shares.
  *
  * the fieldset, the title, the ask, and the attributes the runtime reads an
  * answer back through are identical across the kinds; only the control below
  * them differs. Drawing the shell once is what keeps a new shell attribute —
  * the citation code was the last one — from having to be added in five places
- * and landing in four.
+ * and landing in four. It is exported for the same reason: a kind drawn in its
+ * own module still opens here rather than reimplementing the attributes the
+ * store, the chips and the reply all read.
  * @param block the question block
  * @param path JSON path of `block`, named verbatim by any refusal
  * @param ids every name already claimed on this page
  * @param tag the element the kind uses: a fieldset, or a div for a bare note
  * @returns the question's id and its opening markup
  */
-function openQuestion(
+export function openQuestion(
   block: Question,
   path: string,
   ids: PageIds,
@@ -65,7 +66,9 @@ function openQuestion(
       // the reading position and the keyboard together. `-1` keeps it out of
       // the tab order, where a card is not a control anyone tabs to
       `<${tag} class="question" id="qs-${escapeHtml(id)}" tabindex="-1"` +
-      ` data-question data-question-kind="${block.type}"` +
+      // the contract the answer saves under, not the block's own type: an
+      // observations block is read and restored as the set of ticks it is
+      ` data-question data-question-kind="${ANSWER_KIND[block.type]}"` +
       `${responseAttribute(block, path)} data-question-id="${escapeHtml(id)}"` +
       ` data-question-ref="${escapeHtml(ref)}" data-question-label="${escapeHtml(label)}">` +
       (tag === "fieldset"
@@ -87,7 +90,7 @@ function openQuestion(
  * @returns the question as HTML
  */
 export function renderQuestion(
-  block: Question,
+  block: Drawn,
   path: string,
   ids: PageIds,
 ): string {

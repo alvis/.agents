@@ -149,6 +149,64 @@
       ]
     },
     {
+      "id": "noticed",
+      "label": "What we noticed",
+      "eyebrow": "Observations",
+      "title": "Four things the signup code already does.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "The funnel says where people stop. These say what the product is doing at that point. None of them is an argument for a band on its own \u2014 tick the ones that match what you have seen, and the ones nobody ticks are ones we can stop carrying."
+        },
+        {
+          "type": "observations",
+          "id": "spectrum-noticed",
+          "ref": "S3",
+          "label": "Which of these land",
+          "ask": "Tick every observation that matches your own reading of the product.",
+          "response": "follow-up",
+          "items": [
+            {
+              "title": "The wizard cannot be left and returned to",
+              "file": "web/src/onboarding/wizard-state.ts",
+              "found": [
+                "State lives in a ",
+                { "kind": "code", "text": "useReducer" },
+                " that is mounted by the wizard route, so leaving the route discards every answer. There is no persistence and no resume path."
+              ],
+              "impact": "Anyone who stops to find an API key, an invite address, or a billing owner starts over. The funnel drop is at step 3 of 5, which is the first step needing something the signer-up may not have to hand.",
+              "source": "Funnel analysis"
+            },
+            {
+              "title": "The empty state is written for an admin, not a first user",
+              "file": "web/src/workspace/empty-state.tsx",
+              "found": "Every call to action is a configuration task \u2014 connect a source, invite a team, set a retention policy. Nothing in the component offers a way to see the product working on sample data.",
+              "impact": "The first screen after a successful signup asks for four more decisions. Band A is cheap precisely because this is a copy and layout problem rather than a product one.",
+              "source": "Onboarding interviews"
+            },
+            {
+              "title": "Invites are required before the workspace does anything",
+              "file": "api/src/workspace/create.ts",
+              "found": [
+                "Workspace creation rejects an empty ",
+                { "kind": "code", "text": "members" },
+                " array, so the first screen cannot be reached by one person alone."
+              ],
+              "impact": "Adoption is team-led, so this matches how the product is bought \u2014 but it makes every evaluation a two-person errand, and it is a server-side rule rather than a wizard step, so Band A cannot touch it.",
+              "source": "Research"
+            },
+            {
+              "title": "First value is gated behind a background job",
+              "file": "worker/src/ingest/schedule.ts",
+              "found": "The first ingest is queued rather than run inline, and the schedule gives it a five-minute floor even when the queue is empty.",
+              "impact": "A signup that completes every step still sees nothing for five minutes. Whatever band is chosen, a reader who never waits that long never reaches the value the funnel is measuring.",
+              "source": "Funnel analysis"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "input",
       "label": "Your input",
       "eyebrow": "Questions",

@@ -10,6 +10,7 @@ import { renderFailureMap, renderList, renderTldr } from "./block/list.ts";
 import { renderMermaid } from "./block/mermaid.ts";
 import { renderOwners, renderReadiness } from "./block/meter.ts";
 import { renderMetrics } from "./block/metric.ts";
+import { renderObservations } from "./block/observation.ts";
 import { renderRiskMatrix } from "./block/risk.ts";
 import { renderSteps } from "./block/step.ts";
 import { renderSvg } from "./block/svg.ts";
@@ -101,6 +102,8 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
     case "decision":
     case "note":
       return renderQuestion(block, path, page.ids);
+    case "observations":
+      return renderObservations(block, path, page.ids);
     default:
       throw new RenderError(
         `${path}.type: unknown block type ${JSON.stringify((block as { type: string }).type)}`,
