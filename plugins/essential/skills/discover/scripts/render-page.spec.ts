@@ -105,6 +105,13 @@ describe("fn:renderPage", () => {
     expect(Number(prose?.[1])).toBeLessThanOrEqual(75);
     expect(css).toMatch(/\.table-wrap\{[^}]*overflow-x:\s*auto/);
     expect(css).not.toMatch(/\.table-wrap\{[^}]*max-width/);
+    // SC-3, R-15: the .sr-only verdict labels are absolutely positioned, so
+    // overflow-x clips them only while .table-wrap is their containing block.
+    // Static, they escape the scroller and push documentElement.scrollWidth to
+    // a constant 370px, overflowing the root at 320 and 360 CSS pixels. Assert
+    // the pair — the guard means nothing if .sr-only stops being absolute.
+    expect(css).toMatch(/\.sr-only\{[^}]*position:\s*absolute/);
+    expect(css).toMatch(/\.table-wrap\{[^}]*position:\s*relative/);
   });
 
   it("should collapse the drawer to a status bar carrying the unanswered count", async () => {
@@ -881,8 +888,35 @@ describe("fn:renderPage new blocks", () => {
       ...css.matchAll(/\.finding\[data-severity="\w+"\]\{border-left-style:(\w+)/g),
     ].map((edge) => edge[1]);
     expect(edges).toStrictEqual(["double", "solid", "dashed", "dotted"]);
-    // the edge must be wide enough for those styles to resolve at all
-    expect(css).toMatch(/\.finding\{[^}]*border-left:7px solid/);
+    // Two measured floors keep those four edge styles apart. Both held by
+    // accident until they were pinned here.
+    // 1. `double` binds the width floor, not `dashed`/`dotted` — it is the
+    //    width-hungry member of the set, painting line/gap/line. Measured in
+    //    Blink at greyscale threshold 128: at 2px it paints one line and
+    //    collapses into `solid`; at 3px it paints black/white/black and
+    //    survives. 3 is the cliff edge itself, not a rounded-down guess.
+    const edgeWidth = /\.finding\{[^}]*border-left:(\d+)px solid/.exec(css);
+    expect(edgeWidth).not.toBeNull();
+    expect(Number(edgeWidth?.[1])).toBeGreaterThanOrEqual(3);
+    // 2. Under ~32px of card height a dash paints as one segment, making
+    //    `dashed` read as `solid`. The 32 was measured at the 7px edge above;
+    //    dash length scales with border width, so a narrower edge yields
+    //    shorter dashes and needs less height — this floor stays valid as the
+    //    width shrinks. Card height is content-dependent (measured
+    //    207px-642px), so vertical padding is the only floor we can assert.
+    //    Read the whole shorthand: value 1 is the vertical padding only in
+    //    the 1- and 2-value forms, so a 4-value drift would pass silently.
+    const pad = /\.finding\{[^}]*padding:([^;}]+)/.exec(css);
+    expect(pad).not.toBeNull();
+    const sides = (pad?.[1] ?? "").trim().split(/\s+/);
+    const rem = (value: string | undefined): number =>
+      Number(/^([\d.]+)rem$/.exec(value ?? "")?.[1]);
+    const [top, bottom] =
+      sides.length > 2
+        ? [rem(sides[0]), rem(sides[2])]
+        : [rem(sides[0]), rem(sides[0])];
+
+    expect((top + bottom) * 16).toBeGreaterThanOrEqual(32);
   });
 
   it("should draw a finding's owner and evidence only when given", () => {

@@ -233,7 +233,9 @@ h1{margin:0; max-width:20ch; font-family:var(--font-display); font-weight:500; f
 .metric dt{margin:0; font:650 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .metric dd{margin:.35rem 0 0; font-size:1.35rem; font-weight:600; letter-spacing:-.01em}
 
-.table-wrap{overflow-x:auto; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised)}
+/* positioned so overflow-x can clip the absolutely-positioned .sr-only labels:
+   a static ancestor is not their containing block, so they escape the scroller */
+.table-wrap{position:relative; overflow-x:auto; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised)}
 table{width:100%; border-collapse:collapse; font-size:.95rem}
 th,td{padding:.8rem 1rem; text-align:left; border-bottom:1px solid var(--ui-border); vertical-align:top}
 th{font:700 .74rem/1.2 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
