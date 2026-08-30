@@ -742,6 +742,98 @@ describe("fn:renderPage validation floor", () => {
     );
   });
 
+  it("should refuse a section id that is unsafe as a URL fragment", () => {
+    // the section emits id="s-<id>" and the nav emits href="#s-<id>", so a
+    // space makes href="#s-my id", which silently fails to navigate — a dead
+    // link with no error, and SC-5 quietly broken
+    expect(() =>
+      renderPage(
+        page({
+          sections: [{ id: "my id", label: "A", title: "A", blocks: [] }],
+        }),
+      ),
+    ).toThrow(
+      new RenderError(
+        'sections[0].id: section id "my id" must match [A-Za-z0-9_-]+ to be a safe URL fragment',
+      ),
+    );
+  });
+
+  it("should refuse a question id that is unsafe as a URL fragment", () => {
+    expect(() =>
+      renderPage(
+        page({
+          sections: [
+            {
+              id: "s",
+              label: "S",
+              title: "T",
+              blocks: [{ type: "note", id: "gate#1", label: "L", ask: "A" }],
+            },
+          ],
+        }),
+      ),
+    ).toThrow(
+      new RenderError(
+        'sections[0].blocks[0].id: question id "gate#1" must match [A-Za-z0-9_-]+ to be a safe URL fragment',
+      ),
+    );
+  });
+
+  it("should refuse an empty section id", () => {
+    // the empty string is refused, but by the upstream non-empty guard rather
+    // than the fragment check — it never reaches it. asserted here so the
+    // floor stays covered wherever the refusal is actually seated
+    expect(() =>
+      renderPage(
+        page({ sections: [{ id: "", label: "A", title: "A", blocks: [] }] }),
+      ),
+    ).toThrow(
+      new RenderError(
+        'sections[0].id: required non-empty string, received ""',
+      ),
+    );
+  });
+
+  it("should refuse an unsafe id before the duplicate check claims it", () => {
+    // ordering is load-bearing: a malformed id must never reach `seen`, so two
+    // identical malformed ids report the fragment refusal at the *first*
+    // occurrence, never a duplicate refusal at the second
+    expect(() =>
+      renderPage(
+        page({
+          sections: [
+            { id: "a b", label: "A", title: "A", blocks: [] },
+            { id: "a b", label: "B", title: "B", blocks: [] },
+          ],
+        }),
+      ),
+    ).toThrow(
+      new RenderError(
+        'sections[0].id: section id "a b" must match [A-Za-z0-9_-]+ to be a safe URL fragment',
+      ),
+    );
+  });
+
+  it("should still accept ids carrying hyphens and underscores", () => {
+    const html = renderPage(
+      page({
+        sections: [
+          {
+            id: "risk_map-2",
+            label: "S",
+            title: "T",
+            blocks: [{ type: "note", id: "next_step-1", label: "L", ask: "A" }],
+          },
+        ],
+      }),
+    );
+
+    expect(html).toContain('id="s-risk_map-2"');
+    expect(html).toContain('href="#s-risk_map-2"');
+    expect(html).toContain('data-question-id="next_step-1"');
+  });
+
   it("should namespace section and question ids so the two cannot collide", () => {
     // the ban is on colliding question ids, not on every identifier the page
     // carries; a section and a question may legitimately share an authored

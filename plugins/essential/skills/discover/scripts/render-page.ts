@@ -787,29 +787,44 @@ function renderScale(
   return `<div class="scale">${segments}</div>${anchors}`;
 }
 
-/** the ids a page has already claimed, one peer group per kind. */
-interface PageIds {
-  questions: Set<string>;
-  sections: Set<string>;
-}
+/**
+ * the ids a page has already claimed, one peer group per kind. keying it by
+ * the same `kind` the refusal names is what keeps a caller from pairing one
+ * kind's name with the other kind's set.
+ */
+type PageIds = Record<"question" | "section", Set<string>>;
+
+/** the only ids that survive `s-`/`q-` prefixing as a usable URL fragment. */
+const SAFE_ID = /^[A-Za-z0-9_-]+$/;
 
 /**
- * reads an id, refusing a value already claimed by an earlier peer of its kind
+ * reads an id, refusing one unusable as a URL fragment or already claimed by
+ * an earlier peer of its kind
  * @param id the author-supplied id
  * @param path JSON path of the owning block or section, named by the refusal
- * @param kind the peer group the id must be unique within, named by the refusal
- * @param seen every id claimed by an earlier peer of that kind, extended in
- *   place; sections and questions carry their own set, because the `s-` and
- *   `q-` prefixes keep one from ever colliding with the other in the DOM
+ * @param kind the peer group the id must be unique within, named by the
+ *   refusal and selecting that group's set from `ids`
+ * @param ids every id claimed so far, one set per kind, extended in place;
+ *   sections and questions carry their own set, because the `s-` and `q-`
+ *   prefixes keep one from ever colliding with the other in the DOM
  * @returns the id as a string
  */
 function requireFreshId(
   id: unknown,
   path: string,
   kind: "question" | "section",
-  seen: Set<string>,
+  ids: PageIds,
 ): string {
   const value = requireString(id, `${path}.id`);
+  // the section emits id="s-${value}" and the nav emits href="#s-${value}", so
+  // a space or a `#` produces a fragment that silently fails to navigate — a
+  // dead link with no error. refuse before the duplicate check below, so a
+  // malformed id is never admitted to the claimed set
+  if (!SAFE_ID.test(value))
+    throw new RenderError(
+      `${path}.id: ${kind} id ${JSON.stringify(value)} must match [A-Za-z0-9_-]+ to be a safe URL fragment`,
+    );
+  const seen = ids[kind];
   // two questions sharing an id share one radio group and one textarea target,
   // so one answer silently overwrites the other and the reply loses a line;
   // two sections sharing one emit a repeated DOM id, and the second nav link
@@ -822,7 +837,7 @@ function requireFreshId(
   return value;
 }
 
-function renderBlock(block: Block, path: string, seen: Set<string>): string {
+function renderBlock(block: Block, path: string, ids: PageIds): string {
   requireObject<Block>(block, path);
   requireString((block as { type?: unknown }).type, `${path}.type`);
   switch (block.type) {
@@ -841,7 +856,7 @@ function renderBlock(block: Block, path: string, seen: Set<string>): string {
     case "findings":
       return renderFindings(block, path);
     case "choice": {
-      const id = requireFreshId(block.id, path, "question", seen);
+      const id = requireFreshId(block.id, path, "question", ids);
       const label = requireString(block.label, `${path}.label`);
       return `<fieldset class="question" data-question data-question-kind="choice" data-question-id="${escapeHtml(id)}" data-question-label="${escapeHtml(label)}"><legend>${escapeHtml(label)}</legend><p class="ask">${escapeHtml(requireString(block.ask, `${path}.ask`))}</p><div class="choices">${requireFilledArray<Choice>(block.choices, `${path}.choices`)
         .map((choice, index) => {
@@ -854,7 +869,7 @@ function renderBlock(block: Block, path: string, seen: Set<string>): string {
         .join("")}</div></fieldset>`;
     }
     case "checklist": {
-      const id = requireFreshId(block.id, path, "question", seen);
+      const id = requireFreshId(block.id, path, "question", ids);
       const label = requireString(block.label, `${path}.label`);
       return `<fieldset class="question" data-question data-question-kind="checklist" data-question-id="${escapeHtml(id)}" data-question-label="${escapeHtml(label)}"><legend>${escapeHtml(label)}</legend><p class="ask">${escapeHtml(requireString(block.ask, `${path}.ask`))}</p><div class="choices">${requireFilledArray<Option>(block.options, `${path}.options`)
         .map((option, index) => {
@@ -867,12 +882,12 @@ function renderBlock(block: Block, path: string, seen: Set<string>): string {
         .join("")}</div></fieldset>`;
     }
     case "scale": {
-      const id = requireFreshId(block.id, path, "question", seen);
+      const id = requireFreshId(block.id, path, "question", ids);
       const label = requireString(block.label, `${path}.label`);
       return `<fieldset class="question" data-question data-question-kind="scale" data-question-id="${escapeHtml(id)}" data-question-label="${escapeHtml(label)}"><legend>${escapeHtml(label)}</legend><p class="ask">${escapeHtml(requireString(block.ask, `${path}.ask`))}</p>${renderScale(block, id, path)}</fieldset>`;
     }
     case "note": {
-      const id = requireFreshId(block.id, path, "question", seen);
+      const id = requireFreshId(block.id, path, "question", ids);
       const label = requireString(block.label, `${path}.label`);
       const placeholder =
         optionalString(block.placeholder, `${path}.placeholder`) ?? "";
@@ -885,19 +900,15 @@ function renderBlock(block: Block, path: string, seen: Set<string>): string {
   }
 }
 
-function renderSection(
-  section: Section,
-  index: number,
-  seen: PageIds,
-): string {
+function renderSection(section: Section, index: number, ids: PageIds): string {
   const at = `sections[${index}]`;
   requireObject<Section>(section, at);
   const number = String(index + 1).padStart(2, "0");
-  const id = requireFreshId(section.id, at, "section", seen.sections);
+  const id = requireFreshId(section.id, at, "section", ids);
   const eyebrow = optionalString(section.eyebrow, `${at}.eyebrow`);
   return `<section class="section" id="s-${escapeHtml(id)}" data-section data-section-label="${escapeHtml(requireString(section.label, `${at}.label`))}"><div class="section-heading"><p class="section-no">${number}${eyebrow ? ` · ${escapeHtml(eyebrow)}` : ""}</p><h2>${escapeHtml(requireString(section.title, `${at}.title`))}</h2></div><div class="section-body">${requireArray<Block>(section.blocks, `${at}.blocks`)
     .map((block, position) =>
-      renderBlock(block, `${at}.blocks[${position}]`, seen.questions),
+      renderBlock(block, `${at}.blocks[${position}]`, ids),
     )
     .join("")}</div></section>`;
 }
@@ -916,12 +927,12 @@ export function renderPage(data: PageData): string {
   requireObject<PageData["reply"]>(data.reply, "reply");
   // one page-wide set per kind: a duplicate id is refused wherever the second
   // one sits, and a section may still share an authored name with a question
-  const seen: PageIds = {
-    questions: new Set<string>(),
-    sections: new Set<string>(),
+  const ids: PageIds = {
+    question: new Set<string>(),
+    section: new Set<string>(),
   };
   const sections = requireArray<Section>(data.sections, "sections")
-    .map((section, index) => renderSection(section, index, seen))
+    .map((section, index) => renderSection(section, index, ids))
     .join("");
   const nav = data.sections
     .map(
