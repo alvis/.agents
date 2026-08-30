@@ -94,21 +94,3 @@ Reference examples are inspiration for depth and information architecture only.
   restatement of the plan.
 - Keep the whole plan readable without JavaScript, and keep the rank ordering
   legible through the pip scale, not colour alone.
-
-## Present
-
-Save the board before presenting it, then compile a self-contained copy with the
-builder and present that file:
-
-```bash
-scripts/build-artifact.ts examples/src/plan-review          # self-contained full document
-scripts/build-artifact.ts examples/src/plan-review --artifact  # head-less fragment for the Artifact tool
-```
-
-The builder inlines the Tailwind runtime plus `discovery.css` and `discovery.js`
-so the page renders under a locked-down Artifact CSP. Never hand-edit the
-compiled output — to change the board, edit the modular sources under
-`examples/src/plan-review/` (the `page.html` shell plus `sections/NN-*.html`)
-and re-emit the committed page with `--emit-page`. After the user's step answers,
-verdict, and notes are captured in the one generated reply and transferred to the
-ledger, discard the session workspace and any compiled artifacts.

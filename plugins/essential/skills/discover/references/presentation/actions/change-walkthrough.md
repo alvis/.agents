@@ -96,22 +96,3 @@ Reference examples are inspiration for depth and information architecture only.
   control; it regenerates after every answer or saved note. Phrase it as the
   reviewer's verdict and what they verified — implementation feedback to the
   coder — not as a restatement of the diff.
-
-## Present
-
-Save the board before presenting it, then compile a self-contained copy with the
-builder and present that file:
-
-```bash
-scripts/build-artifact.ts examples/src/change-walkthrough          # self-contained full document
-scripts/build-artifact.ts examples/src/change-walkthrough --artifact  # head-less fragment for the Artifact tool
-```
-
-The builder inlines the Tailwind runtime plus `discovery.css` and `discovery.js`
-so the page renders under a locked-down Artifact CSP. Never hand-edit the
-compiled output — to change the board, edit the modular sources under
-`examples/src/change-walkthrough/` (the `page.html` shell plus
-`sections/NN-*.html`) and re-emit the committed page with `--emit-page`. After the
-user's comprehension answers, verdict, and notes are captured in the one
-generated reply and transferred to the ledger, discard the session workspace and
-any compiled artifacts.

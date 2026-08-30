@@ -1,18 +1,23 @@
-# Discover presentation features — pick list
+# Discover presentation features — the migration record
 
-The `discover` skill is mid-migration from a hand-authored HTML pipeline to a
-JSON-driven renderer. The renderer is not yet a replacement: it is a smaller
-system. This document lists **every feature across all three reference points**
-so the target set can be chosen deliberately rather than discovered missing.
+The `discover` skill has finished migrating from a hand-authored HTML pipeline
+to a JSON-driven renderer. This document is the reconciliation that made the
+target set choosable: it lists **every feature across all three reference
+points**, so what the renderer now owes the reader was decided deliberately
+rather than discovered missing.
 
-Tick the `Pick` box on every row that belongs in the final renderer.
+It reads as history. The 🏛️ column describes a pipeline whose files have since
+been deleted, and its line citations are evidence of what that system did, not
+paths to open. What survives is the `Pick` column: the rows ticked there are
+the set the renderer was built to carry, and they are the list any review of
+that build is owed.
 
 ## The three columns
 
-| Column | What it is | Where it lives |
+| Column | What it is | Where it lived |
 | --- | --- | --- |
-| 🏛️ **Had** | The legacy pipeline: a composer plus a shared runtime | `scripts/build-artifact.ts`, `assets/html/discovery.js` (2,282 lines), `assets/html/discovery.css` (5,255 lines), 15 boards under `examples/src/` |
-| 🆕 **New** | The JSON renderer that produced the four current samples | `scripts/render-page.ts` (1,268 lines), `scripts/page-diagram.ts` (726 lines) |
+| 🏛️ **Had** | The legacy pipeline: a composer plus a shared runtime. Removed | `scripts/build-artifact.ts`, `assets/html/discovery.js` (2,282 lines), `assets/html/discovery.css` (5,255 lines), 15 boards under `examples/src/` |
+| 🆕 **New** | The JSON renderer, as it stood when this was written: two files, four board kinds | `scripts/render-page.ts` (1,268 lines), `scripts/page-diagram.ts` (726 lines) |
 | 🔍 **Ref** | The single-file page held up as clearer to navigate | `examples/reference/` sibling; archived as `artifacts/rival-specimen.html` (1,007 lines) |
 
 ## Legend
@@ -346,9 +351,10 @@ shelf, not a ceiling".
 
 ## Coverage: presentation directions
 
-The legacy system ships **15 example boards** under `examples/src/` but only
+The legacy system shipped **15 example boards** under `examples/src/` but only
 **14 direction files** under `references/presentation/actions/` — `architecture-board`
-has an example and no direction. The renderer implements **4 kinds**.
+had an example and no direction. The renderer implemented **4 kinds** when this
+was written; it now renders all fifteen from `examples/data/`.
 
 | Direction | 🏛️ | 🆕 | Pick | Notes |
 | --- | :-: | :-: | :-: | --- |
@@ -370,10 +376,13 @@ has an example and no direction. The renderer implements **4 kinds**.
 
 ---
 
-## How to use this list
+## How to read this list
 
-Tick `Pick` on each row you want. Rows marked **📄** are builds, not
-restorations. Rows marked **⚠ inline** require a JSON schema decision before any
-of them can be built — if you pick several, that decision comes first.
+The ticked `Pick` rows are what the renderer was built to carry. Rows marked
+**📄** were builds rather than restorations — the legacy system documented them
+without implementing them, so nothing was there to port. Rows marked
+**⚠ inline** forced the schema decision that came first: rich text is an array
+of typed runs, and every run's text is escaped.
 
-Nothing here is approved, and the four staged samples remain unsigned.
+The build is not approved. This list is the standard it is to be reviewed
+against.

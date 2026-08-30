@@ -4,10 +4,9 @@ Two user-approved boards demonstrating the marriage of the discover shell with
 the free-form lessons. They are **design references**: open them in a browser
 to see the target look and interaction, and read
 `references/presentation/components.md` ("Decision-first devices") for the
-distilled recipes. They are intentionally *not* part of the validated example
-suite — they implement their own capture wiring to stay single-file, whereas
-suite examples must compose through `templates/src/page/` and the shared
-runtime.
+distilled recipes. They are intentionally *not* part of the example
+suite — they are hand-written HTML with their own capture wiring, whereas every
+suite board is JSON rendered by `scripts/render-page.ts`.
 
 - `readiness-verdict-board.html` — verdict dashboard: board-theme accent from
   the shell's olive family, `--ui-verdict-*` ramp, stat rails, filter chips,
@@ -19,12 +18,11 @@ runtime.
   single-recommendation cards, per-card notes, live generated reply.
   (Artifact `367d0714`.)
 
-The devices these boards demonstrate are generalized in the starter template
-itself: `templates/src/page/sections/02-decision.html` carries the
-response-capture and decision-first convention slots (option sets with
-reasons, accept/override pairs, per-card capture, semantic-ramp edges,
-sequence strip, board sign-off) so ANY action can compose them — these two
-boards are illustrations, not the only shapes.
+The devices these boards demonstrate are generalized into the renderer's own
+block vocabulary — option sets with reasons, accept/override pairs, per-card
+capture, semantic-ramp edges, sequence strips, board sign-off — so ANY action
+can compose them from data. These two boards are illustrations, not the only
+shapes.
 
 What every generated board must copy from these is the **floor behavior**
 (`references/features.md`): per-card response capture reflected in counters

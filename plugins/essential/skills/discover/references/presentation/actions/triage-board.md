@@ -72,20 +72,7 @@ owners and is used without re-marking.
 - Do not turn the board into a tracker. It produces a plan to paste back, so a
   user can reorder freely without consequence — say so on the board.
 
-## Present
-
-Compile the board to a self-contained file and hand that to the user; never
-present a raw source directory. From the discover skill root:
-
-```bash
-scripts/build-artifact.ts examples/src/triage-board            # file:// document
-scripts/build-artifact.ts examples/src/triage-board --artifact # Artifact fragment
-```
-
-The builder inlines the Tailwind runtime, `discovery.css`, and `discovery.js`,
-and fails unless the output is genuinely self-contained. For a generated board,
-write the source under the session workspace and build from there; discard the
-workspace once the arrangement and notes are captured in the one reply.
+## Directional, not prescriptive
 
 The board is a direction sample, not a fixed schema. Change the lanes, the card
 fields, and the surrounding evidence to fit the actual sort under review — but

@@ -100,20 +100,3 @@ depth and information architecture only.
   control; it updates after every answer or saved annotation.
 - Keep the whole log readable without JavaScript; the timeline, anatomy fields,
   and diffs are all static markup.
-
-## Present
-
-Build journals are throwaway review surfaces. Compile the modular source into a
-self-contained file and present that, never the raw source directory:
-
-```bash
-scripts/build-artifact.ts examples/src/build-journal            # file:// document
-scripts/build-artifact.ts examples/src/build-journal --artifact # Artifact fragment
-```
-
-The builder inlines the Tailwind runtime plus `discovery.css`/`discovery.js` and
-fails unless the output is genuinely self-contained. Edit the small sources
-under `examples/src/build-journal/` and rebuild; never hand-edit the compiled
-output. After the user's accepted revisits, reopened revisits, verdict, and
-annotations are captured in the one generated prompt and transferred to the
-ledger, discard the compiled artifact.
