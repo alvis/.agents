@@ -1,3 +1,4 @@
+import { mkdir, symlink } from "node:fs/promises";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -107,6 +108,51 @@ describe("fn:readTree", () => {
     const tree = await readTree(root, NOW);
 
     expect(tree.streams.map(({ id }) => id)).toStrictEqual(["undated"]);
+  });
+
+  it("should not follow a state.md linked into the archive", async () => {
+    // the board states its own exclusion as a fact — that it never looks in the
+    // directory archived streams are in — and following a link would make that
+    // untrue while filing the archived work under a live directory's name
+    await stream("works/live", "working");
+    await stream("archive/works/retired", "working");
+    await mkdir(join(root, "works", "borrowed"), { recursive: true });
+    await symlink(
+      join(root, "archive", "works", "retired", "state.md"),
+      join(root, "works", "borrowed", "state.md"),
+    );
+
+    const tree = await readTree(root, NOW);
+
+    expect(tree.streams.map(({ id }) => id)).toStrictEqual(["live"]);
+    expect(tree.excluded).toStrictEqual([
+      {
+        id: "borrowed",
+        reason:
+          "holds a state.md that is a link rather than a file, and a link can point anywhere, including into the archive",
+      },
+    ]);
+  });
+
+  it("should read a zone-less timestamp the same way wherever it is run", async () => {
+    // `Date.parse` reads a date on its own as UTC but a date and time with no
+    // zone on the end as host-local, so this one tree used to draw a different
+    // board either side of a dateline
+    await stream("works/inside", "completed", "2026-08-26T12:30:00");
+    await stream("works/outside", "completed", "2026-08-26T11:30:00");
+    const was = process.env.TZ;
+    const seen: string[][] = [];
+    try {
+      for (const zone of ["Pacific/Kiritimati", "Pacific/Midway", "UTC"]) {
+        process.env.TZ = zone;
+        seen.push((await readTree(root, NOW)).streams.map(({ id }) => id));
+      }
+    } finally {
+      if (was === undefined) delete process.env.TZ;
+      else process.env.TZ = was;
+    }
+
+    expect(seen).toStrictEqual([["inside"], ["inside"], ["inside"]]);
   });
 
   it("should say which directory held no state file", async () => {

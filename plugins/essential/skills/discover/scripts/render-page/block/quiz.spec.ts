@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { renderGate, renderQuiz } from "./quiz.ts";
+import { renderBlock } from "../block.ts";
 import { emptyContext } from "../context.ts";
 import { RenderError } from "../error.ts";
 
@@ -34,7 +35,7 @@ const BASE = {
  * @returns the context
  */
 function pageWith(sections = ["deviations"]): PageContext {
-  return { ...emptyContext(), sections: new Set(sections) };
+  return { ...emptyContext(), quizzed: true, sections: new Set(sections) };
 }
 
 /**
@@ -91,7 +92,32 @@ describe("fn:renderQuiz", () => {
   });
 
   it("should give every option in one question the same radio name", () => {
-    expect(draw().match(/name="q-quiz-reply"/gu)).toHaveLength(2);
+    expect(draw().match(/name="quiz-reply"/gu)).toHaveLength(2);
+  });
+
+  it("should name its radio group the way every other question names one", () => {
+    // a name is what groups radios, and only the quiz prefixed one. A quiz `x`
+    // and a choice `q-x` are two distinct ids, so both pass the freshness
+    // check, and they used to land in one group where each answer silently
+    // erased the other and the reply reported an answered question unanswered
+    const page = pageWith();
+    const drawn =
+      renderBlock({ ...BASE, id: "x" } as Block, "sections[0].blocks[0]", page) +
+      renderBlock(
+        {
+          type: "choice",
+          id: "q-x",
+          ref: "C1",
+          label: "A plain choice",
+          ask: "Which one?",
+          choices: [{ value: "This one" }],
+        } as unknown as Block,
+        "sections[0].blocks[1]",
+        page,
+      );
+    const names = [...drawn.matchAll(/name="([^"]+)"/gu)].map(([, name]) => name);
+
+    expect(new Set(names).size).toBe(2);
   });
 
   it("should refuse a link back to a section the board does not have", () => {
@@ -149,33 +175,56 @@ describe("fn:renderGate", () => {
     fail: "Not yet. Re-read the sections below.",
   } as Extract<Block, { type: "gate" }>;
 
-  it("should ship in the unanswered state rather than waiting for the runtime", () => {
-    const drawn = renderGate(GATE, "sections[5].blocks[5]");
+  /**
+   * renders one gate
+   * @param page what the block is rendered into
+   * @returns the gate as HTML
+   */
+  function gate(page = pageWith()): string {
+    return renderGate(GATE, "sections[5].blocks[5]", page);
+  }
 
-    expect(drawn).toContain('data-gate data-gate-state="open"');
+  it("should ship unscored rather than waiting for the runtime", () => {
+    const drawn = gate();
+
+    expect(drawn).toContain('data-gate data-gate-state="unscored"');
     expect(drawn).toContain(
-      '<p class="gate-progress" data-gate-progress role="status">Answer every question above to see where this stands.</p>',
+      '<p class="gate-progress" data-gate-progress role="status">Scoring needs JavaScript. With it off, check your own answers against the sections each one cites.</p>',
     );
   });
 
-  it("should hide the pass verdict and show the fail one until anything is answered", () => {
-    const drawn = renderGate(GATE, "sections[5].blocks[5]");
+  it("should hide both verdicts until something has scored them", () => {
+    // the sheet reveals each rationale on `:has(input:checked)` with no script
+    // at all, so a reader with scripting off can answer every question — and
+    // shipping the fail verdict visible told that reader the merge was blocked,
+    // which is a settled answer nobody computed
+    const drawn = gate();
 
     expect(drawn).toContain(
       '<div class="gate-verdict" data-gate-pass hidden>Cleared — merge it.</div>',
     );
     expect(drawn).toContain(
-      '<div class="gate-verdict" data-gate-fail>Not yet. Re-read the sections below.</div>',
+      '<div class="gate-verdict" data-gate-fail hidden>Not yet. Re-read the sections below.</div>',
     );
   });
 
   it("should give the empty miss list a name to be read under", () => {
-    const drawn = renderGate(GATE, "sections[5].blocks[5]");
+    const drawn = gate();
     const id = /id="([a-z0-9-]+)"/u.exec(drawn)?.[1] ?? "";
 
     expect(id).not.toBe("");
     expect(drawn).toContain(`aria-labelledby="${id}-title"`);
     expect(drawn).toContain('<ul class="gate-misses" data-gate-misses');
+  });
+
+  it("should refuse a gate on a board that asks no quiz question", () => {
+    // "0 of 0 answered so far" beside a merge verdict reads as a merge that was
+    // considered, and the runtime's own count is all that stands between that
+    // and a gate reporting itself cleared on nobody's answer
+    expect(() => gate(emptyContext())).toThrow(RenderError);
+    expect(() => gate(emptyContext())).toThrow(
+      "sections[5].blocks[5]: a gate scores the quiz questions on its page, and this page asks none",
+    );
   });
 
   it("should name the verdict that is missing, by its own path", () => {
@@ -186,6 +235,7 @@ describe("fn:renderGate", () => {
           { type: "gate" }
         >,
         "sections[5].blocks[5]",
+        pageWith(),
       ),
     ).toThrow("sections[5].blocks[5].fail");
   });

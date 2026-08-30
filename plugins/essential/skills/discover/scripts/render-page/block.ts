@@ -89,7 +89,7 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
     case "deviations":
       return renderDeviations(block, path);
     case "gate":
-      return renderGate(block, path);
+      return renderGate(block, path, page);
     case "tradeoffs":
       return renderTradeoffs(block, path);
     case "kanban":

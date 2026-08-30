@@ -58,12 +58,14 @@ and its blocks to fit the action.
 
 Together, the fifteen action examples and four convention boards
 (specimen-board, board-hub, architecture-board, triage-board) must cover the
-complete reusable pattern catalog. Use the
+complete reusable pattern catalog — fifteen against fourteen mode rows because
+build-journal is authored rather than chosen, as above. Use the
 [presentation coverage map](presentation/coverage.md) to see which action owns
 each demonstration. This is suite-level coverage: generated pages still select
-only the components that improve their task-specific UX. The complete validator
-checks both catalog coverage and minimum semantic structure for every action;
-neither check substitutes for rendered review.
+only the components that improve their task-specific UX. Neither is checked
+mechanically beyond `examples.spec.ts`, which renders the whole run, ties this
+table to it board by board, and refuses a block type that reaches no board;
+rendered review is what judges whether an action is complete.
 
 ## Variable length, modular sources
 

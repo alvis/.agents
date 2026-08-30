@@ -41,9 +41,14 @@ function renderOption(
     ? `<span class="quiz-because">${escapeHtml(because)}</span>`
     : "";
 
+  // the question's own id, unprefixed, because that is what every other
+  // question names its controls with. A name is what groups radios, and the
+  // ids are already unique page-wide within the question group — prefixing one
+  // kind and not the others put a quiz `x` and a choice `q-x` in one group,
+  // where each answer silently erased the other and the reply lost a line
   return [
     correct,
-    `<label class="quiz-option"><input type="radio" name="q-${escapeHtml(name)}" value="${escapeHtml(value)}"${correct ? " data-correct" : ""} /><span class="quiz-value">${escapeHtml(value)}</span>${note}</label>`,
+    `<label class="quiz-option"><input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(value)}"${correct ? " data-correct" : ""} /><span class="quiz-value">${escapeHtml(value)}</span>${note}</label>`,
   ];
 }
 
@@ -93,29 +98,39 @@ export function renderQuiz(
 /**
  * draws the merge verdict every quiz question on the page feeds.
  *
- * it ships in the unanswered state rather than being built by the runtime, so
- * a board read with scripting off says plainly that the questions decide
- * whether to merge instead of showing an empty box where a verdict goes. The
- * progress line carries no count for the same reason: a static `0 of 4` is a
- * number that is wrong the moment anybody answers and cannot be corrected.
+ * it ships unscored rather than unanswered, with both verdicts hidden and the
+ * progress line saying why. Shipping the "not yet" verdict visible told a
+ * reader with scripting off that the merge was blocked — and that reader can
+ * answer every question, because the sheet reveals each rationale with no
+ * script at all, so the page was stating a settled verdict nobody computed.
+ * The line carries no count for the same reason: a static `0 of 4` is a number
+ * that is wrong the moment anybody answers and cannot be corrected.
  * @param block the gate block
  * @param path JSON path of `block`, named verbatim by any refusal
+ * @param page what the block is rendered into, which knows what it asks
  * @returns the gate as HTML
  */
 export function renderGate(
   block: Extract<Block, { type: "gate" }>,
   path: string,
+  page: PageContext,
 ): string {
   requireObject<Block>(block, path);
+  // a gate with nothing to score reported "0 of 0 answered so far" beside an
+  // unhidden "not yet", which reads as a merge that was considered and refused
+  if (!page.quizzed)
+    throw new RenderError(
+      `${path}: a gate scores the quiz questions on its page, and this page asks none`,
+    );
   const id = slugOf(path, "gate");
   const title = requireString(block.title, `${path}.title`);
 
   return [
-    `<div class="gate" id="${id}" data-gate data-gate-state="open">`,
+    `<div class="gate" id="${id}" data-gate data-gate-state="unscored">`,
     `<h4 class="gate-title" id="${id}-title">${escapeHtml(title)}</h4>`,
-    `<p class="gate-progress" data-gate-progress role="status">Answer every question above to see where this stands.</p>`,
+    `<p class="gate-progress" data-gate-progress role="status">Scoring needs JavaScript. With it off, check your own answers against the sections each one cites.</p>`,
     `<div class="gate-verdict" data-gate-pass hidden>${renderInline(block.pass, `${path}.pass`)}</div>`,
-    `<div class="gate-verdict" data-gate-fail>${renderInline(block.fail, `${path}.fail`)}</div>`,
+    `<div class="gate-verdict" data-gate-fail hidden>${renderInline(block.fail, `${path}.fail`)}</div>`,
     `<ul class="gate-misses" data-gate-misses aria-labelledby="${id}-title"></ul>`,
     `</div>`,
   ].join("");

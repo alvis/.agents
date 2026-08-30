@@ -36,6 +36,17 @@ export interface PageContext {
    */
   sections: Set<string>;
   /**
+   * whether the board asks any quiz question at all, read from the data
+   * before any of it is drawn.
+   *
+   * a gate is a verdict over the quiz questions on its page, and one with none
+   * to score is a merge nobody was ever asked about. Read from the data for
+   * the same reason `sections` is: a gate is drawn last and the questions it
+   * scores sit above it, so a set filled as the page renders would answer this
+   * correctly only by accident of order.
+   */
+  quizzed: boolean;
+  /**
    * every board of the run, when this board was rendered as part of one.
    *
    * a hub indexes it and every board lists it; a board rendered on its own
@@ -53,6 +64,7 @@ export function emptyContext(): PageContext {
     ids: freshIds(),
     files: {},
     id: "page",
+    quizzed: false,
     sections: new Set(),
   };
 }

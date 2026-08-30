@@ -70,10 +70,9 @@ export async function renderFile(
     ...(excerpts.length ? [CODE_CSS] : []),
     ...(usesBlock(data, "observations") ? [OBSERVATION_CSS] : []),
     ...(usesBlock(data, "deviations") ? [DEVIATION_CSS] : []),
-    // either block, because a gate without questions is still a gate and a
-    // question without a gate is still asked; a board holding one and not the
-    // other would otherwise draw it unstyled
-    ...(usesBlock(data, "quiz") || usesBlock(data, "gate") ? [QUIZ_CSS] : []),
+    // the gate rides on the question: `renderGate` refuses a page that asks
+    // none, so a board holding a gate holds a quiz and one test covers both
+    ...(usesBlock(data, "quiz") ? [QUIZ_CSS] : []),
   ].join("\n\n");
   const html = renderPage(data, { ...assets, css, files, mermaid });
   await mkdir(dirname(outPath), { recursive: true });
