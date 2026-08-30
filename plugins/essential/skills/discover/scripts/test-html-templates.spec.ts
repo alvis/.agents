@@ -1,10 +1,12 @@
-import { join } from "node:path";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { runBun } from "./test-support.ts";
+import { removeDirectory, runBun, temporaryDirectory } from "./test-support.ts";
 
 const scripts = import.meta.dirname;
+const discover = resolve(scripts, "..");
 const validator = join(scripts, "test-html-templates.ts");
 
 describe("presentation validator", () => {
@@ -15,13 +17,36 @@ describe("presentation validator", () => {
     expect(invalid.exitCode).toBe(2);
     expect(invalid.stdout).toBe("");
   });
-  it("should validate deterministically without network access", () => {
-    const dead = {
-      ALL_PROXY: "http://127.0.0.1:9",
-      HTTP_PROXY: "http://127.0.0.1:9",
-      HTTPS_PROXY: "http://127.0.0.1:9",
-    };
-    const result = runBun(validator, ["--stage=complete"], dead);
-    expect(result).toMatchObject({ exitCode: 0, stderr: "" });
-  });
+  it.each([false, true])(
+    "should skip an unavailable network with partial runtime caches=%s",
+    async (tailwindOnly) => {
+      const root = await temporaryDirectory();
+      try {
+        const isolated = join(root, "discover");
+        await cp(discover, isolated, { recursive: true });
+        const vendor = join(isolated, "assets/html/vendor");
+        await rm(vendor, { force: true, recursive: true });
+        if (tailwindOnly) {
+          await mkdir(vendor, { recursive: true });
+          await writeFile(
+            join(vendor, "tailwind-browser.cache.js"),
+            "/* deterministic @tailwindcss/browser test runtime */",
+          );
+        }
+        const dead = {
+          ALL_PROXY: "http://127.0.0.1:9",
+          HTTP_PROXY: "http://127.0.0.1:9",
+          HTTPS_PROXY: "http://127.0.0.1:9",
+        };
+        const result = runBun(
+          join(isolated, "scripts/test-html-templates.ts"),
+          ["--stage=complete"],
+          dead,
+        );
+        expect(result).toMatchObject({ exitCode: 0, stderr: "" });
+      } finally {
+        await removeDirectory(root);
+      }
+    },
+  );
 });

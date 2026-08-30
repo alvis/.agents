@@ -271,16 +271,12 @@ describe("rule module loading", () => {
     const write = vi
       .spyOn(process.stderr, "write")
       .mockImplementation(() => true);
-    try {
-      expect((await loadRules(directory)).map((rule) => rule.id)).toEqual([
-        "ok-rule",
-      ]);
-      expect(write).toHaveBeenCalledWith(
-        expect.stringContaining("failed to load rule module boom"),
-      );
-    } finally {
-      write.mockRestore();
-    }
+    expect((await loadRules(directory)).map((rule) => rule.id)).toEqual([
+      "ok-rule",
+    ]);
+    expect(write).toHaveBeenCalledWith(
+      expect.stringContaining("failed to load rule module boom"),
+    );
   });
 });
 

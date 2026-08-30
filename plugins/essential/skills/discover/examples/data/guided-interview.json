@@ -46,17 +46,46 @@
             {
               "value": "Accept, then finalize",
               "summary": "Return a job ID, expose progress, and notify when the immutable invoice is ready.",
-              "recommended": true
+              "tags": [
+                "Architectural",
+                "Recommended"
+              ],
+              "pros": [
+                "Invoice size stops being a correctness risk.",
+                "Progress and failure become things the caller can see."
+              ],
+              "cons": [
+                "The caller must poll or subscribe rather than read one response."
+              ]
             },
             {
               "value": "Complete in request",
-              "summary": "Simpler state model, but large invoices can exceed the gateway limit."
+              "summary": "Simpler state model, but large invoices can exceed the gateway limit.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "One request, one answer, no job state to model."
+              ],
+              "cons": [
+                "A large invoice times out at the gateway, and the caller cannot tell a timeout from a failure."
+              ]
             },
             {
               "value": "Split the boundary",
-              "summary": "Commit accounting now; render the PDF and send email later."
+              "summary": "Commit accounting now; render the PDF and send email later.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "The money is correct the moment the request returns."
+              ],
+              "cons": [
+                "Two success states to explain, and a window where the invoice exists but is not deliverable."
+              ]
             }
-          ]
+          ],
+          "recommendation": "Accept, then finalize. It is the only option where a large invoice fails visibly instead of timing out at the gateway, and finalization is already slow enough that the caller cannot be held for it."
         },
         {
           "type": "scale",
@@ -154,17 +183,46 @@
             {
               "value": "Client finalization key",
               "summary": "Survives request and worker retries; one key owns every effect.",
-              "recommended": true
+              "tags": [
+                "Architectural",
+                "Recommended"
+              ],
+              "pros": [
+                "One identity covers the request retry and the worker retry alike.",
+                "The client can retry safely without asking whether the first attempt landed."
+              ],
+              "cons": [
+                "Every caller must generate and persist the key, which is a client-side contract to police."
+              ]
             },
             {
               "value": "Invoice + revision",
-              "summary": "Rejects stale retries but makes every edit a new operation."
+              "summary": "Rejects stale retries but makes every edit a new operation.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "Derived from data we already hold, so no client change is needed."
+              ],
+              "cons": [
+                "An edit during a retry window becomes a second operation rather than a duplicate."
+              ]
             },
             {
               "value": "Server job ID",
-              "summary": "Deduplicates workers, not duplicate submissions before a job exists."
+              "summary": "Deduplicates workers, not duplicate submissions before a job exists.",
+              "tags": [
+                "Workaround"
+              ],
+              "pros": [
+                "Entirely server-side; nothing to coordinate with callers."
+              ],
+              "cons": [
+                "Cannot suppress the duplicate that matters most — two submissions before any job exists."
+              ]
             }
-          ]
+          ],
+          "recommendation": "The client finalization key. It is the only one of the three that suppresses a duplicate submitted before any job exists, which is the case that actually double-charges a customer."
         },
         {
           "type": "checklist",
@@ -231,17 +289,46 @@
             {
               "value": "30-day replay, 7-year audit",
               "summary": "Separates the executable payload's retention from the financial evidence.",
-              "recommended": true
+              "tags": [
+                "Ideal",
+                "Recommended"
+              ],
+              "pros": [
+                "Keeps the audit obligation without keeping the sensitive payload that satisfies no rule.",
+                "Thirty days covers every replay we have actually needed."
+              ],
+              "cons": [
+                "Two retention policies to implement and to keep honest."
+              ]
             },
             {
               "value": "Full-period replay",
-              "summary": "Maximum recoverability with a much larger sensitive-data surface."
+              "summary": "Maximum recoverability with a much larger sensitive-data surface.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "Any invoice in the audit window can be reconstructed exactly."
+              ],
+              "cons": [
+                "Seven years of executable payloads is a breach surface with no matching obligation."
+              ]
             },
             {
               "value": "Automatic retry only",
-              "summary": "Lowest operator surface; unresolved partial failures require engineering."
+              "summary": "Lowest operator surface; unresolved partial failures require engineering.",
+              "tags": [
+                "Workaround"
+              ],
+              "pros": [
+                "Nothing sensitive is retained beyond the retry window."
+              ],
+              "cons": [
+                "Every unresolved partial failure escalates to an engineer, permanently."
+              ]
             }
-          ]
+          ],
+          "recommendation": "Thirty-day replay with a seven-year audit trail. The long window is a legal obligation on the financial evidence, not on the executable payload, and keeping the payload for seven years buys a breach surface that no regulation asks for."
         },
         {
           "type": "scale",
@@ -288,17 +375,45 @@
             {
               "value": "Split by consequence",
               "summary": "Billing owns stuck or incorrect invoices; platform owns queue saturation and delivery availability.",
-              "recommended": true
+              "tags": [
+                "Architectural",
+                "Recommended"
+              ],
+              "pros": [
+                "Each page reaches the team that can actually fix that symptom."
+              ],
+              "cons": [
+                "The handoff between the two owners has to be written down, or an incident falls between them."
+              ]
             },
             {
               "value": "Billing owns everything",
-              "summary": "One accountable owner, including queue-level symptoms."
+              "summary": "One accountable owner, including queue-level symptoms.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "No handoff to negotiate and no ambiguity about who is accountable."
+              ],
+              "cons": [
+                "Billing is paged for queue saturation it has neither the access nor the expertise to resolve."
+              ]
             },
             {
               "value": "Platform owns everything",
-              "summary": "Centralizes operations, but detaches invoice correctness from its domain owner."
+              "summary": "Centralizes operations, but detaches invoice correctness from its domain owner.",
+              "tags": [
+                "Workaround"
+              ],
+              "pros": [
+                "One on-call rota to staff, with the infrastructure access already in place."
+              ],
+              "cons": [
+                "The team paged for a wrong invoice is the one team that cannot judge whether it is wrong."
+              ]
             }
-          ]
+          ],
+          "recommendation": "Split by consequence. A healthy queue carrying wrong invoices is a billing problem wearing a platform symptom, and only billing can tell that the number is wrong — so pick the split and pay for it by writing the handoff down explicitly."
         },
         {
           "type": "note",
@@ -434,6 +549,6 @@
   ],
   "reply": {
     "heading": "Generated reply",
-    "template": "Guided interview — invoice finalization\n\nAnswers, in the order the page asks them:\n\n{{answers}}\n\nAnything marked (unanswered) is an open question, not a default. Do not resolve it by picking the recommended option."
+    "template": "Guided interview — invoice finalization\n\nAnswers, in the order the page asks them:\n\n{{summary}}\n\n{{answers}}\n\nAnything under “Not yet marked” is an open question, not a default. Do not resolve it by picking the recommended option."
   }
 }

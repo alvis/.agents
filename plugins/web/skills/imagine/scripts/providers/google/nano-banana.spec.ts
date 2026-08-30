@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { BunFile } from "bun";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sharpHarness = vi.hoisted(() => {
@@ -46,28 +47,23 @@ import {
 
 const roots: string[] = [];
 
-function fakeBun(path: string): Blob {
-  return new Blob([readFileSync(path)], { type: "image/png" });
+/** stands in for `Bun.file`, whose real reader is a Bun runtime handle. */
+function fakeFile(path: string): BunFile {
+  return new Blob([readFileSync(path)], {
+    type: "image/png",
+  }) as Partial<BunFile> as BunFile;
 }
 
 beforeEach(() => {
-  vi.stubGlobal("Bun", { file: fakeBun });
+  vi.spyOn(Bun, "file").mockImplementation((path) => fakeFile(String(path)));
   googleConstructorError = undefined;
-  sharpHarness.pipeline.flatten
-    .mockReset()
-    .mockReturnValue(sharpHarness.pipeline);
-  sharpHarness.pipeline.toFormat
-    .mockReset()
-    .mockReturnValue(sharpHarness.pipeline);
-  sharpHarness.pipeline.toBuffer
-    .mockReset()
-    .mockResolvedValue(Uint8Array.from([6, 5, 4]));
-  sharpHarness.entry.mockReset().mockReturnValue(sharpHarness.pipeline);
+  sharpHarness.pipeline.flatten.mockReturnValue(sharpHarness.pipeline);
+  sharpHarness.pipeline.toFormat.mockReturnValue(sharpHarness.pipeline);
+  sharpHarness.pipeline.toBuffer.mockResolvedValue(Uint8Array.from([6, 5, 4]));
+  sharpHarness.entry.mockReturnValue(sharpHarness.pipeline);
 });
 
 afterEach(async () => {
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
   for (const root of roots.splice(0))
     await rm(root, { recursive: true, force: true });
 });
@@ -253,12 +249,9 @@ describe("Google image generation", () => {
       .spyOn(process.stderr, "write")
       .mockImplementation(() => true);
     const sleeps: number[] = [];
-    vi.stubGlobal("Bun", {
-      file: fakeBun,
-      sleep: (ms: number) => {
-        sleeps.push(ms);
-        return Promise.resolve();
-      },
+    vi.spyOn(Bun, "sleep").mockImplementation((ms) => {
+      sleeps.push(ms as number);
+      return Promise.resolve();
     });
     const provider = new NanoBananaProvider();
 

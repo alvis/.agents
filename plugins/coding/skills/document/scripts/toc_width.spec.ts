@@ -170,7 +170,6 @@ describe("TOC width enforcement", () => {
       .mockImplementation(() => undefined);
     expect(run(["--", "--unknown"])).toBe(0);
     expect(error).toHaveBeenCalledWith("skip (not a file): --unknown");
-    error.mockRestore();
   });
 
   it.each(["-1", "-.1", "-١"])(
@@ -245,6 +244,5 @@ describe("TOC width enforcement", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     expect(run(["--line=short"])).toBe(0);
     expect(log).toHaveBeenCalledWith("5\tOK\tshort");
-    log.mockRestore();
   });
 });

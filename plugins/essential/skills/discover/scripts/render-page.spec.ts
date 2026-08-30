@@ -3,16 +3,59 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { RenderError, main, renderPage } from "./render-page.ts";
+import { buildAssets } from "./render-page/assets.ts";
+import { main } from "./render-page/cli.ts";
+import { RenderError } from "./render-page/error.ts";
+import { renderPage } from "./render-page/page.ts";
+import { CHOICE_TAGS } from "./render-page/types.ts";
 import { removeDirectory, temporaryDirectory } from "./test-support.ts";
 
-import type { Block, PageData } from "./render-page.ts";
+import type { Block, Choice, PageData } from "./render-page/types.ts";
 
 const discover = resolve(import.meta.dirname, "..");
 const dataPath = join(discover, "examples/data/ranked-options.json");
 
+// bundling costs about as much as the rest of the file put together, so it
+// happens once here rather than once a test
+const assets = await buildAssets();
+
+/**
+ * renders a page with the assets the command line would have built.
+ *
+ * `renderPage` takes its stylesheet and scripts as data, so every call has to
+ * supply them; naming that once keeps each test reading as the behaviour under
+ * test rather than as asset plumbing.
+ * @param data the page to render
+ * @returns the rendered document
+ */
+function render(data: PageData): string {
+  return renderPage(data, assets);
+}
+
 async function loadExample(): Promise<PageData> {
   return JSON.parse(await readFile(dataPath, "utf8")) as PageData;
+}
+
+/**
+ * reads the runtime the page carries.
+ *
+ * a page holds two scripts — the scheme boot in the head and the runtime at
+ * the end of the body — so a test that wants the runtime must say which, or it
+ * silently asserts against the wrong one.
+ * @param html the rendered page
+ * @returns the last script's body
+ */
+function runtimeOf(html: string): string {
+  return [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)?.[1] ?? "";
+}
+
+/**
+ * reads the page's authored markup, with every script left out
+ * @param html the rendered page
+ * @returns the body up to the runtime
+ */
+function markupOf(html: string): string {
+  return html.slice(html.indexOf("<body"), html.lastIndexOf("<script>"));
 }
 
 /** builds a minimal valid page, overridden per test. */
@@ -27,6 +70,108 @@ function page(overrides: Partial<PageData> = {}): PageData {
     reply: { heading: "Generated reply", template: "{{answers}}" },
     ...overrides,
   };
+}
+
+/**
+ * builds a page holding one `choice` block, so a tag, trade-off, or
+ * recommendation assertion reads against a single known question
+ */
+function choicePage(
+  choice: Choice,
+  overrides: Partial<Extract<Block, { type: "choice" }>> = {},
+): PageData {
+  return page({
+    sections: [
+      {
+        id: "s",
+        label: "S",
+        title: "T",
+        blocks: [
+          { type: "choice", id: "c", label: "C", ask: "A", choices: [choice], ...overrides },
+        ],
+      },
+    ],
+  });
+}
+
+/**
+ * every option label belonging to a `choice` question. The `checklist` branch
+ * emits `<label class="choice">` too, so scoping to the fieldset kind is what
+ * stops a checklist option — which carries neither attribute — from silently
+ * satisfying the pairing assertion below.
+ */
+function choiceLabels(html: string): string[] {
+  return [
+    ...html.matchAll(
+      /<fieldset class="question" data-question data-question-kind="choice"[\s\S]*?<\/fieldset>/g,
+    ),
+  ].flatMap((fieldset) =>
+    [...fieldset[0].matchAll(/<label class="choice">[\s\S]*?<\/label>/g)].map(
+      (match) => match[0],
+    ),
+  );
+}
+
+/** reads one attribute off a label's radio, or `undefined` when unset. */
+function inputAttribute(label: string, name: string): string | undefined {
+  return new RegExp(`<input[^>]*\\b${name}="([^"]*)"`).exec(label)?.[1];
+}
+
+/** the visible words of a markup fragment, with tags and entities dropped. */
+function words(markup: string): string[] {
+  return markup
+    .replaceAll(/<[^>]+>/g, " ")
+    .replaceAll(/&[a-z]+;|&#\d+;/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/**
+ * models the accessible name a screen reader computes for a radio wrapped in
+ * a label: `aria-label` wins outright, otherwise the whole label is read.
+ * Asserting on this rather than on attribute presence is deliberate — a
+ * presence check passes on a broken pairing, which is the exact regression
+ * this guards.
+ */
+function announcedName(label: string): string[] {
+  const explicit = inputAttribute(label, "aria-label");
+  return explicit === undefined ? words(label) : words(explicit);
+}
+
+/**
+ * resolves an `aria-describedby` id to the element carrying it, so a test can
+ * read what the description actually announces
+ */
+function elementById(html: string, id: string): string {
+  const start = html.indexOf(`id="${id}"`);
+  if (start === -1) throw new Error(`no element carries id ${id}`);
+  // both description targets are spans, so walk to the matching close tag
+  let cursor = html.indexOf(">", start) + 1;
+  let depth = 1;
+  while (depth > 0) {
+    const open = html.indexOf("<span", cursor);
+    const close = html.indexOf("</span>", cursor);
+    if (close === -1) throw new Error(`id ${id} is never closed`);
+    if (open !== -1 && open < close) {
+      depth = depth + 1;
+      cursor = open + 5;
+    } else {
+      depth = depth - 1;
+      cursor = close + 7;
+    }
+  }
+  return html.slice(start, cursor);
+}
+
+/** the full description a radio's `aria-describedby` resolves to. */
+function announcedDescription(html: string, label: string): string {
+  const target = inputAttribute(label, "aria-describedby");
+  return target === undefined
+    ? ""
+    : target
+        .split(" ")
+        .map((id) => words(elementById(html, id)).join(" "))
+        .join(" ");
 }
 
 /** extracts the one inlined stylesheet from an emitted page. */
@@ -46,7 +191,7 @@ function declarations(css: string): string[] {
 
 describe("fn:renderPage", () => {
   it("should emit a self-contained page with no external resource", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
 
     // SC-1: nothing on the page may be fetched over the network
     expect(html).not.toMatch(/<link\b[^>]*rel=["']?stylesheet/i);
@@ -57,7 +202,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should render each section title directly above its content", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const heading = html.indexOf('<div class="section-heading">');
     const body = html.indexOf('<div class="section-body">');
 
@@ -72,7 +217,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should reserve no fixed horizontal space beside the reading column", async () => {
-    const css = stylesheet(renderPage(await loadExample()));
+    const css = stylesheet(render(await loadExample()));
 
     // SC-3: the column is capped and centred, so it cannot narrow as the
     // viewport widens. Geometry itself is browser-measured, not asserted here.
@@ -96,7 +241,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should cap prose to a readable measure and leave tables the full column", async () => {
-    const css = stylesheet(renderPage(await loadExample()));
+    const css = stylesheet(render(await loadExample()));
     const prose = /\.prose\{[^}]*max-width:\s*(\d+)ch/.exec(css);
 
     // SC-3: recovered width goes to tables, never to prose
@@ -115,11 +260,14 @@ describe("fn:renderPage", () => {
   });
 
   it("should collapse the drawer to a status bar carrying the unanswered count", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const data = await loadExample();
     const questions = data.sections.flatMap((section) =>
       section.blocks.filter(
-        (block: Block) => block.type === "choice" || block.type === "note",
+        (block: Block) =>
+          block.type === "choice" ||
+          block.type === "note" ||
+          block.type === "decision",
       ),
     );
     const toggle = /<button\b[^>]*data-drawer-toggle[^>]*>/.exec(html)?.[0];
@@ -149,7 +297,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should give the collapsed bar's whole height to the control that opens it", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const css = stylesheet(html);
     const bar = /\.drawer-bar\{([^}]*)\}/.exec(css)?.[1] ?? "";
     const toggle = /\.drawer-toggle\{([^}]*)\}/.exec(css)?.[1] ?? "";
@@ -169,9 +317,9 @@ describe("fn:renderPage", () => {
   });
 
   it("should forward a press anywhere on the collapsed bar to that control", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const bar = /<div class="drawer-bar"[^>]*>/.exec(html)?.[0] ?? "";
-    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
+    const script = runtimeOf(html);
 
     // the count sits outside the button, so without this the pill and the
     // strip it occupies stay dead to the pointer
@@ -189,21 +337,25 @@ describe("fn:renderPage", () => {
 
   it("should expand the drawer to navigation, summaries and the reply", async () => {
     const data = await loadExample();
-    const html = renderPage(data);
-    const panel = /<div class="drawer-panel"[\s\S]*?<\/body>/.exec(html)?.[0];
+    const html = render(data);
+    // markup only: the slice stops at the runtime, or every selector the
+    // bundle names would read as panel content
+    const panel = /<div class="drawer-panel"[\s\S]*?<script>/.exec(html)?.[0];
 
     // SC-4: everything the drawer buys back over a bare count
     expect(panel).toMatch(/<nav class="drawer-nav" aria-label="Sections">/);
     for (const section of data.sections)
       expect(panel).toContain(`href="#s-${section.id}">${section.label}</a>`);
     expect(panel).toMatch(/<ul class="summaries" data-summaries>/);
-    expect(panel).toMatch(/<button type="button" class="copy" data-copy>/);
+    // the copy control lives in the collapsed bar, so the reply can be taken
+    // without first opening the drawer to reach it
+    expect(panel).not.toContain("data-copy");
     // the reply is populated before the runtime runs, not left empty
     expect(panel).toMatch(/<pre class="reply"[^>]*>[^<]*Final ranked direction/);
   });
 
   it("should wire the toggle to the panel it controls", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const toggle = /<button\b[^>]*data-drawer-toggle[^>]*>/.exec(html)?.[0] ?? "";
     const controls = /aria-controls="([^"]+)"/.exec(toggle)?.[1];
     const panel = new RegExp(`<div class="drawer-panel" id="${controls}"([^>]*)>`);
@@ -224,7 +376,7 @@ describe("fn:renderPage", () => {
     // set and refused rather than escaped. These fields are free text by
     // design, so escaping is the only thing standing between an author and
     // injected markup — keep this coverage wherever the closed sets grow.
-    const html = renderPage(
+    const html = render(
       page({
         title: 'Quotes "and" <tags>',
         sections: [
@@ -270,7 +422,7 @@ describe("fn:renderPage", () => {
     // an unrecognised verdict draws no .sr-only label and no glyph, so
     // escaping and emitting it degrades SC-6 to colour alone for that cell
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             {
@@ -303,7 +455,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should carry each verdict as text, not by glyph and colour alone", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const css = stylesheet(html);
 
     // SC-6: the ::before glyph is decorative and reaches no screen reader, so
@@ -324,7 +476,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should set no text below the small-type floor", async () => {
-    const css = stylesheet(renderPage(await loadExample()));
+    const css = stylesheet(render(await loadExample()));
     const undersized = [...css.matchAll(/font(?:-size)?:[^;}]*?([\d.]+)rem/g)]
       .map((match) => Number(match[1]))
       .filter((size) => size < 0.72);
@@ -334,7 +486,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should associate the unanswered count with the control", async () => {
-    const html = renderPage(await loadExample());
+    const html = render(await loadExample());
     const toggle = /<button\b[^>]*data-drawer-toggle[^>]*>/.exec(html)?.[0] ?? "";
     const describedBy = /aria-describedby="([^"]+)"/.exec(toggle)?.[1];
 
@@ -347,7 +499,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should render optional block fields as absent without emitting empties", () => {
-    const html = renderPage(
+    const html = render(
       page({
         sections: [
           {
@@ -371,21 +523,237 @@ describe("fn:renderPage", () => {
       }),
     );
 
-    // a choice without summary or recommended draws neither element
+    // a choice without summary, tags, pros/cons, or a recommendation draws
+    // none of those elements rather than an empty shell of each
     expect(html).not.toContain("<small>");
     expect(html).not.toContain('class="badge"');
+    expect(html).not.toContain('class="badges"');
+    expect(html).not.toContain('class="tradeoffs"');
+    expect(html).not.toContain('class="recommendation"');
     // a note without a placeholder still emits a valid empty attribute
     expect(html).toContain('placeholder=""');
     // the masthead has no meta here, so no metric strip precedes the sections
     expect(html).not.toMatch(/<\/p>\s*<dl class="metrics">/);
     // both questions still reach the count and the pre-rendered reply
     expect(html).toContain(">2 unanswered<");
-    expect(html).toContain("- C: (unanswered)");
-    expect(html).toContain("- N: (unanswered)");
+    expect(html).toContain("- **C:** unanswered");
+    expect(html).toContain("- **N:** unanswered");
+  });
+
+  it.each([...CHOICE_TAGS])("should draw the %s tag as a badge", (tag) => {
+    const html = render(choicePage({ value: "only", tags: [tag] }));
+
+    expect(html).toContain(`<span class="badge" data-tag="${tag}">${tag}</span>`);
+    expect(html).toMatch(/<span class="badges" id="[^"]+"><span class="badge"/);
+  });
+
+  it("should draw every tag of a choice in the order given", () => {
+    const html = render(
+      choicePage({ value: "only", tags: ["Pragmatic", "Recommended"] }),
+    );
+
+    // questions.md asks for every applicable tag, so they are a list rather
+    // than the single winner the old boolean could express
+    expect(html).toContain(
+      '<span class="badge" data-tag="Pragmatic">Pragmatic</span><span class="badge" data-tag="Recommended">Recommended</span></span>',
+    );
+  });
+
+  it("should refuse a tag outside the vocabulary naming the offending field", () => {
+    expect(() =>
+      render(
+        choicePage({ value: "only", tags: ["Blessed" as never] }),
+      ),
+    ).toThrow(
+      new RenderError(
+        'sections[0].blocks[0].choices[0].tags[0]: required one of "Architectural", "Ideal", "Recommended", "Pragmatic", "Hotfix", "Workaround", received "Blessed"',
+      ),
+    );
+  });
+
+  it("should refuse an empty tag list rather than drawing an empty badge row", () => {
+    expect(() =>
+      render(choicePage({ value: "only", tags: [] })),
+    ).toThrow(
+      new RenderError(
+        "sections[0].blocks[0].choices[0].tags: required non-empty array, received []",
+      ),
+    );
+  });
+
+  it("should draw pros and cons as labelled runs inside the choice label", () => {
+    const html = render(
+      choicePage({
+        value: "only",
+        pros: ["Cheap to reverse", "No new vendor"],
+        cons: ["Slower first release"],
+      }),
+    );
+
+    expect(html).toContain(
+      '<span class="tradeoffs"><span class="tradeoff" data-tradeoff="pros"><span class="tradeoff-label">Pros</span><span class="tradeoff-item">Cheap to reverse</span><span class="tradeoff-item">No new vendor</span></span><span class="tradeoff" data-tradeoff="cons"><span class="tradeoff-label">Cons</span><span class="tradeoff-item">Slower first release</span></span></span>',
+    );
+    // <label> admits phrasing content only, so a <ul> here is invalid HTML.
+    // It would still parse as a child of the label rather than being moved,
+    // so this guards spec conformance, not the click target
+    const label = /<label class="choice">[\s\S]*?<\/label>/.exec(html)?.[0];
+    expect(label).toContain('class="tradeoffs"');
+    expect(label).not.toContain("<ul");
+  });
+
+  it("should draw one side of a trade-off when only that side is given", () => {
+    const html = render(
+      choicePage({ value: "only", cons: ["Hard to undo"] }),
+    );
+
+    expect(html).toContain('data-tradeoff="cons"');
+    expect(html).not.toContain('data-tradeoff="pros"');
+  });
+
+  it("should refuse a non-string trade-off clause naming the offending field", () => {
+    expect(() =>
+      render(choicePage({ value: "only", pros: [7 as never] })),
+    ).toThrow(
+      new RenderError(
+        "sections[0].blocks[0].choices[0].pros[0]: required non-empty string, received 7",
+      ),
+    );
+  });
+
+  it("should state the recommendation and its reason after the choices", () => {
+    const html = render(
+      choicePage(
+        { value: "only", tags: ["Recommended"] },
+        {
+          recommendation:
+            "Producer adapter, because it is the only option we can reverse inside one sprint.",
+        },
+      ),
+    );
+
+    // the badge says which; questions.md also wants the why, and the why is
+    // a property of the question rather than of any single answer, so it sits
+    // after the grid rather than inside one label
+    expect(html).toContain(
+      '</div><p class="recommendation"><span class="recommendation-label">Recommendation</span> Producer adapter, because it is the only option we can reverse inside one sprint.</p></fieldset>',
+    );
+  });
+
+  it("should escape a recommendation rather than emitting its markup", () => {
+    const html = render(
+      choicePage({ value: "only" }, { recommendation: '<b>a</b>&"' }),
+    );
+
+    expect(html).toContain("&lt;b&gt;a&lt;/b&gt;&amp;&quot;");
+    expect(html).not.toContain("<b>a</b>");
+  });
+
+  it("should refuse a non-string recommendation naming the offending field", () => {
+    expect(() =>
+      render(choicePage({ value: "only" }, { recommendation: 7 as never })),
+    ).toThrow(
+      new RenderError(
+        "sections[0].blocks[0].recommendation: required non-empty string, received 7",
+      ),
+    );
+  });
+
+  it("should announce a choice option as its title alone", async () => {
+    const html = render(await loadExample());
+
+    // the label wraps the radio, so before the name/description split the
+    // whole card was the accessible name — 38 words on the first option
+    const named = choiceLabels(html).map((label) => ({
+      value: inputAttribute(label, "value"),
+      announced: announcedName(label).join(" "),
+    }));
+
+    expect(named).not.toStrictEqual([]);
+    for (const option of named) expect(option.announced).toBe(option.value);
+    // measured, not assumed: no option's name exceeds its own title length
+    expect(Math.max(...named.map((o) => o.announced.split(" ").length))).toBeLessThanOrEqual(4);
+  });
+
+  it("should keep the trade-offs announced as the option's description", async () => {
+    const html = render(await loadExample());
+    const first = choiceLabels(html)[0];
+    const description = announcedDescription(html, first);
+
+    // aria-label alone would shorten the name by hiding this text entirely,
+    // trading a verbosity bug for information loss; the description is what
+    // keeps summary, pros, cons, and tags reachable
+    expect(description).toContain("Preserve as the reversible baseline.");
+    expect(description).toContain("Pros");
+    expect(description).toContain("Reversible by one switch, inside a single sprint.");
+    expect(description).toContain("Cons");
+    expect(description).toContain("Leaves translation logic in the producer");
+    expect(description).toContain("Pragmatic");
+    expect(description).toContain("Recommended");
+  });
+
+  it.each([
+    "ranked-options",
+    "guided-interview",
+    "risk-context-report",
+    "architecture-board",
+  ])("should pair name and description on every %s option", async (kind) => {
+    const data = JSON.parse(
+      await readFile(join(discover, `examples/data/${kind}.json`), "utf8"),
+    ) as PageData;
+    const html = render(data);
+
+    for (const label of choiceLabels(html)) {
+      const named = inputAttribute(label, "aria-label") !== undefined;
+      const described = inputAttribute(label, "aria-describedby") !== undefined;
+      // every sample option carries a summary and tags, so all of them are
+      // expected to be described; a bare option is covered separately below
+      expect(described).toBe(true);
+      // neither attribute ships without the other; a lone aria-label is the
+      // information-loss failure, a lone describedby leaves the name bloated
+      expect(named).toBe(described);
+      // every id the description points at must actually resolve
+      if (described) expect(announcedDescription(html, label)).not.toBe("");
+    }
+  });
+
+  it("should leave a bare option unlabelled rather than describing nothing", () => {
+    const html = render(choicePage({ value: "only" }));
+    const [label] = choiceLabels(html);
+
+    // with no summary, tags, or trade-offs the label is already just the
+    // title, so both attributes would be noise
+    expect(inputAttribute(label, "aria-label")).toBeUndefined();
+    expect(inputAttribute(label, "aria-describedby")).toBeUndefined();
+    expect(announcedName(label).join(" ")).toBe("only");
+  });
+
+  it.each([
+    "ranked-options",
+    "guided-interview",
+    "risk-context-report",
+    "architecture-board",
+  ])("should back every class %s emits with a rule", async (kind) => {
+    const data = JSON.parse(
+      await readFile(join(discover, `examples/data/${kind}.json`), "utf8"),
+    ) as PageData;
+    const html = render(data);
+    const css = stylesheet(html);
+
+    // there is no lint and no type check in this repository, so a class that
+    // is emitted but never styled has nothing else to catch it; the page
+    // simply renders unstyled in front of the reader
+    const emitted = [...html.matchAll(/class="([^"]+)"/g)].flatMap((match) =>
+      match[1].split(" "),
+    );
+    const unstyled = [...new Set(emitted)].filter(
+      (name) => !css.includes(`.${name}`),
+    );
+
+    expect(unstyled).toStrictEqual([]);
   });
 
   it("should render a section without an eyebrow as a bare number", () => {
-    const html = renderPage(
+    const html = render(
       page({
         sections: [
           { id: "s", label: "S", title: "T", blocks: [] },
@@ -400,26 +768,28 @@ describe("fn:renderPage", () => {
 
   it("should refuse an unknown block type naming its path", () => {
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             {
               id: "s",
               label: "S",
               title: "T",
-              blocks: [{ type: "timeline" } as never],
+              // deliberately not a name the vocabulary is likely to grow
+              // into: this fixture named "timeline" until timeline shipped
+              blocks: [{ type: "hologram" } as never],
             },
           ],
         }),
       ),
     ).toThrow(
-      new RenderError('sections[0].blocks[0].type: unknown block type "timeline"'),
+      new RenderError('sections[0].blocks[0].type: unknown block type "hologram"'),
     );
   });
 
   it("should refuse a missing required field naming its path", () => {
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             { id: "s", label: "S", title: undefined as never, blocks: [] },
@@ -432,7 +802,7 @@ describe("fn:renderPage", () => {
   });
 
   it("should refuse an unsupported kind naming the offending field", () => {
-    expect(() => renderPage(page({ kind: "triage-board" as never }))).toThrow(
+    expect(() => render(page({ kind: "triage-board" as never }))).toThrow(
       new RenderError(
         'kind: required one of "ranked-options", "guided-interview", "risk-context-report", "architecture-board", received "triage-board"',
       ),
@@ -490,13 +860,13 @@ describe("fn:renderPage kinds", () => {
     "risk-context-report",
     "architecture-board",
   ])("should render the %s kind", (kind) => {
-    const html = renderPage(page({ kind } as Partial<PageData>));
+    const html = render(page({ kind } as Partial<PageData>));
 
     expect(html).toContain(`data-kind="${kind}"`);
   });
 
   it("should refuse an unknown kind, naming the field and quoting the value", () => {
-    expect(() => renderPage(page({ kind: "mood-board" } as Partial<PageData>)))
+    expect(() => render(page({ kind: "mood-board" } as Partial<PageData>)))
       .toThrow(
         'kind: required one of "ranked-options", "guided-interview", "risk-context-report", "architecture-board", received "mood-board"',
       );
@@ -506,7 +876,7 @@ describe("fn:renderPage kinds", () => {
     const data = JSON.parse(
       await readFile(join(discover, "examples/data/architecture-board.json"), "utf8"),
     ) as PageData;
-    const html = renderPage(data);
+    const html = render(data);
 
     expect(html).toContain('data-kind="architecture-board"');
     expect(html).toContain('<figure class="diagram"');
@@ -543,7 +913,7 @@ describe("fn:renderPage validation floor", () => {
         columns: ["a", 2 as never],
         rows: [[{ text: "x" }, { text: "y" }]],
       }),
-      "sections[0].blocks[0].columns[1]: required non-empty string, received 2",
+      "sections[0].blocks[0].columns[1]: required a non-empty string or a column object, received 2",
     ],
     [
       "table.rows[r][c].text",
@@ -666,13 +1036,13 @@ describe("fn:renderPage validation floor", () => {
       "sections[0].blocks[0].choices: required non-empty array, received []",
     ],
   ])("should refuse a bad %s naming its path", (_field, overrides, message) => {
-    expect(() => renderPage(page(overrides))).toThrow(new RenderError(message));
+    expect(() => render(page(overrides))).toThrow(new RenderError(message));
   });
 
   it("should refuse a row whose cell count does not match the columns", () => {
     // a ragged row was emitted silently and misaligned every later cell
     expect(() =>
-      renderPage(
+      render(
         page(
           withBlocks({
             type: "table",
@@ -695,7 +1065,7 @@ describe("fn:renderPage validation floor", () => {
     // two questions sharing an id share one radio group, so one answer
     // silently overwrites the other and {{answers}} loses a line
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             {
@@ -729,7 +1099,7 @@ describe("fn:renderPage validation floor", () => {
 
   it("should refuse a duplicate section id naming the second occurrence", () => {
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             { id: "execution", label: "A", title: "A", blocks: [] },
@@ -747,7 +1117,7 @@ describe("fn:renderPage validation floor", () => {
     // space makes href="#s-my id", which silently fails to navigate — a dead
     // link with no error, and SC-5 quietly broken
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [{ id: "my id", label: "A", title: "A", blocks: [] }],
         }),
@@ -761,7 +1131,7 @@ describe("fn:renderPage validation floor", () => {
 
   it("should refuse a question id that is unsafe as a URL fragment", () => {
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             {
@@ -785,7 +1155,7 @@ describe("fn:renderPage validation floor", () => {
     // than the fragment check — it never reaches it. asserted here so the
     // floor stays covered wherever the refusal is actually seated
     expect(() =>
-      renderPage(
+      render(
         page({ sections: [{ id: "", label: "A", title: "A", blocks: [] }] }),
       ),
     ).toThrow(
@@ -800,7 +1170,7 @@ describe("fn:renderPage validation floor", () => {
     // identical malformed ids report the fragment refusal at the *first*
     // occurrence, never a duplicate refusal at the second
     expect(() =>
-      renderPage(
+      render(
         page({
           sections: [
             { id: "a b", label: "A", title: "A", blocks: [] },
@@ -816,7 +1186,7 @@ describe("fn:renderPage validation floor", () => {
   });
 
   it("should still accept ids carrying hyphens and underscores", () => {
-    const html = renderPage(
+    const html = render(
       page({
         sections: [
           {
@@ -839,7 +1209,7 @@ describe("fn:renderPage validation floor", () => {
     // carries; a section and a question may legitimately share an authored
     // name, so the rendered DOM ids must be prefixed apart — otherwise a
     // note's `for` would resolve to the section and lose its label
-    const html = renderPage(
+    const html = render(
       page({
         sections: [
           {
@@ -863,7 +1233,7 @@ describe("fn:renderPage validation floor", () => {
   });
 
   it("should keep an authored id off the drawer's own chrome ids", () => {
-    const html = renderPage(
+    const html = render(
       page({
         sections: [
           {
@@ -927,11 +1297,18 @@ const NEW_BLOCKS = {
       { value: "high", label: "Drilled" },
     ],
   },
+  decision: {
+    type: "decision",
+    id: "rollout",
+    label: "Rollout plan",
+    ask: "Approve the staged rollout behind a flag, or ask for a change.",
+    placeholder: "For example: hold the flag open for a week.",
+  },
 } as const satisfies Record<string, Block>;
 
 describe("fn:renderPage new blocks", () => {
   it("should encode a step's progress as word, glyph, edge and only then colour", () => {
-    const html = renderPage(page(withBlocks(NEW_BLOCKS.steps)));
+    const html = render(page(withBlocks(NEW_BLOCKS.steps)));
     const css = stylesheet(html);
 
     // SC-6, channel 1: the state is real text, not a colour to be decoded
@@ -952,7 +1329,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should render a step without a state as a bare numbered entry", () => {
-    const html = renderPage(page(withBlocks(NEW_BLOCKS.steps)));
+    const html = render(page(withBlocks(NEW_BLOCKS.steps)));
 
     // an omitted state makes no claim, so it must draw no state word at all
     expect(html).toContain(
@@ -961,7 +1338,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should keep four finding severities apart without reading any colour", () => {
-    const html = renderPage(page(withBlocks(NEW_BLOCKS.findings)));
+    const html = render(page(withBlocks(NEW_BLOCKS.findings)));
     const css = stylesheet(html);
 
     // SC-6, channel 1: the severity word is visible text on the card, not
@@ -1012,7 +1389,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should draw a finding's owner and evidence only when given", () => {
-    const html = renderPage(page(withBlocks(NEW_BLOCKS.findings)));
+    const html = render(page(withBlocks(NEW_BLOCKS.findings)));
     const cards = html.split('<li class="finding"');
 
     expect(cards[1]).toContain("<dt>Owner</dt><dd>Identity platform</dd>");
@@ -1022,7 +1399,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should render a checklist as a multi-select whose answer is a set", () => {
-    const html = renderPage(page(withBlocks(NEW_BLOCKS.checklist)));
+    const html = render(page(withBlocks(NEW_BLOCKS.checklist)));
 
     expect(html).toContain('data-question-kind="checklist"');
     expect(html).toContain('data-question-id="controls"');
@@ -1033,7 +1410,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should render a scale as ordinals with visible endpoint anchors", () => {
-    const html = renderPage(page(withBlocks(NEW_BLOCKS.scale)));
+    const html = render(page(withBlocks(NEW_BLOCKS.scale)));
 
     expect(html).toContain('data-question-kind="scale"');
     // the ordinal is real information the recorded answer must carry
@@ -1051,7 +1428,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should give a one-point scale no endpoint anchors to contradict", () => {
-    const html = renderPage(
+    const html = render(
       page(
         withBlocks({
           type: "scale",
@@ -1069,7 +1446,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should keep the pointer target of a scale segment at the segment itself", () => {
-    const css = stylesheet(renderPage(page(withBlocks(NEW_BLOCKS.scale))));
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.scale))));
 
     // WCAG 2.2 SC 2.5.8 — the visually hidden radio covers its whole segment,
     // so the target is the 2.75rem (44px) segment, not a 13px radio dot. The
@@ -1080,8 +1457,78 @@ describe("fn:renderPage new blocks", () => {
     expect(css).toMatch(/\.scale-point:has\(input:focus-visible\)\{outline:/);
   });
 
+  it("should render a decision as two mutually exclusive verdict buttons", () => {
+    const html = render(page(withBlocks(NEW_BLOCKS.decision)));
+
+    expect(html).toContain('data-question-kind="decision"');
+    expect(html).toContain('data-question-id="rollout"');
+    // what is being approved rides in the ask, per the user's direction
+    expect(html).toContain(
+      "Approve the staged rollout behind a flag, or ask for a change.",
+    );
+    // real buttons carrying a toggle state, not radios dressed as buttons
+    expect(html).toContain(
+      '<button type="button" class="verdict" data-verdict="approve" aria-pressed="false">Approve</button>',
+    );
+    expect(html).toContain(
+      '<button type="button" class="verdict" data-verdict="change" aria-pressed="false">Change</button>',
+    );
+    // both start unpressed: a fresh page states no verdict of its own. Read
+    // the markup alone — the inlined stylesheet and runtime both mention the
+    // pressed state and would mask a pressed button here.
+    const markup = markupOf(html);
+    expect(markup).toContain('data-question-kind="decision"');
+    expect(markup).not.toContain('aria-pressed="true"');
+  });
+
+  it("should hide a decision's note until Change is pressed", () => {
+    const html = render(page(withBlocks(NEW_BLOCKS.decision)));
+
+    // hidden in the markup, so a page opened without JavaScript shows the ask
+    // alone rather than a note field for a verdict nobody gave
+    expect(html).toContain('<div class="verdict-note" data-verdict-note hidden>');
+    expect(html).toContain(
+      '<label class="q-label" for="q-rollout">What to change</label>',
+    );
+    expect(html).toContain(
+      '<textarea id="q-rollout" placeholder="For example: hold the flag open for a week."></textarea>',
+    );
+    // the reveal and the focus move are executed, not scraped, in
+    // render-page/runtime/verdict.spec.ts
+  });
+
+  it("should ship the delegated verdict click branch in the page runtime", () => {
+    const script = runtimeOf(render(page(withBlocks(NEW_BLOCKS.decision))));
+
+    // the trap: refresh is wired to "input" and "change", and a button fires
+    // neither, so without this branch the tally and the reply never move. What
+    // the branch *does* is executed in render-page/runtime/verdict.spec.ts;
+    // this asserts only that the bundle the page carries still contains it.
+    expect(script).toContain("function installVerdicts(");
+    expect(script).toContain("installVerdicts(");
+  });
+
+  it("should keep a pressed verdict readable without reading any colour", () => {
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.decision))));
+
+    // SC-6, channel 1: the verdict word is the button's own visible text
+    // SC-6, channel 2: the border goes dashed 1px to solid 3px
+    expect(css).toMatch(/\.verdict\{[^}]*border:1px dashed/);
+    expect(css).toMatch(/\.verdict\[aria-pressed="true"\]\{[^}]*border-style:solid/);
+    expect(css).toMatch(/\.verdict\[aria-pressed="true"\]\{[^}]*border-width:3px/);
+    // SC-6, channel 3: the leading glyph changes, and the two pressed glyphs
+    // differ from the unpressed one and from each other
+    const glyphs = [
+      ...css.matchAll(/\.verdict[^{]*::before\{content:"([^"]+)"/g),
+    ].map((glyph) => glyph[1]);
+    expect(glyphs).toHaveLength(3);
+    expect(new Set(glyphs).size).toBe(3);
+    // WCAG 2.2 SC 2.5.8 — the button is the target, so it carries the 44px
+    expect(css).toMatch(/\.verdict\{[^}]*min-height:2\.75rem/);
+  });
+
   it("should let a narrow column shrink a choice grid track below its minimum", () => {
-    const css = stylesheet(renderPage(page(withBlocks(NEW_BLOCKS.checklist))));
+    const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
 
     // a bare minmax(17rem,1fr) demanded 272px inside a 272px page and
     // overflowed it by 50px, breaking the question card out of the column
@@ -1107,6 +1554,7 @@ describe("fn:renderPage single-reply round trip", () => {
         blocks: [
           NEW_BLOCKS.checklist,
           NEW_BLOCKS.scale,
+          NEW_BLOCKS.decision,
           NEW_BLOCKS.steps,
           NEW_BLOCKS.findings,
           { type: "note", id: "constraint", label: "Constraint", ask: "A" },
@@ -1117,64 +1565,56 @@ describe("fn:renderPage single-reply round trip", () => {
   });
 
   it("should count and pre-render every new question kind in the reply", () => {
-    const html = renderPage(questions);
+    const html = render(questions);
 
     // SC-5 sink 1 and 4: the reply's {{answers}} and the collapsed bar's
-    // unanswered count both see all three questions and neither of the two
+    // unanswered count both see all four questions and neither of the two
     // non-interactive blocks
-    expect(html).toContain(">3 unanswered<");
-    expect(html).toContain("- Launch controls: (unanswered)");
-    expect(html).toContain("- Containment confidence: (unanswered)");
-    expect(html).toContain("- Constraint: (unanswered)");
+    expect(html).toContain(">4 unanswered<");
+    // a question the page recommends an answer to names the suggestion it is
+    // still waiting on; one it recommends nothing about is plainly unanswered.
+    // Neither may be absent, and neither may read as settled
+    for (const label of [
+      "Launch controls",
+      "Rollout plan",
+      "Containment confidence",
+      "Constraint",
+    ])
+      expect(html).toMatch(
+        new RegExp(`- \\*\\*${label}:\\*\\* (unanswered|recommended [^<]*; not yet confirmed)`),
+      );
+    // nothing on a freshly rendered page has been marked, so no group that
+    // would claim otherwise may appear
+    for (const settled of ["### Confirmed", "### Changed", "### Answered"])
+      expect(html).not.toContain(settled);
     expect(html).not.toContain("- Bind authorization");
     expect(html).not.toContain("- Authorization race");
   });
 
   it("should carry the attributes the runtime reads on every question kind", () => {
-    const html = renderPage(questions);
+    const html = render(questions);
     const fields = [...html.matchAll(/<(?:fieldset|div) class="question"[^>]*>/g)]
       .map((field) => field[0]);
 
     // SC-5 sinks 2 and 3: the drawer's itemised summaries and the
     // data-answered state on each row are built from these attributes alone,
     // so every question kind must carry all three
-    expect(fields).toHaveLength(3);
+    expect(fields).toHaveLength(4);
     for (const field of fields) {
       expect(field).toMatch(/data-question\b/);
-      expect(field).toMatch(/data-question-kind="(?:choice|note|checklist|scale)"/);
+      expect(field).toMatch(
+        /data-question-kind="(?:choice|note|checklist|scale|decision)"/,
+      );
       expect(field).toMatch(/data-question-label="[^"]+"/);
     }
     expect(fields.map((field) => /data-question-kind="(\w+)"/.exec(field)?.[1]))
-      .toStrictEqual(["checklist", "scale", "note"]);
-  });
-
-  it("should branch answerOf explicitly on every question kind it emits", () => {
-    const html = renderPage(questions);
-    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
-    const answerOf = /function answerOf\(field\)\{[\s\S]*?\n  \}/.exec(script)?.[0] ?? "";
-    const kinds = [
-      ...html.matchAll(/data-question-kind="(\w+)"/g),
-    ].map((kind) => kind[1]);
-
-    // PAGE_JS is a string constant: it is never executed by this suite and is
-    // invisible to coverage, so its wiring is asserted structurally here and
-    // observed in a browser separately. This is not a behavioural proof.
-    expect(answerOf).not.toBe("");
-    for (const kind of new Set(kinds))
-      if (kind !== "note") expect(answerOf).toContain(`kind==="${kind}"`);
-    // a set, not a scalar: the checklist branch must read every checked input
-    expect(answerOf).toMatch(/querySelectorAll\("input:checked"\)/);
-    expect(answerOf).toMatch(/\.join\(", "\)/);
-    // the scale branch reads the ordinal the markup pre-computed
-    expect(answerOf).toMatch(/point\.dataset\.answer/);
-    // note stays the fallthrough, so the textarea read must survive
-    expect(answerOf).toMatch(/querySelector\("textarea"\)\.value\.trim\(\)/);
+      .toStrictEqual(["checklist", "scale", "decision", "note"]);
   });
 
   it("should refuse a duplicate id across a checklist and a scale", () => {
     // the new kinds join the same page-wide id namespace as choice and note
     expect(() =>
-      renderPage(
+      render(
         page(
           withBlocks(NEW_BLOCKS.checklist, {
             ...NEW_BLOCKS.scale,
@@ -1302,8 +1742,28 @@ describe("fn:renderPage new-block validation", () => {
       { type: "scale", id: "s2", label: "L", ask: "A", points: [{ value: "v", label: 7 }] },
       "sections[0].blocks[0].points[0].label: required non-empty string, received 7",
     ],
+    [
+      "decision.id",
+      { type: "decision", id: "", label: "L", ask: "A" },
+      'sections[0].blocks[0].id: required non-empty string, received ""',
+    ],
+    [
+      "decision.label",
+      { type: "decision", id: "d", label: [], ask: "A" },
+      "sections[0].blocks[0].label: required non-empty string, received []",
+    ],
+    [
+      "decision.ask",
+      { type: "decision", id: "d", label: "L", ask: 6 },
+      "sections[0].blocks[0].ask: required non-empty string, received 6",
+    ],
+    [
+      "decision.placeholder",
+      { type: "decision", id: "d", label: "L", ask: "A", placeholder: 1 },
+      "sections[0].blocks[0].placeholder: required non-empty string, received 1",
+    ],
   ])("should refuse a bad %s naming its path", (_field, block, message) => {
-    expect(() => renderPage(page(withBlocks(block as never)))).toThrow(
+    expect(() => render(page(withBlocks(block as never)))).toThrow(
       new RenderError(message),
     );
   });
@@ -1319,7 +1779,7 @@ describe("fn:renderPage examples", () => {
 
   it("should render the guided-interview example under question density", async () => {
     const data = await loadKind("guided-interview");
-    const html = renderPage(data);
+    const html = render(data);
     const questions = data.sections.flatMap((section) =>
       section.blocks.filter((block: Block) =>
         ["choice", "note", "checklist", "scale"].includes(block.type),
@@ -1338,7 +1798,11 @@ describe("fn:renderPage examples", () => {
     expect(kinds).toStrictEqual(new Set(["choice", "note", "checklist", "scale"]));
     expect(html).toContain(`>${questions.length} unanswered<`);
     for (const question of questions)
-      expect(html).toContain(`- ${question.label}: (unanswered)`);
+      expect(html).toMatch(
+        new RegExp(
+          `- \\*\\*${question.label}:\\*\\* (unanswered|recommended [^<]*; not yet confirmed)`,
+        ),
+      );
     // no id may repeat, or one answer would overwrite another silently
     const ids = [...html.matchAll(/data-question-id="([^"]+)"/g)].map((id) => id[1]);
     expect(new Set(ids).size).toBe(ids.length);
@@ -1346,7 +1810,7 @@ describe("fn:renderPage examples", () => {
   });
 
   it("should render the risk-context-report example under severity encoding", async () => {
-    const html = renderPage(await loadKind("risk-context-report"));
+    const html = render(await loadKind("risk-context-report"));
 
     expect(html).toContain('data-kind="risk-context-report"');
     // SC-6: all four severities are present, so the greyscale check has
@@ -1358,7 +1822,7 @@ describe("fn:renderPage examples", () => {
       ["clear", "Clear"],
     ])
       expect(html).toContain(
-        `<li class="finding" data-severity="${severity}"><p class="finding-head"><span class="finding-severity">${word}</span>`,
+        `<li class="finding" data-severity="${severity}" data-filter-item="${severity}"><p class="finding-head"><span class="finding-severity">${word}</span>`,
       );
     // plus a verdict-bearing table and a checklist launch gate
     expect(html).toMatch(/<td data-verdict="bad"><span class="sr-only">costly: /);
@@ -1378,4 +1842,231 @@ describe("fn:renderPage examples", () => {
       await removeDirectory(directory);
     },
   );
+});
+
+describe("fn:renderPage theming", () => {
+  it("should let a board carry its own palette in both schemes", () => {
+    const html = render(
+      page({ theme: { accent: 265, dark: { "--ui-canvas": "#05040a" } } }),
+    );
+
+    expect(html).toContain("--ui-accent:oklch(.672 .131 265)");
+    expect(html).toContain("--ui-accent:oklch(.75 .14 265)");
+    expect(html).toContain("--ui-canvas:#05040a");
+  });
+
+  it("should leave an unthemed board on the built-in palette alone", () => {
+    // an override sheet that appears when nothing was overridden would make
+    // every board's cascade harder to read for no gain
+    expect(render(page())).not.toContain("oklch(.672");
+  });
+
+  it("should refuse a bad theme by its JSON path, like every other field", () => {
+    expect(() => render(page({ theme: { accent: 400 } as never }))).toThrow(
+      "theme.accent: required number between 0 and 360",
+    );
+  });
+
+  it("should offer the reader a scheme control in the collapsed bar", () => {
+    const html = render(page());
+    const bar = html.slice(
+      html.indexOf('<div class="drawer-bar"'),
+      html.indexOf('<div class="drawer-panel"'),
+    );
+    const toggle = bar.slice(bar.indexOf('class="drawer-toggle"'), bar.indexOf("</button>"));
+
+    // the accessible name is one string with no separator inserted for it,
+    // so the punctuation between label and state has to be authored or the
+    // control announces as "Colour schemeAuto"
+    expect(bar).toContain(
+      '<span class="sr-only">Colour scheme: <span data-scheme-state>Auto</span></span>',
+    );
+    // an icon-only button says nothing to a screen reader, so the state is
+    // real text in the markup rather than a glyph or a generated string
+    expect(bar).toMatch(/aria-hidden="true"[^>]*>/);
+    expect(bar).not.toContain("aria-label");
+    // a control nested inside the drawer's own control would be unreachable
+    // by keyboard without first opening the drawer
+    expect(toggle).not.toContain("data-scheme-toggle");
+  });
+
+  it("should offer copy from the collapsed bar, between count and scheme", async () => {
+    const html = render(await loadExample());
+    const bar = html.slice(
+      html.indexOf('<div class="drawer-bar"'),
+      html.indexOf('<div class="drawer-panel"'),
+    );
+    const order = ["data-unanswered-count", "data-copy", "data-scheme-toggle"];
+
+    // reading order is the tab order here, and the reader asked for copy to
+    // sit between the count and the scheme control
+    expect(order.map((mark) => bar.indexOf(mark))).toStrictEqual(
+      [...order.map((mark) => bar.indexOf(mark))].sort((a, b) => a - b),
+    );
+    for (const mark of order) expect(bar).toContain(mark);
+
+    // the bar toggles the drawer on a bare click, so a control inside it that
+    // is not a button would open the drawer every time it was pressed
+    expect(bar).toContain('<button type="button" class="copy" data-copy>');
+  });
+
+  it("should copy from a glyph, and say the outcome in words", async () => {
+    const html = render(await loadExample());
+    const css = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
+    const bar = html.slice(
+      html.indexOf('<div class="drawer-bar"'),
+      html.indexOf('<div class="drawer-panel"'),
+    );
+
+    // a glyph says nothing to a screen reader, so the name is real text
+    expect(bar).toContain('<span class="sr-only">Copy reply</span>');
+    for (const icon of ["copy", "done"]) expect(bar).toContain(`data-icon="${icon}"`);
+    expect(css).toContain(".copy .copy-icon{display:none}");
+
+    // a tick cannot say "press the keys yourself", which is what the control
+    // has to say wherever the clipboard API is missing
+    expect(bar).toContain('<span class="copy-state" data-copy-status role="status">');
+
+    // SC 2.5.8 — the target has to clear 24px once the label is gone
+    expect(css).toMatch(/\.copy\{[^}]*min-height:2\.2rem/);
+  });
+
+  it("should put the reply in a dialog that is open until scripts close it", async () => {
+    const data = await loadExample();
+    const html = render(data);
+    const markup = markupOf(html);
+    const dialog = markup.slice(
+      markup.indexOf('<dialog class="reply-dialog"'),
+      markup.indexOf("</dialog>", markup.indexOf('<dialog class="reply-dialog"')),
+    );
+
+    // a closed dialog is display:none, so a page whose scripts never arrive
+    // would carry a reply nobody could read. It ships open and the runtime
+    // closes it, which is the only order that serves both readers.
+    expect(markup).toContain("<dialog class=\"reply-dialog\" data-reply-dialog open");
+    expect(dialog).toContain('<pre class="reply" data-reply');
+    // exactly one reply on the page: two would drift the moment one repainted
+    expect(markup.match(/data-reply[ =>]/g)).toHaveLength(1);
+
+    // and the control that opens it ships hidden, because without a runtime
+    // there is no modal to open
+    expect(markup).toContain(
+      '<button type="button" class="reply-show" data-reply-open hidden>',
+    );
+  });
+
+  it("should close the reply dialog without scripting, or not offer to", async () => {
+    const html = render(await loadExample());
+    const css = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
+    const markup = markupOf(html);
+
+    // method="dialog" is what closes it with no runtime at all
+    expect(markup).toContain('<form method="dialog" class="reply-head">');
+    // ...and the control is not shown at all while the dialog is a panel,
+    // where closing it would hide the reply with no way back
+    expect(css).toContain(".reply-dialog:not(:modal) .reply-close{display:none}");
+    // the panel state has to shed the user agent's absolute positioning, or
+    // it floats over whatever it lands on
+    expect(css).toMatch(/\.reply-dialog\{[^}]*position:static/);
+  });
+
+  it("should carry all three scheme icons and show exactly one", () => {
+    const html = render(page());
+    const css = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
+
+    // all three ship, so the glyph is right at first paint rather than after
+    // the runtime has run — and so a reader without scripts sees a real button
+    for (const icon of ["auto", "light", "dark"])
+      expect(markupOf(html)).toContain(`data-icon="${icon}"`);
+
+    // the button carries its own state, which is what picks the glyph
+    expect(markupOf(html)).toContain('data-scheme-toggle data-scheme="auto"');
+    expect(css).toContain(".scheme .scheme-icon{display:none}");
+    expect(css).toContain('.scheme[data-scheme="auto"] [data-icon="auto"]');
+
+    // SC 2.5.8 — the target has to clear 24px, and the icon does not carry it
+    expect(css).toMatch(/\.scheme\{[^}]*width:2\.2rem/);
+    // the bar wraps rather than clips, but a shrinkable target could still be
+    // squeezed under the 24px floor on the narrowest screens
+    expect(css).toMatch(/\.scheme\{[^}]*flex:none/);
+  });
+
+  it("should honour a manual choice over the system's, in either direction", () => {
+    const html = render(page());
+
+    // the built-in dark palette has to be reachable by choice, and the system
+    // rule has to step aside for a reader who chose light on a dark machine
+    expect(html).toContain(':root[data-theme="dark"]{');
+    expect(html).toContain(
+      '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){',
+    );
+    expect(html).toContain(':root[data-theme="light"]{color-scheme:light}');
+  });
+
+  it("should apply the saved scheme before the body is ever painted", () => {
+    const html = render(page());
+    const boot = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
+
+    // in the head, ahead of the body: applying it any later shows the reader
+    // the system's colours first and then replaces them
+    expect(html.indexOf("<script>")).toBeLessThan(html.indexOf("<body"));
+    expect(boot).toContain("data-theme");
+    expect(boot).not.toContain("installDrawer");
+  });
+});
+
+describe("fn:renderPage rich text", () => {
+  it("should accept runs wherever a rich-text value is read", () => {
+    const runs = [
+      "budget is ",
+      { kind: "provenance", text: "4.2 ms p99", level: "measured" },
+      " per ",
+      { kind: "code", text: "sync()" },
+    ];
+    const html = render(
+      page({
+        sections: [
+          {
+            id: "s",
+            label: "S",
+            title: "T",
+            blocks: [
+              { type: "prose", text: runs },
+              { type: "callout", title: "C", text: runs },
+              {
+                type: "table",
+                columns: ["Option"],
+                rows: [[{ text: runs }]],
+              },
+            ],
+          },
+        ],
+      } as never),
+    );
+
+    // read the markup alone: the inlined stylesheet carries its own
+    // data-provenance selectors and would inflate every count here
+    const markup = markupOf(html);
+
+    expect(markup.match(/data-provenance="measured"/g)).toHaveLength(3);
+    expect(markup.match(/<code class="mono">sync\(\)<\/code>/g)).toHaveLength(3);
+  });
+
+  it("should name the block and the run when a run is wrong", () => {
+    // the path is what makes a bad run findable in a long data file
+    expect(() =>
+      render(
+        page({
+          sections: [
+            {
+              id: "s",
+              label: "S",
+              title: "T",
+              blocks: [{ type: "prose", text: ["a", { kind: "bold", text: "b" }] }],
+            },
+          ],
+        } as never),
+      ),
+    ).toThrow("sections[0].blocks[0].text[1].kind: required one of");
+  });
 });

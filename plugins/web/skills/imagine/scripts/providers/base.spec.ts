@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { BunFile } from "bun";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -13,6 +14,11 @@ import {
   get_provider,
   register_provider,
 } from "./base";
+
+/** stands in for `Bun.file`, whose real reader is a Bun runtime handle. */
+function fakeFile(path: string): BunFile {
+  return new Blob([readFileSync(path)]) as Partial<BunFile> as BunFile;
+}
 
 class TestProvider extends ImageProvider {
   readonly name = "test-provider-foundation";
@@ -35,13 +41,10 @@ class TestProvider extends ImageProvider {
 
 describe("image provider registry and validation", () => {
   beforeEach(() => {
-    vi.stubGlobal("Bun", {
-      file: (path: string) => new Blob([readFileSync(path)]),
-    });
+    vi.spyOn(Bun, "file").mockImplementation((path) => fakeFile(String(path)));
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     delete PROVIDER_REGISTRY["test-provider-foundation"];
     delete process.env.IMAGINE_TEST_KEY;
   });

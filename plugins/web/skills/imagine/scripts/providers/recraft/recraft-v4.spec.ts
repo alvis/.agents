@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { BunFile } from "bun";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let mockedClient: unknown;
@@ -35,16 +36,18 @@ function stderr_lines(spy: ReturnType<typeof capture_stderr>): string[] {
   return spy.mock.calls.map(([chunk]) => String(chunk));
 }
 
+/** stands in for `Bun.file`, whose real reader is a Bun runtime handle. */
+function fakeFile(path: string): BunFile {
+  return new Blob([readFileSync(path)], {
+    type: "image/png",
+  }) as Partial<BunFile> as BunFile;
+}
+
 beforeEach(() => {
-  vi.stubGlobal("Bun", {
-    file: (path: string) =>
-      new Blob([readFileSync(path)], { type: "image/png" }),
-  });
+  vi.spyOn(Bun, "file").mockImplementation((path) => fakeFile(String(path)));
 });
 
 afterEach(async () => {
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
   mockedClient = undefined;
   for (const root of roots.splice(0))
     await rm(root, { recursive: true, force: true });
@@ -382,12 +385,11 @@ describe("Recraft image generation", () => {
       ),
     ).resolves.toEqual(["edited"]);
     expect(client.post.mock.calls[0]?.[0]).toBe("/images/inpaint");
-    let lines = stderr_lines(stderr);
+    const lines = stderr_lines(stderr);
     expect(lines).toHaveLength(2);
     expect(lines[0]).toBe("Calling Recraft API (inpainting).\n");
     expect(lines[1]).toMatch(/^Inpainting completed in \d+\.\d+s\.\n$/);
 
-    stderr.mockClear();
     await expect(
       provider.generate(
         "edit prompt",
@@ -396,10 +398,10 @@ describe("Recraft image generation", () => {
       ),
     ).resolves.toEqual(["edited"]);
     expect(client.post.mock.calls[1]?.[0]).toBe("/images/imageToImage");
-    lines = stderr_lines(stderr);
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toBe("Calling Recraft API (image-to-image).\n");
-    expect(lines[1]).toMatch(/^Image-to-image completed in \d+\.\d+s\.\n$/);
+    const second = stderr_lines(stderr).slice(lines.length);
+    expect(second).toHaveLength(2);
+    expect(second[0]).toBe("Calling Recraft API (image-to-image).\n");
+    expect(second[1]).toMatch(/^Image-to-image completed in \d+\.\d+s\.\n$/);
   });
 
   it("reports custom-style creation and distinguishes styled from plain generation announcements", async () => {
@@ -426,7 +428,7 @@ describe("Recraft image generation", () => {
         { references: [reference] },
       ),
     ).resolves.toEqual(["generated"]);
-    let lines = stderr_lines(stderr);
+    const lines = stderr_lines(stderr);
     expect(lines).toHaveLength(4);
     expect(lines[0]).toBe(
       "Creating custom style from 1 reference image(s)...\n",
@@ -437,15 +439,14 @@ describe("Recraft image generation", () => {
     );
     expect(lines[3]).toMatch(/^Generation completed in \d+\.\d+s\.\n$/);
 
-    stderr.mockClear();
     await expect(
       provider.generate("plain prompt", { model: "recraftv4" }),
     ).resolves.toEqual(["generated"]);
-    lines = stderr_lines(stderr);
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toBe(
+    const plain = stderr_lines(stderr).slice(lines.length);
+    expect(plain).toHaveLength(2);
+    expect(plain[0]).toBe(
       "Calling Recraft API (generation). This can take up to a minute.\n",
     );
-    expect(lines[1]).toMatch(/^Generation completed in \d+\.\d+s\.\n$/);
+    expect(plain[1]).toMatch(/^Generation completed in \d+\.\d+s\.\n$/);
   });
 });

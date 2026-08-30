@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { BunFile } from "bun";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let mockedOpenAIClient: unknown;
@@ -35,16 +36,18 @@ function stderr_lines(spy: ReturnType<typeof capture_stderr>): string[] {
   return spy.mock.calls.map(([chunk]) => String(chunk));
 }
 
+/** stands in for `Bun.file`, whose real reader is a Bun runtime handle. */
+function fakeFile(path: string): BunFile {
+  return new Blob([readFileSync(path)], {
+    type: "image/png",
+  }) as Partial<BunFile> as BunFile;
+}
+
 beforeEach(() => {
-  vi.stubGlobal("Bun", {
-    file: (path: string) =>
-      new Blob([readFileSync(path)], { type: "image/png" }),
-  });
+  vi.spyOn(Bun, "file").mockImplementation((path) => fakeFile(String(path)));
 });
 
 afterEach(async () => {
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
   for (const root of roots.splice(0))
     await rm(root, { recursive: true, force: true });
 });

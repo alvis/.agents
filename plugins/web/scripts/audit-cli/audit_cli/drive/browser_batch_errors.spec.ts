@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ActionLogger } from "../action_log";
 import { BrowserDriver, BrowserDriverError } from "./browser";
@@ -13,8 +13,6 @@ const spawnSyncMock = vi.mocked(spawnSync);
 vi.mock("node:child_process", () => ({ spawnSync: vi.fn() }));
 
 describe("browser driver batch error reporting", () => {
-  beforeEach(() => spawnSyncMock.mockReset());
-
   it("uses structured stdout errors when stderr is empty", () => {
     spawnSyncMock.mockReturnValue({
       status: 1,

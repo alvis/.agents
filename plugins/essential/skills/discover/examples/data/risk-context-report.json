@@ -82,6 +82,7 @@
       "blocks": [
         {
           "type": "findings",
+          "filters": true,
           "items": [
             {
               "title": "AUTH-07 — revocation and derived-cache invalidation are separate paths",
@@ -295,17 +296,46 @@
             {
               "value": "Block on containment and lineage",
               "summary": "Permit a cohort only after the revocation and replay probes pass.",
-              "recommended": true
+              "tags": [
+                "Architectural",
+                "Recommended"
+              ],
+              "pros": [
+                "No customer sees generated prose until we can prove we could withdraw it.",
+                "The two probes are cheap and already scoped."
+              ],
+              "cons": [
+                "Exposure waits on probe results, so the first cohort slips by roughly two weeks."
+              ]
             },
             {
               "value": "Internal shadow first",
-              "summary": "Collect online evidence with no generated prose visible to customers."
+              "summary": "Collect online evidence with no generated prose visible to customers.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "Real traffic and real evidence at zero customer risk."
+              ],
+              "cons": [
+                "Internal reviewers are not the population whose reaction we need to measure."
+              ]
             },
             {
               "value": "Restricted cohort with review",
-              "summary": "Requires an explicit review SLA and a capacity proof."
+              "summary": "Requires an explicit review SLA and a capacity proof.",
+              "tags": [
+                "Pragmatic"
+              ],
+              "pros": [
+                "Genuine customer signal arrives soonest of the three."
+              ],
+              "cons": [
+                "Human review must hold at volume, and we have no capacity proof that it does."
+              ]
             }
-          ]
+          ],
+          "recommendation": "Block on containment and lineage. Revocation is the one property we cannot add after the fact — if generated prose reaches a customer record and we cannot withdraw it, no later gate recovers that — and the two probes cost about two weeks against a risk that is otherwise permanent."
         },
         {
           "type": "note",
@@ -324,6 +354,6 @@
   ],
   "reply": {
     "heading": "Generated reply",
-    "template": "Risk position — AI case summaries\n\nTreat the trust boundary, not the model, as the thing you are building. The dangerous failure is a confident summary that no longer has the right to exist.\n\nDecisions taken on this page:\n\n{{answers}}\n\nAny replay counts or sampled-signal figures on this board are illustrative shapes, not measured rates. Report what containment is proven and what still blocks the first cohort."
+    "template": "Risk position — AI case summaries\n\nTreat the trust boundary, not the model, as the thing you are building. The dangerous failure is a confident summary that no longer has the right to exist.\n\n{{summary}}\n\nDecisions taken on this page:\n\n{{answers}}\n\nAny replay counts or sampled-signal figures on this board are illustrative shapes, not measured rates. Report what containment is proven and what still blocks the first cohort."
   }
 }

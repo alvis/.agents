@@ -93,7 +93,6 @@ describe("audit CLI orchestration", () => {
       ]);
       expect(print).toHaveBeenCalledWith(reportPath);
     } finally {
-      print.mockRestore();
       await rm(out, { force: true, recursive: true });
     }
   });

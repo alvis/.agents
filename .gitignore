@@ -1,2 +1,7 @@
 .state/
 node_modules/
+
+# downloaded vendor runtimes. render-page/vendor.ts fetches these from a CDN,
+# validates their shape, and writes them here; they regenerate on demand and
+# are far above jj's 1MiB snapshot limit, so they are cache, never source
+plugins/essential/skills/discover/assets/html/vendor/*.cache.js
