@@ -1,0 +1,43 @@
+{
+  "schema": "specification-provenance-v1",
+  "source_kind": "<inline|local>",
+  "source_locators": [
+    "<stable source locator>"
+  ],
+  "source_revision": "<git-blob-oid-or-empty>",
+  "materialization_revision": "<git-blob-oid-or-empty>",
+  "approved_content_ref": "<durable reachable locator to approved content>",
+  "body_author": {
+    "capability_id": "<plugin>:<skill>",
+    "selection_source": "<explicit_argument|delegated_caller>"
+  },
+  "logical_units": [
+    {
+      "id": "<stable logical unit id>",
+      "source_path": "<source section, block, or path>",
+      "output_path": "spec/README.md"
+    },
+    {
+      "id": "<consumer reference logical unit id; remove when reference.md is absent>",
+      "source_path": "<source interface section; remove when reference.md is absent>",
+      "output_path": "spec/reference.md"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "spec/README.md",
+      "exact_sha256": "sha256:<64-lowercase-hex>"
+    },
+    {
+      "path": "spec/reference.md",
+      "exact_sha256": "sha256:<64-lowercase-hex>"
+    }
+  ],
+  "template": {
+    "locator": "plugin:specification/spec-code/templates/capability-readme.md",
+    "plugin_version": "<exact-installed-version>",
+    "exact_sha256": "sha256:<64-lowercase-hex>"
+  },
+  "derived_at": "<ISO-8601 timestamp>",
+  "receipt_anchor": "<work journal or approval receipt>"
+}

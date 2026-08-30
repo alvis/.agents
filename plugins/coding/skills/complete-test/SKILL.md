@@ -8,7 +8,7 @@ argument-hint: "[scope] [--framework=<name>]"
 
 # Complete test
 
-Before any `jj` decision or command, follow `coding:references/jj.md`.
+Before any `jj` decision or command, follow `coding:directions/jj.md`.
 
 Own test authoring and test-suite maintenance. Do not implement production behavior, rewrite a failing application fix, or create placeholders for unspecified features.
 
@@ -29,7 +29,7 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 ## Workflow
 
-Load [references/orchestration.md](references/orchestration.md) for the full coordination procedure: batching algorithm, subagent dispatch prompts, the per-test coverage-verification loop, redundancy-removal phases, fixture-restructuring phases, and report shapes.
+Load [./directions/orchestration.md](directions/orchestration.md) for the full coordination procedure: batching algorithm, subagent dispatch prompts, the per-test coverage-verification loop, redundancy-removal phases, fixture-restructuring phases, and report shapes.
 
 1. Resolve scope and classify each promise as runtime behavior, compiler-observable semantics, or declaration shape before inventory. Resolve the configured type-test mechanism and command for compiler-semantic targets; resolve a runtime-test and coverage mechanism only when eligible runtime sources exist. Group targets by owning project, derive each project's applicable discovery patterns from its configuration and conventions, including non-runtime filenames such as tsd's `*.test-d.ts`, and run the coding scanner separately for each group with its project root as `--test-root` plus every resolved compiler-test glob as a repeated `--test-pattern` argument; never combine targets owned by different test roots in one scanner invocation. Route runtime behavior to coverage batches, compiler-observable behaviors permitted by `TST-CORE-10` to focused compile-time cases, and declaration shape to type diagnostics plus affected-consumer builds. Exercise compiler behavior through representative consumer usage. Keep executable runtime schema validators in behavior-test batches and exercise accepted and rejected inputs through their supported parser entrypoints. Inventory the selected targets, current applicable tests, pending markers, fixture ownership, configured exclusions, and discovered compiler oracles; map every compiler-semantic target to any existing oracle before batching, and author a case only for an uncovered promise. Capture per-source and aggregate runtime coverage only when runtime sources are selected.
 2. Partition independent runtime source/test pairs into coherent batches: 2-5 source files and at most 500 source lines per batch; put independent compile-time targets in separate focused batches of at most 10 target/resources each. Dispatch each kind in waves of at most 8 concurrent batches, aggregate a wave before starting the next, and re-batch and retry any incomplete runtime or compiler work. Parallelize only disjoint files and fixtures; serialize shared fixtures, global setup, snapshots, and integration state. Record both batch maps and wave completion so no target is skipped.

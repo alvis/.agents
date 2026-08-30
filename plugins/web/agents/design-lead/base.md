@@ -29,7 +29,7 @@ Typical responses:
 
 ## Lead direction
 
-Apply @essential:references/directions/lead-agent.md.
+Apply @essential:directions/lead.md.
 
 ## Base Context
 

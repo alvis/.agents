@@ -9,7 +9,7 @@ argument-hint: "<resolve|checkout|author|verify|create|update|review|stack|merge
 # Pull Requests
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`. Its stacked-review repair
+`coding:directions/jj.md`. Its stacked-review repair
 route precedes `coding:pr update` publication.
 
 Before any script call, set `CODING_PR_SKILL_DIR` to the absolute directory
@@ -22,11 +22,11 @@ owned by `coding:review-code`.
 
 Each action reference owns its directions. Scan each implementation diff and
 rendered PR body against `coding:standards/git/`. Author PR bodies through
-[templates/message.md](templates/message.md), then validate them with
-[scripts/scan-pr-message.ts](scripts/scan-pr-message.ts). Render anchored
-review comments through [templates/inline-review.md](templates/inline-review.md)
+[message.md](templates/message.md), then validate them with
+[scan-pr-message.ts](scripts/scan-pr-message.ts). Render anchored
+review comments through [inline-review.md](templates/inline-review.md)
 and the overall verdict through
-[templates/overall-review.md](templates/overall-review.md).
+[overall-review.md](templates/overall-review.md).
 
 ## Usage
 
@@ -52,56 +52,56 @@ remote mutation.
 PR numbers and stack numbers are separate sequences, so a bare number can name
 both. Before `resolve`, `checkout`, `update`, `review`, `merge`, or a `stack`
 selector acts on a number or URL, bind its namespace through
-[references/resolve-reference.md](references/resolve-reference.md), which orders
+[resolve.md](directions/resolve.md), which orders
 the two lookups by the request's own wording. Never report a number as
 unlocatable from one namespace's lookup alone.
 
 For every request to create, inspect, update, restructure, publish, check out,
 sync, navigate, unstack, or merge a GitHub PR stack, load
-[references/github-stacks.md](references/github-stacks.md) before selecting an
+[github-stacks.md](references/github-stacks.md) before selecting an
 operator. This applies even when the request arrives through `create`, `update`,
 or `merge`, rather than the explicit `stack` route.
 
 - `resolve` reports which namespace a number or URL names, and mutates nothing.
-  Follow [references/resolve-reference.md](references/resolve-reference.md) and
+  Follow [resolve.md](directions/resolve.md) and
   report the resolved surface, the rejected candidate, and any ambiguity.
 - `checkout` lands a resolved stack or PR in a `jj` workspace. Follow
-  [Land the resolved surface](references/resolve-reference.md#land-the-resolved-surface),
+  [Land the resolved surface](directions/resolve.md#land-the-resolved-surface),
   which fetches the resolved head and adds a workspace on it, leaving every
   existing workspace untouched. It never commits, rewrites, pushes, or
   publishes.
 - `author` writes deterministic PR title and body text without publication,
-  using [templates/message.md](templates/message.md) when the repository has no
+  using [message.md](templates/message.md) when the repository has no
   local template.
-  Follow only [Author the PR text](references/create-update.md#author-the-pr-text);
+  Follow only [Author the PR text](directions/create-update.md#author-the-pr-text);
   `--base` selects the intended PR base instead of the first-parent default.
 - `verify` runs the fail-closed local test/lint gate for one exact target and
   base without publishing. Load and follow
-  [references/verify-ci-parity.md](references/verify-ci-parity.md); callers must
+  [verify.md](directions/verify.md); callers must
   pass resolved immutable revision IDs, and `--kind` defaults to `standalone`. Because these
   inputs do not identify a base ref or event type, workflow applicability is
   conservative and the receipt records that mode.
 - `create` opens new draft PRs for one saved change or a conventional linear
   stack. Load and follow
-  [references/create-update.md](references/create-update.md) with
+  [create-update.md](directions/create-update.md) with
   `ACTION=create`, including its default tip-first and bottom-up local
   verification gate, and always load
-  [references/stacked-prs.md](references/stacked-prs.md).
+  [stacked-prs.md](directions/stacked-prs.md).
 - `update` republishes existing PR heads for a conventional linear stack,
   refreshes their title, body, and bases, and drives CI to green. Load and follow
-  [references/create-update.md](references/create-update.md) with
+  [create-update.md](directions/create-update.md) with
   `ACTION=update`, including its default tip-first and bottom-up local
   verification gate, and always load
-  [references/stacked-prs.md](references/stacked-prs.md).
+  [stacked-prs.md](directions/stacked-prs.md).
 - `review` publishes one external review per PR, or one holistic review unit for
   a linear stack with findings attributed to its PR surfaces. As the
   context-owning caller,
-  load [references/review-workflow.md](references/review-workflow.md), provision
+  load [review.md](directions/review.md), provision
   any owned tree, and retain its cleanup lease. Run the read-only steps in a
   fresh `code-quality-critic` subagent with no inherited implementation context,
   close the lease after any return or cancellation, and never delegate again
   from that dedicated reviewer. A fresh critic dispatched by
-  [references/review-loop.md](references/review-loop.md) with an explicit
+  [review-loop.md](directions/review-loop.md) with an explicit
   preprovisioned stack capsule is already that dedicated reviewer: it runs the
   review phase directly instead of nesting another dispatch.
 - `stack` follows
@@ -114,8 +114,8 @@ or `merge`, rather than the explicit `stack` route.
 - `merge` validates and merges a conventional linear stack bottom-up. For a
   GitHub PR stack, use the GitHub operator map loaded above instead. Otherwise
   load and follow
-  [references/stacked-prs.md](references/stacked-prs.md), then
-  [references/merge.md](references/merge.md).
+  [stacked-prs.md](directions/stacked-prs.md), then
+  [merge.md](directions/merge.md).
 
 <IMPORTANT>
 Execute exactly one subcommand per invocation. A workflow may instruct a later

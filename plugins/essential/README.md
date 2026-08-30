@@ -16,18 +16,18 @@ Contracts load progressively — only the small `hooks/ALLAGENT.md`, `hooks/MAIN
 | `references/decision-causality.md` | When creating/accepting/superseding a decision | `supersedes`/`affects`/`invalidates`/`preserves`, blast-radius sweep, decision completion gate |
 | `references/approvals.md` | When recording approvals or durable claims that age | The approval binding tuple, freshness metadata |
 | `references/anchors.md` | For non-git anchors or cross-stream initiatives | Anchor declarations, adapter contract, initiative manifests |
-| `references/lease.md` | Before main-agent writes | `ensure` choreography, the main-agent-only first-use bootstrap, the lease-verified write path, release moments |
+| `./directions/lease.md` | Before main-agent writes | `ensure` choreography, the main-agent-only first-use bootstrap, the lease-verified write path, release moments |
 | `references/overviews.md` | When reconciling lazy overviews | Proposals-vs-changes, child statuses, deviation provenance |
 | `references/reviews.md` | When writing review artifacts | The seven review areas plus plugin-namespaced areas, finding lifecycle |
 | `references/spec-lifecycle.md` | When materializing or revalidating specs | Mirrors, freshness sweep, completion verification |
 | `references/durable-documentation.md` | Before writing versioned project documentation | Entrypoint authority, capability/domain content, template ownership, terminology, migration |
 | `references/work-memory-topology.md` | When creating, locating, or migrating ignored work files | Commented `.state` file map |
-| `references/change-control.md` | On a mid-execution finding | Task-local / plan-level / spec-level routing |
-| `references/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
+| `./directions/change-control.md` | On a mid-execution finding | Task-local / plan-level / spec-level routing |
+| `./directions/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
 | `references/team-lifecycle.md` | At spawn and wind-down moments | Team forming/retiring, model and effort selection |
-| `references/directions/subagent-handover.md` | Before a first task handover | Required prompt fields, extensible Context, durable path compression, later-message boundary |
+| `./directions/subagent-handover.md` | Before a first task handover | Required prompt fields, extensible Context, durable path compression, later-message boundary |
 
-Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` (shared durable directory entrypoints), and `templates/initiative-manifest.template.md` (Essential's initiative-domain semantic authority). Domain plugins own their own semantic templates.
+Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` (shared durable directory entrypoints), and `./templates/initiative.md` (Essential's initiative-domain semantic authority). Domain plugins own their own semantic templates.
 
 ## The tools
 

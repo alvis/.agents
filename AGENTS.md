@@ -35,11 +35,12 @@ plus `gh`, and optionally `jj`, for publishing.
 | OpenCode V1 projector | `scripts/install_opencode.ts` + `scripts/opencode_adapter.js` + `scripts/opencode_contract.json` |
 | Harness compatibility matrix | `COMPATIBILITY.md` (maintained manually) |
 | Plugin manifests | `plugins/<p>/.{claude,codex,grok}-plugin/plugin.json` |
-| Skill | `plugins/<p>/skills/<name>/SKILL.md` (+ `references/`, `scripts/`, `assets/`) |
+| Skill | `plugins/<p>/skills/<name>/SKILL.md` (+ the content directories below) |
 | Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex,grok}.json` |
 | Standard | `plugins/<p>/standards/<name>/{meta,scan,write}.md` + `rules/` |
 | Injected payload | `plugins/<p>/hooks/{ALLAGENT,MAINAGENT,SUBAGENT}.md` |
 | Routing table | `plugins/<p>/references/ROUTING.md` |
+| Workflow entry point | `plugins/<p>/directions/WORKFLOW.md` |
 | Shared executables | `plugins/essential/scripts/` |
 
 There are **no source `commands/` directories**. Agents ship from `agents/` as
@@ -90,10 +91,52 @@ stays advisory there until xAI makes `Stop` blocking.
 
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files
 are re-read on every session, they are byte-budgeted (see below) — put detail in
-`references/` and link to it at the decision point.
+the content directory that owns it and link to it at the decision point.
 
 This root `AGENTS.md` is a different mechanism: ordinary memory-file discovery, for work
 done *in this repo*. It is not shipped, not hook-injected, and not byte-budgeted.
+
+## Content taxonomy
+
+Every file a plugin ships sits in exactly one of seven directories, chosen by what
+the file *is*, not by what reads it. A file whose kind is ambiguous is usually two
+files with one seam; split it only when the seam is clean, and otherwise file it by
+its main purpose.
+
+| Directory | Holds |
+|---|---|
+| `templates/` | The layout and authoring instructions for a work product to be delivered |
+| `directions/` | Workflow — how to perform a task, step by step |
+| `examples/` | A worked instance of a delivered work product |
+| `scripts/` | Strictly mechanical executables |
+| `assets/` | Static, non-generated files, including anything copied to a destination |
+| `standards/` | Rules a produced file must satisfy, in the four-part shape above |
+| `references/` | Plain description of something, and nothing else |
+
+`references/` is the residue, not the default: it holds lookup tables and background
+prose. A file there that tells someone what to do, shows a deliverable, or states a
+rule is misfiled.
+
+Placement follows use, not authorship. A directory lives **under the skill** when one
+skill uses it and the association is strong (`plugins/coding/skills/pr/templates/`).
+It lives **under the plugin** as soon as a second skill uses it, or plausibly could
+(`plugins/essential/references/`, `plugins/coding/standards/`). Promoting a file to
+plugin level is what makes it citable from elsewhere; a cross-skill link into another
+skill's private tree is the signal that the file was placed too deep.
+
+Name files in one word where the plugin or skill already supplies the rest of the
+context: a `directions/` entry is `jj.md`, not `manage-jj.md`, unless a sibling forces
+the qualifier. Uppercase names are reserved for shipped entry points that a hook or a
+router names by convention — `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`.
+
+Not everything has to move. Reclassify a file only when it clearly belongs somewhere
+else; a file that genuinely is a plain reference stays in `references/`.
+
+`scripts/check_doc_paths.ts` enforces the parts of this that are mechanical: no
+content directory may nest inside a `references/` tree, and documents under
+`templates/` and `examples/` are exempt from link resolution because their paths are
+illustrative. That exemption is by directory, never by filename — a file merely
+*named* like a template is still checked.
 
 ## Design invariants
 
@@ -162,7 +205,7 @@ verify them when changing payloads or their unconditional read chain.
 | Every injected payload ≤ 2,000 bytes, per plugin | Author review |
 | Every plugin's unconditional hook read chain ≤ 40,960 bytes | Author review |
 | `.state/` work Markdown flagged over 16,384 bytes | `plugins/essential/scripts/check-markdown-size` |
-| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/references/orchestration.md` |
+| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/orchestration.md` |
 | Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
 
 An agent metadata `description` must also end with the exact sentence
@@ -219,14 +262,11 @@ Further suites live in `plugins/<p>/tests/` and beside their scripts.
 ## Git and pull requests
 
 Conventional Commits, validated before any history mutation against
-`plugins/coding/skills/commit/references/conventional-commits.md`:
-
-```
-^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([\w./-]+\))?!?: .+
-```
-
-Those 11 types only — no aliases, no emoji prefix. Scope is a plugin or `plugin/skill`
-(`feat(essential):`, `docs(coding/pr):`), omitted for global changes. Branches are
+`plugins/coding/standards/commit/`, which owns the subject regex and the closed
+type allowlist; read `write.md` there at the moment a message is authored rather
+than restating its regex anywhere. No aliases, no emoji prefix. Scope here is a
+plugin or `plugin/skill` (`feat(essential):`, `docs(coding/pr):`), omitted for
+global changes. Branches are
 `type/kebab-summary`, or `type/<work-id>` and `type/<work-id>/NN-<slice>` for a
 branch belonging to a work stream. Work lands through pull requests whose titles are themselves
 conventional commits.

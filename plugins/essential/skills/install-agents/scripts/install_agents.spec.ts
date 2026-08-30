@@ -62,7 +62,7 @@ function writeTemplate(plugin: string, name: string, alias = false): string {
   writeFileSync(resolve(template, "frontmatter/grok.json"), "{}");
   writeFileSync(
     resolve(template, "base.md"),
-    `# ${name}\n${alias ? "\nApply @essential:references/directions/lead-agent.md.\n" : ""}${memory(name)}`,
+    `# ${name}\n${alias ? "\nApply @essential:directions/lead.md.\n" : ""}${memory(name)}`,
   );
   return template;
 }
@@ -73,9 +73,10 @@ function sourceCheckout(): {
 } {
   const root = temporaryRoot();
   const essential = resolve(root, "plugins/essential");
-  const direction = resolve(essential, "references/directions/lead-agent.md");
+  const direction = resolve(essential, "directions/lead.md");
   mkdirSync(dirname(direction), { recursive: true });
   writeFileSync(direction, "Lead direction.\n");
+  mkdirSync(resolve(essential, "references"), { recursive: true });
   writeFileSync(resolve(essential, "references/state-systems.md"), "State systems.\n");
   writeTemplate(essential, "first-agent", true);
   writeTemplate(resolve(root, "plugins/coding"), "second-agent");
@@ -154,7 +155,7 @@ describe("agent discovery and installation", () => {
     expect(
       readFileSync(resolve(destination, `first-agent${suffix}`), "utf8"),
     ).toContain(
-      `@${resolve(destination, ".essential/references/directions/lead-agent.md")}`,
+      `@${resolve(destination, ".essential/directions/lead.md")}`,
     );
     expect(
       readFileSync(resolve(destination, `second-agent${suffix}`), "utf8"),

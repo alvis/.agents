@@ -9,7 +9,7 @@ argument-hint: "<instruction>"
 
 # Draft Code Skeleton
 
-Before any `jj` decision or command, follow `coding:references/jj.md`.
+Before any `jj` decision or command, follow `coding:directions/jj.md`.
 
 Creates TypeScript-compliant production skeletons with explicit `TODO(implementation):` markers, type definitions, and function signatures. It may outline pending tests, but test markers belong to `coding:complete-test`; production stubs belong to `coding:complete-code`.
 
@@ -45,8 +45,8 @@ Apply these constitution standards while drafting:
 
 1. Parse the instruction into required types, interfaces, functions, and file structure. Read only the work-local design/spec children and durable architecture/design/spec paths named by the caller or mission capsule. For a direct or resume run, use `state/working.md` and `state.md` to discover those paths. Read neighboring modules for established patterns. Do not scan unrelated Markdown or fall back to root continuation/design files.
 2. Plan the structure before writing: file organization, type hierarchy, and test layout for planned runtime behavior or compiler-observable semantics per the standards above.
-3. Draft type definitions (interfaces, type aliases, enums) and function stubs with JSDoc, marking every incomplete body with the canonical placeholders in [references/drafting-patterns.md](references/drafting-patterns.md) — `TODO(implementation):` comments plus the `IMPLEMENTATION:` sentinel throw wherever a value is expected.
-4. Draft tests for planned runtime behavior through a callable public entrypoint and for compiler-observable behavior permitted by `TST-CORE-10` through representative consumer usage. Use `describe.todo()`/`it.todo()` until a runtime entrypoint is callable; once it is, write the smallest behavioral assertion that fails red for the missing implementation. Use the project's configured type-test mechanism for compiler semantics: acceptance cases compile, rejection cases use its expected-diagnostic convention, overload resolution and narrowing exercise representative calls, and transformations compare representative inputs and outputs. Keep a rejection case pending or outside the normal compilation graph when the configured mechanism cannot express its diagnostic. Declaration shape alone — members, signature or overload inventories, schemas, exports, or barrels — receives no test scaffold. Draft only the helpers and fixtures these cases need (details in references/drafting-patterns.md).
+3. Draft type definitions (interfaces, type aliases, enums) and function stubs with JSDoc, marking every incomplete body with the canonical placeholders in [./references/patterns.md](references/patterns.md) — `TODO(implementation):` comments plus the `IMPLEMENTATION:` sentinel throw wherever a value is expected.
+4. Draft tests for planned runtime behavior through a callable public entrypoint and for compiler-observable behavior permitted by `TST-CORE-10` through representative consumer usage. Use `describe.todo()`/`it.todo()` until a runtime entrypoint is callable; once it is, write the smallest behavioral assertion that fails red for the missing implementation. Use the project's configured type-test mechanism for compiler semantics: acceptance cases compile, rejection cases use its expected-diagnostic convention, overload resolution and narrowing exercise representative calls, and transformations compare representative inputs and outputs. Keep a rejection case pending or outside the normal compilation graph when the configured mechanism cannot express its diagnostic. Declaration shape alone — members, signature or overload inventories, schemas, exports, or barrels — receives no test scaffold. Draft only the helpers and fixtures these cases need (details in references/patterns.md).
 5. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
 
 ## Verification
@@ -54,7 +54,7 @@ Apply these constitution standards while drafting:
 - TypeScript compiles with no errors and all imports resolve (`npx tsc --noEmit` or the repository equivalent).
 - `npm run lint` (or equivalent) passes; file organization and naming match the standards above.
 - Applicable repository-native test commands run without collection or configuration errors. Run a runtime command only when the project produces runtime behavior and configures a runtime framework; run a compile-time command only for an allowed compiler-semantic case. Runtime scaffolds are pending or red exactly as designed; runnable compiler-semantic cases pass through the configured expected-diagnostic convention, while unavailable cases remain pending or isolated from normal compilation.
-- Every placeholder uses a canonical form from references/drafting-patterns.md — no bare `TODO:` markers, which `coding:complete-code` refuses to claim.
+- Every placeholder uses a canonical form from references/patterns.md — no bare `TODO:` markers, which `coding:complete-code` refuses to claim.
 - The skeleton is internal: public shape reaches publication only with its first implementation and the focused runtime or compiler-semantic tests its promises require.
 
 ## Completion

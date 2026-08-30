@@ -73,7 +73,7 @@ question: Is the second sort intentional?
 praise: The boundary validation covers malformed payloads clearly.
 ```
 
-GitHub review comments use the rendered marker taxonomy owned by `../../skills/pr/references/review-tone.md`, not these literal prefixes.
+GitHub review comments use the rendered marker taxonomy owned by `../../skills/pr/directions/review-tone.md`, not these literal prefixes.
 
 ### Review Depth
 

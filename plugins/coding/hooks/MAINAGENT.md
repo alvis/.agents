@@ -9,5 +9,5 @@ that work yourself leaves it coordinating a plan it did not make.
 </IMPORTANT>
 
 Read `{{PLUGIN_DIR}}/references/ROUTING.md` for the task-type to specialist map
-`tech-lead` routes against, and `{{PLUGIN_DIR}}/references/WORKFLOW.md` before any
+`tech-lead` routes against, and `{{PLUGIN_DIR}}/directions/WORKFLOW.md` before any
 code is written, reviewed, or published.

@@ -8,11 +8,13 @@ This standard owns only violations detectable mechanically or semantically in
 an implementation diff or rendered PR message. Each violation is an issue that
 requires a fix.
 
+The [commit-message standard](../commit/meta.md) owns the text of a commit
+message, including the header contract a PR title reuses.
 [coding:commit](../../skills/commit/SKILL.md) owns commit, branch, and local
-history directions. [create-update.md](../../skills/pr/references/create-update.md),
-[stacked-prs.md](../../skills/pr/references/stacked-prs.md),
-[review-workflow.md](../../skills/pr/references/review-workflow.md), and
-[merge.md](../../skills/pr/references/merge.md) own PR directions. The PR skill's
+history directions. [create-update.md](../../skills/pr/directions/create-update.md),
+[stacked-prs.md](../../skills/pr/directions/stacked-prs.md),
+[review.md](../../skills/pr/directions/review.md), and
+[merge.md](../../skills/pr/directions/merge.md) own PR directions. The PR skill's
 [message.md](../../skills/pr/templates/message.md) and
 [inline-review.md](../../skills/pr/templates/inline-review.md) own rendered
 message shapes. Those directions and templates are not standards.

@@ -113,9 +113,9 @@ adapters, providers, or runtimes.
 ### `docs/architecture/README.md`
 
 Essential's
-`${ESSENTIAL_ROOT}/templates/docs/architecture-readme.template.md` owns the
+`${ESSENTIAL_ROOT}/templates/docs/architecture.md` owns the
 entrypoint's required shape; its
-`${ESSENTIAL_ROOT}/templates/docs/docs-root-readme.template.md` owns the parent
+`${ESSENTIAL_ROOT}/templates/docs/readme.md` owns the parent
 catalog. Read both at the write decision rather than copying their section
 contract here.
 

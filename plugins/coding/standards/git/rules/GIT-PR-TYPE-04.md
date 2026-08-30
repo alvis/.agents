@@ -21,7 +21,7 @@ removes, or changes behavior.
 Separate the mechanical transformation from the behavior change. Imports and
 references required solely by a move remain mechanical; signature, invariant,
 or control-flow changes belong to the behavioral diff. Use
-[stacked-prs.md](../../../skills/pr/references/stacked-prs.md) to arrange the
+[stacked-prs.md](../../../skills/pr/directions/stacked-prs.md) to arrange the
 resulting changes.
 
 ## Edge Cases

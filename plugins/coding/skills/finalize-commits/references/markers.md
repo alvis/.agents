@@ -49,7 +49,7 @@ Because the change id is stable across jj rewrites, the file persists; the patch
 
 ## Skip rule
 
-A commit is skipped in Step 4 iff: a marker exists for it AND the stored `patch-id` equals the freshly computed lock-excluded patch id. Any mismatch (content changed) → re-run QA and overwrite the marker on green. The skip waives the lint and test legs only — when the commit's lockfile must re-fold (an upstream fold cascaded into it during replay), install still runs and the regenerated lock is folded before the walk advances (`qa-loop.md` Step 3).
+A commit is skipped in Step 4 iff: a marker exists for it AND the stored `patch-id` equals the freshly computed lock-excluded patch id. Any mismatch (content changed) → re-run QA and overwrite the marker on green. The skip waives the lint and test legs only — when the commit's lockfile must re-fold (an upstream fold cascaded into it during replay), install still runs and the regenerated lock is folded before the walk advances (`../directions/qa-loop.md` Step 3).
 
 ## Write timing
 

@@ -59,7 +59,7 @@ anything is written. `update-agent` owns changes to existing definitions.
      catalog — invent no standard or path;
    - fixed intelligence level, launch-appropriate `permissionMode`, and memory and
      isolation settings from
-     [references/intelligence-level-heuristic.md](references/intelligence-level-heuristic.md)
+     [intelligence.md](directions/intelligence.md)
      — pick the least expensive level that clears the role's bar;
    - no `tools` field, so both leaf-by-charter and coordinating roles inherit
      the complete runtime tool surface;
@@ -110,7 +110,7 @@ anything is written. `update-agent` owns changes to existing definitions.
    behavior. If notes are written down, keep them temporary as a Markdown scratch
    document in an OS temp
    folder (for example `${TMPDIR:-/tmp}/check.md`) using
-   [check reference](../../references/check.md) as the
+   [check reference](../../templates/check.md) as the
    example table format with `:white_check_mark:`/`:x:` status markers,
    and delete them before staging; they are not deliverables and must not be
    committed.

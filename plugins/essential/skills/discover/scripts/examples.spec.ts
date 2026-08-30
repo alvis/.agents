@@ -205,7 +205,7 @@ describe("the example board set", () => {
   });
 
   it("should emit no presentation marker on any board", async () => {
-    // `references/presentation/coverage.md` used to require a
+    // `directions/presentation/coverage.md` used to require a
     // `data-presentation-pattern` on every demonstration and named a template
     // test that read them; the test does not exist and the renderer stopped
     // emitting them, so the document said both things at once. It now says

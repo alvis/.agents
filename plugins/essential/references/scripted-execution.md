@@ -56,7 +56,7 @@ export const meta = {
 ## Minimal example
 
 Every `agent()` task below is a first handover and therefore follows
-[directions/subagent-handover.md](directions/subagent-handover.md). The caller
+[subagent-handover.md](../directions/subagent-handover.md). The caller
 passes absolute file paths in `args.files`; the verification finding carries
 the absolute evidence path in `x.path`. `args.work_id` is the resolved stable
 reference required by `references/naming.md`.

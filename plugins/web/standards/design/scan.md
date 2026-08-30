@@ -4,7 +4,7 @@
 
 Any P0 or P1 finding blocks UI approval and completion unless it is closed
 under the canonical
-[audit disposition contract](../../skills/audit/references/review-template.md).
+[audit disposition contract](../../skills/audit/templates/review.md).
 A non-fixed closure requires explicit risk-acceptance authority, an accountable
 owner, non-placeholder rationale, durable acceptance evidence, and a concrete
 recheck condition.

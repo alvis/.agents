@@ -9,7 +9,7 @@ argument-hint: "[path] [--exclude-remote]"
 # Cleanup
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`.
+`coding:directions/jj.md`.
 
 Own evidence-first cleanup of no-longer-needed development state: branches,
 registered worktrees/workspaces, jj changes, and the resolved state root's ignored

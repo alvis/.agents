@@ -30,6 +30,7 @@ standard name or path; it cites entries from here verbatim.
 | `naming` | `coding:standards/naming/` |
 | `testing` | `coding:standards/testing/` |
 | `git` | `coding:standards/git/` |
+| `commit` | `coding:standards/commit/` |
 | `documentation` | `coding:standards/documentation/` |
 | `observability` | `coding:standards/observability/` |
 | `code-review` | `coding:standards/code-review/` |

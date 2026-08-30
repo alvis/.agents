@@ -352,7 +352,7 @@ shelf, not a ceiling".
 ## Coverage: presentation directions
 
 The legacy system shipped **15 example boards** under `examples/src/` but only
-**14 direction files** under `references/presentation/actions/` — `architecture-board`
+**14 direction files** under `directions/presentation/actions/` — `architecture-board`
 had an example and no direction. The renderer implemented **4 kinds** when this
 was written; it now renders all fifteen from `examples/data/`.
 

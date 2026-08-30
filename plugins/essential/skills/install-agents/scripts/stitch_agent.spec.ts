@@ -272,15 +272,16 @@ describe("agent stitching", () => {
   it("resolves Essential aliases against an explicit durable reference root", () => {
     const root = temporaryRoot();
     const essential = resolve(root, "plugins/essential");
-    const direction = resolve(essential, "references/directions/lead-agent.md");
+    const direction = resolve(essential, "directions/lead.md");
     mkdirSync(dirname(direction), { recursive: true });
     writeFileSync(direction, "direction");
+    mkdirSync(resolve(essential, "references"), { recursive: true });
     writeFileSync(
       resolve(essential, "references/state-systems.md"),
       "state systems",
     );
     const template = writeTemplate(resolve(root, "plugins/coding"), "lead", {
-      body: `# Lead\n\nApply @essential:references/directions/lead-agent.md.\n${memory("lead")}`,
+      body: `# Lead\n\nApply @essential:directions/lead.md.\n${memory("lead")}`,
     });
     const reference = resolve(root, "installed/.essential");
     expect(
@@ -289,7 +290,7 @@ describe("agent stitching", () => {
         referenceRoot: reference,
       }),
     ).toContain(
-      `@${resolve(reference, "references/directions/lead-agent.md")}`,
+      `@${resolve(reference, "directions/lead.md")}`,
     );
   });
 

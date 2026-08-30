@@ -1,0 +1,764 @@
+<!doctype html>
+<!--
+  Generated from preview.html (web:design skill).
+
+  RULES FOR THE GENERATING AGENT:
+  - Token values must mirror the project theme.css produced by the web:css skill —
+    this catalog is a rendering of the SAME tier-1 values, never a second source of truth.
+  - Replace every value marked with a REPLACE comment. Keep the five-branch
+    @layer theme structure exactly as-is (CSS-MODE-01..04).
+  - Verify contrast in BOTH modes: run the SKILL.md WCAG script once with
+    data-theme="light" and once with data-theme="dark".
+  - Catalog styles below the PRIMITIVES block consume ONLY tier-2 ui-* tokens
+    and primitives. Keep it that way: this file doubles as the reference
+    implementation of the theming contract.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Token Preview</title>
+<style>
+/* ================================================================
+   TIER-1 + TIER-2 MODE TOKENS — @layer theme (CSS-MODE-01..04)
+   Mirror of plugins/web/skills/css/templates/theme.css:
+   :root baseline → media(light) → [data-theme="light"] →
+   media(dark) → [data-theme="dark"]. Every branch sets color-scheme
+   and re-aliases EVERY --ui-* token. Add new tokens in PAIRS and
+   update all five branches.
+   ================================================================ */
+@layer theme {
+  :root {
+    /* ---- tier-1: light ---- */
+    --theme-light-bg: #ffffff;                 /* REPLACE */
+    --theme-light-fg: #18181b;                 /* REPLACE */
+    --theme-light-surface: #ffffff;            /* REPLACE */
+    --theme-light-surface-sunken: #f4f4f5;     /* REPLACE */
+    --theme-light-overlay: rgba(24, 24, 27, 0.5); /* REPLACE */
+    --theme-light-fg-muted: #52525b;           /* REPLACE */
+    --theme-light-fg-subtle: #71717a;          /* REPLACE */
+    --theme-light-fg-inverse: #ffffff;         /* REPLACE */
+    --theme-light-primary: #4f46e5;            /* REPLACE */
+    --theme-light-primary-hover: #4338ca;      /* REPLACE */
+    --theme-light-primary-active: #3730a3;     /* REPLACE */
+    --theme-light-primary-subtle: #e0e7ff;     /* REPLACE */
+    --theme-light-accent: #0f766e;             /* REPLACE */
+    --theme-light-accent-hover: #115e59;       /* REPLACE */
+    --theme-light-accent-subtle: #ccfbf1;      /* REPLACE */
+    --theme-light-border: #e4e4e7;             /* REPLACE */
+    --theme-light-border-strong: #d4d4d8;      /* REPLACE */
+    --theme-light-focus-ring: #4f46e5;         /* REPLACE */
+    --theme-light-success: #15803d;            /* REPLACE */
+    --theme-light-success-subtle: #f0fdf4;     /* REPLACE */
+    --theme-light-warning: #b45309;            /* REPLACE */
+    --theme-light-warning-subtle: #fffbeb;     /* REPLACE */
+    --theme-light-danger: #dc2626;             /* REPLACE */
+    --theme-light-danger-subtle: #fef2f2;      /* REPLACE */
+    --theme-light-info: #1d4ed8;               /* REPLACE */
+    --theme-light-info-subtle: #eff6ff;        /* REPLACE */
+    --theme-light-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);        /* REPLACE */
+    --theme-light-shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);     /* REPLACE */
+    --theme-light-shadow-overlay: 0 20px 40px rgba(0, 0, 0, 0.18), 0 8px 16px rgba(0, 0, 0, 0.08);  /* REPLACE */
+
+    /* ---- tier-1: dark (elevation = light-overlay stepping, not drop shadows) ---- */
+    --theme-dark-bg: #09090b;                  /* REPLACE */
+    --theme-dark-fg: #fafafa;                  /* REPLACE */
+    --theme-dark-surface: #18181b;             /* REPLACE */
+    --theme-dark-surface-sunken: #000000;      /* REPLACE */
+    --theme-dark-overlay: rgba(0, 0, 0, 0.7);  /* REPLACE */
+    --theme-dark-fg-muted: #d4d4d8;            /* REPLACE */
+    --theme-dark-fg-subtle: #a1a1aa;           /* REPLACE */
+    --theme-dark-fg-inverse: #18181b;          /* REPLACE */
+    --theme-dark-primary: #818cf8;             /* REPLACE */
+    --theme-dark-primary-hover: #a5b4fc;       /* REPLACE */
+    --theme-dark-primary-active: #c7d2fe;      /* REPLACE */
+    --theme-dark-primary-subtle: #1e1b4b;      /* REPLACE */
+    --theme-dark-accent: #2dd4bf;              /* REPLACE */
+    --theme-dark-accent-hover: #5eead4;        /* REPLACE */
+    --theme-dark-accent-subtle: #134e4a;       /* REPLACE */
+    --theme-dark-border: #27272a;              /* REPLACE */
+    --theme-dark-border-strong: #3f3f46;       /* REPLACE */
+    --theme-dark-focus-ring: #818cf8;          /* REPLACE */
+    --theme-dark-success: #4ade80;             /* REPLACE */
+    --theme-dark-success-subtle: #052e16;      /* REPLACE */
+    --theme-dark-warning: #fbbf24;             /* REPLACE */
+    --theme-dark-warning-subtle: #451a03;      /* REPLACE */
+    --theme-dark-danger: #f87171;              /* REPLACE */
+    --theme-dark-danger-subtle: #450a0a;       /* REPLACE */
+    --theme-dark-info: #60a5fa;                /* REPLACE */
+    --theme-dark-info-subtle: #172554;         /* REPLACE */
+    --theme-dark-shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.05);                                  /* REPLACE */
+    --theme-dark-shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.5); /* REPLACE */
+    --theme-dark-shadow-overlay: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 24px 48px rgba(0, 0, 0, 0.6); /* REPLACE */
+
+    /* ---- tier-2 aliases: baseline (light) ---- */
+    color-scheme: light;
+
+    --ui-bg: var(--theme-light-bg);
+    --ui-fg: var(--theme-light-fg);
+    --ui-surface: var(--theme-light-surface);
+    --ui-surface-sunken: var(--theme-light-surface-sunken);
+    --ui-overlay: var(--theme-light-overlay);
+    --ui-fg-muted: var(--theme-light-fg-muted);
+    --ui-fg-subtle: var(--theme-light-fg-subtle);
+    --ui-fg-inverse: var(--theme-light-fg-inverse);
+    --ui-primary: var(--theme-light-primary);
+    --ui-primary-hover: var(--theme-light-primary-hover);
+    --ui-primary-active: var(--theme-light-primary-active);
+    --ui-primary-subtle: var(--theme-light-primary-subtle);
+    --ui-accent: var(--theme-light-accent);
+    --ui-accent-hover: var(--theme-light-accent-hover);
+    --ui-accent-subtle: var(--theme-light-accent-subtle);
+    --ui-border: var(--theme-light-border);
+    --ui-border-strong: var(--theme-light-border-strong);
+    --ui-focus-ring: var(--theme-light-focus-ring);
+    --ui-success: var(--theme-light-success);
+    --ui-success-subtle: var(--theme-light-success-subtle);
+    --ui-warning: var(--theme-light-warning);
+    --ui-warning-subtle: var(--theme-light-warning-subtle);
+    --ui-danger: var(--theme-light-danger);
+    --ui-danger-subtle: var(--theme-light-danger-subtle);
+    --ui-info: var(--theme-light-info);
+    --ui-info-subtle: var(--theme-light-info-subtle);
+    --ui-shadow-card: var(--theme-light-shadow-card);
+    --ui-shadow-raised: var(--theme-light-shadow-raised);
+    --ui-shadow-overlay: var(--theme-light-shadow-overlay);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme]) {
+      color-scheme: light;
+
+      --ui-bg: var(--theme-light-bg);
+      --ui-fg: var(--theme-light-fg);
+      --ui-surface: var(--theme-light-surface);
+      --ui-surface-sunken: var(--theme-light-surface-sunken);
+      --ui-overlay: var(--theme-light-overlay);
+      --ui-fg-muted: var(--theme-light-fg-muted);
+      --ui-fg-subtle: var(--theme-light-fg-subtle);
+      --ui-fg-inverse: var(--theme-light-fg-inverse);
+      --ui-primary: var(--theme-light-primary);
+      --ui-primary-hover: var(--theme-light-primary-hover);
+      --ui-primary-active: var(--theme-light-primary-active);
+      --ui-primary-subtle: var(--theme-light-primary-subtle);
+      --ui-accent: var(--theme-light-accent);
+      --ui-accent-hover: var(--theme-light-accent-hover);
+      --ui-accent-subtle: var(--theme-light-accent-subtle);
+      --ui-border: var(--theme-light-border);
+      --ui-border-strong: var(--theme-light-border-strong);
+      --ui-focus-ring: var(--theme-light-focus-ring);
+      --ui-success: var(--theme-light-success);
+      --ui-success-subtle: var(--theme-light-success-subtle);
+      --ui-warning: var(--theme-light-warning);
+      --ui-warning-subtle: var(--theme-light-warning-subtle);
+      --ui-danger: var(--theme-light-danger);
+      --ui-danger-subtle: var(--theme-light-danger-subtle);
+      --ui-info: var(--theme-light-info);
+      --ui-info-subtle: var(--theme-light-info-subtle);
+      --ui-shadow-card: var(--theme-light-shadow-card);
+      --ui-shadow-raised: var(--theme-light-shadow-raised);
+      --ui-shadow-overlay: var(--theme-light-shadow-overlay);
+    }
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+
+    --ui-bg: var(--theme-light-bg);
+    --ui-fg: var(--theme-light-fg);
+    --ui-surface: var(--theme-light-surface);
+    --ui-surface-sunken: var(--theme-light-surface-sunken);
+    --ui-overlay: var(--theme-light-overlay);
+    --ui-fg-muted: var(--theme-light-fg-muted);
+    --ui-fg-subtle: var(--theme-light-fg-subtle);
+    --ui-fg-inverse: var(--theme-light-fg-inverse);
+    --ui-primary: var(--theme-light-primary);
+    --ui-primary-hover: var(--theme-light-primary-hover);
+    --ui-primary-active: var(--theme-light-primary-active);
+    --ui-primary-subtle: var(--theme-light-primary-subtle);
+    --ui-accent: var(--theme-light-accent);
+    --ui-accent-hover: var(--theme-light-accent-hover);
+    --ui-accent-subtle: var(--theme-light-accent-subtle);
+    --ui-border: var(--theme-light-border);
+    --ui-border-strong: var(--theme-light-border-strong);
+    --ui-focus-ring: var(--theme-light-focus-ring);
+    --ui-success: var(--theme-light-success);
+    --ui-success-subtle: var(--theme-light-success-subtle);
+    --ui-warning: var(--theme-light-warning);
+    --ui-warning-subtle: var(--theme-light-warning-subtle);
+    --ui-danger: var(--theme-light-danger);
+    --ui-danger-subtle: var(--theme-light-danger-subtle);
+    --ui-info: var(--theme-light-info);
+    --ui-info-subtle: var(--theme-light-info-subtle);
+    --ui-shadow-card: var(--theme-light-shadow-card);
+    --ui-shadow-raised: var(--theme-light-shadow-raised);
+    --ui-shadow-overlay: var(--theme-light-shadow-overlay);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      color-scheme: dark;
+
+      --ui-bg: var(--theme-dark-bg);
+      --ui-fg: var(--theme-dark-fg);
+      --ui-surface: var(--theme-dark-surface);
+      --ui-surface-sunken: var(--theme-dark-surface-sunken);
+      --ui-overlay: var(--theme-dark-overlay);
+      --ui-fg-muted: var(--theme-dark-fg-muted);
+      --ui-fg-subtle: var(--theme-dark-fg-subtle);
+      --ui-fg-inverse: var(--theme-dark-fg-inverse);
+      --ui-primary: var(--theme-dark-primary);
+      --ui-primary-hover: var(--theme-dark-primary-hover);
+      --ui-primary-active: var(--theme-dark-primary-active);
+      --ui-primary-subtle: var(--theme-dark-primary-subtle);
+      --ui-accent: var(--theme-dark-accent);
+      --ui-accent-hover: var(--theme-dark-accent-hover);
+      --ui-accent-subtle: var(--theme-dark-accent-subtle);
+      --ui-border: var(--theme-dark-border);
+      --ui-border-strong: var(--theme-dark-border-strong);
+      --ui-focus-ring: var(--theme-dark-focus-ring);
+      --ui-success: var(--theme-dark-success);
+      --ui-success-subtle: var(--theme-dark-success-subtle);
+      --ui-warning: var(--theme-dark-warning);
+      --ui-warning-subtle: var(--theme-dark-warning-subtle);
+      --ui-danger: var(--theme-dark-danger);
+      --ui-danger-subtle: var(--theme-dark-danger-subtle);
+      --ui-info: var(--theme-dark-info);
+      --ui-info-subtle: var(--theme-dark-info-subtle);
+      --ui-shadow-card: var(--theme-dark-shadow-card);
+      --ui-shadow-raised: var(--theme-dark-shadow-raised);
+      --ui-shadow-overlay: var(--theme-dark-shadow-overlay);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --ui-bg: var(--theme-dark-bg);
+    --ui-fg: var(--theme-dark-fg);
+    --ui-surface: var(--theme-dark-surface);
+    --ui-surface-sunken: var(--theme-dark-surface-sunken);
+    --ui-overlay: var(--theme-dark-overlay);
+    --ui-fg-muted: var(--theme-dark-fg-muted);
+    --ui-fg-subtle: var(--theme-dark-fg-subtle);
+    --ui-fg-inverse: var(--theme-dark-fg-inverse);
+    --ui-primary: var(--theme-dark-primary);
+    --ui-primary-hover: var(--theme-dark-primary-hover);
+    --ui-primary-active: var(--theme-dark-primary-active);
+    --ui-primary-subtle: var(--theme-dark-primary-subtle);
+    --ui-accent: var(--theme-dark-accent);
+    --ui-accent-hover: var(--theme-dark-accent-hover);
+    --ui-accent-subtle: var(--theme-dark-accent-subtle);
+    --ui-border: var(--theme-dark-border);
+    --ui-border-strong: var(--theme-dark-border-strong);
+    --ui-focus-ring: var(--theme-dark-focus-ring);
+    --ui-success: var(--theme-dark-success);
+    --ui-success-subtle: var(--theme-dark-success-subtle);
+    --ui-warning: var(--theme-dark-warning);
+    --ui-warning-subtle: var(--theme-dark-warning-subtle);
+    --ui-danger: var(--theme-dark-danger);
+    --ui-danger-subtle: var(--theme-dark-danger-subtle);
+    --ui-info: var(--theme-dark-info);
+    --ui-info-subtle: var(--theme-dark-info-subtle);
+    --ui-shadow-card: var(--theme-dark-shadow-card);
+    --ui-shadow-raised: var(--theme-dark-shadow-raised);
+    --ui-shadow-overlay: var(--theme-dark-shadow-overlay);
+  }
+}
+
+/* ================================================================
+   PRIMITIVES — mode-independent, plain :root (never in the mode chain)
+   ================================================================ */
+:root {
+  /* spacing — 4px grid */
+  --space-1: 0.25rem;   /*  4px */
+  --space-2: 0.5rem;    /*  8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.5rem;    /* 24px */
+  --space-6: 2rem;      /* 32px */
+  --space-7: 2.5rem;    /* 40px */
+  --space-8: 3rem;      /* 48px */
+  --space-9: 3.5rem;    /* 56px */
+  --space-10: 4rem;     /* 64px */
+  --space-11: 5rem;     /* 80px */
+  --space-12: 6rem;     /* 96px */
+
+  /* radius — role names only (WT-VARIANT-01); fully-round elements use the
+     9999px literal directly: shape constant, not a theme decision */
+  --radius-control: 0.5rem;   /* REPLACE — buttons, inputs, selects */
+  --radius-card: 0.75rem;     /* REPLACE — cards, panels */
+  --radius-modal: 1rem;       /* REPLACE — modals, sheets, large surfaces */
+
+  /* fonts — REPLACE the display face via the Font Selection procedure in
+     references/guardrails.md; reflex fonts (Inter/Roboto/system-ui as
+     display) fail the litmus checks */
+  --font-display: 'Georgia', 'Times New Roman', serif;                           /* REPLACE */
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; /* REPLACE */
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;              /* REPLACE */
+}
+
+/* ================================================================
+   CATALOG — consumes ONLY --ui-* tokens and primitives.
+   Font sizes are literals from the active design type-scale table
+   (the scale is documented, not tokenized — WT-VARIANT-01).
+   ================================================================ */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding: var(--space-6) var(--space-5) var(--space-12);
+}
+
+main { max-width: 960px; margin: 0 auto; }
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-2);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: var(--space-10) 0 var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.section-note {
+  color: var(--ui-fg-muted);
+  font-size: 0.875rem;
+  margin: 0 0 var(--space-5);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+/* --- theme toggle (preview-only) --- */
+.theme-toggle {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 10;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--ui-fg);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 9999px;
+  box-shadow: var(--ui-shadow-card);
+  cursor: pointer;
+}
+
+.theme-toggle:hover { border-color: var(--ui-fg-subtle); }
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+/* --- color palette --- */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.swatch {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.swatch__chip { height: var(--space-10); border-bottom: 1px solid var(--ui-border); }
+
+.swatch__label {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ui-fg-muted);
+}
+
+.chip--bg { background: var(--ui-bg); }
+.chip--fg { background: var(--ui-fg); }
+.chip--surface { background: var(--ui-surface); }
+.chip--surface-sunken { background: var(--ui-surface-sunken); }
+.chip--overlay { background: var(--ui-overlay); }
+.chip--fg-muted { background: var(--ui-fg-muted); }
+.chip--fg-subtle { background: var(--ui-fg-subtle); }
+.chip--fg-inverse { background: var(--ui-fg-inverse); }
+.chip--primary { background: var(--ui-primary); }
+.chip--primary-hover { background: var(--ui-primary-hover); }
+.chip--primary-active { background: var(--ui-primary-active); }
+.chip--primary-subtle { background: var(--ui-primary-subtle); }
+.chip--accent { background: var(--ui-accent); }
+.chip--accent-hover { background: var(--ui-accent-hover); }
+.chip--accent-subtle { background: var(--ui-accent-subtle); }
+.chip--border { background: var(--ui-border); }
+.chip--border-strong { background: var(--ui-border-strong); }
+.chip--focus-ring { background: var(--ui-focus-ring); }
+.chip--success { background: var(--ui-success); }
+.chip--success-subtle { background: var(--ui-success-subtle); }
+.chip--warning { background: var(--ui-warning); }
+.chip--warning-subtle { background: var(--ui-warning-subtle); }
+.chip--danger { background: var(--ui-danger); }
+.chip--danger-subtle { background: var(--ui-danger-subtle); }
+.chip--info { background: var(--ui-info); }
+.chip--info-subtle { background: var(--ui-info-subtle); }
+
+/* --- feedback samples --- */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--ui-border);
+  margin-bottom: var(--space-3);
+  font-size: 0.875rem;
+}
+
+.alert__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 9999px;
+  flex: none;
+}
+
+.alert--success { background: var(--ui-success-subtle); }
+.alert--success .alert__dot { background: var(--ui-success); }
+.alert--warning { background: var(--ui-warning-subtle); }
+.alert--warning .alert__dot { background: var(--ui-warning); }
+.alert--danger { background: var(--ui-danger-subtle); }
+.alert--danger .alert__dot { background: var(--ui-danger); }
+.alert--info { background: var(--ui-info-subtle); }
+.alert--info .alert__dot { background: var(--ui-info); }
+
+/* --- typography --- */
+.type-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.type-row__meta {
+  flex: none;
+  width: 200px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ui-fg-muted);
+}
+
+.type-row__sample { margin: 0; }
+
+.sample-display-xl { font-family: var(--font-display); font-size: 3.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.022em; }
+.sample-display { font-family: var(--font-display); font-size: 3rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.022em; }
+.sample-h1 { font-family: var(--font-display); font-size: 2.25rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.022em; }
+.sample-h2 { font-family: var(--font-display); font-size: 1.875rem; font-weight: 700; line-height: 1.25; letter-spacing: -0.012em; }
+.sample-h3 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.012em; }
+.sample-body-lg { font-size: 1.125rem; line-height: 1.6; }
+.sample-body { font-size: 1rem; line-height: 1.6; }
+.sample-body-sm { font-size: 0.875rem; line-height: 1.5; }
+.sample-caption { font-size: 0.75rem; font-weight: 500; line-height: 1.4; color: var(--ui-fg-muted); }
+.sample-mono { font-family: var(--font-mono); font-size: 0.875rem; }
+
+/* --- buttons --- */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.btn {
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.btn:active { transform: scale(0.96); }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn--primary { background: var(--ui-primary); color: var(--ui-fg-inverse); }
+.btn--primary:hover:not(:disabled) { background: var(--ui-primary-hover); }
+.btn--primary:active:not(:disabled) { background: var(--ui-primary-active); }
+
+.btn--secondary { background: transparent; color: var(--ui-primary); border-color: var(--ui-primary); }
+.btn--secondary:hover:not(:disabled) { background: var(--ui-primary-subtle); }
+
+.btn--ghost { background: transparent; color: var(--ui-fg); }
+.btn--ghost:hover:not(:disabled) { background: var(--ui-surface-sunken); }
+
+.btn--danger { background: var(--ui-danger); color: var(--ui-fg-inverse); }
+
+/* --- cards --- */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.card {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--ui-shadow-card);
+  padding: var(--space-5);
+}
+
+.card--raised { border-color: transparent; box-shadow: var(--ui-shadow-raised); }
+
+.card--interactive { transition: box-shadow 150ms ease, transform 150ms ease; cursor: pointer; }
+.card--interactive:hover { box-shadow: var(--ui-shadow-raised); transform: translateY(-2px); }
+
+.card h3 { margin: 0 0 var(--space-2); font-size: 1.125rem; font-weight: 600; }
+.card p { margin: 0; font-size: 0.875rem; color: var(--ui-fg-muted); }
+
+/* --- spacing --- */
+.space-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+}
+
+.space-row__label {
+  flex: none;
+  width: 140px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ui-fg-muted);
+}
+
+.space-row__bar {
+  height: var(--space-3);
+  background: var(--ui-primary);
+  border-radius: 9999px;
+}
+
+/* --- radius --- */
+.radius-grid { display: flex; flex-wrap: wrap; gap: var(--space-5); margin-bottom: var(--space-4); }
+
+.radius-box {
+  width: 160px;
+  height: var(--space-11);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-strong);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ui-fg-muted);
+}
+
+.radius-box--control { border-radius: var(--radius-control); }
+.radius-box--card { border-radius: var(--radius-card); }
+.radius-box--modal { border-radius: var(--radius-modal); }
+.radius-box--round { border-radius: 9999px; }
+
+/* --- elevation --- */
+.elevation-grid { display: flex; flex-wrap: wrap; gap: var(--space-6); }
+
+.elevation-box {
+  width: 200px;
+  padding: var(--space-5);
+  background: var(--ui-surface);
+  border-radius: var(--radius-card);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ui-fg-muted);
+}
+
+.elevation-box--card { box-shadow: var(--ui-shadow-card); }
+.elevation-box--raised { box-shadow: var(--ui-shadow-raised); }
+.elevation-box--overlay { box-shadow: var(--ui-shadow-overlay); }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Cycle color mode">theme: system</button>
+
+<main>
+  <h1><!-- REPLACE -->Project Name<!-- /REPLACE --> — Design Tokens</h1>
+  <p class="section-note">
+    Rendered from the project theme. Components consume tier-2 <code>--ui-*</code> tokens only;
+    tier-1 <code>--theme-light-*</code> / <code>--theme-dark-*</code> pairs live in <code>@layer theme</code>.
+    Toggle top-right: system → light → dark.
+  </p>
+
+  <h2>Color Palette</h2>
+  <p class="section-note">Core surfaces and text. Each swatch is labeled with the tier-2 token components use; every tier-2 token is fed by a <code>--theme-light-*</code> / <code>--theme-dark-*</code> pair.</p>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch__chip chip--bg"></div><code class="swatch__label">--ui-bg</code></div>
+    <div class="swatch"><div class="swatch__chip chip--fg"></div><code class="swatch__label">--ui-fg</code></div>
+    <div class="swatch"><div class="swatch__chip chip--surface"></div><code class="swatch__label">--ui-surface</code></div>
+    <div class="swatch"><div class="swatch__chip chip--surface-sunken"></div><code class="swatch__label">--ui-surface-sunken</code></div>
+    <div class="swatch"><div class="swatch__chip chip--overlay"></div><code class="swatch__label">--ui-overlay</code></div>
+    <div class="swatch"><div class="swatch__chip chip--fg-muted"></div><code class="swatch__label">--ui-fg-muted</code></div>
+    <div class="swatch"><div class="swatch__chip chip--fg-subtle"></div><code class="swatch__label">--ui-fg-subtle</code></div>
+    <div class="swatch"><div class="swatch__chip chip--fg-inverse"></div><code class="swatch__label">--ui-fg-inverse</code></div>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch__chip chip--primary"></div><code class="swatch__label">--ui-primary</code></div>
+    <div class="swatch"><div class="swatch__chip chip--primary-hover"></div><code class="swatch__label">--ui-primary-hover</code></div>
+    <div class="swatch"><div class="swatch__chip chip--primary-active"></div><code class="swatch__label">--ui-primary-active</code></div>
+    <div class="swatch"><div class="swatch__chip chip--primary-subtle"></div><code class="swatch__label">--ui-primary-subtle</code></div>
+    <div class="swatch"><div class="swatch__chip chip--accent"></div><code class="swatch__label">--ui-accent</code></div>
+    <div class="swatch"><div class="swatch__chip chip--accent-hover"></div><code class="swatch__label">--ui-accent-hover</code></div>
+    <div class="swatch"><div class="swatch__chip chip--accent-subtle"></div><code class="swatch__label">--ui-accent-subtle</code></div>
+    <div class="swatch"><div class="swatch__chip chip--border"></div><code class="swatch__label">--ui-border</code></div>
+    <div class="swatch"><div class="swatch__chip chip--border-strong"></div><code class="swatch__label">--ui-border-strong</code></div>
+    <div class="swatch"><div class="swatch__chip chip--focus-ring"></div><code class="swatch__label">--ui-focus-ring</code></div>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch__chip chip--success"></div><code class="swatch__label">--ui-success</code></div>
+    <div class="swatch"><div class="swatch__chip chip--success-subtle"></div><code class="swatch__label">--ui-success-subtle</code></div>
+    <div class="swatch"><div class="swatch__chip chip--warning"></div><code class="swatch__label">--ui-warning</code></div>
+    <div class="swatch"><div class="swatch__chip chip--warning-subtle"></div><code class="swatch__label">--ui-warning-subtle</code></div>
+    <div class="swatch"><div class="swatch__chip chip--danger"></div><code class="swatch__label">--ui-danger</code></div>
+    <div class="swatch"><div class="swatch__chip chip--danger-subtle"></div><code class="swatch__label">--ui-danger-subtle</code></div>
+    <div class="swatch"><div class="swatch__chip chip--info"></div><code class="swatch__label">--ui-info</code></div>
+    <div class="swatch"><div class="swatch__chip chip--info-subtle"></div><code class="swatch__label">--ui-info-subtle</code></div>
+  </div>
+
+  <h3 class="sample-h3">Feedback</h3>
+  <p class="section-note">Feedback text stays <code>--ui-fg</code> on the subtle background; the semantic color carries the indicator, never the copy (color is not the sole meaning carrier).</p>
+  <div class="alert alert--success"><span class="alert__dot"></span>Saved — all changes synced.</div>
+  <div class="alert alert--warning"><span class="alert__dot"></span>Heads up — quota at 80%.</div>
+  <div class="alert alert--danger"><span class="alert__dot"></span>Failed — the export could not complete.</div>
+  <div class="alert alert--info"><span class="alert__dot"></span>Tip — drag columns to reorder.</div>
+
+  <h2>Typography</h2>
+  <p class="section-note">Sizes come from the active design type-scale table — documented levels, not tokens. Faces: <code>--font-display</code> / <code>--font-body</code> / <code>--font-mono</code>.</p>
+  <div class="type-row"><code class="type-row__meta">Display XL · 3.5rem/800</code><p class="type-row__sample sample-display-xl">Ship it</p></div>
+  <div class="type-row"><code class="type-row__meta">Display · 3rem/800</code><p class="type-row__sample sample-display">Design once</p></div>
+  <div class="type-row"><code class="type-row__meta">H1 · 2.25rem/700</code><p class="type-row__sample sample-h1">Page title</p></div>
+  <div class="type-row"><code class="type-row__meta">H2 · 1.875rem/700</code><p class="type-row__sample sample-h2">Section heading</p></div>
+  <div class="type-row"><code class="type-row__meta">H3 · 1.5rem/600</code><p class="type-row__sample sample-h3">Subsection heading</p></div>
+  <div class="type-row"><code class="type-row__meta">Body LG · 1.125rem/400</code><p class="type-row__sample sample-body-lg">Lead paragraphs set the scene before the detail arrives.</p></div>
+  <div class="type-row"><code class="type-row__meta">Body · 1rem/400</code><p class="type-row__sample sample-body">Default body text carries the bulk of the reading experience.</p></div>
+  <div class="type-row"><code class="type-row__meta">Body SM · 0.875rem/400</code><p class="type-row__sample sample-body-sm">Secondary text supports without competing.</p></div>
+  <div class="type-row"><code class="type-row__meta">Caption · 0.75rem/500</code><p class="type-row__sample sample-caption">Captions, metadata, fine print</p></div>
+  <div class="type-row"><code class="type-row__meta">Mono · 0.875rem</code><p class="type-row__sample sample-mono">const theme = 'tokens';</p></div>
+
+  <h2>Buttons</h2>
+  <p class="section-note">Hover/active/focus states are live — mouse over and tab through. Padding and radius come from primitives; colors from <code>--ui-*</code>.</p>
+  <div class="button-row">
+    <button class="btn btn--primary" type="button">Primary</button>
+    <button class="btn btn--secondary" type="button">Secondary</button>
+    <button class="btn btn--ghost" type="button">Ghost</button>
+    <button class="btn btn--danger" type="button">Danger</button>
+  </div>
+  <div class="button-row">
+    <button class="btn btn--primary" type="button" disabled>Primary disabled</button>
+    <button class="btn btn--secondary" type="button" disabled>Secondary disabled</button>
+    <button class="btn btn--ghost" type="button" disabled>Ghost disabled</button>
+    <button class="btn btn--danger" type="button" disabled>Danger disabled</button>
+  </div>
+
+  <h2>Cards</h2>
+  <div class="card-grid">
+    <div class="card">
+      <h3>Default</h3>
+      <p>Border + <code>--ui-shadow-card</code> on <code>--ui-surface</code>.</p>
+    </div>
+    <div class="card card--raised">
+      <h3>Raised</h3>
+      <p>No border, <code>--ui-shadow-raised</code> — dark mode steps luminance instead.</p>
+    </div>
+    <div class="card card--interactive">
+      <h3>Interactive</h3>
+      <p>Hover lifts to <code>--ui-shadow-raised</code> with a 2px translate.</p>
+    </div>
+  </div>
+
+  <h2>Spacing</h2>
+  <p class="section-note">4px grid. Every gap, inset, and padding resolves to a <code>--space-*</code> primitive.</p>
+  <div class="space-row"><code class="space-row__label">--space-1 · 4px</code><div class="space-row__bar" style="width: var(--space-1)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-2 · 8px</code><div class="space-row__bar" style="width: var(--space-2)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-3 · 12px</code><div class="space-row__bar" style="width: var(--space-3)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-4 · 16px</code><div class="space-row__bar" style="width: var(--space-4)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-5 · 24px</code><div class="space-row__bar" style="width: var(--space-5)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-6 · 32px</code><div class="space-row__bar" style="width: var(--space-6)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-7 · 40px</code><div class="space-row__bar" style="width: var(--space-7)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-8 · 48px</code><div class="space-row__bar" style="width: var(--space-8)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-9 · 56px</code><div class="space-row__bar" style="width: var(--space-9)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-10 · 64px</code><div class="space-row__bar" style="width: var(--space-10)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-11 · 80px</code><div class="space-row__bar" style="width: var(--space-11)"></div></div>
+  <div class="space-row"><code class="space-row__label">--space-12 · 96px</code><div class="space-row__bar" style="width: var(--space-12)"></div></div>
+
+  <h2>Border Radius</h2>
+  <p class="section-note">Role-named tokens only (WT-VARIANT-01). Fully-round is the <code>9999px</code> literal — a shape constant, not a theme decision.</p>
+  <div class="radius-grid">
+    <div class="radius-box radius-box--control">--radius-control</div>
+    <div class="radius-box radius-box--card">--radius-card</div>
+    <div class="radius-box radius-box--modal">--radius-modal</div>
+    <div class="radius-box radius-box--round">9999px literal</div>
+  </div>
+
+  <h2>Elevation</h2>
+  <p class="section-note">Mode-dependent: light mode uses drop shadows; dark mode swaps to luminance stepping via the same <code>--ui-shadow-*</code> tokens.</p>
+  <div class="elevation-grid">
+    <div class="elevation-box elevation-box--card">--ui-shadow-card</div>
+    <div class="elevation-box elevation-box--raised">--ui-shadow-raised</div>
+    <div class="elevation-box elevation-box--overlay">--ui-shadow-overlay</div>
+  </div>
+</main>
+
+<script>
+  /* Preview-only 3-state toggle: system → light → dark. System mode is the
+     ABSENCE of data-theme (never data-theme="system"). No persistence on
+     purpose — real apps follow plugins/web/skills/css/references/runtime-toggle.md */
+  (() => {
+    const root = document.documentElement;
+    const button = document.getElementById('theme-toggle');
+    const states = ['system', 'light', 'dark'];
+    const current = () => root.getAttribute('data-theme') ?? 'system';
+    const render = () => { button.textContent = `theme: ${current()}`; };
+    button.addEventListener('click', () => {
+      const next = states[(states.indexOf(current()) + 1) % states.length];
+      if (next === 'system') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', next);
+      render();
+    });
+    render();
+  })();
+</script>
+
+</body>
+</html>

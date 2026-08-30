@@ -9,7 +9,7 @@ argument-hint: "[path/to/scan] [--exclude=pattern]"
 # Find Unused Code
 
 Before any `jj` decision or command, follow
-`coding:references/jj.md`.
+`coding:directions/jj.md`.
 
 Own read-only dead-code discovery: commented-out code blocks, unused exports
 and symbols, unused test helpers, and production code referenced only by
@@ -40,9 +40,9 @@ pre-flight and handles user-confirmed deletion.
    Symbols (hierarchical LSP: file-level reachability, then symbol-level,
    then test helpers), and Test-Only Production Code — following the
    decomposition in
-   [references/parallel-analysis.md](references/parallel-analysis.md). Each
+   [parallel-analysis.md](directions/parallel-analysis.md). Each
    agent maps detection tasks to LSP operations and classifies references per
-   [references/lsp-operations.md](references/lsp-operations.md): only
+   [lsp-operations.md](references/lsp-operations.md): only
    actual-usage references (calls, instantiations, reads, type annotations)
    count — exports, re-exports, imports, and type-only imports do not.
 3. Merge agent findings: deduplicate across agents, drop false positives
@@ -66,7 +66,7 @@ evidence for the user or a calling skill to act on.
   duplicates.
 - Each unused-symbol finding cites only non-usage references under the
   classification rules in
-  [references/lsp-operations.md](references/lsp-operations.md).
+  [lsp-operations.md](references/lsp-operations.md).
 - No project file was modified by this run.
 
 ## Completion

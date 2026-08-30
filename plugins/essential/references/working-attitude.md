@@ -43,7 +43,7 @@ workflow contracts determine who accepts it and when execution may begin.
 
 <report>
 
-Follow [Making plans](directions/plan.md), then add only these risk-specific
+Follow [Making plans](../directions/plan.md), then add only these risk-specific
 details:
 
 - Under Boundary, number every falsifiable assumption and cover only relevant

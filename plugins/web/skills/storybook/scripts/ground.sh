@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ground.sh — visual grounding of a single screenshot via `claude -p`.
 #
-# Reads the prompt section for the given state from references/grounding-prompts.md,
+# Reads the prompt section for the given state from templates/grounding.md,
 # embeds the absolute image path so Claude Code reads it, parses the result.
 # Sentinel "ISSUES: none" → empty issues. Otherwise lines beginning with
 # "- [severity: low|medium|high] [confidence: confirmed|possible] <description>"
@@ -47,9 +47,9 @@ case "$IMAGE" in
   *)  ABS_IMAGE="$(cd "$(dirname "$IMAGE")" && pwd)/$(basename "$IMAGE")" ;;
 esac
 
-PROMPTS_FILE="$(dirname "$0")/../references/grounding-prompts.md"
+PROMPTS_FILE="$(dirname "$0")/../templates/grounding.md"
 if [[ ! -f "$PROMPTS_FILE" ]]; then
-  emit_empty "grounding-prompts.md not found at $PROMPTS_FILE"
+  emit_empty "grounding.md not found at $PROMPTS_FILE"
 fi
 
 # Extract the section for this state — content between "## $STATE" and the

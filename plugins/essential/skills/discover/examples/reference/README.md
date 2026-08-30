@@ -3,7 +3,7 @@
 Two user-approved boards demonstrating the marriage of the discover shell with
 the free-form lessons. They are **design references**: open them in a browser
 to see the target look and interaction, and read
-`references/presentation/components.md` ("Decision-first devices") for the
+`directions/presentation/components.md` ("Decision-first devices") for the
 distilled recipes. They are intentionally *not* part of the example
 suite — they are hand-written HTML with their own capture wiring, whereas every
 suite board is JSON rendered by `scripts/render-page.ts`.

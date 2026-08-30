@@ -637,7 +637,7 @@ These are meant to be stable wire-contract objects, not mutable runtime accumula
   `high` to `p1`, and every remaining input to `p2`.
 - Canonical Markdown rendering reads the raw report severity and maps
   `critical|high|medium|low` to `P0|P1|P2|P3`; `info` remains advisory, as
-  specified by `phase-4-output.md`.
+  specified by `../templates/output.md`.
 - evidence fields are normalized
 - recommendations are synthesized from issue payloads
 

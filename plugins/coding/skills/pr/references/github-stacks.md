@@ -105,10 +105,10 @@ failure.
 
 Landing is explicit and deterministic: require the caller's stack number, PR
 number, PR URL, or branch, and bind a bare number's namespace first through
-[resolve-reference.md](resolve-reference.md), because a stack number and a PR
+[resolve.md](../directions/resolve.md), because a stack number and a PR
 number carrying the same digits select different heads. Landing itself is a jj
 operation on the resolved head branch — fetch, then add a workspace, as
-[Land the resolved surface](resolve-reference.md#land-the-resolved-surface)
+[Land the resolved surface](../directions/resolve.md#land-the-resolved-surface)
 directs. No gh-stack operator lands a stack for an agent, so no local stack
 tracking exists to inspect: verify the landed head against this REST inventory
 and `gh pr view` rather than `gh stack view --json`.
@@ -315,7 +315,7 @@ destination with `view --json` afterward. Do not use interactive
 
 On the jj route, moving between members is a revision choice, not a tree
 switch: add or reuse a workspace at the member's `<head-branch>@<remote>` as
-[Land the resolved surface](resolve-reference.md#land-the-resolved-surface)
+[Land the resolved surface](../directions/resolve.md#land-the-resolved-surface)
 directs, so one member's work never displaces another's.
 
 ## Verify and recover

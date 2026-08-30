@@ -69,9 +69,9 @@ const memoryContractMarkers = [
 ] as const;
 /** Reference alias agent bodies use to bind the lead direction. */
 export const leadAgentDirectionAlias =
-  "@essential:references/directions/lead-agent.md";
+  "@essential:directions/lead.md";
 /** Plugin-relative path the alias resolves against an Essential root. */
-export const leadAgentDirectionPath = "references/directions/lead-agent.md";
+export const leadAgentDirectionPath = "directions/lead.md";
 /** Reference alias injected into every stitched agent's state-system contract. */
 export const stateSystemsReferenceAlias =
   "@essential:references/state-systems.md";

@@ -1,6 +1,6 @@
 # Dossier — persistence contract
 
-This reference defines every file the run writes and the exact schema of each. The loop (`references/loop-workflow.md`)
+This reference defines every file the run writes and the exact schema of each. The loop (`directions/loop.md`)
 persists round artifacts the moment they exist; Step 7 synthesizes the final deliverables from them. Because the
 schemas below are the only run state, any run is resumable — and auditable — from disk alone.
 
@@ -40,7 +40,7 @@ summary: '<one line: what this candidate tries>'
 
 ## scores.yaml
 
-Schema owned by `references/eval-backends.md`: one entry per candidate —
+Schema owned by `directions/eval-backends.md`: one entry per candidate —
 `{backend, raw: [{judge|run, score, reasoning}], consensus, spread, disqualified: null|reason}`.
 
 ## verify.yaml
