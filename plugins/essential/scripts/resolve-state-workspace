@@ -423,7 +423,7 @@ fi
 
 work_dir="$work_root/$work_id"
 ignore_file="$state_root/.gitignore"
-active_probe=".state/works/$work_id/state.md"
+active_probe=".state/works/$work_id/state.mdc"
 
 require_safe_directory_component "$work_dir"
 if [[ -d "$work_dir" ]] &&
@@ -431,10 +431,23 @@ if [[ -d "$work_dir" ]] &&
   invalid "state directory escaped its canonical workspace path: $work_dir"
 fi
 require_safe_directory_component "$work_dir/state"
-require_safe_entrypoint "$work_dir/state/working.md"
-require_safe_entrypoint "$work_dir/state.md"
-require_safe_entrypoint "$work_dir/goal.md"
-require_safe_entrypoint "$work_dir/state/journal.md"
+require_safe_entrypoint "$work_dir/state/working.mdc"
+require_safe_entrypoint "$work_dir/state.mdc"
+require_safe_entrypoint "$work_dir/goal.mdc"
+require_safe_entrypoint "$work_dir/state/journal.mdc"
+
+legacy_files=()
+for legacy in "$state_root/.state/overview.md" "$work_dir/state.md" "$work_dir/goal.md" "$work_dir/state/working.md" "$work_dir/state/journal.md"; do
+  [[ -e "$legacy" ]] && legacy_files+=("$legacy")
+done
+if [[ ${#legacy_files[@]} -gt 0 ]]; then
+  legacy_json="$(jq -n '$ARGS.positional' --args ${legacy_files[@]+"${legacy_files[@]}"})"
+  jq -n --arg work_id "$work_id" --arg work_dir "$work_dir" \
+    --argjson legacy_files "$legacy_json" \
+    '{status:"migration_required", work_id:$work_id, work_dir:$work_dir,
+      legacy_files:$legacy_files, error:"legacy Markdown state requires essential:doctor migration"}'
+  exit 5
+fi
 
 if [[ ! -f "$ignore_file" ]] ||
    ! grep -Eq '^[[:space:]]*\.state/[[:space:]]*(#.*)?$' "$ignore_file" ||
@@ -502,115 +515,43 @@ if [[ $bootstrap -eq 1 ]]; then
   else
     written_under="$(shasum -a 256 "$contract_reference" | cut -c1-8)"
   fi
-  working_contents="# Current focus
-
-- Work ID: \`$work_id\`
-- Updated: \`$bootstrap_timestamp\`
-- Status: Bootstrapped; the charter is not written yet.
-- Working now: Confirm the goal, scope, and acceptance criteria.
-- Handback point: First-use bootstrap is complete; discovery has not started.
-
-## Fast paths
-
-- Charter: [goal.md](../goal.md)
-- Specification: [goal.md#specification-provenance](../goal.md#specification-provenance)
-- State: [state.md](../state.md)
+  project_slug="$(basename "$(dirname "$state_root")" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+  [[ -n "$project_slug" ]] || project_slug="project"
+  project_ref="state:$project_slug"
+  work_ref="$project_ref:work:$work_id"
+  state_contents="---
+schema: essential.state/v1
+kind: stream
+ref: $work_ref
+workId: $work_id
+---
+{{ type: state.stream, ref: '$work_ref', projectRef: '$project_ref', phase: planned, charterStatus: absent, charterRevision: 1, planRevision: 1, stateRevision: 1, writtenUnder: '$written_under', syncState: 'Not started', reviewState: 'Not started', updatedAt: '$bootstrap_timestamp', tasks: [], events: [], revisions: [], questions: [], records: [], documentations: [] }}
+- $work_id
+{{ type: state.source, ref: '$work_ref:source:tasks', href: state/working.mdc, documentKind: tasks }}
+- state/working.mdc
+{{ type: state.source, ref: '$work_ref:source:events', href: state/journal.mdc, documentKind: events }}
+- state/journal.mdc
 "
-  state_contents="# Work state
-
-- State role: \`root\`
-- Work ID: \`$work_id\`
-- Phase: \`planned\`
-- Updated: \`$bootstrap_timestamp\`
-- Charter: [goal.md](goal.md)
-- Current focus: [working.md](state/working.md)
-- Journal: [journal.md](state/journal.md)
-- Plan source: \`state.md\`
-- Plan revision: \`1\`
-- State revision: \`1\`
-- Written under: \`$written_under\`
-- Next owner: \`PM\`
-- Next action: Confirm the charter in goal.md with the user.
-- Repository revision: Not captured yet.
-- Sync state: Not started.
-- Review state: Not started.
-
-## Status
-
-- Topology: \`linear\`
-- Overall graph: \`GOL → OWN\`
-
-## Tasks
-
-| ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GOL | - | planned | Confirm the charter: goal, scope, and success criteria. [targets: goal.md] | — | yes | goal.md records the goal, scope, and measurable success criteria. | PM | Confirm with the user. |
-| OWN | - | planned | Select the next owning skill. [targets: none] | GOL | yes | The next owning skill and handback point are recorded. | PM | Wait for GOL. |
-
-## Decisions
-
-None recorded.
-
-## Dependencies, blockers, and risks
-
-None known.
-
-## Evidence and validation
-
-None recorded.
+  working_contents="---
+schema: essential.state/v1
+kind: tasks
+ref: $work_ref:document:tasks
+workRef: $work_ref
+---
 "
-  goal_contents="# Charter
-
-- Work ID: \`$work_id\`
-- Charter: \`absent\`
-- Charter revision: \`1\`
-- Created: \`$bootstrap_timestamp\`
-- State: [state.md](state.md)
-
-## Goal
-
-Pending confirmation with the user.
-
-## Scope and non-goals
-
-Pending confirmation with the user.
-
-## Success criteria
-
-| ID | Criterion | Acceptance evidence |
-| --- | --- | --- |
-| SC-1 | Pending confirmation with the user. | Pending. |
-
-## Specification provenance
-
-- Source kind: \`pending\`
-- Canonical specification: Pending user confirmation
-- Accepted revision/base: Pending user confirmation
-- Local materialization: Pending user confirmation
-- Materialization receipt: Pending user confirmation
-- Last verification status: \`pending\`
-- Last verified at: Pending user confirmation
-
-## Workspace anchors
-
-- kind: \`$vcs\` · locator: \`$active_workspace\` · revision semantics: commit/change id
+  journal_contents="---
+schema: essential.state/v1
+kind: events
+ref: $work_ref:document:events
+workRef: $work_ref
+---
 "
-  journal_contents="# Journal
-
-Append-only event log, newest last, never rewritten. Line grammar:
-\`- <ISO-8601> <actor>@<capability_id> rev:<N> <event-type> <subject>: <summary> [evidence: <ref>] [invalidates: <ids>]\`
-with event types \`status|decision|revision|sync|sweep|lease\`.
-
-- $bootstrap_timestamp PM@pm rev:1 status $work_id: bootstrapped, phase \`planned\`
-"
-  write_bootstrap_file "$work_dir/goal.md" "$goal_contents"
-  write_bootstrap_file "$work_dir/state/working.md" "$working_contents"
-  write_bootstrap_file "$work_dir/state.md" "$state_contents"
-  write_bootstrap_file "$work_dir/state/journal.md" "$journal_contents"
-  require_safe_entrypoint "$work_dir/goal.md"
-  require_safe_entrypoint "$work_dir/state/working.md"
-  require_safe_entrypoint "$work_dir/state.md"
-  require_safe_entrypoint "$work_dir/state/journal.md"
+  write_bootstrap_file "$work_dir/state/working.mdc" "$working_contents"
+  write_bootstrap_file "$work_dir/state/journal.mdc" "$journal_contents"
+  write_bootstrap_file "$work_dir/state.mdc" "$state_contents"
+  require_safe_entrypoint "$work_dir/state/working.mdc"
+  require_safe_entrypoint "$work_dir/state/journal.mdc"
+  require_safe_entrypoint "$work_dir/state.mdc"
 fi
 
 created_json="$(jq -n '$ARGS.positional' \
@@ -629,6 +570,7 @@ jq -n \
   --arg work_id "$work_id" \
   --arg work_id_source "$work_id_source" \
   --arg work_dir "$work_dir" \
+  --arg state_file "$work_dir/state.mdc" \
   --arg ignore_file "$ignore_file" \
   --argjson bootstrap_requested "$bootstrap" \
   --argjson bootstrap_created "$created_json" \
@@ -639,6 +581,7 @@ jq -n \
     active_workspace:$active_workspace, state_root:$state_root,
     workspace_label:(if $workspace_label == "" then null else $workspace_label end),
     work_id:$work_id, work_id_source:$work_id_source, work_dir:$work_dir,
+    stateFile:$state_file, stateFormat:"mdc-v1",
     ignore_file:$ignore_file, state_ignored:true,
     bootstrap_requested:($bootstrap_requested == 1),
     bootstrap_created:$bootstrap_created,

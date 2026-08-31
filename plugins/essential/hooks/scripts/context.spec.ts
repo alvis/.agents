@@ -44,12 +44,13 @@ function fixture(): string {
     "DESIGN.md",
     "PLAN.md",
     "NOTES.md",
-    ".state/works/eng-42/goal.md",
-    ".state/works/eng-42/state/working.md",
-    ".state/works/eng-42/state.md",
+    ".state/works/eng-42/state/working.mdc",
+    ".state/works/eng-42/goal.mdc",
+    ".state/works/eng-42/state.mdc",
     ".state/works/eng-42/decisions.md",
-    ".state/works/eng-99/state/working.md",
-    ".state/works/eng-99/state.md",
+    ".state/works/eng-99/state/working.mdc",
+    ".state/works/eng-99/goal.mdc",
+    ".state/works/eng-99/state.mdc",
     "docs/README.md",
     "docs/architecture/README.md",
     "docs/architecture/runtime-boundaries.md",
@@ -60,7 +61,12 @@ function fixture(): string {
     "docs/design/checkout-flow.md",
     "docs/design/LEGACY.md",
     "docs/design/system/10-tokens.md",
-    ".state/works/eng-99/goal.md",
+    "docs/specs/README.md",
+    "docs/specs/accounts/README.md",
+    "docs/specs/accounts/session.md",
+    "docs/specs/payments/README.md",
+    "docs/specs/payments/error-contract.md",
+    "docs/specs/payments/UPPER.md",
   ]) {
     const path = resolve(root, relative);
     mkdirSync(dirname(path), { recursive: true });
@@ -125,17 +131,18 @@ describe("Essential context discovery", () => {
     expect(output).not.toContain("\\n");
     assertOrdered(output, [
       "README.md",
-      ".state/works/eng-42/goal.md",
-      ".state/works/eng-42/state/working.md",
-      ".state/works/eng-42/state.md",
+      ".state/works/eng-42/goal.mdc",
+      ".state/works/eng-42/state/working.mdc",
+      ".state/works/eng-42/state.mdc",
       "docs/README.md",
       "docs/architecture/README.md",
       "docs/design/README.md",
+      "docs/specs/README.md",
     ]);
     for (const absent of [
-      ".state/works/eng-99/state/working.md",
-      ".state/works/eng-99/state.md",
-      ".state/works/eng-99/goal.md",
+      ".state/works/eng-99/state/working.mdc",
+      ".state/works/eng-99/goal.mdc",
+      ".state/works/eng-99/state.mdc",
       "CONTEXT.md",
       "DESIGN.md",
       "PLAN.md",
@@ -148,6 +155,11 @@ describe("Essential context discovery", () => {
       "docs/design/system.md",
       "docs/design/checkout-flow.md",
       "docs/design/system/10-tokens.md",
+      "docs/specs/accounts/README.md",
+      "docs/specs/accounts/session.md",
+      "docs/specs/payments/README.md",
+      "docs/specs/payments/error-contract.md",
+      "docs/specs/payments/UPPER.md",
     ])
       expect(output, absent).not.toContain(absent);
     expect(output.match(/^- readme\.md$/gim)).toHaveLength(1);
@@ -156,7 +168,6 @@ describe("Essential context discovery", () => {
   it("omits every work detail when active selection is ambiguous", () => {
     const output = repoContext(fixture());
     expect(output).not.toMatch(/\.state\/works\/(?:eng-42|eng-99)\/state/);
-    expect(output).not.toMatch(/\.state\/works\/(?:eng-42|eng-99)\/goal\.md/);
     expect(output).toContain(
       "State selection is unresolved; ask only when artifact work begins.",
     );
@@ -169,12 +180,12 @@ describe("Essential context discovery", () => {
     expect(session).not.toContain("\\n");
     expect(session).not.toContain("CONTEXT.md");
     assertOrdered(session, [
-      ".state/works/eng-42/goal.md",
-      ".state/works/eng-42/state/working.md",
-      ".state/works/eng-42/state.md",
+      ".state/works/eng-42/state/working.mdc",
+      ".state/works/eng-42/state.mdc",
       "docs/README.md",
       "docs/architecture/README.md",
       "docs/design/README.md",
+      "docs/specs/README.md",
     ]);
     const subagent = hook(root, subagentStart);
     expect(subagent).toContain("**Working directory**");
@@ -182,9 +193,8 @@ describe("Essential context discovery", () => {
     expect(subagent).not.toContain("## Target Repo Documents");
     for (const path of [
       "README.md",
-      ".state/works/eng-42/goal.md",
-      ".state/works/eng-42/state/working.md",
-      ".state/works/eng-42/state.md",
+      ".state/works/eng-42/state/working.mdc",
+      ".state/works/eng-42/state.mdc",
       "docs/README.md",
     ])
       expect(subagent).not.toContain(path);

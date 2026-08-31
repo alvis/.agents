@@ -16,9 +16,12 @@ import { tmpdir } from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { decodeStateDashboard } from "./state-codec.ts";
+
 const here = import.meta.dirname;
 const resolver = resolve(here, "resolve-state-workspace");
-const doctor = resolve(here, "../skills/doctor/scripts/state-doctor");
+const stateLease = resolve(here, "state-lease");
+const stateDoctor = resolve(here, "../skills/doctor/scripts/state-doctor");
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -86,6 +89,17 @@ function run(
   const result = spawnSync("/bin/bash", [resolver, ...args], {
     encoding: "utf8",
     env: environment,
+  });
+  return {
+    exitCode: result.status ?? 1,
+    payload: JSON.parse(result.stdout) as Record<string, unknown>,
+    stderr: result.stderr,
+  };
+}
+
+function diagnose(workDir: string) {
+  const result = spawnSync(stateDoctor, ["--work-dir", workDir, "--json"], {
+    encoding: "utf8",
   });
   return {
     exitCode: result.status ?? 1,
@@ -282,7 +296,7 @@ describe("work state workspace resolution", () => {
     expect(help.stderr).toContain("--bootstrap");
   });
 
-  it("bootstraps only missing entrypoints with current vocabulary", () => {
+  it("bootstraps only missing entrypoints with current vocabulary", async () => {
     const root = resolve(temporary(), "bootstrap");
     initialize(root);
     const id = "eng-421-bootstrap";
@@ -295,10 +309,9 @@ describe("work state workspace resolution", () => {
     expect(existsSync(work)).toBe(false);
     const created = run(root, { workId: id, bootstrap: true });
     const expected = [
-      resolve(work, "goal.md"),
-      resolve(work, "state/working.md"),
-      resolve(work, "state.md"),
-      resolve(work, "state/journal.md"),
+      resolve(work, "state/working.mdc"),
+      resolve(work, "state/journal.mdc"),
+      resolve(work, "state.mdc"),
     ];
     expect(created).toMatchObject({
       exitCode: 0,
@@ -308,47 +321,86 @@ describe("work state workspace resolution", () => {
         bootstrap_existing: [],
       },
     });
-    const working = resolve(work, "state/working.md");
+    const decoded = await decodeStateDashboard(
+      String(created.payload.stateFile),
+    );
+    expect(decoded).toMatchObject({
+      kind: "stream",
+      projectRef: expect.stringMatching(/^state:[a-z0-9-]+$/),
+      stream: {
+        workId: id,
+        charterStatus: "absent",
+      },
+    });
+    expect(decoded.stream).not.toHaveProperty("charter");
+    expect(diagnose(work)).toMatchObject({
+      exitCode: 0,
+      payload: { status: "ok", findings: [] },
+    });
+    const working = resolve(work, "state/working.mdc");
     writeFileSync(working, "# Preserved owner state\n");
-    rmSync(resolve(work, "state.md"));
+    rmSync(resolve(work, "state.mdc"));
     expect(run(root, { workId: id, bootstrap: true })).toMatchObject({
       exitCode: 0,
       payload: {
-        bootstrap_created: [resolve(work, "state.md")],
-        bootstrap_existing: [
-          resolve(work, "goal.md"),
-          working,
-          resolve(work, "state/journal.md"),
-        ],
+        bootstrap_created: [resolve(work, "state.mdc")],
+        bootstrap_existing: [working, resolve(work, "state/journal.mdc")],
       },
     });
     expect(readFileSync(working, "utf8")).toBe("# Preserved owner state\n");
-    const state = readFileSync(resolve(work, "state.md"), "utf8");
-    const goal = readFileSync(resolve(work, "goal.md"), "utf8");
-    expect(state).toContain("- Phase: `planned`\n");
-    expect(state).not.toContain("Blocked on");
-    expect(state).not.toContain("Motion");
-    expect(state).not.toContain(" · ");
-    expect(goal).toContain("- Charter: `absent`");
+    const state = readFileSync(resolve(work, "state.mdc"), "utf8");
+    expect(state).toContain("schema: essential.state/v1");
+    expect(state).toContain("charterStatus: absent");
+    expect(created.payload).toMatchObject({
+      stateFile: resolve(work, "state.mdc"),
+      stateFormat: "mdc-v1",
+    });
+  });
 
-    writeFileSync(
-      resolve(work, "state.md"),
-      state.replace("- Phase: `planned`", "- Phase: `working`"),
+  it("defers lease creation until the first coordinator acquisition", () => {
+    const root = resolve(temporary(), "bootstrap-lease");
+    initialize(root);
+    const created = run(root, {
+      workId: "eng-421-bootstrap-lease",
+      bootstrap: true,
+    });
+    const work = String(created.payload.work_dir);
+
+    expect(created.exitCode).toBe(0);
+    expect(existsSync(resolve(work, "state.mdc"))).toBe(true);
+    expect(existsSync(resolve(work, "lease.json"))).toBe(false);
+
+    const acquired = spawnSync(
+      "/bin/bash",
+      [
+        stateLease,
+        "acquire",
+        "--work-dir",
+        work,
+        "--capability",
+        "pm",
+        "--session",
+        "bootstrap-test",
+      ],
+      { encoding: "utf8" },
     );
-    const diagnostic = spawnSync(
-      doctor,
-      ["--work-dir", work, "--json", "--strict"],
-      {
-        encoding: "utf8",
+    expect(acquired.status, acquired.stderr).toBe(0);
+    expect(JSON.parse(acquired.stdout)).toMatchObject({ status: "acquired" });
+    expect(existsSync(resolve(work, "lease.json"))).toBe(true);
+  });
+
+  it("requires migration for project-level legacy state", () => {
+    const root = resolve(temporary(), "legacy-overview");
+    initialize(root);
+    mkdirSync(resolve(root, ".state"), { recursive: true });
+    writeFileSync(resolve(root, ".state/overview.md"), "# Legacy overview\n");
+    expect(run(root, { workId: "new-work" })).toMatchObject({
+      exitCode: 5,
+      payload: {
+        status: "migration_required",
+        legacy_files: [resolve(root, ".state/overview.md")],
       },
-    );
-    expect(diagnostic.status).toBe(1);
-    const findings = (
-      JSON.parse(diagnostic.stdout) as {
-        findings: Array<{ check: string }>;
-      }
-    ).findings.filter(({ check }) => check === "specification-provenance");
-    expect(findings).toHaveLength(1);
+    });
   });
 
   it("cannot bootstrap past identity or ignore gates", () => {
@@ -383,9 +435,9 @@ describe("work state workspace resolution", () => {
     rmSync(resolve(root, ".state/works"), { recursive: true });
     const work = resolve(root, ".state/works/eng-421-symlink");
     mkdirSync(work, { recursive: true });
-    const victim = resolve(outside, "state.md");
+    const victim = resolve(outside, "state.mdc");
     writeFileSync(victim, "unchanged\n");
-    symlinkSync(victim, resolve(work, "state.md"));
+    symlinkSync(victim, resolve(work, "state.mdc"));
     for (const result of [
       run(root),
       run(root, { workId: "eng-421-symlink", bootstrap: true }),

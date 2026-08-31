@@ -83,8 +83,11 @@ const READ_ONLY_AGENT_POLICIES: Readonly<
   },
   "code-quality-critic": {
     hook_sha256:
-      "02b9715be978c366c6ff8d0aa11304a3a25c35cbfdba44325d45fd29a5389a73",
-    edit_patterns: [".claude/agent-memory/code-quality-critic/*"],
+      "55ed192c18d49185d611985294c636cb2a71b8667ee1be7bd9ff0d3ff765cdd9",
+    edit_patterns: [
+      ".claude/agent-memory/code-quality-critic/*",
+      ".state/works/*/review.mdc",
+    ],
   },
 };
 
@@ -456,15 +459,32 @@ function projectTarget(
   }
   let root = projectRoot;
   if (root === undefined) {
-    const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+    const gitResult = spawnSync("git", ["rev-parse", "--show-toplevel"], {
       cwd: process.cwd(),
+      encoding: "utf8",
     });
-    if (result.status !== 0 || result.stdout === null) {
-      throw new ProjectionError(
-        "project scope requires a Git worktree or --project-root",
-      );
+    if (
+      gitResult.status === 0 &&
+      typeof gitResult.stdout === "string" &&
+      gitResult.stdout.trim() !== ""
+    ) {
+      root = gitResult.stdout.trim();
+    } else {
+      const jjResult = spawnSync("jj", ["root"], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+      });
+      if (
+        jjResult.status !== 0 ||
+        typeof jjResult.stdout !== "string" ||
+        jjResult.stdout.trim() === ""
+      ) {
+        throw new ProjectionError(
+          "project scope requires a Git or Jujutsu worktree or --project-root",
+        );
+      }
+      root = jjResult.stdout.trim();
     }
-    root = result.stdout.toString().trim();
   }
   const resolvedRoot = resolvePath(expandUser(root));
   let rootInfo;
@@ -501,34 +521,26 @@ function worktreeFiles(sourceRoot: string): readonly string[] {
     ["rev-parse", "--absolute-git-dir"],
     { cwd: ROOT, encoding: "utf8" },
   );
-  if (
-    gitDirectoryResult.status !== 0 ||
-    typeof gitDirectoryResult.stdout !== "string" ||
-    gitDirectoryResult.stdout.trim() === ""
-  ) {
-    const detail =
-      typeof gitDirectoryResult.stderr === "string" &&
-      gitDirectoryResult.stderr.trim() !== ""
-        ? gitDirectoryResult.stderr.trim()
-        : `exit ${gitDirectoryResult.status ?? "unknown"}`;
-    throw new ProjectionError(`cannot resolve source repository: ${detail}`);
-  }
-  const gitDirectory = gitDirectoryResult.stdout.trim();
-  const result = spawnSync(
-    "git",
-    [
-      `--git-dir=${gitDirectory}`,
-      `--work-tree=${ROOT}`,
-      "ls-files",
-      "--cached",
-      "--others",
-      "--exclude-standard",
-      "-z",
-      "--",
-      repositoryRelativeRoot,
-    ],
-    { cwd: ROOT, encoding: "utf8" },
-  );
+  const result =
+    gitDirectoryResult.status === 0 &&
+    typeof gitDirectoryResult.stdout === "string" &&
+    gitDirectoryResult.stdout.trim() !== ""
+      ? spawnSync(
+          "git",
+          [
+            `--git-dir=${gitDirectoryResult.stdout.trim()}`,
+            `--work-tree=${ROOT}`,
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            repositoryRelativeRoot,
+          ],
+          { cwd: ROOT, encoding: "utf8" },
+        )
+      : jujutsuFiles(repositoryRelativeRoot);
   if (result.status !== 0 || typeof result.stdout !== "string") {
     const detail =
       typeof result.stderr === "string" && result.stderr.trim() !== ""
@@ -556,6 +568,36 @@ function worktreeFiles(sourceRoot: string): readonly string[] {
     files.push(relative(sourceRoot, sourcePath).split("\\").join("/"));
   }
   return files.sort();
+}
+
+function jujutsuFiles(
+  repositoryRelativeRoot: string,
+): ReturnType<typeof spawnSync> {
+  const rootResult = spawnSync("jj", ["root"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (
+    rootResult.status !== 0 ||
+    typeof rootResult.stdout !== "string" ||
+    rootResult.stdout.trim() === ""
+  ) {
+    const detail =
+      typeof rootResult.stderr === "string" && rootResult.stderr.trim() !== ""
+        ? rootResult.stderr.trim()
+        : `exit ${rootResult.status ?? "unknown"}`;
+    throw new ProjectionError(`cannot resolve source repository: ${detail}`);
+  }
+  if (resolvePath(rootResult.stdout.trim()) !== ROOT) {
+    throw new ProjectionError(
+      `source repository root does not match installer root: ${rootResult.stdout.trim()}`,
+    );
+  }
+  return spawnSync(
+    "jj",
+    ["file", "list", "-T", 'path ++ "\\0"', repositoryRelativeRoot],
+    { cwd: ROOT, encoding: "utf8" },
+  );
 }
 
 interface CopyRegularFilesParams {
@@ -912,8 +954,16 @@ function writeAgent(agentRoot: string, destination: string): string {
 
 function sourceRevision(): string {
   const result = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT });
-  return result.status === 0 && result.stdout !== null
-    ? result.stdout.toString().trim()
+  if (result.status === 0 && result.stdout !== null) {
+    return result.stdout.toString().trim();
+  }
+  const jjResult = spawnSync(
+    "jj",
+    ["log", "--no-graph", "-r", "@", "-T", "commit_id"],
+    { cwd: ROOT, encoding: "utf8" },
+  );
+  return jjResult.status === 0 && typeof jjResult.stdout === "string"
+    ? jjResult.stdout.trim()
     : "unknown";
 }
 
