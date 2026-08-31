@@ -222,12 +222,6 @@ is true, run:
 gh pr ready "$PR_URL" --repo "$HOST/$OWNER/$REPO"
 ```
 
-Re-run the same `gh pr view` command and require the reviewed head and base
-values to be unchanged and `isDraft` to be false. A failed transition or
-read-back is a blocker; do not return review convergence until every approved
-surface passes this check. Use the substantive verdict for this transition
-even when GitHub downgraded the submitted event for a self-review.
-
 Return the converged head map and review evidence to the caller. The initial
 publication caller continues to its initial CI poll; a red-CI repair caller
 continues to its repair-specific schedule. Do not start either poll here.
