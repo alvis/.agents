@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
-case "$MISSING_SECRET_NAMES" in
+case "${MISSING_SECRET_NAMES-}" in
   "")
     CI_PARITY_SECRET_GATE=run_local
     CI_PARITY_OVERALL=pending_local_run
     ;;
   *)
-    if test "${MISSING_SECRET_APPROVED-false}" = true \
+    if test "${MISSING_SECRET_FAILURE_CONFIRMED-false}" != true
+    then
+      CI_PARITY_SECRET_GATE=run_local
+      CI_PARITY_OVERALL=pending_local_run
+    elif test "${MISSING_SECRET_APPROVED-false}" = true \
       && test "${MISSING_SECRET_APPROVAL_SHA-}" = "$TARGET_SHA" \
       && test "${MISSING_SECRET_APPROVAL_NAMES-}" = "$MISSING_SECRET_NAMES"
     then

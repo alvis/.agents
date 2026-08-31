@@ -25,6 +25,22 @@ describe("missing-secret approval gate", () => {
     ]);
   });
 
+  it("should not gate on declared names before a failed command", () => {
+    const result = run({
+      MISSING_SECRET_FAILURE_CONFIRMED: "false",
+      MISSING_SECRET_NAMES: "API_TOKEN,SIGNING_KEY",
+      MISSING_SECRET_APPROVED: "true",
+      MISSING_SECRET_APPROVAL_NAMES: "API_TOKEN,SIGNING_KEY",
+      MISSING_SECRET_APPROVAL_SHA: "target-sha",
+      TARGET_SHA: "target-sha",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout.trim().split(/\r?\n/)).toEqual([
+      "CI_PARITY_SECRET_GATE=run_local",
+      "CI_PARITY_OVERALL=pending_local_run",
+    ]);
+  });
+
   it.each([
     ["missing approval", {}],
     [
@@ -45,6 +61,7 @@ describe("missing-secret approval gate", () => {
     ],
   ])("should reject %s", (_name, approval) => {
     const result = run({
+      MISSING_SECRET_FAILURE_CONFIRMED: "true",
       MISSING_SECRET_NAMES: "API_TOKEN,SIGNING_KEY",
       TARGET_SHA: "target-sha",
       ...approval,
@@ -58,6 +75,7 @@ describe("missing-secret approval gate", () => {
 
   it("should accept only the exact revision and secret names", () => {
     const result = run({
+      MISSING_SECRET_FAILURE_CONFIRMED: "true",
       MISSING_SECRET_APPROVED: "true",
       MISSING_SECRET_APPROVAL_NAMES: "API_TOKEN,SIGNING_KEY",
       MISSING_SECRET_APPROVAL_SHA: "target-sha",
