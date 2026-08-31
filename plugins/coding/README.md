@@ -9,7 +9,7 @@ Two mechanisms make saves and publication safe around AI-driven edits:
 - **One `jj` playbook.** [`./directions/jj.md`](directions/jj.md) owns initialization, workspaces, stacked-review fixes, history shaping, publication handoffs, and recovery for every coding skill.
 
 - **Scoped saves.** Lifecycle saves run through `coding:commit` with a sealed path manifest (`--paths-from=<manifest> --manifest-sha256=<sha>`), so a save touches exactly the reviewed file set and preserves unrelated staged or dirty developer work. Any writer after sealing invalidates the manifest.
-- **Per-commit QA.** `coding:finalize-commits` verifies every unpushed commit in isolation before `coding:pr create` publishes draft PRs and drives CI to green. History mutation belongs to `coding:commit` alone.
+- **Per-commit QA.** `coding:finalize-commits` verifies every unpushed commit in isolation before `coding:pr create` publishes initially draft PRs, promotes approved surfaces to ready for review, and drives CI to green. History mutation belongs to `coding:commit` alone.
 
 ## Skills
 
@@ -27,7 +27,7 @@ Two mechanisms make saves and publication safe around AI-driven edits:
 | `coding:document` | Source-backed package and architecture docs after meaningful changes. |
 | `coding:commit` | All history mutation: scoped saves, split/absorb, stacking, reordering. |
 | `coding:finalize-commits` | Isolated per-commit QA before publishing a stack. |
-| `coding:pr` | Create or update draft PRs, publish external reviews, and merge linear stacks through explicit subcommands. |
+| `coding:pr` | Create or update PRs initially as drafts, promote approved surfaces to ready for review, publish external reviews, and merge linear stacks through explicit subcommands. |
 | `coding:setup-project` | Project/monorepo scaffolding when structure is missing. |
 | `coding:cleanup` | Evidence-based retirement of stale branches, worktrees, and work dirs. |
 | `coding:find-unused` | Read-only dead-code discovery. |
