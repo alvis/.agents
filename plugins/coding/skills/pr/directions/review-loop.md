@@ -205,6 +205,23 @@ Review convergence passes only when all of these hold for every current head:
 - every acted-on comment has a reply tied to remote evidence;
 - each PR head/base target and OID still equal the reviewed surface.
 
+After the exit gate passes, promote each approved draft surface to ready for
+review. For every surface whose latest review reports substantive `APPROVE`,
+re-read its metadata:
+
+```bash
+gh pr view "$PR_URL" --repo "$HOST/$OWNER/$REPO" \
+  --json headRefOid,baseRefName,baseRefOid,isDraft
+```
+
+Compare `headRefOid`, `baseRefName`, and `baseRefOid` with the reviewed
+surface; if any value changed, stop with a concurrency blocker. When `isDraft`
+is true, run:
+
+```bash
+gh pr ready "$PR_URL" --repo "$HOST/$OWNER/$REPO"
+```
+
 Return the converged head map and review evidence to the caller. The initial
 publication caller continues to its initial CI poll; a red-CI repair caller
 continues to its repair-specific schedule. Do not start either poll here.

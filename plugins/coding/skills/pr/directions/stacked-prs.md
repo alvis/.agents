@@ -162,7 +162,7 @@ Before publication and after every stack synchronization, confirm:
 - branch/bookmark names and PR bases express the same bottom-to-top chain;
 - each remote PR head SHA equals the recorded local SHA;
 - no merged revision was rewritten;
-- every new PR is still draft.
+- every new PR starts as draft; the review loop promotes only converged approved surfaces to ready for review.
 
 The create/update workflow owns publication and CI convergence; the merge
 workflow owns per-round merge and descendant restacking. This reference owns
