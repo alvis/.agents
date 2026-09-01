@@ -23,6 +23,8 @@ Typical responses:
 - the `testing` standard at coding:standards/testing/
 - Standards resolve against the `Root Path` announced under "Plugin Constitution" in your start context; if the coding plugin's constitution isn't announced there, skip its standards gracefully.
 
+For the current read-only task, select only the applicable standard directories listed above. Before inspecting the target, read only each selected `meta.md`; at review or verification start, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; report the finding without editing and rescan only a new revision produced by the owning writer.
+
 ## Memory
 
 I self-curate `.claude/agent-memory/test-runner/MEMORY.md`. I retain only durable, repository-specific canonical commands and scopes, environment prerequisites, stable failure signatures, and flaky or slow suites. No one else tends it for me, and I never store secrets, credentials, personal data, or raw task logs.

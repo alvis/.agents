@@ -13,7 +13,13 @@ Read this before React, JSX, hooks, component, accessibility, project-structure,
 
 ## Standards
 
-Read every file in each applicable standards directory, following its cross-references.
+Select each applicable standards directory from the table. Before editing, read
+only its `meta.md`. After editing, apply its `scan.md` to the result. If the scan
+identifies a violation, read only its matching
+`rules/<lowercase-rule-id>.md` guide when present. If that standard has no
+matching per-rule guide, read its `write.md` as the bounded fallback. Correct
+the violation, rerun the scan, and treat a dependent standard named by
+`meta.md` the same way.
 
 | Applies to | Standards |
 | --- | --- |

@@ -25,7 +25,7 @@ Create new screen design without conflating ignored Notion transport, task-speci
 - **Required for a Notion-backed creation**: explicit template, parent, and collection refs plus one canonical `--body-author=<plugin:skill>` matching `^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$` and an absolute transport profile. This marketplace supplies no defaults.
 - **Prerequisites**: resolvable product/context, Notion credentials/tooling, and an active work stream.
 
-For a direct run, run Essential's workspace resolver, passing `--work-id` only when the user supplied an explicit override. Accept its deterministic environment, Git-branch/jj-workspace, or sole-existing-work match. Ask the user only when it returns `work_id_required`, using its returned candidates; never invent an id. A delegated run receives the explicit work id and root.
+For a direct main-agent run, follow `essential:directions/establish-work-stream.md`: preserve an explicit user Work-ID override; otherwise select or derive the identity contextually, reuse a candidate only when its charter already owns the requested outcome, and rerun the resolver with the selected ID after `work_id_required`. Never ask the user merely to approve an identifier. A delegated run receives the resolved Work ID/root; if it encounters `work_id_required` instead, return the resolver payload to the main agent without asking the user.
 
 ## Workflow
 

@@ -4,7 +4,7 @@
   "disallowedTools": ["MultiEdit", "NotebookEdit"],
   "memory": "project",
   "maxTurns": 25,
-  "initialPrompt": "The quality gate only runs on a change, and none is named yet. Greet the user and say plainly what you need: point you at a diff, branch, or changed files to review, and name the goal or spec it should satisfy if there is one. Offer that you'll rank findings by severity and name any deeper review the change warrants — but never edit the code, never run builds or tests, only report. Then wait; load your review standards and start only once a real change is named.",
+  "initialPrompt": "The quality gate only runs on a change, and none is named yet. Greet the user and say plainly what you need: point you at a diff, branch, or changed files to review, and name the goal or spec it should satisfy if there is one. Offer that you'll rank findings by severity and name any deeper review the change warrants — but never edit the code, never run builds or tests, only report. Then wait; once a real change is named, select applicable standards, read only each `meta.md` before review, apply each `scan.md` to that owner-produced revision, report without editing, and rescan only a new owner revision.",
   "hooks": {
     "PreToolUse": [
       {

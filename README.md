@@ -110,7 +110,7 @@ The source and manually maintained projection boundaries are documented in [Harn
 
 A work stream is born, executes, and retires through one continuous discipline:
 
-1. **Bootstrap.** The PM confirms a stable work ID, the resolver enforces the `.state/` ignore gate, and a no-clobber bootstrap creates the charter (`goal.md`), state (`state.md`), focus pointer (`state/working.md`), and journal.
+1. **Bootstrap.** The main agent selects a stable Work ID from task context and existing charters, the resolver enforces the `.state/` ignore gate, and a no-clobber bootstrap creates the charter (`goal.md`), state (`state.md`), focus pointer (`state/working.md`), and journal.
 2. **Charter.** `goal.md` owns the goal, scope, and numbered success criteria (`SC-1`…) with expected evidence — so status churn can never drift the definition of done. It also declares the stream's workspace anchors (a git worktree by default; media projects and asset stores for production work).
 3. **Lease.** The coordinator acquires the stream's on-disk lease before any state write. Two sessions can never both believe they own a stream; an expired lease yields only to an explicit, journaled takeover.
 4. **Specify and plan.** Specs carry provenance and approval binds to exact content; plans are task tables with stable three-letter IDs, explicit dependency graphs, and per-task acceptance.
@@ -177,7 +177,7 @@ This path avoids Notion and remote publication entirely. It leaves verified code
 
 ## Agent team
 
-A cross-harness 22-agent team is organized into a main-session Project Manager, domain leads, and their teammates. Shared operation lives in `plugins/essential/hooks/ALLAGENT.md` and `plugins/essential/hooks/MAINAGENT.md`, subagent conduct including the scripted-execution proxy protocol lives in `plugins/essential/hooks/SUBAGENT.md`, owner-specific routing lives in each contributing plugin's `plugins/<owner>/hooks/ALLAGENT.md`, and per-agent delegation topology lives in each agent definition. A plugin that owns an injected domain binding carries a `plugins/<owner>/hooks/MAINAGENT.md`, injected at `SessionStart` only: `coding` binds to `tech-lead` and `web` binds to `design-lead`. Each lead wraps its `## Collaboration` map in an `<IMPORTANT>` tag, marking it as the map the lead routes from.
+A cross-harness 22-agent team is organized into a main-session Project Manager, domain leads, and their teammates. Shared operation lives in `plugins/essential/hooks/ALLAGENT.md` and `plugins/essential/hooks/MAINAGENT.md`, subagent conduct including the scripted-execution proxy protocol lives in `plugins/essential/hooks/SUBAGENT.md`, owner-specific routing lives in each contributing plugin's `plugins/<owner>/hooks/ALLAGENT.md`, and per-agent delegation topology lives in each agent definition. A plugin that owns an injected domain policy carries a `plugins/<owner>/hooks/MAINAGENT.md`, injected at `SessionStart` only: `coding` selects topology by semantic risk and `web` binds design initiatives to `design-lead`. Each lead wraps its `## Collaboration` map in an `<IMPORTANT>` tag, marking it as the map the lead routes from.
 
 Install via the `essential:install-agents` skill in the active harness. Canonical sources live under `plugins/<owner>/agents/<name>/` as `base.md` plus `frontmatter/meta.json`, `claude.json`, `codex.json`, and `grok.json`. The installer discovers source-checkout siblings, enabled same-marketplace plugins, and explicitly trusted marketplaces passed with `--include-marketplace`; it validates the complete discovered roster, stages stitched files, and copies them into the selected harness's personal agent directory. It overwrites current same-named discoveries and leaves unrelated or stale files untouched. Edits require a re-install, and changes take effect in the next session.
 
@@ -258,7 +258,7 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 ### Team shapes
 
-- **Domain leads**: `tech-lead` for coding delivery, `design-lead` for design delivery, and `ai-research-lead` for research delivery.
+- **Domain leads**: `tech-lead` for Tier 3 coding delivery, `design-lead` for design initiatives, and `ai-research-lead` for research initiatives.
 - **Warm-core specialists** (trusting, low-friction hand-offs): `code-quality-critic`, `testing-evangelist`, `generalist-engineer`, `harness-eval-engineer`.
 - **On-demand specialists**: `principal-engineer`, `data-architect`, `frontend-designer`, `frontend-implementer`, `desktop-implementer`, `mobile-implementer`, `ml-engineer`, `security-champion`, `aesthetic-evaluator`, `adversarial-red-team`, `specification-expert`, `project-initializer`.
 - **Background** (one run per spawn): `devops`, `workflow-optimizer`.
@@ -271,7 +271,7 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 ### Team operation
 
-- Works team-first: The Project Manager initiates the team, appoints domain leads, and handles staffing and user/session proxies. Each lead gathers teammate advice, decomposes its assigned work, owns the domain's implementation decisions, assigns and monitors the pieces across its team, and reconciles delivery. `plugins/essential/hooks/ALLAGENT.md` carries shared operation rules; each owner plugin's `plugins/<owner>/hooks/ALLAGENT.md` carries only its task-to-specialist rows.
+- Topology follows the owning domain's risk policy. The Project Manager forms a team only when that policy requires one, appoints domain leads, and handles staffing and user/session proxies. Each selected lead gathers teammate advice, decomposes its assigned work, owns the domain's implementation decisions, assigns and monitors the pieces across its team, and reconciles delivery. `plugins/essential/hooks/ALLAGENT.md` carries shared operation rules; each owner plugin's `plugins/<owner>/hooks/ALLAGENT.md` carries only its task-to-specialist rows.
 - Subagents reply to the assigning teammate's `agent_id`. Roles and configured names are never direct-message addresses. For continuing work they message the best-known teammate directly when they have its ID, ask the main agent to resolve the ID when the teammate is known, and ask the main agent to suggest a warm peer by folder/feature history or spawn a new named teammate only when they cannot identify the owner.
 - Subagents proxy deterministic scripted execution through the main agent: they compose the complete launch input, send it through the direct teammate-messaging capability, and wait for the result (see `plugins/essential/hooks/SUBAGENT.md`). Plans authored by a specialist in plan mode flow back to the main agent the same way for presentation.
 

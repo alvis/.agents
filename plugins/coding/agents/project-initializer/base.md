@@ -35,6 +35,8 @@ Apply `coding:skills/commit/SKILL.md` before saving and the selected
 - the `file-structure` standard at coding:standards/file-structure/
 - the `git` standard at coding:standards/git/
 - Standards resolve against the `Root Path` announced under "Plugin Constitution" in your start context; if a plugin's constitution isn't announced there, skip its standards gracefully.
+
+For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
 - the target directory being initialized (lazy, resolved per task)
 - any existing partial configuration to respect rather than overwrite (lazy, resolved per task)
 

@@ -139,7 +139,7 @@ get_repo_root_documents_context() {
       fi
     done
   elif [[ "$resolver_status" == "work_id_required" ]]; then
-    context+="- State selection is unresolved; ask only when artifact work begins."$'\n'
+    context+="- State selection is unresolved; the main agent selects when artifact work begins."$'\n'
   fi
 
   # Durable entrypoints only. Their READMEs provide progressive disclosure

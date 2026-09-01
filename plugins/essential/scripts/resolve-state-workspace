@@ -8,7 +8,7 @@ usage: resolve-state-workspace [--work-id <id>|--work-id=<id>] \
 
 Resolves the state workspace and selected work identity, enforcing the
 .state ignore gate and path safety. A normal invocation is read-only;
---bootstrap is the PM-only no-clobber creation mode.
+--bootstrap is the main-agent-only no-clobber creation mode.
 
 Output (JSON) on status:"resolved":
   vcs                 git | jj
@@ -56,8 +56,8 @@ canonical_work_id() {
 }
 
 # The 32-byte bound is a convention with a cost behind it, not a requirement,
-# so it governs only what this resolver proposes; a PM who names a longer
-# stream deliberately gets it.
+# so it governs only what this resolver proposes; a main agent that selects a
+# longer stream deliberately gets it.
 within_id_bound() {
   [[ ${#1} -le 32 ]]
 }
@@ -407,7 +407,7 @@ if [[ -z "$work_id" ]]; then
       --arg work_id_grammar '^[a-z0-9]+(-[a-z0-9]+)*$ at or under 32 bytes, naming what the work is about: no date prefix, no type prefix, no random suffix' \
       --arg naming_reference "$naming_reference" \
       --argjson existing_work_ids "$existing_work_ids_json" \
-      --arg error "work ID cannot be selected safely; the PM must ask the user. existing_work_ids are every stream on disk under works/ and archive/, to check a proposed ID against for collision — not examples of the format, which is work_id_grammar" \
+      --arg error "work ID requires contextual main-agent selection; rerun with --work-id after checking charter ownership and collisions. existing_work_ids are every stream on disk under works/ and archive/, to check a proposed ID against for collision — not examples of the format, which is work_id_grammar" \
       '{status:"work_id_required", vcs:$vcs, repo_root:$repo_root,
         durable_root:$active_workspace, active_workspace:$active_workspace,
         state_root:$state_root,

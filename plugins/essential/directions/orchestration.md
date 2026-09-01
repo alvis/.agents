@@ -1,12 +1,21 @@
 # Orchestration & delegation
 
-Delegate on signal, not reflex. The Project Manager owns delivery across teams; route every coding change through `tech-lead` and the implementing teammate. A domain lead gathers teammate advice, decomposes the assigned goal, owns its domain's implementation decisions, assigns and monitors the pieces, and reconciles results. Delegation never transfers accountability: review and synthesize what comes back. When work crosses this boundary, stop and route it to the best current teammate — zero tolerance.
+Delegate on signal, not reflex. The Project Manager owns delivery across teams.
+Coding topology follows `coding:directions/WORKFLOW.md`; do not add a coordinator
+around one bounded executable slice. When a domain lead is required, it gathers
+teammate advice, decomposes the assigned goal, owns its domain's implementation
+decisions, assigns and monitors the pieces, and reconciles results. Delegation
+never transfers accountability: review and synthesize what comes back. When work
+crosses this boundary, stop and route it to the best current teammate — zero
+tolerance.
 
 ## Choosing the topology
 
 Classify the task and pick the substrate once, up front, then name the success criteria before launch — a run with no stop condition is not ready:
 
-- **Inline** — don't dispatch when dispatching would save no context, add no independence, and only cost latency or a lossy hand-off. Work you can finish in a handful of tool calls is inline; prefer one subagent over several.
+- **Inline** — where the owning domain workflow permits, don't dispatch when
+  dispatching would save no context, add no independence, and only cost latency
+  or a lossy hand-off. Prefer one subagent over several.
 - **Parallel tasks** — independent, dispatch-and-score work whose siblings needn't talk → parallel uses of the subagent-dispatch capability in one request, one stable reference from [naming.md](../references/naming.md) each.
 - **Agent Team** — ongoing, high-signal multi-role coordination where warm context avoids repeated setup → persistent teammates around a warm core. A need to relay reasoning or evidence is not sufficient; put durable detail in artifacts.
 - **Deterministic scripted execution** — high-volume structured iteration toward a measurable target: fan-out plus adversarial verification plus a bounded, resumable correction loop. A subagent composes the complete launch input and asks the main agent to run it.

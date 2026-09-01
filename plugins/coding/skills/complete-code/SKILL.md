@@ -40,11 +40,17 @@ This skill may read and run existing tests to discover and verify the establishe
 - **Required**: `<scope>` — the file, directory, or package to scan.
 - **Optional**: none. If `$ARGUMENTS` contains `--test-only`, stop immediately with exactly:
   > `--test-only` was removed; use `coding:complete-test <scope>`.
-- **Prerequisites**: implementations must satisfy the constitution standards for `universal/write`, `function/write`, `typescript/write`, `documentation/write`, `observability/write`, and `testing/write` (when touching tests to verify a contract).
+- **Prerequisites**: select `universal`, `function`, `typescript`,
+  `documentation`, and `observability`, plus `testing` when touching tests to
+  verify a contract. Before editing, read only each selected standard's
+  `meta.md`. After editing, apply its `scan.md`; when the scan identifies a
+  violation, read the matching `rules/<lowercase-rule-id>.md` guide when
+  present. If that standard has no matching per-rule guide, read its `write.md`
+  as the bounded fallback. Correct the violation and rerun the affected scan.
 
 ## State gate
 
-Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work root first. When delegated, start from the mission capsule's exact work root and relevant specification/design paths. Read `state/working.md` only when the capsule lacks current navigation; read `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned work pointers or overview files. The main-agent caller uses the resolver, asks only on `work_id_required`, and gives a delegated run the explicit resolved work ID/root.
+Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work root first. The main-agent caller follows `essential:directions/establish-work-stream.md`: preserve an explicit user Work-ID override; otherwise select or derive the identity contextually, reuse a candidate only when its charter already owns the requested outcome, and rerun the resolver with the selected ID after `work_id_required`; never ask the user merely to approve an identifier. When delegated, start from the mission capsule's resolved Work ID/root and relevant specification/design paths; if the resolver instead returns `work_id_required`, return its payload to the main agent without asking the user. Read `state/working.md` only when the capsule lacks current navigation; read `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned work pointers or overview files.
 
 ## Workflow
 

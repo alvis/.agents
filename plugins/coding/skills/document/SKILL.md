@@ -31,11 +31,21 @@ Produce accurate package documentation from code. This skill owns package `readm
 
 ## State gate
 
-Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Use the resolver and ask only on `work_id_required`. When delegated, start from the mission capsule's exact source, specification, and design paths. Read `state/working.md` only when navigation is missing, and `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned work pointers or overview files.
+Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. The main-agent caller follows `essential:directions/establish-work-stream.md`: preserve an explicit user Work-ID override; otherwise select or derive the identity contextually, reuse a candidate only when its charter already owns the requested outcome, and rerun the resolver with the selected ID after `work_id_required`; never ask the user merely to approve an identifier. When delegated, start from the mission capsule's resolved Work ID/root and exact source, specification, and design paths; if the resolver instead returns `work_id_required`, return its payload to the main agent without asking the user. Read `state/working.md` only when navigation is missing, and `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned work pointers or overview files.
 
 ## Workflow
 
-Load [references/authoring-rules.md](references/authoring-rules.md) for the concrete drafting rules (section order, TOC discipline, Support Matrix, folder notation, banned behaviors), the ARCHITECTURE tree/diagram/split rules, the independent-review audit checklist, and the retry/rollback criteria.
+<IMPORTANT>
+Classify the documentation change through the Coding workflow before choosing
+topology. Tier 0/1 stays with the main-agent writing owner; do not delegate its
+drafting. That owner performs the evidence check, drafting, mechanical
+verification, and self-review. Add an independent read-only reviewer only when
+the change is consequential, explicitly requested for review, or
+publication-bound. Tier 3 or genuinely multi-milestone work may use its
+governed coordination without transferring document-write ownership.
+</IMPORTANT>
+
+Load [references/authoring-rules.md](references/authoring-rules.md) for the concrete drafting rules (section order, TOC discipline, Support Matrix, folder notation, banned behaviors), the ARCHITECTURE tree/diagram/split rules, the review audit checklist, and the retry/rollback criteria.
 
 1. Resolve the package/workspace and its anchors. Precedence is local explicit template/checklist, existing `readme.md` and `docs/architecture/` structure, repository documentation rules, then closest same-archetype sibling. Use this skill's bundled templates and, when `references/package-types.md` maps the archetype to one, a matching public example only when repository anchors do not decide the shape. A bundled template/example entrypoint may be a split manifest; when it is, load every linked child in manifest order before drafting.
 2. When `--force-plan` is set, or neither a repository anchor nor a bundled template decides the document shape, propose a section outline with a one-line rationale per section and wait for user approval before drafting.
@@ -44,15 +54,15 @@ Load [references/authoring-rules.md](references/authoring-rules.md) for the conc
 5. Draft from the evidence map. Use real imports, commands, paths, inputs, outputs, and failure cases that were verified against code/tests. Never invent a convenience API. Preserve the existing voice and integrate updates into the owning sections.
 6. Generate a table of contents only when the document benefits from one. Use `bun run "${CODING_DOCUMENT_SKILL_DIR}/scripts/toc_width.ts"` for width calculations; never use a checkout-specific absolute path.
 7. Create or update `docs/architecture/<architecture-slug>.md` when explicitly requested or when the package has multiple public/runtime entry points, cross-process or persistent data flow, meaningful dependency layering, or at least three cooperating components whose relationship is not clear from `readme.md`. Name it per `naming.md` in the essential plugin's `references/` directory and repository capability, not a task title. At this write decision, read `${ESSENTIAL_ROOT}/templates/docs/readme.md` and `${ESSENTIAL_ROOT}/templates/docs/architecture.md`, using the root derived from the injected state contract. Reconcile `docs/architecture/README.md` and `docs/README.md`; individual architectural choices remain ADRs under `docs/architecture/decisions/`. Before creating or superseding one, apply the ADR contract at `${ESSENTIAL_ROOT}/references/adr.md` and the template at `${ESSENTIAL_ROOT}/templates/docs/adr.md`: effective ADRs are indexed directly under `decisions/`, superseded ADRs move under `decisions/superseded/`, and a new successor stands alone without naming the old ADR.
-8. The main agent applies the coherent documentation patch. A delegated run returns the patch for it to apply. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping. Decide review outcomes per the criteria in references/authoring-rules.md.
+8. The main agent applies the coherent documentation patch. A delegated run returns the patch for it to apply. Run the verification below and the audit checklist in `references/authoring-rules.md` as the owning writer's self-review. When the independent-review predicate above applies, delegate that same checklist to a read-only reviewer after the self-review. When a check fails, fix the cause and re-run that check; repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
 
 ## Verification
 
 - Every documented export, command, environment variable, path, link, and dependency exists in the evidence map and matches the source.
 - Documentation/build/test examples were executed where safe, and each ran as documented.
-- An independent read-only review (delegated) found no unsupported claims, wrong archetype, README/architecture overlap, unusable examples, stale text, or broken durable-index links.
+- The owning writer's self-review found no unsupported claims, wrong archetype, README/architecture overlap, unusable examples, stale text, or broken durable-index links. When the independent-review predicate applied, its read-only review found none either.
 - Any generated table of contents was produced with `toc_width.ts`, not by hand.
 
 ## Completion
 
-Report project path and archetype, anchors/templates/examples used, evidence-map coverage, architecture create/skip decision, commands/examples verified, independent-review verdict, stale claims removed, and unresolved gaps. The main agent returns created or materially rewritten final paths as `generated_files`; a delegated run returns proposed paths and patch content. Do not measure or split `docs/**` or project README files: durable documentation has no mechanical size limit, but it is still length-calibrated — see `essential:references/output-manifest.md`. The main agent size-checks only eligible work Markdown inside the target `.state/` after all artifact writers finish.
+Report project path and archetype, anchors/templates/examples used, evidence-map coverage, architecture create/skip decision, commands/examples verified, review mode and verdict, stale claims removed, and unresolved gaps. The main agent returns created or materially rewritten final paths as `generated_files`; a delegated run returns proposed paths and patch content. Do not measure or split `docs/**` or project README files: durable documentation has no mechanical size limit, but it is still length-calibrated — see `essential:references/output-manifest.md`. The main agent size-checks only eligible work Markdown inside the target `.state/` after all artifact writers finish.

@@ -17,8 +17,13 @@ a minimal bootstrap that mimics similar projects in the monorepo only when
 essential files are missing. Feature and business-logic code is owned by
 `coding:write-code`, which invokes this skill as its conditional first step.
 
-Applicable standards: `file-structure` (directory layout), `universal/write`,
-`typescript/write` (TypeScript configuration), and `documentation/write`.
+Select `file-structure`, `universal`, `typescript`, and `documentation` as
+applicable to the files being created. Before editing, read only each selected
+standard's `meta.md`. After editing, apply its `scan.md`; when the scan
+identifies a violation, read the matching
+`rules/<lowercase-rule-id>.md` guide when present. If that standard has no
+matching per-rule guide, read its `write.md` as the bounded fallback. Correct
+the violation and rerun the affected scan.
 
 ## Boundaries
 

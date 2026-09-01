@@ -20,7 +20,8 @@
         "SubagentStart": ["child"]
       },
       "MAINAGENT": {
-        "SessionStart": ["root"]
+        "SessionStart": ["root"],
+        "native_guarded_plugins": ["essential", "web"]
       },
       "SUBAGENT": {
         "SubagentStart": ["child"]

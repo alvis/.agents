@@ -4,5 +4,5 @@
   "isolation": "worktree",
   "memory": "project",
   "maxTurns": 40,
-  "initialPrompt": "Take a quick look for quality gates, evals, or convergence predicates that are missing or unmeasured — or a research idea or emerging tech whose feasibility is still a guess — then greet the user and propose the one you'd harden or prototype first: a golden set, a seeded-defect suite, a scoring predicate, or a benchmark that would validate a claim. Then wait for them to pick; load your base standards and wire real repo code only once the target is named, and never claim a capability the harness can't actually observe."
+  "initialPrompt": "Take a quick look for quality gates, evals, or convergence predicates that are missing or unmeasured — or a research idea or emerging tech whose feasibility is still a guess — then greet the user and propose the one you'd harden or prototype first: a golden set, a seeded-defect suite, a scoring predicate, or a benchmark that would validate a claim. Then wait for them to pick; once the target is named, select applicable standards, read only each `meta.md` before editing, apply each `scan.md` after editing, correct and rescan, and never claim a capability the harness can't actually observe."
 }

@@ -30,9 +30,9 @@ Three shapes recur, and none of them is a work ID:
 
 An ID already on disk is never renamed to correct its shape: it is an identity, and identities do not change to satisfy a rule written later. The repair is forward-only — mint the next name right.
 
-A work ID is an identity and is never reused — a rule nothing enforces, so it holds only if you check. Before taking one, read every ID under `works/` **and** `archive/`; if the name is occupied, append the next free ordinal — shortening the scope first so the ordinal still fits in 32 bytes, since `<31-byte-name>-2` would not. That ordinal makes a distinct stream, not a slice of the one it collided with.
+A Work ID is an identity and is never reused — a rule nothing enforces, so it holds only if the main agent checks. Before taking one, read every ID under `works/` **and** `archive/`; if the name is occupied, append the next free ordinal — shortening the scope first so the ordinal still fits in 32 bytes, since `<31-byte-name>-2` would not. That ordinal makes a distinct stream, not a slice of the one it collided with.
 
-`archive/` is permanent — no skill deletes it — so those two directories together are a complete record of which IDs are spoken for, and the resolver reads both. They are still not the whole answer: a name is taken while **any** trace of it survives, including a branch, a source tree, or a merged pull request left by a stream whose directory was removed by hand. Take a colliding name only after establishing that nothing is still using it.
+`archive/` is permanent — no skill deletes it — so those two directories together are a complete record of which IDs are spoken for, and the resolver reads both. They are still not the whole answer: a name is taken while **any** trace of it survives, including a registered workspace or worktree path, a local or remote branch or bookmark, or a pull-request identity left by a stream whose directory was removed by hand. Check all of those surfaces before taking the name; the resolver reports filesystem identities but does not query the forge.
 
 ## Branch
 
@@ -53,7 +53,7 @@ Renaming leaves this checkout pointing at a ref that is gone. Run `git fetch --p
 
 The segment after the ordinal is a semantic scope label for branch readability, not an identity or a substitute for the stable reference above. Name that scope, not the PR archetype selected from `coding:skills/pr/directions/create-update.md`.
 
-Naming the branch this way is what lets the workspace resolution step select the stream from whichever branch is checked out. Only these two shapes resolve; anything else means the main agent asks instead — which is the intended outcome, not a failure.
+Naming the branch this way is what lets the workspace resolution step select the stream from whichever branch is checked out. Only these two shapes resolve automatically; for anything else the main agent selects contextually under [establish-work-stream.md](../directions/establish-work-stream.md) and reruns with `--work-id`.
 
 ## Documents
 

@@ -1,6 +1,6 @@
 ---
 name: lint
-description: Enforce coding standards mechanically across a selected scope with batched linters and independent reviewers. Use when source files need lint-error correction, standards enforcement, or consistent formatting, including calls extended by another plugin's portable lint profile; behavior-changing repairs belong to fix.
+description: Enforce coding standards mechanically across a selected scope with risk-appropriate ownership and review. Use when source files need lint-error correction, standards enforcement, or consistent formatting, including calls extended by another plugin's portable lint profile; behavior-changing repairs belong to fix.
 requirements:
   intelligence: medium
 argument-hint: "[specifier] [--scope=SCOPE] [--skip-unused] [--profile=ABSOLUTE_PATH] [--test-root=PROJECT_ROOT] [--test-pattern=GLOB ...]"
@@ -49,9 +49,19 @@ Fail before editing if the profile is invalid, references a missing standard/sca
 
 ## Workflow
 
-You are the lead orchestrator: coordinate, delegate, and aggregate only — never scan, lint, review, or read standard files yourself. Load [cycle.md](directions/cycle.md) for the lead rules, agent pool lifecycle, per-batch task contents, the lint–review cycle, and `/goal` convergence semantics.
+<IMPORTANT>
+The implementing owner remains responsible for discovery, standards loading,
+the scanner, mechanical edits, focused checks, and self-review. Classify the
+scope through the Coding workflow before choosing topology. Tier 0/1 stays
+with that one owner. Add independent review only when the change is
+consequential, explicitly requested for review, or publication-bound. Tier 3,
+multiple dependent milestones, or multiple implementers may use governed
+coordination, but each assigned implementing owner keeps those mechanical
+responsibilities for its disjoint batch. Load [cycle.md](directions/cycle.md)
+only when an independent-review or coordinated topology applies.
+</IMPORTANT>
 
-0. Unless `--skip-unused` is set, run the pre-flight unused-code scan: invoke `coding:find-unused` with the specifier (or repo root). Zero findings → proceed silently. Otherwise present each finding through a graphical or structured user-input tool (file:line + symbol, Remove/Keep, ≤4 questions per call, paginated), then dispatch one low-intelligence cleanup agent with the confirmed-unused list to delete precisely and report. Record scan/removed/kept counts for the final report; they never count toward `violations_found_total`. `--scope` does not apply here — dead-code detection is project-wide by nature.
+0. Unless `--skip-unused` is set, run the pre-flight unused-code scan: invoke `coding:find-unused` with the specifier (or repo root). Zero findings → proceed silently. Otherwise present each finding through a graphical or structured user-input tool (file:line + symbol, Remove/Keep, ≤4 questions per call, paginated), then have the implementing owner delete precisely the confirmed-unused list. Record scan/removed/kept counts for the final report; they never count toward `violations_found_total`. `--scope` does not apply here — dead-code detection is project-wide by nature.
 1. Parse `specifier`, `--scope`, and the optional profile independently of argument order.
 2. Resolve candidate files:
    - `uncommitted`: union unstaged, staged, and untracked files, then apply the specifier.
@@ -59,16 +69,16 @@ You are the lead orchestrator: coordinate, delegate, and aggregate only — neve
    - Always exclude ignored files, dependencies, generated output, and paths outside the repository.
    - When the selected files include compiler tests, group files by owning project and resolve each project's configured type-test mechanism and discovery patterns before batching. Keep each batch within one project root, pass that absolute root as `--test-root` and every applicable compiler-test glob as a repeated `--test-pattern`, and never combine files owned by different test roots in one runner invocation; do not infer test status from filenames alone.
 3. Apply profile eligibility and exclusions when supplied. Stop cleanly if no files remain.
-4. Discover generic coding standards from active plugin context: collect the standard file paths listed under the "Plugin Constitution > Standards" sections of the system prompt (fall back to filesystem pattern search for `**/standards/**` when absent), select the set named by the linting Delegation Rule by matching names to filename stems (partial-stem matching tolerates renamed or split standards), and add testing standards when any target is a `*.spec.*` or `*.test.*` file or matches a configured compiler-test pattern. Add profile standards without replacing or duplicating generic standards. Pass standard paths to teammates as strings — the lead never reads their contents.
-5. Batch related files that share one owning project root, with at most two files per batch.
-6. For each batch, delegate mechanical linting to a suitable available subagent that cannot delegate further (low-intelligence linters, max 4 concurrent — see the team reference for the full task contents and lifecycle):
+4. Discover generic coding standards from active plugin context: collect the standard file paths listed under the "Plugin Constitution > Standards" sections of the system prompt (fall back to filesystem pattern search for `**/standards/**` when absent), select the set named by the linting Delegation Rule by matching names to filename stems (partial-stem matching tolerates renamed or split standards), and add testing standards when any target is a `*.spec.*` or `*.test.*` file or matches a configured compiler-test pattern. Add profile standards without replacing or duplicating generic standards. Before editing, the implementing owner reads only each selected standard's `meta.md`.
+5. Batch related files that share one owning project root, with at most two files per runner invocation. Batching does not authorize delegation.
+6. For each owned batch, the implementing owner:
    - Run `bun run ${CODING_LINT_SKILL_DIR}/../../scripts/lint_profile_runner.ts [--profile=<absolute-path>] [--test-root=<project-root> --test-pattern=<compiler-test-glob> ...] <files>` exactly once. The runner resolves Coding resources from its installed location and forwards compiler-test classification only to the generic scanner.
    - The runner executes the generic scanner exactly once, then each profile scanner exactly once in declared order. Profile resources resolve relative to the absolute profile path.
-   - Treat scanner output as advisory; confirm candidates against the matching rule before editing.
+   - Treat scanner output as advisory. Apply each selected standard's `scan.md`; confirm a violation against its matching `rules/<lowercase-rule-id>.md` guide when present, or that standard's `write.md` as the bounded fallback when no matching per-rule guide exists.
    - Apply generic and profile standards only within the requested scope.
    - Run project lint, type, and focused test commands after edits.
-   - Return `violations_found`, `status`, files changed, checks run, and remaining issues.
-7. Independently review batches that changed files with two medium-intelligence reviewers per batch, repeating the fix–review round until both approve (see the team reference). Already-compliant batches need no review.
+   - Self-review the resulting diff, rerun affected scans after corrections, and record `violations_found`, `status`, files changed, checks run, and remaining issues.
+7. When the independent-review predicate applies, run the changed batches through [cycle.md](directions/cycle.md). The reviewer remains read-only; the same implementing owner fixes findings and reruns affected scans and project checks. Already-compliant batches need no independent review unless the caller explicitly requested one or publication requires it.
 8. Aggregate batch counts and use the worst status: `failure > partial > success > compliant`.
 9. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
 
@@ -78,7 +88,7 @@ You are the lead orchestrator: coordinate, delegate, and aggregate only — neve
 - The generic scanner ran once per batch; every profile scanner ran once per batch.
 - Every edit is justified by a loaded rule or project tool failure.
 - Relevant project checks pass, or their exact failure is reported.
-- All delegated work is complete and temporary teams are shut down.
+- Every changed batch received implementing-owner self-review. Every batch selected by the independent-review predicate also received read-only independent review; any governed team is shut down.
 
 ## Completion
 
@@ -93,4 +103,4 @@ status: compliant # compliant | success | partial | failure
 
 </report>
 
-Then report the command, the unused-code pre-flight (ran/skipped, findings/removed/kept), profile report label when present, scope, files scanned and modified, standards and scanners applied, verification commands, review coverage, agent lifecycle counts, and remaining issues. Use `compliant` only for a clean pass with no edits and `success` when violations were fixed. A caller using a profile receives this same report shape.
+Then report the command, the unused-code pre-flight (ran/skipped, findings/removed/kept), profile report label when present, scope, files scanned and modified, standards and scanners applied, verification commands, selected topology, self-review and applicable independent-review coverage, any governed agent lifecycle counts, and remaining issues. Use `compliant` only for a clean pass with no edits and `success` when violations were fixed. A caller using a profile receives this same report shape.

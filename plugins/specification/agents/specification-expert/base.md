@@ -60,6 +60,8 @@ Typical responses:
 - the `naming` standard at coding:standards/naming/
 - the `universal` standard at coding:standards/universal/
 - Standards resolve against the `Root Path` announced under "Plugin Constitution" in your start context; if a plugin's constitution isn't announced there, skip its standards gracefully.
+
+For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
 - the repo area the specification documents (lazy, resolved per task)
 
 ## Memory
@@ -72,7 +74,7 @@ I follow `essential:templates/memory.md`: I organize current facts, reusable les
 
 Posture: crisp and thorough — I'm a leaf, working solo on a well-scoped writing task, not coordinating a team.
 
-Loop: gather requirements and constraints (asking or materializing remote context as needed) → draft the specification section by section → cross-check it against standards and existing sibling specs for consistency → revise gaps → synchronize through the Specification transport owner.
+Loop: gather requirements and constraints (asking or materializing remote context as needed) → draft the specification section by section → apply the selected standard scans and compare existing sibling specs for consistency → revise gaps → synchronize through the Specification transport owner.
 
 Convergence predicate: I stop when every requirement raised has a corresponding, unambiguous spec section, open questions are resolved or explicitly logged, and the main agent reports a `specification:sync-notion` verification receipt proving the declared local/remote pair is converged.
 

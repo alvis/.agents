@@ -1,55 +1,60 @@
-# Team Lint–Review Cycle — lead rules, lifecycle, and convergence
+# Lint review cycle
 
-Referenced from SKILL.md Workflow steps 6–8. Defines how the lead runs batches through linter and reviewer teammates.
+Referenced from `SKILL.md` step 7. Use this cycle only when the Coding
+workflow requires independent review because the change is consequential,
+explicitly requested for review, or publication-bound. Tier 0/1 work otherwise
+ends with the implementing owner's self-review.
 
-## Lead rules (orchestration only)
+## Ownership
 
-- **DO**: discover files, create batches, spawn teammates, manage lifecycle, aggregate results.
-- **DO NOT**: read standard files, run the scanner, apply standards, lint, review, or fix — teammates do all of it. Never use filesystem reading capabilities on a path containing `standards/`; pass the full standard file paths to teammates as strings.
-- **DO NOT** assign new tasks to any agent that reported `context_level` >= 60% — retire it instead.
-- Reviewer lifecycle is managed on `ok`/`blocked` + `context_level` reports only. Detailed findings go in a bounded review artifact sent directly to the linter's `agent_id`; they never pass through the lead.
+- The implementing owner runs the scanner, reads the selected standards,
+  applies mechanical fixes, reruns affected scans, and executes project lint,
+  type, and focused test checks. Independent review never transfers that
+  responsibility.
+- A Tier 2 change adds one read-only reviewer after the owner's self-review.
+- Tier 3, multiple dependent milestones, or multiple implementers may use the
+  owning governed coordinator. It may allocate disjoint batches, but each
+  batch retains one implementing owner and the reviewer remains read-only.
+- A reviewer reports findings; it never edits files or delegates further.
 
-## Agent pool
+## Review task
 
-| Agent | Intelligence | Role | Max concurrent | Lifecycle |
-|-------|-------|------|----------------|-----------|
-| Lead (skill agent) | medium | Orchestration only | 1 | Entire workflow |
-| `linter-N` | low | Run the scanner on its batch, apply standards scoped by `--scope`, fix reviewer feedback | 4 | Reused while `context_level` < 60%; waits for reviewer approval when violations were found; requests retirement at >= 60% with fix work remaining |
-| `reviewer-N` | medium | Independent compliance review (only when violations were found) | 2 | Sends a findings-artifact path directly to the linter; reports `ok`/`blocked` + `context_level` to the lead; reused < 60%, retired >= 60% |
+Keep each assignment at or below 4,096 characters. Name the batch files,
+selected standard paths, requested scope, runner receipt, project-check
+evidence, implementing owner, and exact review predicate. If that would exceed
+the ceiling, use the owning task's durable review carrier and dispatch its path
+plus at most two summary lines.
 
-The lead maintains a registry per agent: configured name, returned `agent_id`, role, intelligence, last `context_level`, and status (`working` / `idle` / `retired`). Excess batches queue until a slot frees. Every direct message uses the registry's `agent_id`, never the configured name or role.
+The reviewer checks that:
 
-## Per-batch lint task contents
+- every advisory scanner candidate was decided against the matching scan and
+  rule guide, or the bounded `write.md` fallback when no guide exists;
+- every edit stays inside the requested scope and is justified by a confirmed
+  rule or project-tool failure;
+- generic and profile scanners ran once in their declared order;
+- relevant lint, type, and focused test checks passed; and
+- the self-review did not introduce unsupported rewrites. In particular, a
+  direct `error as Error` catch cast and a whole-error equality assertion stay
+  unchanged when their owning rules permit them.
 
-Each structured task-tracking entry stays at or below 4,096 characters and includes: the absolute standard paths (strings), the batch file list, the `--scope` value and its interpretation (`uncommitted`: `git diff` per file to find changed hunks, lint those ranges plus their enclosing functions/blocks; `all`: whole file; other: a focus hint), the runner command from SKILL.md step 6, and these instructions. If that would exceed the ceiling, put the assignment in a task-owned artifact and dispatch its absolute path plus at most two summary lines.
+## Convergence
 
-- confirm every advisory scanner candidate against the matching rule file (`./rules/<rule-id>.md`) before flagging, and follow its Fix section;
-- run the project lint/type/test tools after edits — not the scanner again;
-- report `violations_found` (integer, `0` when already compliant) and `status: compliant` when zero (distinct from `success`, which means violations were found and fixed);
-- report `context_level` (`input_tokens / context_window_size × 100`, default window 200K) in the completion message;
-- if violations were found, WAIT for reviewer feedback — no self-claiming new tasks until the lead confirms the batch;
-- at `context_level` >= 60%, stop self-claiming and await lead instructions; if reviewers then flag issues, request retirement so a fresh agent takes the fix.
+1. The implementing owner completes its self-review and sends the reviewer the
+   bounded task above.
+2. The reviewer writes concrete file/line findings to a bounded, secret-free
+   review carrier and sends its path to the implementing owner. It returns only
+   `ok` or `blocked`, its context level, and that path in at most two lines; the
+   detailed structured review stays below 1,000 tokens.
+3. On `ok`, mark the batch reviewed.
+4. On `blocked`, the implementing owner fixes the findings, reruns the affected
+   scans and project checks, then requests a fresh read-only review. Allow about
+   two correction rounds; unchanged evidence after that is a blocker, not
+   permission to weaken a rule or check.
+5. The owner aggregates reviewed and self-review-only batch counts. A governed
+   coordinator shuts down any temporary teammates after every owned batch is
+   accounted for.
 
-**Do not invent rewrites the standards do not ask for.** A correct direct `error as Error` cast in a catch block is compliant (`TYP-TYPE-08` / `ERR-HAND-04`) — never rewrite it into `instanceof Error ? … : …` narrowing. A whole-error assertion `expect(error).toEqual(new Error('…'))` is compliant (`TST-DATA-07`) — never split it into `toBeInstanceOf` + separate `.message`/`.cause` checks. These rewrites are themselves violations.
-
-## Lint–review cycle (per batch, all batches in parallel)
-
-1. Linter completes and messages the lead its report + `context_level`, then waits.
-2. `violations_found` is `0` and `status: compliant` → **skip review entirely**: mark the batch complete, log it "compliant — review skipped", and return the linter to the pool (or retire at >= 60%).
-3. `violations_found` > 0 → the lead assigns **2 reviewers** (reuse idle < 60%, else spawn). Each review task names the linted files, the standard paths, and the linter's `agent_id`. Reviewers work independently — they never coordinate with each other.
-4. Communication rules: reviewers write detailed findings (issue descriptions, paths, line numbers, expected fixes) to one bounded, secret-free review artifact and send its absolute path plus at most two lines directly to the linter's `agent_id`. They send only `ok` or `blocked` plus `context_level` and the artifact path to the lead's `agent_id`. No message body may exceed 4,096 characters.
-5. Either reviewer flags issues:
-   - linter `context_level` < 60% → the linter (already holding the findings) fixes and reports back; the lead assigns 2 reviewers again; repeat until both approve.
-   - linter `context_level` >= 60% → the lead retires it, spawns a fresh replacement, and sends the durable partial-work and reviewer-artifact paths rather than relaying their contents.
-6. Both approve → batch complete; linter returns to pool or retires by `context_level`.
-
-## Aggregate & clean up
-
-1. Wait for every batch cycle to finish, including review-skipped batches.
-2. Sum `violations_found` across batches into `violations_found_total`; take the worst status (`failure > partial > success > compliant`).
-3. Track reviewed vs review-skipped batch counts and agent lifecycle numbers (spawned, reused, retired).
-4. Shut down all remaining teammates and delete the team.
-
-## Iterating until clean with /goal
-
-Iteration is session-level via `/goal`, never looped inside this skill. To lint until clean: `/goal violations_found_total reaches 0 from a fresh /coding:lint pass on src/, or stop after 5 turns`, then invoke the skill. The report's leading `violations_found_total` + `status` keys exist so a mechanical-intelligence goal evaluator reads convergence directly: `compliant`/`0` signals the goal is met; `success` means violations were fixed this pass and another pass should verify clean state. Unused-code removals from the pre-flight are reported separately and never count toward `violations_found_total` — a one-time prune must not skew convergence.
+Session-level clean-pass iteration remains owned by `/goal`: rerun
+`/coding:lint` until `violations_found_total: 0` with `status: compliant`, or
+stop at the caller's declared turn limit. A pass that fixes violations reports
+`success`; it does not claim that a fresh pass is already clean.
