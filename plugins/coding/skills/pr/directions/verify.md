@@ -22,6 +22,7 @@ Resolve the target repository's main source checkout first:
 
 ```bash
 SOURCE_REPO_ROOT=$(git rev-parse --show-toplevel)
+export SOURCE_REPO_ROOT
 ```
 
 Require jj to be installed, initialized for that checkout, and able to resolve
@@ -117,7 +118,9 @@ Dispatch one fresh small-model read-only tester. It MUST NOT edit, format,
 commit, or push. It first runs the discovered test and lint commands in CI order
 at the target revision with the available local toolchain and dependencies,
 continues through independent commands after failure, and returns under 1000
-tokens. No install-only bootstrap step is part of this check.
+tokens. Assign a stable nonempty `dependency_group` to every command: commands
+whose prerequisites are coupled share a group, while independent commands use
+different groups. No install-only bootstrap step is part of this check.
 
 Resolve the workflow's complete shell template, including GitHub Actions'
 default flags when `shell` is omitted, into `CI_SHELL_TEMPLATE`. The template
@@ -156,11 +159,19 @@ root before the exact command:
 PROJECT_LOCAL_DEPENDENCY_ROOT="$SOURCE_REPO_ROOT/node_modules"
 test -d "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
 test ! -L "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
-python3 - "$PROJECT_LOCAL_DEPENDENCY_ROOT" <<'PY' || exit 42
+python3 - "$PROJECT_LOCAL_DEPENDENCY_ROOT" "$SOURCE_REPO_ROOT" "$JJ_WORKSPACE_ROOT" <<'PY' || exit 42
 import os
 import sys
 
 root = os.path.realpath(sys.argv[1])
+source_repo_root = os.path.realpath(sys.argv[2])
+target_repo_root = os.path.realpath(sys.argv[3])
+
+def inside(parent, child):
+    try:
+        return os.path.commonpath((parent, child)) == parent
+    except ValueError:
+        return False
 
 def fail(error):
     raise error
@@ -173,18 +184,129 @@ try:
             path = os.path.join(directory, name)
             if not os.path.islink(path):
                 continue
-            target = os.path.realpath(path)
-            try:
-                inside = os.path.commonpath((root, target)) == root
-            except ValueError:
-                inside = False
-            if not inside or not os.path.exists(target):
+            link_target = os.readlink(path)
+            if os.path.isabs(link_target):
+                raise RuntimeError(f"absolute dependency symlink is unsafe: {path}")
+            source_target = os.path.realpath(path)
+            if not inside(source_repo_root, source_target) or not os.path.exists(
+                source_target
+            ):
                 raise RuntimeError(
-                    f"dependency symlink escapes or is dangling: {path}"
+                    f"dependency symlink escapes or is dangling in source tree: {path}"
+                )
+            if inside(root, source_target):
+                continue
+            relative_target = os.path.relpath(source_target, source_repo_root)
+            target = os.path.realpath(
+                os.path.join(target_repo_root, relative_target)
+            )
+            if not inside(target_repo_root, target) or not os.path.exists(target):
+                raise RuntimeError(
+                    f"dependency symlink has no safe target in target tree: {path}"
                 )
 except (OSError, RuntimeError, ValueError) as error:
     print(error, file=sys.stderr)
     raise SystemExit(1)
+PY
+python3 - "$SOURCE_REPO_ROOT" "$JJ_WORKSPACE_ROOT" "$PROJECT_LOCAL_DEPENDENCY_ROOT" <<'PY' || exit 42
+import hashlib
+import json
+import os
+import sys
+
+DEPENDENCY_INPUT_NAMES = frozenset(
+    {
+        ".npmrc",
+        ".pnpmfile.cjs",
+        ".pnpmfile.js",
+        ".yarnrc",
+        ".yarnrc.yml",
+        "bun.lock",
+        "bun.lockb",
+        "bunfig.toml",
+        "npm-shrinkwrap.json",
+        "package-lock.json",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "yarn.lock",
+    }
+)
+SKIP_DIRECTORIES = frozenset(
+    {
+        ".git",
+        ".jj",
+        ".next",
+        ".turbo",
+        "build",
+        "coverage",
+        "dist",
+        "node_modules",
+        "out",
+    }
+)
+
+
+def digest(path):
+    hasher = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def dependency_inputs(root):
+    root = os.path.realpath(root)
+    result = []
+    for directory, subdirectories, files in os.walk(root, followlinks=False):
+        subdirectories[:] = [
+            name for name in subdirectories if name not in SKIP_DIRECTORIES
+        ]
+        for name in files:
+            if name not in DEPENDENCY_INPUT_NAMES:
+                continue
+            path = os.path.join(directory, name)
+            if os.path.islink(path):
+                raise RuntimeError(f"dependency input symlink is unsafe: {path}")
+            result.append((os.path.relpath(path, root), digest(path)))
+    return tuple(sorted(result))
+
+
+source_inputs = dependency_inputs(sys.argv[1])
+target_inputs = dependency_inputs(sys.argv[2])
+if source_inputs != target_inputs:
+    raise SystemExit(
+        "source dependency inputs do not match the target revision; refusing reuse"
+    )
+
+def read_json(path):
+    if os.path.islink(path) or not os.path.isfile(path):
+        raise RuntimeError(f"missing supported dependency integrity metadata: {path}")
+    with open(path, encoding="utf-8") as stream:
+        return json.load(stream)
+
+
+source_lock = read_json(os.path.join(sys.argv[1], "package-lock.json"))
+target_lock = read_json(os.path.join(sys.argv[2], "package-lock.json"))
+hidden_lock = read_json(
+    os.path.join(sys.argv[3], ".package-lock.json")
+)
+if source_lock.get("lockfileVersion") != target_lock.get("lockfileVersion"):
+    raise RuntimeError("source and target npm lockfile versions differ")
+if source_lock.get("packages") != target_lock.get("packages"):
+    raise RuntimeError("source and target npm lockfile package maps differ")
+expected_packages = target_lock.get("packages")
+installed_packages = hidden_lock.get("packages")
+if not isinstance(expected_packages, dict) or not isinstance(installed_packages, dict):
+    raise RuntimeError("npm lockfiles lack package integrity metadata")
+if {
+    key: value for key, value in expected_packages.items() if key
+} != installed_packages:
+    raise RuntimeError(
+        "source node_modules is not bound to the target npm lockfile"
+    )
+if hidden_lock.get("lockfileVersion") != target_lock.get("lockfileVersion"):
+    raise RuntimeError("source node_modules npm integrity metadata is stale")
 PY
 test ! -e "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
 test ! -L "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
@@ -192,17 +314,32 @@ cp -RP "$PROJECT_LOCAL_DEPENDENCY_ROOT" "$JJ_WORKSPACE_ROOT/" || exit 42
 <exact test-or-lint-command>
 ```
 
-The source root must be a real directory. The validator must fail on traversal
-errors, dangling links, and links whose resolved target escapes the canonical
-source root; links that resolve to existing paths inside the tree remain
-supported for package-manager shims such as `node_modules/.bin`. The destination
-checks also reject regular, dangling, or symlink paths, and `cp -RP` failure is
-an ordinary local failure. `-P` preserves the validated links instead of
-following them during the copy. The copied tree is an untracked input created and
-discarded with that `--clean` working copy, so task writes cannot alter the source
-checkout. The tracked files still come only from `-r "$TARGET_SHA"`, and the
-`JJ_COMMIT_ID` check remains mandatory. A missing, unusable, or unsafe dependency
-tree blocks the gate as an ordinary local failure, not a missing-secret exception.
+The source root must be a real directory. The validator must fail on absolute
+links, traversal errors, dangling links, and links whose resolved source target
+escapes the canonical source root. Relative links that resolve to existing paths
+inside the source dependency tree remain supported for package-manager shims such
+as `node_modules/.bin`. Workspace links that resolve outside the dependency tree
+must also have the corresponding relative target inside the clean target
+repository.
+Before copying, the task hashes every recognized package-manager manifest,
+lockfile, and configuration file under both roots (excluding generated and
+dependency directories) and requires the same relative paths and bytes. This
+binds the reused tree to the target revision's dependency inputs; a source tree
+from another lockfile or manifest fails as an ordinary local dependency error.
+For npm trees, the source `node_modules/.package-lock.json` must also match the
+source and target `package-lock.json` package map and lockfile version. This is
+the package-manager install metadata that proves the reused tree was installed
+from those inputs; the shown path does not fall back to manifest hashing alone.
+Projects using another manager must add equivalent manager-owned integrity
+metadata before reuse. An unrecognized dependency input must extend the
+allowlist too. The destination checks also reject regular, dangling, or symlink
+paths, and `cp -RP` failure is an ordinary local failure. `-P` preserves the
+validated links instead of following them during the copy. The copied tree is an
+untracked input created and discarded with that `--clean` working copy, so task
+writes cannot alter the source checkout. The tracked files still come only from
+`-r "$TARGET_SHA"`, and the `JJ_COMMIT_ID` check remains mandatory. A missing,
+unusable, mismatched, or unsafe dependency tree blocks the gate as an ordinary
+local failure, not a missing-secret exception.
 
 For every task, verify that the runner's `JJ_COMMIT_ID` equals the target revision ID; a
 mismatch blocks the gate.
@@ -235,17 +372,20 @@ parent-owned `TREE_LEASE`.
 Serialize the exact ordered workflow command/result set once as canonical JSON
 in `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`. Every entry records the
 target ref, kind, exact command, source, result status, and
-`failure_evidence`. A successful attempted command records integer status `0`
-and `failure_evidence: null`. When a command exits nonzero because it could not
-obtain a named CI variable, retain its numeric status and record exactly
-`{"type":"missing_ci_variable","name":"<variable name>"}` as its
-`failure_evidence`; every such name must be a declared missing variable. An
-approved receipt must contain at least one such attempted failure, and the
-sorted unique set of its evidence names must equal the exact missing-secret
-name array. Use `not_run_missing_secret` with `failure_evidence: null` only for
-commands genuinely skipped after that failure. Any other status/evidence pair,
-including an ordinary non-secret numeric failure, blocks the receipt. Serialize
-the exact lexically sorted missing-secret-name array as
+`failure_evidence` and a dependency group. A successful attempted command
+records integer status `0` and `failure_evidence: null`. When a command exits
+nonzero because it could not obtain one or more named CI variables, retain its
+numeric shell status and record exactly
+`{"type":"missing_ci_variable","names":["<variable name>"]}` as its
+`failure_evidence`, with every name declared missing and the array lexically
+sorted and unique. An approved receipt must contain at least one such attempted
+failure, and the sorted unique union of all evidence names must equal the exact
+missing-secret name array. Use `not_run_missing_secret` with
+`failure_evidence: null` only for commands genuinely skipped after a qualifying
+failure in the same dependency group. Independent groups continue to run and
+retain their attempted results. Any other status/evidence pair, including an
+ordinary non-secret numeric failure or a non-integral/out-of-range status, blocks
+the receipt. Serialize the exact lexically sorted missing-secret-name array as
 `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`; use `[]` when none are missing.
 Embed those exact arrays in the complete JSON receipt below and return all three
 values to the caller. Do not return a standalone approval as a substitute for
@@ -277,6 +417,7 @@ the receipt.
       "kind": "<test-or-lint>",
       "command": "<exact command>",
       "source": "<path and job/script>",
+      "dependency_group": "<ordered dependency group>",
       "status": 0,
       "duration_seconds": 0,
       "failure_evidence": null
@@ -300,10 +441,12 @@ the receipt.
 ```
 
 For an approved receipt, a nonzero attempted result replaces `null` with the
-exact two-field missing-variable evidence object above. A string
+exact `type`/`names` missing-variable evidence object above. A string
 `not_run_missing_secret` status remains a genuine skip and must keep
 `failure_evidence` null; it is not interchangeable with an attempted numeric
-result.
+result. Results in one dependency group remain in workflow order; a group enters
+skip state only after its own qualifying failure, while an independent group may
+continue attempting tasks.
 
 </report>
 
@@ -318,8 +461,9 @@ unresolved blockers under 1000 tokens. The public verifier remains read-only.
 Its create/update caller owns tip-first failure localization, selects the
 earliest failing bookmark/PR, dispatches the relevant fixer only after that
 ownership is known, and restarts the complete gate at new exact revision IDs. Any
-nonzero applicable command or unresolved diagnosis blocks publication. Any
-separate review is read-only.
+ordinary or unapproved nonzero applicable command, or unresolved diagnosis,
+blocks publication; a confirmed missing-variable failure follows the exact
+approval contract above. Any separate review is read-only.
 
 ## Verification
 

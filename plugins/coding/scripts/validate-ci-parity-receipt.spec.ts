@@ -7,6 +7,7 @@ const validator = resolve(import.meta.dirname, "validate-ci-parity-receipt.sh");
 const workflowResults = [
   {
     command: "bunx vitest run",
+    dependency_group: "default",
     kind: "test",
     ref: "target-sha",
     source: ".github/workflows/ci.yml:test",
@@ -16,6 +17,7 @@ const workflowResults = [
 ];
 const skippedWorkflowResult = {
   command: "bunx lint",
+  dependency_group: "default",
   kind: "lint",
   ref: "target-sha",
   source: ".github/workflows/ci.yml:lint",
@@ -28,7 +30,7 @@ const missingVariableFailureWorkflowResults = [
     command: "bunx vitest run --requires-api-token",
     status: 1,
     failure_evidence: {
-      name: "API_TOKEN",
+      names: ["API_TOKEN"],
       type: "missing_ci_variable",
     },
   },
@@ -37,7 +39,7 @@ const missingVariableFailureWorkflowResults = [
     command: "bunx lint --requires-signing-key",
     status: 2,
     failure_evidence: {
-      name: "SIGNING_KEY",
+      names: ["SIGNING_KEY"],
       type: "missing_ci_variable",
     },
   },
@@ -158,12 +160,70 @@ describe("CI-parity receipt validation", () => {
       workflowResults[0],
       missingVariableFailureWorkflowResults[0],
       missingVariableFailureWorkflowResults[2],
+      { ...skippedWorkflowResult, command: "bunx package-audit" },
     ];
     const accepted = run(approvedReceiptWithResults(results), {
       expectedMissingSecretNames: ["API_TOKEN"],
       expectedWorkflowResults: results,
     });
     expect(accepted.status, accepted.stderr).toBe(0);
+  });
+
+  it("should accept all missing names reported by one failed task", () => {
+    const results = [
+      {
+        ...workflowResults[0],
+        status: 1,
+        failure_evidence: {
+          names: ["API_TOKEN", "SIGNING_KEY"],
+          type: "missing_ci_variable",
+        },
+      },
+      { ...skippedWorkflowResult, command: "bunx lint" },
+    ];
+    const accepted = run(approvedReceiptWithResults(results, approvedMissingSecretNames), {
+      expectedMissingSecretNames: approvedMissingSecretNames,
+      expectedWorkflowResults: results,
+    });
+    expect(accepted.status, accepted.stderr).toBe(0);
+  });
+
+  it("should accept independent attempted results after a dependent skip", () => {
+    const results = [
+      missingVariableFailureWorkflowResults[0],
+      skippedWorkflowResult,
+      {
+        ...workflowResults[0],
+        command: "bunx independent-audit",
+        dependency_group: "independent",
+      },
+    ];
+    const accepted = run(approvedReceiptWithResults(results), {
+      expectedMissingSecretNames: ["API_TOKEN"],
+      expectedWorkflowResults: results,
+    });
+    expect(accepted.status, accepted.stderr).toBe(0);
+  });
+
+  it.each([
+    [
+      "a later missing-variable failure",
+      missingVariableFailureWorkflowResults[1],
+      ["API_TOKEN", "SIGNING_KEY"],
+    ],
+    ["a later attempted success", workflowResults[0], ["API_TOKEN"]],
+  ])("should reject %s after skipping starts", (_name, result, names) => {
+    const results = [
+      missingVariableFailureWorkflowResults[0],
+      skippedWorkflowResult,
+      result,
+    ];
+    expect(
+      run(approvedReceiptWithResults(results, names), {
+        expectedMissingSecretNames: names,
+        expectedWorkflowResults: results,
+      }).status,
+    ).toBe(42);
   });
 
   it("should reject a genuine skip before the first missing-variable failure", () => {
@@ -216,6 +276,23 @@ describe("CI-parity receipt validation", () => {
       }).status,
     ).toBe(42);
   });
+
+  it.each([0.5, -1, 256])(
+    "should reject a non-shell exit status %s",
+    (status) => {
+      const result = {
+        ...workflowResults[0],
+        status,
+        failure_evidence: missingVariableFailureWorkflowResults[0].failure_evidence,
+      };
+      expect(
+        run(approvedReceiptWithResults([result, skippedWorkflowResult]), {
+          expectedMissingSecretNames: ["API_TOKEN"],
+          expectedWorkflowResults: [result, skippedWorkflowResult],
+        }).status,
+      ).toBe(42);
+    },
+  );
 
   it("should reject a genuine skip with failure evidence", () => {
     const result = {
