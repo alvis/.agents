@@ -156,20 +156,53 @@ root before the exact command:
 PROJECT_LOCAL_DEPENDENCY_ROOT="$SOURCE_REPO_ROOT/node_modules"
 test -d "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
 test ! -L "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
-test -z "$(find "$PROJECT_LOCAL_DEPENDENCY_ROOT" -type l -print -quit)" || exit 42
+python3 - "$PROJECT_LOCAL_DEPENDENCY_ROOT" <<'PY' || exit 42
+import os
+import sys
+
+root = os.path.realpath(sys.argv[1])
+
+def fail(error):
+    raise error
+
+try:
+    for directory, subdirectories, files in os.walk(
+        root, followlinks=False, onerror=fail
+    ):
+        for name in (*subdirectories, *files):
+            path = os.path.join(directory, name)
+            if not os.path.islink(path):
+                continue
+            target = os.path.realpath(path)
+            try:
+                inside = os.path.commonpath((root, target)) == root
+            except ValueError:
+                inside = False
+            if not inside or not os.path.exists(target):
+                raise RuntimeError(
+                    f"dependency symlink escapes or is dangling: {path}"
+                )
+except (OSError, RuntimeError, ValueError) as error:
+    print(error, file=sys.stderr)
+    raise SystemExit(1)
+PY
 test ! -e "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
 test ! -L "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
-cp -R "$PROJECT_LOCAL_DEPENDENCY_ROOT" "$JJ_WORKSPACE_ROOT/"
+cp -RP "$PROJECT_LOCAL_DEPENDENCY_ROOT" "$JJ_WORKSPACE_ROOT/" || exit 42
 <exact test-or-lint-command>
 ```
 
-The source root and every descendant must be free of symlinks before `cp -R`;
-the destination checks also reject regular, dangling, or symlink paths. The
-copied tree is an untracked input created and discarded with that `--clean`
-working copy, so task writes cannot alter the source checkout. The tracked files
-still come only from `-r "$TARGET_SHA"`, and the `JJ_COMMIT_ID` check remains
-mandatory. A missing, unusable, or symlinked dependency tree is an ordinary
-local failure and blocks the gate, not a missing-secret exception.
+The source root must be a real directory. The validator must fail on traversal
+errors, dangling links, and links whose resolved target escapes the canonical
+source root; links that resolve to existing paths inside the tree remain
+supported for package-manager shims such as `node_modules/.bin`. The destination
+checks also reject regular, dangling, or symlink paths, and `cp -RP` failure is
+an ordinary local failure. `-P` preserves the validated links instead of
+following them during the copy. The copied tree is an untracked input created and
+discarded with that `--clean` working copy, so task writes cannot alter the source
+checkout. The tracked files still come only from `-r "$TARGET_SHA"`, and the
+`JJ_COMMIT_ID` check remains mandatory. A missing, unusable, or unsafe dependency
+tree blocks the gate as an ordinary local failure, not a missing-secret exception.
 
 For every task, verify that the runner's `JJ_COMMIT_ID` equals the target revision ID; a
 mismatch blocks the gate.
