@@ -42,8 +42,12 @@ test "$CANONICAL_RECEIPT_SECRET_NAMES_JSON" = \
 case "$RECEIPT_OVERALL" in
   pass)
     test "$CANONICAL_EXPECTED_SECRET_NAMES_JSON" = '[]' || exit 42
-    jq -e 'all(.workflow_command_results[];
-      (.status | type) == "number" and .status == 0)' \
+    jq -e '
+      all(.workflow_command_results[];
+        (.status | type) == "number"
+        and .status == 0
+        and has("failure_evidence")
+        and .failure_evidence == null)' \
       <<<"$CI_PARITY_RECEIPT_JSON" >/dev/null || exit 42
     jq -e '.missing_secret_approval == {
       "approved": false, "names": [], "sha": null
@@ -66,8 +70,35 @@ case "$RECEIPT_OVERALL" in
     test "$(jq -er '.missing_secret_approval.sha' \
       <<<"$CI_PARITY_RECEIPT_JSON")" = "$TARGET_SHA" || exit 42
     test "$RECEIPT_SECRET_NAMES_JSON" = "$EXPECTED_SECRET_NAMES_JSON" || exit 42
-    jq -e 'all(.workflow_command_results[];
-      .status == "not_run_missing_secret")' \
+    jq -e --argjson expected_names "$EXPECTED_SECRET_NAMES_JSON" '
+      def has_no_failure_evidence:
+        has("failure_evidence") and .failure_evidence == null;
+      def attempted_success:
+        (.status | type) == "number"
+        and .status == 0
+        and has_no_failure_evidence;
+      def genuine_skip:
+        .status == "not_run_missing_secret"
+        and has_no_failure_evidence;
+      def missing_variable_failure:
+        (.status | type) == "number"
+        and .status != 0
+        and (.failure_evidence | type) == "object"
+        and (.failure_evidence | keys == ["name", "type"])
+        and .failure_evidence.type == "missing_ci_variable"
+        and (.failure_evidence.name
+          | type == "string" and length > 0)
+        and (.failure_evidence.name as $name
+          | (($expected_names | index($name)) != null));
+      (any(.workflow_command_results[]; missing_variable_failure)
+        and all(.workflow_command_results[];
+          attempted_success
+          or genuine_skip
+          or missing_variable_failure)
+        and ([.workflow_command_results[]
+          | select(missing_variable_failure)
+          | .failure_evidence.name]
+          | sort | unique) == $expected_names)' \
       <<<"$CI_PARITY_RECEIPT_JSON" >/dev/null || exit 42
     ;;
   *)

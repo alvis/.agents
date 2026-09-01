@@ -146,6 +146,26 @@ amend the target or rebase descendants. Do not use `--ignore-errors`, which
 would hide the task's failing exit status. Continue through other independent
 tasks with separate invocations and record each status.
 
+When an exact task needs project-local dependencies, expose only an already-
+installed tree from the source checkout inside that same task invocation. Do
+not install, upgrade, authenticate, or populate a cache as parity setup. The
+task script may copy the source checkout's dependency tree into the clean run
+root before the exact command:
+
+```bash
+PROJECT_LOCAL_DEPENDENCY_ROOT="$SOURCE_REPO_ROOT/node_modules"
+test -d "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
+test ! -e "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
+cp -R "$PROJECT_LOCAL_DEPENDENCY_ROOT" "$JJ_WORKSPACE_ROOT/"
+<exact test-or-lint-command>
+```
+
+The copied tree is an untracked input created and discarded with that `--clean`
+working copy, so task writes cannot alter the source checkout. The tracked files
+still come only from `-r "$TARGET_SHA"`, and the `JJ_COMMIT_ID` check remains
+mandatory. A missing or unusable dependency tree is an ordinary local failure
+and blocks the gate, not a missing-secret exception.
+
 For every task, verify that the runner's `JJ_COMMIT_ID` equals the target revision ID; a
 mismatch blocks the gate.
 
@@ -176,10 +196,18 @@ parent-owned `TREE_LEASE`.
 
 Serialize the exact ordered workflow command/result set once as canonical JSON
 in `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`. Every entry records the
-target ref, kind, exact command, source, and result status. A successful local
-run records integer status `0`; the approved missing-secret path records
-`not_run_missing_secret` for every command. Serialize the exact lexically sorted
-missing-secret-name array as
+target ref, kind, exact command, source, result status, and
+`failure_evidence`. A successful attempted command records integer status `0`
+and `failure_evidence: null`. When a command exits nonzero because it could not
+obtain a named CI variable, retain its numeric status and record exactly
+`{"type":"missing_ci_variable","name":"<variable name>"}` as its
+`failure_evidence`; every such name must be a declared missing variable. An
+approved receipt must contain at least one such attempted failure, and the
+sorted unique set of its evidence names must equal the exact missing-secret
+name array. Use `not_run_missing_secret` with `failure_evidence: null` only for
+commands genuinely skipped after that failure. Any other status/evidence pair,
+including an ordinary non-secret numeric failure, blocks the receipt. Serialize
+the exact lexically sorted missing-secret-name array as
 `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`; use `[]` when none are missing.
 Embed those exact arrays in the complete JSON receipt below and return all three
 values to the caller. Do not return a standalone approval as a substitute for
@@ -232,6 +260,12 @@ the receipt.
   "overall": "<pass-fail-blocked-or-approved_without_local_run>"
 }
 ```
+
+For an approved receipt, a nonzero attempted result replaces `null` with the
+exact two-field missing-variable evidence object above. A string
+`not_run_missing_secret` status remains a genuine skip and must keep
+`failure_evidence` null; it is not interchangeable with an attempted numeric
+result.
 
 </report>
 

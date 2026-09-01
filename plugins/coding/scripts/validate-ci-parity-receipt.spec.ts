@@ -11,8 +11,51 @@ const workflowResults = [
     ref: "target-sha",
     source: ".github/workflows/ci.yml:test",
     status: 0,
+    failure_evidence: null,
   },
 ];
+const skippedWorkflowResult = {
+  command: "bunx lint",
+  kind: "lint",
+  ref: "target-sha",
+  source: ".github/workflows/ci.yml:lint",
+  status: "not_run_missing_secret",
+  failure_evidence: null,
+};
+const missingVariableFailureWorkflowResults = [
+  {
+    ...workflowResults[0],
+    command: "bunx vitest run --requires-api-token",
+    status: 1,
+    failure_evidence: {
+      name: "API_TOKEN",
+      type: "missing_ci_variable",
+    },
+  },
+  {
+    ...skippedWorkflowResult,
+    command: "bunx lint --requires-signing-key",
+    status: 2,
+    failure_evidence: {
+      name: "SIGNING_KEY",
+      type: "missing_ci_variable",
+    },
+  },
+  {
+    ...skippedWorkflowResult,
+    command: "bunx typecheck",
+  },
+];
+
+const approvedMissingSecretNames = ["API_TOKEN", "SIGNING_KEY"];
+const malformedMissingVariableFailureWorkflowResult = {
+  ...workflowResults[0],
+  status: 1,
+  failure_evidence: {
+    name: "API_TOKEN",
+    type: "ordinary_command_failure",
+  },
+};
 
 function passingReceipt(): Record<string, unknown> {
   return {
@@ -22,6 +65,33 @@ function passingReceipt(): Record<string, unknown> {
     overall: "pass",
     target: { base: "target-base", kind: "standalone", sha: "target-sha" },
     workflow_command_results: workflowResults,
+  };
+}
+
+const approvedMissingSecretReceipt = {
+  ...passingReceipt(),
+  missing_secret_approval: {
+    approved: true,
+    names: approvedMissingSecretNames,
+    sha: "target-sha",
+  },
+  overall: "approved_without_local_run",
+  workflow_command_results: missingVariableFailureWorkflowResults,
+};
+
+function approvedReceiptWithResults(
+  results: readonly Record<string, unknown>[],
+  names: readonly string[] = ["API_TOKEN"],
+) {
+  return {
+    ...passingReceipt(),
+    missing_secret_approval: {
+      approved: true,
+      names,
+      sha: "target-sha",
+    },
+    overall: "approved_without_local_run",
+    workflow_command_results: results,
   };
 }
 
@@ -70,31 +140,81 @@ describe("CI-parity receipt validation", () => {
   });
 
   it("should accept exact missing-secret approval", () => {
-    const results = workflowResults.map((result) => ({
-      ...result,
-      status: "not_run_missing_secret",
-    }));
-    const receipt = {
-      ...passingReceipt(),
-      missing_secret_approval: {
-        approved: true,
-        names: ["API_TOKEN", "SIGNING_KEY"],
-        sha: "target-sha",
-      },
-      overall: "approved_without_local_run",
-      workflow_command_results: results,
-    };
-    const accepted = run(receipt, {
-      expectedMissingSecretNames: ["API_TOKEN", "SIGNING_KEY"],
-      expectedWorkflowResults: results,
+    const accepted = run(approvedMissingSecretReceipt, {
+      expectedMissingSecretNames: approvedMissingSecretNames,
+      expectedWorkflowResults: missingVariableFailureWorkflowResults,
     });
     expect(accepted.status, accepted.stderr).toBe(0);
 
-    const mismatched = run(receipt, {
+    const mismatched = run(approvedMissingSecretReceipt, {
+      expectedMissingSecretNames: ["API_TOKEN"],
+      expectedWorkflowResults: missingVariableFailureWorkflowResults,
+    });
+    expect(mismatched.status).toBe(42);
+  });
+
+  it("should accept attempted results and genuine skips after missing-variable failure", () => {
+    const results = [
+      workflowResults[0],
+      missingVariableFailureWorkflowResults[0],
+      missingVariableFailureWorkflowResults[2],
+    ];
+    const accepted = run(approvedReceiptWithResults(results), {
       expectedMissingSecretNames: ["API_TOKEN"],
       expectedWorkflowResults: results,
     });
-    expect(mismatched.status).toBe(42);
+    expect(accepted.status, accepted.stderr).toBe(0);
+  });
+
+  it("should reject an attempted non-secret failure hidden by approval", () => {
+    expect(
+      run(approvedReceiptWithResults([
+        malformedMissingVariableFailureWorkflowResult,
+        skippedWorkflowResult,
+      ]), {
+        expectedMissingSecretNames: ["API_TOKEN"],
+        expectedWorkflowResults: [
+          malformedMissingVariableFailureWorkflowResult,
+          skippedWorkflowResult,
+        ],
+      }).status,
+    ).toBe(42);
+  });
+
+  it("should reject a missing-variable failure without explicit evidence", () => {
+    const result = { ...workflowResults[0], status: 1 };
+    expect(
+      run(approvedReceiptWithResults([result, skippedWorkflowResult]), {
+        expectedMissingSecretNames: ["API_TOKEN"],
+        expectedWorkflowResults: [result, skippedWorkflowResult],
+      }).status,
+    ).toBe(42);
+  });
+
+  it("should reject an attempted success with failure evidence", () => {
+    const result = {
+      ...workflowResults[0],
+      failure_evidence: missingVariableFailureWorkflowResults[0].failure_evidence,
+    };
+    expect(
+      run(approvedReceiptWithResults([result]), {
+        expectedMissingSecretNames: ["API_TOKEN"],
+        expectedWorkflowResults: [result],
+      }).status,
+    ).toBe(42);
+  });
+
+  it("should reject a genuine skip with failure evidence", () => {
+    const result = {
+      ...skippedWorkflowResult,
+      failure_evidence: missingVariableFailureWorkflowResults[0].failure_evidence,
+    };
+    expect(
+      run(approvedReceiptWithResults([result]), {
+        expectedMissingSecretNames: ["API_TOKEN"],
+        expectedWorkflowResults: [result],
+      }).status,
+    ).toBe(42);
   });
 
   it("should reject a passing receipt when secrets were expected", () => {
