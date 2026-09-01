@@ -90,15 +90,20 @@ case "$RECEIPT_OVERALL" in
           | type == "string" and length > 0)
         and (.failure_evidence.name as $name
           | (($expected_names | index($name)) != null));
-      (any(.workflow_command_results[]; missing_variable_failure)
-        and all(.workflow_command_results[];
-          attempted_success
-          or genuine_skip
-          or missing_variable_failure)
-        and ([.workflow_command_results[]
-          | select(missing_variable_failure)
-          | .failure_evidence.name]
-          | sort | unique) == $expected_names)' \
+      (reduce .workflow_command_results[] as $result
+        ({valid: true, failure_seen: false, names: []};
+         if ($result | missing_variable_failure) then
+           .failure_seen = true
+           | .names += [$result.failure_evidence.name]
+         elif ($result | attempted_success) then .
+         elif ($result | genuine_skip) then
+           .valid = (.valid and .failure_seen)
+         else
+           .valid = false
+         end)
+        | .valid
+          and .failure_seen
+          and (.names | sort | unique) == $expected_names)' \
       <<<"$CI_PARITY_RECEIPT_JSON" >/dev/null || exit 42
     ;;
   *)

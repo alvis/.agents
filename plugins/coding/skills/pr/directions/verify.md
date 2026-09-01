@@ -155,16 +155,21 @@ root before the exact command:
 ```bash
 PROJECT_LOCAL_DEPENDENCY_ROOT="$SOURCE_REPO_ROOT/node_modules"
 test -d "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
+test ! -L "$PROJECT_LOCAL_DEPENDENCY_ROOT" || exit 42
+test -z "$(find "$PROJECT_LOCAL_DEPENDENCY_ROOT" -type l -print -quit)" || exit 42
 test ! -e "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
+test ! -L "$JJ_WORKSPACE_ROOT/node_modules" || exit 42
 cp -R "$PROJECT_LOCAL_DEPENDENCY_ROOT" "$JJ_WORKSPACE_ROOT/"
 <exact test-or-lint-command>
 ```
 
-The copied tree is an untracked input created and discarded with that `--clean`
+The source root and every descendant must be free of symlinks before `cp -R`;
+the destination checks also reject regular, dangling, or symlink paths. The
+copied tree is an untracked input created and discarded with that `--clean`
 working copy, so task writes cannot alter the source checkout. The tracked files
 still come only from `-r "$TARGET_SHA"`, and the `JJ_COMMIT_ID` check remains
-mandatory. A missing or unusable dependency tree is an ordinary local failure
-and blocks the gate, not a missing-secret exception.
+mandatory. A missing, unusable, or symlinked dependency tree is an ordinary
+local failure and blocks the gate, not a missing-secret exception.
 
 For every task, verify that the runner's `JJ_COMMIT_ID` equals the target revision ID; a
 mismatch blocks the gate.

@@ -166,6 +166,19 @@ describe("CI-parity receipt validation", () => {
     expect(accepted.status, accepted.stderr).toBe(0);
   });
 
+  it("should reject a genuine skip before the first missing-variable failure", () => {
+    const results = [
+      skippedWorkflowResult,
+      missingVariableFailureWorkflowResults[0],
+    ];
+    expect(
+      run(approvedReceiptWithResults(results), {
+        expectedMissingSecretNames: ["API_TOKEN"],
+        expectedWorkflowResults: results,
+      }).status,
+    ).toBe(42);
+  });
+
   it("should reject an attempted non-secret failure hidden by approval", () => {
     expect(
       run(approvedReceiptWithResults([
