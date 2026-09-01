@@ -78,8 +78,9 @@ fails silently.
 
 - `ALLAGENT.md` — injected at `SessionStart` **and** `SubagentStart`; carries that plugin's
   own routing only. Do not rebuild a central roster table in it.
-- `MAINAGENT.md` — `SessionStart` only; binds the main agent to a domain lead
-  (`coding`→`tech-lead`, `web`→`design-lead`).
+- `MAINAGENT.md` — `SessionStart` only; carries the owner's main-session decision
+  gate (`coding` selects topology by semantic risk; `web` binds design initiatives
+  to `design-lead`).
 - `SUBAGENT.md` — `essential` only, `SubagentStart`.
 
 Under Grok Build these payloads stay registered but are openly scoped out: its
@@ -214,16 +215,21 @@ distinct capitalized names.
 
 ## Authoring rules
 
-Read the rule before writing the artifact; these are the sources, not summaries.
+<IMPORTANT>
+Select applicable standards by action. Before editing, read only each selected
+standard's `meta.md`; after editing, apply its `scan.md`. When a scan identifies
+a violation, read only the matching rule guide before correcting it, then repeat
+that scan. These are the sources, not summaries.
+</IMPORTANT>
 
-- `plugins/governance/standards/authoring/` — one coherent
+- `plugins/governance/standards/authoring/meta.md` — one coherent
   document (supersede prose, never append addenda); concision must preserve the
   executable contract; the Content Boundary Convention (`<IMPORTANT>` for hard
   guardrails, `<report>` for output contracts, every tag closed); headings are useful
   defaults, not a contract.
 - `plugins/governance/references/context-catalog.md` — the standards an
   agent may cite. Name a standard by its canonical path; never invent one.
-- `plugins/governance/standards/delegation/` — batching, reports, and
+- `plugins/governance/standards/delegation/meta.md` — batching, reports, and
   the message ceiling for skills that dispatch subagents.
 - `plugins/governance/skills/{write-skill,create-agent,create-standard}/templates/` —
   seed templates for their authored artifacts. Delete every author-guide comment

@@ -12,7 +12,7 @@ If ineligible, transfer the complete task with its identity, evidence, constrain
 
 ## Work artifacts
 
-Before reading or changing project state, read `{{PLUGIN_DIR}}/references/state-systems.md`. Before lifecycle-managed work, read `{{PLUGIN_DIR}}/references/state.md` and run its resolver without inventing a work ID. On `work_id_required`, the main agent asks; on `requires_ignore`, subagents stop and the main agent alone repairs `.gitignore`. For ADRs, read `{{PLUGIN_DIR}}/references/adr.md`.
+Before reading or changing project state, read `{{PLUGIN_DIR}}/references/state-systems.md`. Before lifecycle-managed work, read `{{PLUGIN_DIR}}/references/state.md` and run its resolver without inventing a Work ID. On `work_id_required`, the main agent selects contextually and reruns; subagents return the payload. On `requires_ignore`, subagents stop and the main agent alone repairs `.gitignore`. For ADRs, read `{{PLUGIN_DIR}}/references/adr.md`.
 
 ## Work approach
 

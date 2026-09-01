@@ -47,10 +47,13 @@ step 2 is its concrete application to file size.
 
 ## Standards
 
-Apply `universal/write` (general authoring conventions), `typescript/write`
-(patterns and type safety), `function/write` (function design and
-complexity), `documentation/write` (JSDoc and inline comments), and
-`naming/write` (variable, function, and file naming).
+Select `universal`, `typescript`, `function`, `documentation`, and `naming`,
+plus `file-structure` when creating or moving files. Before editing, read only
+each selected standard's `meta.md`. After editing, apply its `scan.md`; when
+the scan identifies a violation, read the matching
+`rules/<lowercase-rule-id>.md` guide when present. If that standard has no
+matching per-rule guide, read its `write.md` as the bounded fallback. Correct
+the violation and rerun the affected scan.
 
 ## Workflow
 

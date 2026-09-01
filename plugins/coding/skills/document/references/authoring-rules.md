@@ -1,7 +1,7 @@
 # Authoring rules — README and durable architecture drafting
 
-Referenced from SKILL.md Workflow steps 3–7. These are the concrete rules the
-drafts and the independent review are held to.
+Referenced from SKILL.md Workflow steps 3–8. These are the concrete rules the
+draft and every applicable self-review or independent review are held to.
 
 ## README drafting
 
@@ -128,10 +128,12 @@ For ADR rows and ADR changes, apply the canonical
 The index contains effective ADRs only; history is selected from
 `decisions/superseded/` by the successor link when a current ADR is known.
 
-## Independent review audits
+## Review audits
 
-The read-only reviewer checks each item and returns pass/fail per audit with
-itemized fatals and warnings:
+The writing owner checks every item during self-review. When the skill's
+independent-review predicate applies, a read-only reviewer repeats the same
+checks. Each review returns pass/fail per audit with itemized fatals and
+warnings:
 
 1. **Evidence integrity** — every export, CLI command, flag, env var, file
    path, and script mentioned in the docs exists in the evidence map or actual

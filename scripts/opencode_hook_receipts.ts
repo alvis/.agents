@@ -197,11 +197,11 @@ function parseSkillRegistrations(
 function nativePayloadCommand(
   event: string,
   payloadName: string,
-  leadAgent?: string,
+  guardedLeadAgent?: string,
 ): string {
   const leadGuard =
-    payloadName === "MAINAGENT"
-      ? `if [ -n "\${PLUGIN_ROOT:-}" ] && [ ! -f "\${CODEX_HOME:-\${HOME}/.codex}/agents/${stringValue(leadAgent, "payload lead agent")}.toml" ]; then exit 0; fi; `
+    payloadName === "MAINAGENT" && guardedLeadAgent !== undefined
+      ? `if [ -n "\${PLUGIN_ROOT:-}" ] && [ ! -f "\${CODEX_HOME:-\${HOME}/.codex}/agents/${guardedLeadAgent}.toml" ]; then exit 0; fi; `
       : "";
   return `${PLUGIN_ROOT_GUARD}${leadGuard}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
 }
@@ -261,9 +261,23 @@ function receiptFromGlobalRegistration(
         ? (leadAgents[pluginName] as string)
         : undefined;
     if (payloadName === "MAINAGENT" && leadAgent === undefined) continue;
+    const nativeGuardedPlugins =
+      payloadName === "MAINAGENT"
+        ? stringArray(
+            payloadPolicy.native_guarded_plugins,
+            "native guarded MAINAGENT plugins",
+          )
+        : [];
+    const guardedLeadAgent = nativeGuardedPlugins.includes(pluginName)
+      ? leadAgent
+      : undefined;
     if (
       registration.command !==
-      nativePayloadCommand(registration.event, payloadName, leadAgent)
+      nativePayloadCommand(
+        registration.event,
+        payloadName,
+        guardedLeadAgent,
+      )
     ) {
       continue;
     }
@@ -275,11 +289,8 @@ function receiptFromGlobalRegistration(
       `${payloadName} ${registration.event} audiences`,
     );
     const requirements: Record<string, string> = {};
-    if (payloadName === "MAINAGENT") {
-      requirements.projected_agent = stringValue(
-        leadAgents[pluginName],
-        `lead agent for ${pluginName}`,
-      );
+    if (guardedLeadAgent !== undefined) {
+      requirements.projected_agent = guardedLeadAgent;
     }
     return {
       audiences,

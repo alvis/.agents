@@ -1,8 +1,7 @@
 # Converge Pull Request Reviews
 
 Load this reference after `coding:pr create` or `coding:pr update` has pushed
-every selected head and verified each PR's `headRefOid`. Skip it only when the
-invocation includes `--no-review`.
+every selected head and verified each PR's `headRefOid`.
 
 Dispatch review without a prior authorization receipt, including for a
 self-contained black-zone draft. The review workflow performs the full review
@@ -144,8 +143,10 @@ mutation($threadId:ID!){
 
 When any accepted finding changes a selected PR:
 
-1. Update the earliest owning PR and every affected descendant through
-   `coding:pr update <bottom-affected-pr> --publish-only`. Publication returns
+1. Update the earliest owning PR and every affected descendant through the
+   internal `coding:pr update <bottom-affected-pr> --publish-only` continuation,
+   passing this review-loop parent's exact stack map, head/base OIDs, expected
+   hosted checks, and retained iteration values. Publication returns
    immediately after verified pushes and base updates while this parent still
    owns review convergence. Replace the saved expected-check/config evidence
    with the refreshed result from that publication.
@@ -168,7 +169,8 @@ When the only remaining trust cap is red CI, do not spend another review attempt
 same hosted state. Return `action: repair_ci_then_review` with the capped PR,
 head/base map, check evidence, and every non-CI disposition already completed.
 The create/update caller enters its polling/repair phase, republishes any repair
-with `--publish-only`, then restarts review convergence with a fresh critic.
+with the internal `--publish-only` continuation context, then restarts review
+convergence with a fresh critic.
 This preserves the existing `retry count unchanged` contract: the CI-only
 return leaves `REVIEW_ITERATION` unchanged, and the fresh review after repair
 increments it under the guard above.
@@ -225,4 +227,3 @@ gh pr ready "$PR_URL" --repo "$HOST/$OWNER/$REPO"
 Return the converged head map and review evidence to the caller. The initial
 publication caller continues to its initial CI poll; a red-CI repair caller
 continues to its repair-specific schedule. Do not start either poll here.
-Report `--no-review` as an explicit skip, never as a passing review.

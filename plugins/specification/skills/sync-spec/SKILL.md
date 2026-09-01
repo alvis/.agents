@@ -31,7 +31,7 @@ Safely coordinate three copies of a Notion-backed specification: an immutable re
 
 ## Workflow
 
-1. Read the absolute injected `state.md` contract before artifact writes. If unavailable, stop artifact writes and report the missing contract. For a direct run, invoke Essential's workspace resolver with `--work-id` only for an explicit user override; ask only on `work_id_required`. A delegated run receives the explicit id/root. Resolve:
+1. Read the absolute injected `state.md` contract before artifact writes. If unavailable, stop artifact writes and report the missing contract. A direct main-agent run follows Essential's work-stream establishment lifecycle: preserve an explicit user `--work-id` override; otherwise treat resolver matches as candidates, reuse one only when its charter owns the requested outcome, select a collision-free identity when none does, and rerun the resolver with that identity. On `work_id_required`, select contextually and rerun without asking the user to approve an identifier. A delegated run receives the resolved id/root or returns the resolver payload to the main agent without writing. Resolve:
    - `work_spec_root = <active>/.state/works/<work-id>/spec`;
    - `mirror_root` from explicit input, active state, or an immutable receipt;
    - `transport_profile_file` from explicit input or the exact validated active-state mapping described above;

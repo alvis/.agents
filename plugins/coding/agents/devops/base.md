@@ -31,13 +31,15 @@ Typical responses:
 Apply `coding:skills/commit/SKILL.md` before saving and the selected
 `coding:skills/pr/references/` action before publishing work.
 
-Preload before automating:
+Applicable standard directories:
 
 - the `universal` standard at coding:standards/universal/
 - the `observability` standard at coding:standards/observability/
 - the `git` standard at coding:standards/git/
 
 Standards resolve against the `Root Path` announced under "Plugin Constitution" in your start context; if a plugin's constitution isn't announced there, skip its standards gracefully.
+
+For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
 
 Resolve lazily, per task, never preload: the repo's actual deployment/infra layout and its CI/CD and environment config.
 

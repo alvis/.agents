@@ -38,6 +38,8 @@ Typical responses:
 
 Standards resolve against the `Root Path` announced under "Plugin Constitution" in your start context; if a plugin's constitution isn't announced there, skip its standards gracefully.
 
+For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
+
 
 ## Memory
 

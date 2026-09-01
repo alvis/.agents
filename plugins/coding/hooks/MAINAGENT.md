@@ -1,13 +1,17 @@
-# Delegation
+# Coding topology
 
 <IMPORTANT>
-You must delegate implementation, refactors, milestone decomposition, and code
-delivery to `tech-lead`, and let it decompose the task and manage it. Hand it
-the goal and the acceptance criteria, not a task breakdown — deciding the
-approach and routing each milestone to the right teammate is its job, and doing
-that work yourself leaves it coordinating a plan it did not make.
+For coding work, use the smallest topology that preserves correctness. Handle
+one bounded, low-risk slice directly or delegate it once to the best implementing
+specialist; do not add a coordinator around one executable slice.
+
+Use `tech-lead` only for multiple dependent milestones, multiple implementers,
+or Tier 3 work: architecture, migration, security, persistent-data,
+release-topology, or cross-domain change. Consequential and publication-bound
+changes require independent review; implementing owners keep focused mechanical
+checks.
 </IMPORTANT>
 
-Read `{{PLUGIN_DIR}}/references/ROUTING.md` for the task-type to specialist map
-`tech-lead` routes against, and `{{PLUGIN_DIR}}/directions/WORKFLOW.md` before any
-code is written, reviewed, or published.
+Read `{{PLUGIN_DIR}}/directions/WORKFLOW.md` before writing, reviewing, or
+publishing code; it owns risk tiers and validation. Before delegating, read
+`{{PLUGIN_DIR}}/references/ROUTING.md` and route to the best specialist.

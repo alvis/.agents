@@ -13,7 +13,7 @@ standard name or path; it cites entries from here verbatim.
   the agent is currently working in. They are NEVER preloaded at agent-definition time and never hold a fixed path
   in this catalog; an agent's base.md states that it resolves them lazily, not what they currently point to.
 - **Standards are stable.** These live at fixed paths in this repo (the plugin `standards/` trees)
-  and MAY be named as preload candidates for producers/critics per the assignment map.
+  and MAY be selected for producers/critics per the assignment map.
 - **Every agent self-curates project memory.** Every roster definition carries `"memory": "project"` and owns
   `.claude/agent-memory/<name>/MEMORY.md`; there is no external memory steward or shared runtime memory file.
   Each definition names role-specific durable content and follows
@@ -40,8 +40,16 @@ standard name or path; it cites entries from here verbatim.
 | the design standards — `css`, `design`, `theming`, `components`, `accessibility`, `hooks`, `project-structure`, `storybook` | `web:standards/{css,design,theming}/` + `react:standards/{components,accessibility,hooks,project-structure,storybook}/` |
 
 Paths use canonical `plugin:path` syntax (e.g. `universal` resolves to
-`coding:standards/universal/`). Directories (trailing slash) mean "read every file
-under this tree, following cross-references."
+`coding:standards/universal/`). A directory citation (trailing slash) selects a
+standard; it does not preload the tree. Before editing, read only its `meta.md`.
+Before a read-only review or verification, read that same `meta.md` without
+loading the rest of the tree. After editing, a writer applies its `scan.md`; a
+read-only role instead applies the scan at review or verification start. Read only the matching
+`rules/<lowercase-rule-id>.md` guide identified by the scan when present, or
+that standard's `write.md` as the bounded fallback when no matching guide
+exists. Writers correct violations and rerun the scan. Read-only roles report
+findings without editing and rerun the scan only on a new revision produced by
+the owning writer. Treat a dependent standard named by `meta.md` the same way.
 
 ### GAP note
 

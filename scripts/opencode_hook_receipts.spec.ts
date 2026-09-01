@@ -29,7 +29,78 @@ function globalHooks(
   return `${JSON.stringify({ hooks: { [event]: [registration] } })}\n`;
 }
 
+function payloadCommand(
+  event: string,
+  payloadName: string,
+  guardedLeadAgent?: string,
+): string {
+  const leadGuard =
+    guardedLeadAgent === undefined
+      ? ""
+      : `if [ -n "\${PLUGIN_ROOT:-}" ] && [ ! -f "\${CODEX_HOME:-\${HOME}/.codex}/agents/${guardedLeadAgent}.toml" ]; then exit 0; fi; `;
+  return `${PLUGIN_ROOT_GUARD}${leadGuard}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
+}
+
 describe("OpenCode hook receipt command validation", () => {
+  it("should not require a projected agent for an unguarded MAINAGENT payload", async () => {
+    const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
+    try {
+      await writeFixture(
+        pluginRoot,
+        "hooks/hooks.json",
+        globalHooks(payloadCommand("SessionStart", "MAINAGENT"), "SessionStart"),
+      );
+      await writeFixture(pluginRoot, "hooks/MAINAGENT.md", "payload\n");
+
+      const receipts = resolveHookReceipts({
+        contract,
+        pluginFiles: ["hooks/MAINAGENT.md", "hooks/hooks.json"],
+        pluginName: "coding",
+        pluginRoot,
+      });
+
+      expect(receipts).toHaveLength(1);
+      expect(receipts[0]?.requirements).toEqual({});
+    } finally {
+      await removeTemporaryDirectory(pluginRoot);
+    }
+  });
+
+  it.each([
+    ["essential", "tech-lead"],
+    ["web", "design-lead"],
+  ])(
+    "should require %s's projected agent for a guarded MAINAGENT payload",
+    async (pluginName, leadAgent) => {
+      const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
+      try {
+        await writeFixture(
+          pluginRoot,
+          "hooks/hooks.json",
+          globalHooks(
+            payloadCommand("SessionStart", "MAINAGENT", leadAgent),
+            "SessionStart",
+          ),
+        );
+        await writeFixture(pluginRoot, "hooks/MAINAGENT.md", "payload\n");
+
+        const receipts = resolveHookReceipts({
+          contract,
+          pluginFiles: ["hooks/MAINAGENT.md", "hooks/hooks.json"],
+          pluginName,
+          pluginRoot,
+        });
+
+        expect(receipts).toHaveLength(1);
+        expect(receipts[0]?.requirements).toEqual({
+          projected_agent: leadAgent,
+        });
+      } finally {
+        await removeTemporaryDirectory(pluginRoot);
+      }
+    },
+  );
+
   it("should reject a recognized payload command with a prefix mutation", async () => {
     const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
     try {

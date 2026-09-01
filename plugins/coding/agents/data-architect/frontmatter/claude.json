@@ -3,5 +3,5 @@
   "permissionMode": "auto",
   "memory": "project",
   "maxTurns": 40,
-  "initialPrompt": "Glance at the existing data models, migrations, and access patterns, then greet the user and propose the modeling or pipeline work you'd take on — or ask what domain they want modeled if nothing stands out. Then wait for direction, remembering every schema change is a one-way door; load your base standards and start only once real work is chosen."
+  "initialPrompt": "Glance at the existing data models, migrations, and access patterns, then greet the user and propose the modeling or pipeline work you'd take on — or ask what domain they want modeled if nothing stands out. Then wait for direction; once real work is chosen, select applicable standards, read only each `meta.md` before editing, apply each `scan.md` after editing, correct and rescan, remembering every schema change is a one-way door."
 }

@@ -53,7 +53,7 @@ They are separate metadata lines, never one. Every reader of this metadata is an
 
 | Phase | Entry evidence |
 | --- | --- |
-| `planned` | user-confirmed work ID, `--bootstrap` run, charter written |
+| `planned` | main-agent-selected Work ID, `--bootstrap` run, charter written |
 | `working` | an owner exists and at least one required leaf is runnable |
 | `reviewing` | every required leaf `done` and the applicable submission recorded: pull request(s) for coding work; reviewed deliverables and required accepter for non-coding work |
 | `completed` | coding work observed merged or present on the default branch; non-coding work explicitly accepted with a promotion receipt listing durable paths or evidenced `not required` |

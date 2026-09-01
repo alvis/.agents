@@ -27,19 +27,24 @@ Creates TypeScript-compliant production skeletons with explicit `TODO(implementa
 
 ## State gate
 
-Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the workspace-local work root and artifact paths before drafting. When delegated, start from the mission capsule's exact work root and relevant design/spec files. Read `state/working.md` only when navigation is missing, and `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned pointers or overviews. The main-agent caller uses the resolver, asks only on `work_id_required`, and gives a delegated run the explicit resolved work ID/root.
+Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the workspace-local work root and artifact paths before drafting. The main-agent caller follows `essential:directions/establish-work-stream.md`: preserve an explicit user Work-ID override; otherwise select or derive the identity contextually, reuse a candidate only when its charter already owns the requested outcome, and rerun the resolver with the selected ID after `work_id_required`; never ask the user merely to approve an identifier. When delegated, start from the mission capsule's resolved Work ID/root and relevant design/spec files; if the resolver instead returns `work_id_required`, return its payload to the main agent without asking the user. Read `state/working.md` only when navigation is missing, and `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned pointers or overviews.
 
-Apply these constitution standards while drafting:
+Select the applicable standards below before drafting. Read only each selected
+directory's `meta.md` before editing. After editing, apply its `scan.md`; when a
+scan identifies a violation, read only the matching
+`rules/<lowercase-rule-id>.md` guide when present, or that standard's `write.md`
+as the bounded fallback when no matching guide exists. Correct the violation
+and rerun the scan.
 
 | Standard | Purpose |
 |---|---|
-| `documentation/write` | JSDoc structure and placeholder comments |
+| `documentation` | JSDoc structure and placeholder comments |
 | `file-structure` | Project directory layout and organization |
-| `function/write` | Function signatures, parameter types, return types |
-| `naming/write` | Naming conventions for files, types, functions |
-| `testing/write` | Test file structure, describe/it patterns |
-| `typescript/write` | Type definitions, interfaces, generics |
-| `universal/write` | General code authoring conventions |
+| `function` | Function signatures, parameter types, return types |
+| `naming` | Naming conventions for files, types, functions |
+| `testing` | Test file structure, describe/it patterns |
+| `typescript` | Type definitions, interfaces, generics |
+| `universal` | General code authoring conventions |
 
 ## Workflow
 

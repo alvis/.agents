@@ -35,8 +35,8 @@ and the overall verdict through
 /coding:pr checkout <number-or-pr-url-or-local-branch> [--prefer stack|pr]
 /coding:pr author [<commit-ref>] [--base <ref>]
 /coding:pr verify --target <revision-anchor> --base <revision-anchor> [--kind standalone|stack-tip]
-/coding:pr create [<commit-ref>] [--branch-prefix <name>] [--remote <name>] [--no-verify] [--no-review] [--max-iteration <count>] [--publish-only] [--dry-run]
-/coding:pr update [<pr-number-or-url> | <commit-ref>] [--branch-prefix <name>] [--remote <name>] [--no-verify] [--no-review] [--max-iteration <count>] [--publish-only] [--dry-run]
+/coding:pr create [<commit-ref>] [--branch-prefix <name>] [--remote <name>] [--no-verify] [--max-iteration <count>] [--dry-run]
+/coding:pr update [<pr-number-or-url> | <commit-ref>] [--branch-prefix <name>] [--remote <name>] [--no-verify] [--max-iteration <count>] [--dry-run]
 /coding:pr review [<pr-number-or-url> | <source-tree-path>] [--repo <owner/name>] [--area=<list>] [--dry-run]
 /coding:pr stack list
 /coding:pr stack checkout <stack-number-or-pr-number-or-pr-url-or-local-branch>
@@ -120,5 +120,8 @@ or `merge`, rather than the explicit `stack` route.
 <IMPORTANT>
 Execute exactly one subcommand per invocation. A workflow may instruct a later
 `coding:pr` invocation, but it must name that subcommand explicitly. Reject an
-option absent from the usage contract and stop before any remote mutation.
+option absent from the public usage contract and stop before any remote
+mutation. The sole internal option is `--publish-only`; accept it only from the
+owned review-loop or red-CI-repair continuations under
+[create-update.md](directions/create-update.md), never from a direct caller.
 </IMPORTANT>

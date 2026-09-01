@@ -92,14 +92,28 @@ anything is written. `update-agent` owns changes to existing definitions.
 6. Build `initialPrompt` from `role-prompt.md` in 2-4 sentences as a no-task
    first-turn directive: its first move (propose if the role's next work is
    legible from repo state, else greet and state the artifact/brief it needs),
-   an explicit wait, then deferred context loading and one role-specific
-   guardrail. It must NOT restate identity, announce that no task was given, or
-   preload standards, and it must agree with `base.md`.
+   an explicit wait, then the posture-specific progressive clause and one
+   role-specific guardrail. It must NOT restate identity, announce that no task
+   was given, or load standards before concrete work arrives. Once work is
+   named, it selects applicable standards and reads only each `meta.md` before
+   editing or review. A writer then scans its produced change after editing; a
+   read-only role scans the owner-produced revision at review or verification
+   start, reports without editing, and rescans only a new owner-produced
+   revision. The prompt must agree with `base.md`.
 7. Write `base.md` as the role's own continuous working voice, preserving the
    template's functional sections: role/mission, expertise and operating
    style, communication style, exact base context, coordination loop and stop
    rule, and collaboration/spawn posture. "Voice" means stable role-specific
    instructions, not a disposable persona, personalized identity, or decorative biography.
+   Base context names only the role-scoped standard directories from
+   `context-catalog.md` and preserves the template's progressive contract:
+   selected `meta.md` before work, then only the matching rule guide or
+   bounded `write.md` fallback identified through `scan.md`. Preserve the
+   role's charter by selecting exactly one template branch: writers apply the
+   scan after editing, correct, and rescan; read-only roles apply it at review
+   or verification start, report findings without editing, and rescan only a
+   new revision from the owning writer. Never instruct whole-directory
+   preload.
    Start with one H1 title and do not write an intelligence line; the stitcher
    derives exactly one line beneath the rendered title from `meta.json`.
 8. Add or update the task-to-agent routing row in the owning plugin's

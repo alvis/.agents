@@ -12,7 +12,7 @@ ESSENTIAL_ROOT="$(cd "$(dirname "$STATE_REFERENCE")/.." && pwd)"
 "$ESSENTIAL_ROOT/scripts/resolve-state-workspace"
 ```
 
-A normal invocation is read-only; `--bootstrap` is the explicit main-agent-only creation mode below. The resolver chooses identity in this order: explicit `--work-id`, `STATE_WORK_ID`, a work directory matching the Git branch/jj workspace label, then a sole existing workspace-local work directory only when the workspace label is generic or unavailable. Branch and workspace names may identify existing work but never create a new identity; `work_id_source` records the choice. On `work_id_required`, no work path is selected — the main agent asks the user, a subagent reports the ambiguity, and nobody guesses through candidates, a detached checkout, or a generic `main`, `master`, `trunk`, or `default` label. The resolver's `--help` enumerates every output field; the essentials:
+A normal invocation is read-only; `--bootstrap` is the explicit main-agent-only creation mode below. The resolver chooses identity in this order: explicit `--work-id`, `STATE_WORK_ID`, a work directory matching the Git branch/jj workspace label, then a sole existing workspace-local work directory only when the workspace label is generic or unavailable. Branch and workspace names may identify existing work but never create a new identity; `work_id_source` records the choice. Resolver output identifies a candidate location, not charter ownership. On `work_id_required`, no work path is selected: a main-agent caller follows [establish-work-stream.md](../directions/establish-work-stream.md), selects contextually, and reruns with `--work-id`; a subagent returns the complete payload to the main agent. Nobody treats a detached checkout or generic `main`, `master`, `trunk`, or `default` label as a new identity. The resolver's `--help` enumerates every output field; the essentials:
 
 - `durable_root` is the active workspace root for versioned project documents and `.gitignore` (`repo_root` is its alias); it follows the tree the caller is working in, and is where `docs/` promotion lands.
 - `state_root` is the **default source tree** — Git's main worktree or the jj workspace registered as `default` — the one tree carrying the ignored `.state/`, falling back to `active_workspace` when none is discoverable. `work_dir` is always `state_root/.state/works/<work-id>/`, whichever tree the caller is in.
@@ -22,7 +22,7 @@ A normal invocation is read-only; `--bootstrap` is the explicit main-agent-only 
 
 ### First-use work-memory bootstrap
 
-For substantial work, follow [directions/establish-work-stream.md](directions/establish-work-stream.md) before the first-use bootstrap. It owns identity reuse, the four confirmations, workspace selection, and their order. After its gates are settled, this lifecycle owns the resolved state paths; [lease.md](lease.md) owns the lease-verified invocation, no-clobber semantics, initial content, and returned paths that enter `generated_files`.
+For substantial work, follow [establish-work-stream.md](../directions/establish-work-stream.md) before the first-use bootstrap. It owns contextual identity selection, charter-safe reuse, the three intent checks, workspace selection, and their order. After its gates are settled, this lifecycle owns the resolved state paths; [lease.md](lease.md) owns the lease-verified invocation, no-clobber semantics, initial content, and returned paths that enter `generated_files`.
 
 ## Canonical topology
 
@@ -30,7 +30,7 @@ Version-controlled documentation follows the active working tree; ignored `.stat
 
 ## Deterministic names
 
-Read [naming.md](naming.md) before naming a work stream, branch, or generated document. It owns every shape and collision rule. A work ID is a type-free, stable identity that is created only after resolver ambiguity is settled and is never renamed or reused.
+Read [naming.md](naming.md) before naming a work stream, branch, or generated document. It owns every shape and collision rule. A Work ID is a type-free, stable identity selected by the main agent after charter ownership and collisions are settled; it is never renamed or reused.
 
 ## Work memory
 

@@ -157,9 +157,12 @@ describe("Essential context discovery", () => {
     const output = repoContext(fixture());
     expect(output).not.toMatch(/\.state\/works\/(?:eng-42|eng-99)\/state/);
     expect(output).not.toMatch(/\.state\/works\/(?:eng-42|eng-99)\/goal\.md/);
-    expect(output).toContain(
-      "State selection is unresolved; ask only when artifact work begins.",
-    );
+    assertOrdered(output, [
+      "README.md",
+      "docs/README.md",
+      "docs/architecture/README.md",
+      "docs/design/README.md",
+    ]);
   });
 
   it("session start injects ordered state entrypoints while subagent start omits catalogs", () => {
