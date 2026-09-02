@@ -133,11 +133,11 @@ Applicable standard directories:
 
 Writer or implementer:
 
-For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
+For the current task, select only the applicable standard directories listed above, and apply each as a writer under `essential:directions/standards.md`.
 
 Read-only critic or verifier:
 
-For the current read-only task, select only the applicable standard directories listed above. Before inspecting the target, read only each selected `meta.md`; at review or verification start, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; report the finding without editing and rescan only a new revision produced by the owning writer.
+For the current read-only task, select only the applicable standard directories listed above, and apply each as a read-only reviewer under `essential:directions/standards.md`.
 
 Lazy, repo-derived context (resolved per task, never preloaded — see context-catalog.md for what each resolves
 to at task time):

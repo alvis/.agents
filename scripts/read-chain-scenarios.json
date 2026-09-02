@@ -2,10 +2,10 @@
   "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
     "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
     "budget": {
-      "bytes": 207392,
-      "instructionTokens": 89012,
-      "calls": 38,
-      "instructionTokensExcludingWork": 36852
+      "bytes": 199197,
+      "instructionTokens": 85683,
+      "calls": 34,
+      "instructionTokensExcludingWork": 34803
     },
     "steps": [
       {
@@ -43,19 +43,7 @@
       },
       {
         "kind": "read",
-        "path": "plugins/coding/standards/universal/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/typescript/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/function/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/testing/meta.md"
+        "path": "plugins/essential/directions/standards.md"
       },
       {
         "kind": "work",
@@ -151,10 +139,6 @@
       },
       {
         "kind": "read",
-        "path": "plugins/coding/standards/commit/meta.md"
-      },
-      {
-        "kind": "read",
         "path": "plugins/coding/standards/commit/write.md"
       },
       {
@@ -182,10 +166,10 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 472388,
-      "instructionTokens": 170626,
-      "calls": 86,
-      "instructionTokensExcludingWork": 85106
+      "bytes": 461941,
+      "instructionTokens": 166414,
+      "calls": 81,
+      "instructionTokensExcludingWork": 82494
     },
     "steps": [
       {
@@ -258,19 +242,7 @@
       },
       {
         "kind": "read",
-        "path": "plugins/coding/standards/universal/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/typescript/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/function/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/testing/meta.md"
+        "path": "plugins/essential/directions/standards.md"
       },
       {
         "kind": "work",
@@ -469,10 +441,6 @@
       },
       {
         "kind": "read",
-        "path": "plugins/coding/standards/commit/meta.md"
-      },
-      {
-        "kind": "read",
         "path": "plugins/coding/standards/commit/write.md"
       },
       {
@@ -510,10 +478,6 @@
       {
         "kind": "read",
         "path": "plugins/coding/skills/pr/templates/message.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/git/meta.md"
       },
       {
         "kind": "read",
@@ -582,10 +546,10 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 132854,
-      "instructionTokens": 65895,
-      "calls": 24,
-      "instructionTokensExcludingWork": 24215
+      "bytes": 124826,
+      "instructionTokens": 62608,
+      "calls": 20,
+      "instructionTokensExcludingWork": 22208
     },
     "steps": [
       {
@@ -614,7 +578,7 @@
       },
       {
         "kind": "read",
-        "path": "plugins/coding/standards/code-review/meta.md"
+        "path": "plugins/essential/directions/standards.md"
       },
       {
         "kind": "read",
@@ -627,22 +591,6 @@
       {
         "kind": "read",
         "path": "plugins/coding/skills/review-code/templates/review.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/universal/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/typescript/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/function/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/testing/meta.md"
       },
       {
         "kind": "work",
@@ -736,10 +684,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 255576,
-      "instructionTokens": 102976,
-      "calls": 44,
-      "instructionTokensExcludingWork": 42896
+      "bytes": 227860,
+      "instructionTokens": 93806,
+      "calls": 37,
+      "instructionTokensExcludingWork": 35966
     },
     "steps": [
       {
@@ -780,39 +728,11 @@
       },
       {
         "kind": "read",
-        "path": "plugins/react/standards/components/meta.md"
+        "path": "plugins/react/standards/INDEX.md"
       },
       {
         "kind": "read",
-        "path": "plugins/react/standards/accessibility/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/react/standards/hooks/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/react/standards/project-structure/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/react/standards/storybook/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/universal/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/typescript/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/function/meta.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/coding/standards/testing/meta.md"
+        "path": "plugins/essential/directions/standards.md"
       },
       {
         "kind": "work",

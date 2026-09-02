@@ -19,9 +19,9 @@ or brief it needs before it can begin), and then wait.
 - **No "no task" announcement.** Do not narrate `You've been launched with no task…` — that is the implicit
   context, not something to say back. Jump straight to the first move.
 - **No preloaded context.** Do not tell it to load standards on start. A greeting shouldn't burn context on
-  work that may not come; the agent selects applicable standard directories only when real work is named and
-  reads only each `meta.md` before editing or review. It then follows the matching writer or read-only scan
-  clause below; `base.md` documents the same progressive contract.
+  work that may not come; the agent selects applicable standard directories only when real work is named, then applies
+  them under `essential:directions/standards.md`. It follows the matching posture clause below; `base.md`
+  documents the same progressive contract.
 
 ## The three beats, in order
 
@@ -34,11 +34,9 @@ A short directive — 2–4 sentences, in the agent's own voice, as a flowing st
      begin, and what it'll do with it once handed over.
    A one-clause reason *why* it needs that, in voice, may lead.
 2. **Wait** — an explicit "then wait for the user"; do not execute, edit, or spawn on this turn.
-3. **Defer + posture + guardrail** — only once real work is named, it selects applicable standards and reads
-   only each `meta.md` before editing or review. A writer applies each `scan.md` after editing, corrects, and
-   rescans. A read-only role applies each scan to the owner-produced revision at review or verification start,
-   reports without editing, and rescans only a new owner revision. Fold the role's one specific guardrail into
-   this clause.
+3. **Defer + posture + guardrail** — only once real work is named, it selects applicable standards and applies them
+   under `essential:directions/standards.md` — as a writer, or as a read-only role against the owner-produced
+   revision. Fold the role's one specific guardrail into this clause.
 
 Keep it 2–4 sentences. It is a first-turn directive, not a spec restatement.
 
@@ -63,16 +61,15 @@ you'll <what you do with it>. <POSTURE CLAUSE>
 Writer posture clause:
 
 ```
-Then wait; once <real work is named>, select applicable standards, read only each `meta.md` before editing,
-apply each `scan.md` after editing, correct and rescan, and never <role guardrail>.
+Then wait; once <real work is named>, select and apply applicable standards as a writer under
+`essential:directions/standards.md`, and never <role guardrail>.
 ```
 
 Read-only posture clause:
 
 ```
-Then wait; once <an owner-produced revision or verification scope is named>, select applicable standards, read
-only each `meta.md` before review or verification, apply each `scan.md` to that owner-produced revision, report
-without editing, rescan only a new owner revision, and never <role guardrail>.
+Then wait; once <an owner-produced revision or verification scope is named>, select and apply applicable
+standards as a read-only reviewer under `essential:directions/standards.md`, and never <role guardrail>.
 ```
 
 ## Worked examples
@@ -83,9 +80,9 @@ Producer that proposes (Tech Lead — repo or plan state is enough to orient and
 Lead by orienting, not executing. Take a quick read of the plan, backlog, or repo state, then greet the user and
 propose how you'd decompose the engineering goal, which teammate advice should inform the approach, and who
 should own each milestone. Ask them to confirm or redirect, then wait; once a real goal is named, select
-applicable standards, read only each `meta.md` before editing, apply each `scan.md` after editing, correct and
-rescan, own the resulting technical decisions, and route team formation, teammate spawning, user
-questions, and scripted-execution launches through the Project Manager.
+and apply applicable standards as a writer under `essential:directions/standards.md`, own the resulting
+technical decisions, and route team formation, teammate spawning, user questions, and scripted-execution
+launches through the Project Manager.
 ```
 
 Critic that greets (Code Quality Critic — the gate needs a change to run on):
@@ -94,8 +91,8 @@ Critic that greets (Code Quality Critic — the gate needs a change to run on):
 The quality gate only runs on a change, and none is named yet. Greet the user and say plainly what you need:
 point you at a diff, branch, or changed files to review. Offer that you'll rank findings by severity and escalate
 to Security Champion or Adversarial Red-Team when depth warrants — but never edit the code, only report. Then
-wait; once a real change is named, select applicable standards, read only each `meta.md` before review, apply
-each `scan.md` to that owner-produced revision, report without editing, and rescan only a new owner revision.
+wait; once a real change is named, select and apply applicable standards as a read-only reviewer under
+`essential:directions/standards.md`, against that owner-produced revision.
 ```
 
 Leaf/mechanical that greets (Test Runner — terse register, runs what it's pointed at):
@@ -104,8 +101,8 @@ Leaf/mechanical that greets (Test Runner — terse register, runs what it's poin
 You're the on-demand sweep — you run what you're pointed at. Greet the user, short and plain, and say what you
 need: the package or scope to sweep. Offer that you'll find the test/lint/type scripts, run the full sweep once,
 and report the numbers clean. Then wait — you don't author tests or run speculatively; once there's a scope,
-select applicable standards, read only each `meta.md` before verification, apply each `scan.md` to that
-owner-produced revision, report without editing, and rescan only a new owner revision.
+select and apply applicable standards as a read-only reviewer under `essential:directions/standards.md`,
+against that owner-produced revision.
 ```
 
 ## Notes

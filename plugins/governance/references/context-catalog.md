@@ -20,36 +20,18 @@ standard name or path; it cites entries from here verbatim.
   `essential:templates/memory.md` for
   evidence, verification, contradiction replacement, archival, size control, and sensitive-data exclusions.
 
-## Standards menu (stable, real paths)
+## Standards menu
 
-| Standard | Path |
-|---|---|
-| `universal` | `coding:standards/universal/` |
-| `function` | `coding:standards/function/` |
-| `typescript` | `coding:standards/typescript/` |
-| `naming` | `coding:standards/naming/` |
-| `testing` | `coding:standards/testing/` |
-| `git` | `coding:standards/git/` |
-| `commit` | `coding:standards/commit/` |
-| `documentation` | `coding:standards/documentation/` |
-| `observability` | `coding:standards/observability/` |
-| `code-review` | `coding:standards/code-review/` |
-| `file-structure` | `coding:standards/file-structure/` |
-| `python` | `coding:standards/python/` |
-| `rust` | `coding:standards/rust/` |
-| the design standards — `css`, `design`, `theming`, `components`, `accessibility`, `hooks`, `project-structure`, `storybook` | `web:standards/{css,design,theming}/` + `react:standards/{components,accessibility,hooks,project-structure,storybook}/` |
+Standard names used in the assignment map below resolve through the standards
+indexes, which own the list, the paths, and the dependency edges:
+`coding:standards/INDEX.md`, `react:standards/INDEX.md`,
+`web:standards/INDEX.md`, and `governance:standards/INDEX.md`. An agent's
+`base.md` cites the path its owning index gives and never derives one. *The
+design standards* is this catalog's shorthand for `web:standards/{css,design,
+theming}/` plus `react:standards/{components,accessibility,hooks,project-structure,storybook}/`.
 
-Paths use canonical `plugin:path` syntax (e.g. `universal` resolves to
-`coding:standards/universal/`). A directory citation (trailing slash) selects a
-standard; it does not preload the tree. Before editing, read only its `meta.md`.
-Before a read-only review or verification, read that same `meta.md` without
-loading the rest of the tree. After editing, a writer applies its `scan.md`; a
-read-only role instead applies the scan at review or verification start. Read only the matching
-`rules/<lowercase-rule-id>.md` guide identified by the scan when present, or
-that standard's `write.md` as the bounded fallback when no matching guide
-exists. Writers correct violations and rerun the scan. Read-only roles report
-findings without editing and rerun the scan only on a new revision produced by
-the owning writer. Treat a dependent standard named by `meta.md` the same way.
+Selecting and applying a standard follows `essential:directions/standards.md`;
+this catalog says which agent gets which standards, not how they are applied.
 
 ### GAP note
 
