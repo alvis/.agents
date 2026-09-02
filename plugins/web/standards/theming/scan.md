@@ -1,9 +1,7 @@
 # Web Theming: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-
 Any single violation blocks approval by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 
@@ -14,7 +12,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 ### Variant & Token Naming
 
-- DO NOT name variants by visual or brand identity (`blue`, `rounded`, `wide`, `example`, `client="…"`, `brand="…"`) — variants are semantic intent (`primary | secondary | ghost | danger`) [`WT-VARIANT-01`]
+- DO NOT name variants by visual or brand identity (`blue`, `rounded`, `wide`, `example`, `client="…"`, `brand="…"`) — variants are semantic intent (`primary | secondary | ghost | danger`) [`WT-VARIANT-01`] (→ `RC-PROPS-01`, `RC-STRUCT-04`)
 - DO NOT name CSS variables by position (`--ink-0`, `--bg-1`) or by visual leaf (`--c-violet`, `--line-soft`, `--glass-bg`) — tokens express role (`--color-ink-heading`, `--color-accent`, `--color-surface-glass`) [`WT-VARIANT-01`]
 - DO NOT include color words anywhere in token names (`--color-accent-violet`, `--bg-blue`) — strip the color word; the role is `accent` (`--color-accent`). For multiple accents, differentiate by role (`--color-accent-primary`, `--color-link`, `--color-callout`), not by color [`WT-VARIANT-01`]
 - DO NOT mint size-tier custom tokens (`--radius-md`, `--shadow-sm`, `--text-body-lg`) — use Tailwind utilities (`rounded-md`, `shadow-sm`, `text-lg`) for default sizes, or mint role-named tokens (`--radius-card`, `--shadow-elevated`, `--text-body`) when the value carries a role [`WT-VARIANT-01`]
@@ -22,7 +20,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 ### Tailwind v4.3 Integration
 
-- DO NOT define semantic tokens outside the library's `@theme { … }` block, and do NOT place component CSS outside `@layer components` — Tailwind v4.3 ownership is fixed [`WT-TAILWIND-01`]
+- DO NOT define semantic tokens outside the library's `@theme { … }` block, and do NOT place component CSS outside `@layer components` [`WT-TAILWIND-01`]
 - DO NOT import client `theme.css` before the library stylesheet, or app CSS before client `theme.css` — order is library → client theme → app [`WT-TAILWIND-02`]
 
 ### Override Strategy

@@ -20,22 +20,7 @@ Before work delegation, read `web:references/ROUTING.md`.
 
 ## Standards
 
-Select each applicable standards directory from the table. Before editing, read
-only its `meta.md`. After editing, apply its `scan.md` to the result. If the scan
-identifies a violation, read only its matching
-`rules/<lowercase-rule-id>.md` guide when present. If that standard has no
-matching per-rule guide, read its `write.md` as the bounded fallback. Correct
-the violation, rerun the scan, and treat a dependent standard named by
-`meta.md` the same way.
-
-| Applies to | Standards |
-| --- | --- |
-| Visual and interaction design or audit | `web:standards/design/` |
-| Light, dark, and system color modes | `web:standards/css/` plus `web:standards/design/` |
-| Brand and token theming | `web:standards/theming/` plus `web:standards/css/` and `web:standards/design/` |
-| Frontend implementation | `coding:standards/universal/`, `coding:standards/function/`, `coding:standards/typescript/`, `coding:standards/naming/`, `coding:standards/testing/`, and `coding:standards/documentation/` |
-| Files and project setup | `coding:standards/file-structure/` |
-| Review | `coding:standards/code-review/` plus the Web standards above |
-| Rendered PR messages and implementation-diff size or composition | `coding:standards/git/` |
+Select from `web:standards/INDEX.md` and apply each selected standard under
+`essential:directions/standards.md`.
 
 Web does not declare another framework plugin as a dependency; do not load its standards or skills.

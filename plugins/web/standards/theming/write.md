@@ -1,8 +1,5 @@
 # Web Theming: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-> **Compliance**: Also follow `scan.md` in this directory to avoid violations during writing. When unsure about a specific rule, consult its detailed guidance in `rules/<rule-id>.md`.
-
 ## Key Principles
 
 - **Library = clay, client = sculpture** — the library publishes a base CSS-variable contract with safe fallbacks; the client owns the final theme.
