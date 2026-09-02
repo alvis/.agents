@@ -27,12 +27,8 @@ Creates TypeScript-compliant production skeletons with explicit `TODO(implementa
 
 Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the workspace-local work root and artifact paths before drafting. The main-agent caller follows `essential:directions/establish-work-stream.md`: preserve an explicit user Work-ID override; otherwise select or derive the identity contextually, reuse a candidate only when its charter already owns the requested outcome, and rerun the resolver with the selected ID after `work_id_required`; never ask the user merely to approve an identifier. When delegated, start from the mission capsule's resolved Work ID/root and relevant design/spec files; if the resolver instead returns `work_id_required`, return its payload to the main agent without asking the user. Read `state/working.md` only when navigation is missing, and `state.md` only for resume, cross-slice dependency, or alignment work. Never write main-agent-owned pointers or overviews.
 
-Select the applicable standards below before drafting. Read only each selected
-directory's `meta.md` before editing. After editing, apply its `scan.md`; when a
-scan identifies a violation, read only the matching
-`rules/<lowercase-rule-id>.md` guide when present, or that standard's `write.md`
-as the bounded fallback when no matching guide exists. Correct the violation
-and rerun the scan.
+Select the applicable standards below before drafting, and apply each as a
+writer under `essential:directions/standards.md`.
 
 | Standard | Purpose |
 |---|---|

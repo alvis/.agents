@@ -1,7 +1,5 @@
 # File and Directory Structure Standards: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 ## Key Principles
 
 - Use kebab-case except for PascalCase React component files.

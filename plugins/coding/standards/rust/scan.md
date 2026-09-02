@@ -1,9 +1,7 @@
 # Rust: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
+Protocol: `essential:directions/standards.md`.
 
 > **During linting**: Only apply a rule's fix if it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
 
@@ -22,7 +20,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 - DO NOT use `anyhow::Error` / `anyhow::Result` in library public APIs — restrict it to binary `main`/CLI handlers [`RST-ERRH-02`]
 - DO NOT use `.unwrap()` / `panic!` for recoverable failures; use `?` and typed errors [`RST-ERRH-03`]
 - DO NOT lose error provenance — chain sources via `#[source]` / `#[from]` instead of stringifying [`RST-ERRH-04`]
-- DO NOT raise errors without identifying context (record id, operation, tenant); `"not found"` alone is useless [`RST-ERRH-05`]
+- DO NOT raise errors without identifying context (record id, operation, tenant) [`RST-ERRH-05`]
 - DO NOT share a primitive type across sibling IDs (`user_id: Uuid`, `order_id: Uuid`); use newtypes [`RST-TYPE-01`]
 - DO NOT use bare `&str` / `String` for finite state values — use an `enum` (with `strum` if string parsing required) [`RST-TYPE-02`]
 - DO NOT leak concrete iterator/future types at API boundaries; return `impl Iterator<Item = T>` / `impl Future<Output = T>` [`RST-TYPE-03`]

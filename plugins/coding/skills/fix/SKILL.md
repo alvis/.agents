@@ -34,12 +34,8 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 Select standards for the artifact being corrected. Test corrections use
 `testing`, `typescript`, and `documentation`; fixture optimization uses
-`universal`, `typescript`, `function`, `documentation`, and `testing`. Before
-editing, read only each selected standard's `meta.md`. After editing, apply its
-`scan.md`; when the scan identifies a violation, read the matching
-`rules/<lowercase-rule-id>.md` guide when present. If that standard has no
-matching per-rule guide, read its `write.md` as the bounded fallback. Correct
-the violation and rerun the affected scan.
+`universal`, `typescript`, `function`, `documentation`, and `testing`. Apply
+each selected standard as a writer under `essential:directions/standards.md`.
 
 ## Workflow
 

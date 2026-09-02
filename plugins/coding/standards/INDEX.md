@@ -1,13 +1,8 @@
 # Coding standards index
 
-Select applicable standards directories by action and language. Before editing,
-read only each selected directory's `meta.md`. After editing, apply its
-`scan.md` to the result. When the scan identifies a rule, read only its matching
-`rules/<lowercase-rule-id>.md` guide when present; if that standard has no
-matching per-rule guide, read its `write.md` as the bounded fallback. Correct the
-violation, then repeat the affected scan. A standard is a mechanically or
-semantically scannable rule over the resulting implementation or change artifact;
-a violation requires a fix.
+Select applicable standards by action and language from the table below. The
+protocol that governs selection, scanning, and rule lookup is
+`essential:directions/standards.md`; this file only says which standard applies.
 
 | Applies to | Standard |
 | --- | --- |

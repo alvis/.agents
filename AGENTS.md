@@ -38,6 +38,7 @@ plus `gh`, and optionally `jj`, for publishing.
 | Skill | `plugins/<p>/skills/<name>/SKILL.md` (+ the content directories below) |
 | Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex,grok}.json` |
 | Standard | `plugins/<p>/standards/<name>/{meta,scan,write}.md` + `rules/` |
+| Standards index | `plugins/<p>/standards/INDEX.md` |
 | Injected payload | `plugins/<p>/hooks/{ALLAGENT,MAINAGENT,SUBAGENT}.md` |
 | Routing table | `plugins/<p>/references/ROUTING.md` |
 | Workflow entry point | `plugins/<p>/directions/WORKFLOW.md` |
@@ -111,7 +112,7 @@ its main purpose.
 | `examples/` | A worked instance of a delivered work product |
 | `scripts/` | Strictly mechanical executables |
 | `assets/` | Static, non-generated files, including anything copied to a destination |
-| `standards/` | Rules a produced file must satisfy, in the four-part shape above |
+| `standards/` | Four-part standard directories in the shape above, plus the `INDEX.md` that indexes them |
 | `references/` | Plain description of something, and nothing else |
 
 `references/` is the residue, not the default: it holds lookup tables and background
@@ -128,7 +129,9 @@ skill's private tree is the signal that the file was placed too deep.
 Name files in one word where the plugin or skill already supplies the rest of the
 context: a `directions/` entry is `jj.md`, not `manage-jj.md`, unless a sibling forces
 the qualifier. Uppercase names are reserved for shipped entry points that a hook or a
-router names by convention — `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`.
+router names by convention — `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`,
+and the `INDEX.md` that each `plugins/<p>/directions/WORKFLOW.md` and
+`essential:directions/standards.md` name, which sits at the root it indexes.
 
 Not everything has to move. Reclassify a file only when it clearly belongs somewhere
 else; a file that genuinely is a plain reference stays in `references/`.
@@ -218,10 +221,9 @@ distinct capitalized names.
 ## Authoring rules
 
 <IMPORTANT>
-Select applicable standards by action. Before editing, read only each selected
-standard's `meta.md`; after editing, apply its `scan.md`. When a scan identifies
-a violation, read only the matching rule guide before correcting it, then repeat
-that scan. These are the sources, not summaries.
+Selecting and applying a standard has one home:
+`plugins/essential/directions/standards.md`. Follow it there rather than any
+restatement of its read order. The rules below are the sources, not summaries.
 </IMPORTANT>
 
 - `plugins/governance/standards/authoring/meta.md` — one coherent

@@ -38,7 +38,7 @@ Applicable standard directories:
 
 Standards resolve against the `Root Path` announced under "Plugin Constitution" in your start context; if a plugin's constitution isn't announced there, skip its standards gracefully.
 
-For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
+For the current task, select only the applicable standard directories listed above, and apply each as a writer under `essential:directions/standards.md`.
 
 Resolve lazily, per task, never preload: the repo's actual model/feature-store layout and its training and serving config. When model serving crosses into another application boundary, define the interface and serving constraints, then hand the integration requirement back to the caller instead of assuming ownership of that application.
 

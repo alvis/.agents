@@ -2,10 +2,10 @@
   "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
     "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
     "budget": {
-      "bytes": 209108,
-      "instructionTokens": 89440,
+      "bytes": 207392,
+      "instructionTokens": 89012,
       "calls": 38,
-      "instructionTokensExcludingWork": 37280
+      "instructionTokensExcludingWork": 36852
     },
     "steps": [
       {
@@ -182,10 +182,10 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 473714,
-      "instructionTokens": 170957,
+      "bytes": 472388,
+      "instructionTokens": 170626,
       "calls": 86,
-      "instructionTokensExcludingWork": 85437
+      "instructionTokensExcludingWork": 85106
     },
     "steps": [
       {
@@ -582,10 +582,10 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 133847,
-      "instructionTokens": 66143,
+      "bytes": 132854,
+      "instructionTokens": 65895,
       "calls": 24,
-      "instructionTokensExcludingWork": 24463
+      "instructionTokensExcludingWork": 24215
     },
     "steps": [
       {
@@ -736,10 +736,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 259504,
-      "instructionTokens": 103959,
+      "bytes": 258186,
+      "instructionTokens": 103630,
       "calls": 44,
-      "instructionTokensExcludingWork": 43879
+      "instructionTokensExcludingWork": 43550
     },
     "steps": [
       {

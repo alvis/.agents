@@ -1,11 +1,8 @@
 # Testing: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
-
-> **During linting**: Only apply a rule's fix if it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
+Protocol: `essential:directions/standards.md`.
+During linting, apply a rule's fix only when it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
 
 > **Scanner-backed rules**: `TST-CORE-03`, `TST-CORE-08`, `TST-CORE-10`, `TST-CORE-11`, `TST-DATA-04`, `TST-DATA-06`, `TST-MOCK-10`, `TST-MOCK-11`, `TST-STRU-01`, and `TST-STRU-03` have advisory mechanical scanner support (`plugins/coding/scripts/scanners/`). The scanner surfaces candidates only — always re-verify each hit against the rule guide before flagging. For `TST-CORE-10`, current scanner support detects checked-in-file reads only; exact declaration, signature, schema-inventory, export-inventory, and re-export-layout assertions remain semantic review checks. A checked-in file read is compliant only when the file feeds an executed consumer or generator and every assertion targets runtime behavior or generated-result structure. The `TST-MOCK-10` and `TST-MOCK-11` scanners inspect JavaScript and TypeScript spec files.
 

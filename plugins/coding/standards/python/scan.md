@@ -1,11 +1,8 @@
 # Python: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
-
-> **During linting**: Only apply a rule's fix if it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
+Protocol: `essential:directions/standards.md`.
+During linting, apply a fix only when it is mechanical — formatting, naming, documentation, casing, import ordering, or field/function reordering; if the fix would add logic, change control flow, introduce runtime validation, or alter behavior, report without fixing.
 
 > **Scanner-backed rules**: `PYT-CORE-03`, `PYT-IMPT-03`, and `PYT-IMPT-05` have advisory mechanical scanner support (`plugins/coding/scripts/scanners/`). The scanner surfaces candidates only — always re-verify each hit against the rule guide before flagging.
 
@@ -18,7 +15,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 - DO NOT use `Optional[X]` or implicit-optional defaults (`def f(x: int = None)`); use `X | None` [`PYT-CORE-05`]
 - DO NOT use cross-package relative imports, such as `from ..billing import InvoiceService` [`PYT-IMPT-01`]
 - DO NOT mix import groups, or add comment labels above groups (e.g. `# third-party`); use blank-line separation only [`PYT-IMPT-02`]
-- DO NOT use `from __future__ import annotations` — it stringifies annotations and breaks runtime introspection [`PYT-IMPT-03`]
+- DO NOT use `from __future__ import annotations` [`PYT-IMPT-03`]
 - DO NOT rely on `TYPE_CHECKING` to paper over a real runtime cycle; move the shared type instead [`PYT-IMPT-04`]
 - DO NOT omit `__all__` from a public package `__init__.py` [`PYT-IMPT-05`]
 - DO NOT use `Pydantic` for internal value objects (reserve it for trust boundaries); use `Protocol`/`ABC`/`@dataclass` otherwise [`PYT-TYPE-01`]
@@ -39,7 +36,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 - DO NOT catch `BaseException` or use bare `except:` — narrow to `Exception` or a specific subclass [`PYT-EXCP-02`]
 - DO NOT re-raise inside `except` without `from exc` (chain) or `from None` (deliberate suppression) [`PYT-EXCP-03`]
 - DO NOT handle concurrent fan-out failures with plain `except` — use `ExceptionGroup` and `except*` [`PYT-EXCP-04`]
-- DO NOT raise exceptions without identifying context (record id, tenant, operation); "not found" alone is useless [`PYT-EXCP-05`]
+- DO NOT raise exceptions without identifying context (record id, tenant, operation) [`PYT-EXCP-05`]
 - DO NOT ship a distributable package without a `src/<package>/` layout [`PYT-MODL-01`]
 - DO NOT place logic or side effects in `__init__.py`; restrict it to imports, `__all__`, and a docstring [`PYT-MODL-02`]
 - DO NOT collect unrelated symbols in `utils.py`/`helpers.py`/`common.py`; one public symbol per module [`PYT-MODL-03`]

@@ -1,19 +1,17 @@
 # Complete-Test Execution — direct ownership, coordinated batches, and reports
 
 Referenced from SKILL.md. The selected topology governs every sub-step. A
-Tier 0/1 owner performs analysis, authoring, checks, and self-review directly.
-An independent reviewer is read-only and appears only on the SKILL predicate.
-A qualifying coordinated run may assign disjoint batches, with at most **8
-parallel implementers**, and aggregates each wave before moving on. Every
-dispatch is a mission capsule naming the exact scope, expected result,
-applicable standards' `meta.md` files to read before editing
-(`testing/meta.md`, `typescript/meta.md`, and `documentation/meta.md` where
-applicable), the post-edit `scan.md` plus identified-rule-or-`write.md`
-fallback procedure from the Coding workflow, active work root, and only the
-relevant contract/evidence paths. Delegates do not reread broad work journals
-unless the assignment is a resume or cross-slice alignment task; they never
-write main-agent-owned pointers/overviews or delegate further. Every writer
-returns explicit `generated_files` to the main agent.
+Tier 0/1 owner performs analysis, authoring, checks, and self-review
+directly. An independent reviewer is read-only and appears only on the SKILL
+predicate. A qualifying coordinated run may assign disjoint batches, with at
+most **8 parallel implementers**, and aggregates each wave before moving on.
+Every dispatch is a mission capsule naming the exact scope, expected result,
+the applicable standards to apply under `essential:directions/standards.md`,
+active work root, and only the relevant contract/evidence paths. Delegates
+do not reread broad work journals unless the assignment is a resume or
+cross-slice alignment task; they never write main-agent-owned
+pointers/overviews or delegate further. Every writer returns explicit
+`generated_files` to the main agent.
 
 ## Sub-step 1 — Initial test analysis
 
