@@ -546,15 +546,15 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 124826,
-      "instructionTokens": 62608,
+      "bytes": 120701,
+      "instructionTokens": 61576,
       "calls": 20,
-      "instructionTokensExcludingWork": 22208
+      "instructionTokensExcludingWork": 21176
     },
     "steps": [
       {
         "kind": "read",
-        "path": "plugins/essential/references/naming.md"
+        "path": "plugins/essential/directions/subagent.md"
       },
       {
         "kind": "read",
@@ -684,15 +684,15 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 227860,
-      "instructionTokens": 93806,
+      "bytes": 223735,
+      "instructionTokens": 92774,
       "calls": 37,
-      "instructionTokensExcludingWork": 35966
+      "instructionTokensExcludingWork": 34934
     },
     "steps": [
       {
         "kind": "read",
-        "path": "plugins/essential/references/naming.md"
+        "path": "plugins/essential/directions/subagent.md"
       },
       {
         "kind": "read",

@@ -25,6 +25,7 @@ Contracts load progressively — only the small `hooks/ALLAGENT.md`, `hooks/MAIN
 | `./directions/change-control.md` | On a mid-execution finding | Task-local / plan-level / spec-level routing |
 | `./directions/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
 | `references/team-lifecycle.md` | At spawn and wind-down moments | Team forming/retiring, model and effort selection |
+| `./directions/subagent.md` | At the start of an assigned subagent task | The whole worker contract: stable reference, report shape and ceiling, read-only state and resolver gate, escalation, ineligibility transfer |
 | `./directions/subagent-handover.md` | Before a first task handover | Required prompt fields, extensible Context, durable path compression, later-message boundary |
 
 Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` (shared durable directory entrypoints), and `./templates/initiative.md` (Essential's initiative-domain semantic authority). Domain plugins own their own semantic templates.
