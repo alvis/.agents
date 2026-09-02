@@ -1,0 +1,923 @@
+{
+  "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
+    "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
+    "budget": {
+      "bytes": 214790,
+      "instructionTokens": 90541,
+      "calls": 37,
+      "instructionTokensExcludingWork": 38701
+    },
+    "steps": [
+      {
+        "kind": "read",
+        "path": "plugins/coding/directions/WORKFLOW.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/directions/jj.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/fix/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/working-attitude.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state-systems.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ resolve-state-workspace",
+        "bytes": 600
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/meta.md"
+      },
+      {
+        "kind": "work",
+        "label": "work call 1",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 2",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 3",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 4",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 5",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 6",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 7",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 8",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 9",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 10",
+        "bytes": 6000
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/rules/func-arch-01.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/lint/SKILL.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ lint_profile_runner.ts",
+        "bytes": 1500
+      },
+      {
+        "kind": "run",
+        "label": "$ tsc / vitest",
+        "bytes": 1200
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/commit/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/commit/directions/save.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/commit/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/commit/write.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ backup.sh",
+        "bytes": 200
+      },
+      {
+        "kind": "run",
+        "label": "$ validate-scoped-save",
+        "bytes": 300
+      },
+      {
+        "kind": "run",
+        "label": "$ jj describe / jj new",
+        "bytes": 300
+      },
+      {
+        "kind": "run",
+        "label": "$ verify.sh",
+        "bytes": 300
+      }
+    ]
+  },
+  "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
+    "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
+    "budget": {
+      "bytes": 479496,
+      "instructionTokens": 172082,
+      "calls": 85,
+      "instructionTokensExcludingWork": 86882
+    },
+    "steps": [
+      {
+        "kind": "read",
+        "path": "plugins/coding/directions/WORKFLOW.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/directions/jj.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/plan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/working-attitude.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state-systems.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ resolve-state-workspace",
+        "bytes": 600
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/establish-work-stream.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/lease.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/naming.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state-format.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ resolve-state-workspace --bootstrap",
+        "bytes": 600
+      },
+      {
+        "kind": "run",
+        "label": "$ state-lease ensure",
+        "bytes": 200
+      },
+      {
+        "kind": "run",
+        "label": "$ state-write goal/state/working x3",
+        "bytes": 300
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/write-code/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/meta.md"
+      },
+      {
+        "kind": "work",
+        "label": "work call 1",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 2",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 3",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 4",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 5",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 6",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 7",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 8",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 9",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 10",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 11",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 12",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 13",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 14",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 15",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 16",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 17",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 18",
+        "bytes": 6000
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/rules/func-arch-01.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/lint/SKILL.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ lint_profile_runner.ts",
+        "bytes": 1500
+      },
+      {
+        "kind": "run",
+        "label": "$ tsc / vitest",
+        "bytes": 1200
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/orchestration.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/subagent-handover.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/team-lifecycle.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/skills/install-agents/references/intelligence-levels.json"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/references/ROUTING.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/review-code/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/review-code/directions/dispatch.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ scan_potential_violations",
+        "bytes": 600
+      },
+      {
+        "kind": "run",
+        "label": "Agent(code-quality-critic) -> report",
+        "bytes": 900
+      },
+      {
+        "kind": "work",
+        "label": "apply review fix 1",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "apply review fix 2",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "apply review fix 3",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "apply review fix 4",
+        "bytes": 6000
+      },
+      {
+        "kind": "run",
+        "label": "$ state-write state.md (progress)",
+        "bytes": 200
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/commit/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/commit/directions/save.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/commit/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/commit/write.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ backup.sh",
+        "bytes": 200
+      },
+      {
+        "kind": "run",
+        "label": "$ validate-scoped-save",
+        "bytes": 300
+      },
+      {
+        "kind": "run",
+        "label": "$ jj describe / jj new",
+        "bytes": 300
+      },
+      {
+        "kind": "run",
+        "label": "$ verify.sh",
+        "bytes": 300
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/pr/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/pr/directions/create-update.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/pr/directions/stacked-prs.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/pr/templates/message.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/git/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/git/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/pr/directions/verify.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ resolve-push-remote.sh",
+        "bytes": 100
+      },
+      {
+        "kind": "run",
+        "label": "$ select-verification-target.sh",
+        "bytes": 150
+      },
+      {
+        "kind": "run",
+        "label": "local CI parity (lint+type+test)",
+        "bytes": 1500
+      },
+      {
+        "kind": "run",
+        "label": "$ validate-ci-parity-receipt.sh",
+        "bytes": 150
+      },
+      {
+        "kind": "run",
+        "label": "$ classify-pr-size.ts",
+        "bytes": 300
+      },
+      {
+        "kind": "run",
+        "label": "$ scan-pr-message.ts",
+        "bytes": 400
+      },
+      {
+        "kind": "run",
+        "label": "$ list-repository-labels.sh",
+        "bytes": 300
+      },
+      {
+        "kind": "run",
+        "label": "$ jj git push / gh pr create",
+        "bytes": 400
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/pr/directions/review-loop.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ gh pr checks / poll",
+        "bytes": 500
+      },
+      {
+        "kind": "run",
+        "label": "$ state-write state.md (reviewing)",
+        "bytes": 200
+      }
+    ]
+  },
+  "S4 Subagent: code-quality-critic reviews one change": {
+    "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
+    "budget": {
+      "bytes": 139510,
+      "instructionTokens": 67239,
+      "calls": 23,
+      "instructionTokensExcludingWork": 25879
+    },
+    "steps": [
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/naming.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/orchestration.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state-systems.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/directions/WORKFLOW.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/code-review/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/code-review/write.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/review-code/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/review-code/templates/review.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/meta.md"
+      },
+      {
+        "kind": "work",
+        "label": "read diff/files 1",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "read diff/files 2",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "read diff/files 3",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "read diff/files 4",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "read diff/files 5",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "read diff/files 6",
+        "bytes": 6000
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/scan.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ write report",
+        "bytes": 100
+      }
+    ]
+  },
+  "S5 Delegate one bounded task to a teammate": {
+    "description": "Main agent delegates one bounded task to a teammate and stops at the dispatch.",
+    "budget": {
+      "bytes": 30382,
+      "instructionTokens": 34837,
+      "calls": 7,
+      "instructionTokensExcludingWork": 7597
+    },
+    "steps": [
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/orchestration.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/subagent-handover.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/naming.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/team-lifecycle.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/skills/install-agents/references/intelligence-levels.json"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/references/ROUTING.md"
+      },
+      {
+        "kind": "run",
+        "label": "Agent(...) dispatch",
+        "bytes": 800
+      }
+    ]
+  },
+  "S9 Subagent: frontend-implementer builds one React component": {
+    "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
+    "budget": {
+      "bytes": 264878,
+      "instructionTokens": 104983,
+      "calls": 43,
+      "instructionTokensExcludingWork": 45223
+    },
+    "steps": [
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/naming.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/directions/orchestration.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state-systems.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/state.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/directions/WORKFLOW.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/directions/WORKFLOW.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/skills/react/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/write-code/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/components/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/accessibility/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/hooks/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/project-structure/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/storybook/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/meta.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/meta.md"
+      },
+      {
+        "kind": "work",
+        "label": "work call 1",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 2",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 3",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 4",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 5",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 6",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 7",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 8",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 9",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 10",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 11",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 12",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 13",
+        "bytes": 6000
+      },
+      {
+        "kind": "work",
+        "label": "work call 14",
+        "bytes": 6000
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/components/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/accessibility/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/hooks/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/react/standards/storybook/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/universal/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/typescript/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/testing/scan.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/function/rules/func-arch-01.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/skills/lint/SKILL.md"
+      },
+      {
+        "kind": "run",
+        "label": "$ lint_profile_runner.ts",
+        "bytes": 1500
+      },
+      {
+        "kind": "run",
+        "label": "$ tsc / vitest",
+        "bytes": 1200
+      }
+    ]
+  }
+}
