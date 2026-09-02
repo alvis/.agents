@@ -8,8 +8,6 @@ argument-hint: "<instruction> [--resume]"
 
 # Write Code
 
-Before any `jj` decision or command, follow `coding:directions/jj.md`.
-
 Risk-adaptive owner for the complete TDD lifecycle. A direct caller first classifies semantic risk through the Coding workflow: Tier 0/1 bounded work stays with one implementing owner, Tier 2 adds its required independent review, and Tier 3 or genuinely multi-milestone work uses Tech Lead coordination. The main agent owns phase order, interactive gates, state-system reconciliation under its lease, and final artifact batching. Remove superseded scaffolding rather than leaving parallel paths or addenda.
 
 ## Boundaries

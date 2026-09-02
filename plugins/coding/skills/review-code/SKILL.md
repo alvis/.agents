@@ -8,8 +8,6 @@ argument-hint: "[specifier] [--area=alignment|correctness|security|quality|testi
 
 # Review Code
 
-Before any `jj` decision or command, follow `coding:directions/jj.md`.
-
 Orchestrate a read-only code review. Area reviewers return seven canonical reports; the main agent writes the lowercase review areas beneath the active work root. Remediation belongs to `coding:fix`; mechanical enforcement belongs to `coding:lint`.
 
 ## Boundaries

@@ -16,6 +16,17 @@ const repoRoot = resolve(import.meta.dirname, "..");
 const fixturePath = resolve(repoRoot, "scripts/read-chain-scenarios.json");
 const fixture: Fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
 
+// Re-seeding rule. Every budget in the fixture equals its own last measurement, so the
+// gate fails on any byte added to any file in a modelled chain — including from a change
+// that never touches plugins/coding. That is the design: it forces the question of
+// whether the added bytes earn a place on a mandated read path, not whether they are
+// few. The author of the change that added them re-seeds, in the same commit, by running
+// scripts/read_chain_budget.ts and writing the measured figures back into
+// scripts/read-chain-scenarios.json, and justifies the addition in that change's PR. Do
+// not re-seed someone else's failing budget as a drive-by. A re-seed whose only purpose
+// is to clear the gate dissolves the ratchet: remove the bytes, or move them off the
+// mandated path so the chain does not pay for them.
+
 describe("read-chain-scenarios.json fixture", () => {
   it("names at least the five audited scenarios S1, S2, S4, S5, S9", () => {
     const names = Object.keys(fixture);
@@ -41,6 +52,26 @@ describe("read-chain-scenarios.json fixture", () => {
         expect(existsSync(absolute), `${name}: missing ${step.path}`).toBe(true);
       }
     }
+  });
+
+  // 9,600 B is the amended SC-4 ceiling for plugins/coding/directions/WORKFLOW.md:
+  // it is coding's single session-entry file under R-1 (one entry file per plugin),
+  // mandated by plugins/coding/hooks/ALLAGENT.md on any intent to write, review or
+  // publish code, so four of the five modelled scenarios bill every byte of it. S5
+  // is delegation-only and never reads it, which is why its numbers do not move
+  // across this slice. The original 8,192 B target was withdrawn: reaching it
+  // required splitting the file, which relocates bytes into a new file rather than
+  // removing them from the chain, and adds a call to the three scenarios that reach
+  // verification, not to all four that read the file: the split-off content is read
+  // at the verification event, and S4 reviews a change without ever running lint or
+  // tests. Re-derive it from the fixture by listing each scenario's non-read steps —
+  // S1, S2 and S9 carry lint and type/test runs, S4 carries none. Do not cite 8,192.
+  // This assertion belongs to the commit that produces the cut WORKFLOW.md (slice 04)
+  // — it fails against base prose (15,690 B) by design, since that tree predates the
+  // cut; do not add it to a commit whose own tree still has the uncut file.
+  it("keeps plugins/coding/directions/WORKFLOW.md at or under the 9,600 B SC-4 ceiling", () => {
+    const bytes = statSync(resolve(repoRoot, "plugins/coding/directions/WORKFLOW.md")).size;
+    expect(bytes).toBeLessThanOrEqual(9_600);
   });
 });
 

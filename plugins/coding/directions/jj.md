@@ -1,29 +1,23 @@
 # Jujutsu guide
 
-This is the coding plugin's canonical cross-skill source for deciding when and
-how to use Jujutsu (`jj`). Coding `SKILL.md` files link here instead of
-inlining setup and situation selection. Route-specific references retain exact
-transactions, non-`jj` gates, and handoffs where their owning skill needs them.
+This is the coding plugin's canonical source for how to run Jujutsu (`jj`).
+`coding:directions/WORKFLOW.md` owns when to use `jj` and mutation ownership —
+`coding:commit` for local history, `coding:pr` for publication. Route-specific
+references retain exact transactions, non-`jj` gates, and handoffs where their
+owning skill needs them.
 
-## Ownership
-
-- `coding:commit` owns every local history mutation: new changes, descriptions,
-  splits, edits, squashes, rebases, abandons, and bookmark movement.
-- `coding:pr create|update|merge` owns remote publication, PR bases, and CI.
-- Other coding skills may inspect `jj` state but must hand mutations to those
-  owners.
-- Use `jj` when it is installed and functionally colocated with the repository.
-  Plain Git remains supported when `jj` is unavailable or colocation cannot be
-  established safely.
-
-## Require jj 0.44 or newer
-
-The coding plugin relies on commands and safety flags available in Jujutsu
-0.44.0 or newer. Before using `jj`, run `coding:sync-tool --only jj --check`.
-If the check fails, run `coding:sync-tool --only jj`, then repeat the check.
-Do not approximate a missing command with a mixed Git/`jj` sequence.
+<IMPORTANT>
+Never rewrite published or merged history — squashing, rebasing, abandoning, or
+describing a change that has already been pushed or landed. Correct it with a
+new change unless explicit authority permits rewriting shared history. This
+applies to every operation below, not only the merged-work row of the situation
+guide.
+</IMPORTANT>
 
 ## Initialize before work
+
+`jj` requires 0.44+ — run `coding:sync-tool --only jj --check`, run
+`coding:sync-tool --only jj` if it fails, then repeat the check.
 
 For an ordinary Git checkout that has not been initialized, run this before
 editing:

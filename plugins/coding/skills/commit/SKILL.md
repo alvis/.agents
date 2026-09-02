@@ -19,8 +19,7 @@ hooks:
 
 # Save Any Code Change — jj-first, git-compatible
 
-Before any `jj` decision or command, follow
-`coding:directions/jj.md`.
+When running a `jj` operation, follow `coding:directions/jj.md`.
 
 Before any script call, set `CODING_COMMIT_SKILL_DIR` to the absolute directory
 containing this loaded `SKILL.md`. This works in all three harnesses; not every harness exposes a plugin-root

@@ -8,8 +8,6 @@ argument-hint: "[--project=<path>] [--architecture|--no-architecture] [--readme-
 
 # Document package
 
-Before any `jj` decision or command, follow `coding:directions/jj.md`.
-
 Set `CODING_DOCUMENT_SKILL_DIR` to the absolute directory containing this loaded `SKILL.md` before invoking its scripts.
 
 Produce accurate package documentation from code. This skill owns package `readme.md` content and durable `docs/architecture/*.md` artifacts; it does not author product specifications, Notion pages, or implementation changes.

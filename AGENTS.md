@@ -205,6 +205,8 @@ verify them when changing payloads or their unconditional read chain.
 | `memory` is `"project"`; body has exactly one `## Memory` section | same |
 | Every injected payload ≤ 2,000 bytes, per plugin | Author review |
 | Every plugin's unconditional hook read chain ≤ 40,960 bytes | Author review |
+| Each modelled read-chain scenario within its seeded budget (bytes, instruction tokens, instruction tokens excluding work turns, tool calls) | `scripts/read_chain_budget.spec.ts` |
+| `plugins/coding/directions/WORKFLOW.md` ≤ 9,600 bytes | same |
 | `.state/` work Markdown flagged over 16,384 bytes | `plugins/essential/scripts/check-markdown-size` |
 | Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/orchestration.md` |
 | Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
@@ -244,15 +246,17 @@ lowercase kebab, never personalized.
 One command validates this repository, with no install step:
 
 ```bash
-bunx vitest@^4.0.0 run --globals --exclude '**/fixtures/**'
+bunx --bun vitest@^4.0.0 run
 ```
+
+The `--bun` flag is load-bearing; `.github/workflows/ci.yml`'s header comment
+says why.
 
 No root `package.json` and no lockfile exists by design: `bunx` resolves the
 runner into its own cache, so the tree stays zero-dependency and a run leaves
 behind only git-ignored caches. That pin is a range (`^4`), not an exact
 version — minor-version drift between runs is the accepted trade for the
-zero-dependency tree. The fixture exclusion keeps the preserved Python corpus
-payloads from being collected as tests.
+zero-dependency tree.
 
 Mechanical gates are colocated `*.spec.ts`, so the suites and gates cannot drift
 apart. `.github/workflows/ci.yml` runs that command on every pull request and push

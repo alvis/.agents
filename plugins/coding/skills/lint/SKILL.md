@@ -8,9 +8,6 @@ argument-hint: "[specifier] [--scope=SCOPE] [--skip-unused] [--profile=ABSOLUTE_
 
 # Linting
 
-Before any `jj` decision or command, follow
-`coding:directions/jj.md`.
-
 Set `CODING_LINT_SKILL_DIR` to the absolute directory containing this loaded
 `SKILL.md` before invoking its scripts.
 
@@ -20,6 +17,8 @@ Apply generic coding standards mechanically. This skill owns file discovery, sco
 
 - Use for: mechanical standards enforcement, lint-error correction, and consistent formatting on eligible source files, with an optional pre-flight unused-code prune.
 - Do not use for: modifying configuration files, installing or updating lint tooling, authoring lint rules, or processing binary, gitignored, generated, or vendor files. Behavior-changing repairs belong to `coding:fix`; structural cleanup belongs to `coding:refactor`.
+- Eligible source files are `.ts/.tsx/.js/.jsx/.py/.go/.rs/.rb/.java/.kt/.swift/.c/.cpp/.h/.hpp/.cs/.php/.sh/.vue/.svelte/.astro` and similar. Skip text and content files (`.md/.mdx/.json/.yaml/.toml/.html/.svg/.csv`) and throwaway scripts that won't be committed.
+- This skill runs its own scan-and-aggregate cycle internally; never lint by hand in its place.
 
 ## Inputs
 

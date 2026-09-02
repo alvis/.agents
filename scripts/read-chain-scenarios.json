@@ -2,10 +2,10 @@
   "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
     "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
     "budget": {
-      "bytes": 214790,
-      "instructionTokens": 90541,
-      "calls": 37,
-      "instructionTokensExcludingWork": 38701
+      "bytes": 209108,
+      "instructionTokens": 89440,
+      "calls": 38,
+      "instructionTokensExcludingWork": 37280
     },
     "steps": [
       {
@@ -36,6 +36,10 @@
         "kind": "run",
         "label": "$ resolve-state-workspace",
         "bytes": 600
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/INDEX.md"
       },
       {
         "kind": "read",
@@ -178,10 +182,10 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 479496,
-      "instructionTokens": 172082,
-      "calls": 85,
-      "instructionTokensExcludingWork": 86882
+      "bytes": 473714,
+      "instructionTokens": 170957,
+      "calls": 86,
+      "instructionTokensExcludingWork": 85437
     },
     "steps": [
       {
@@ -247,6 +251,10 @@
       {
         "kind": "read",
         "path": "plugins/coding/skills/write-code/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/INDEX.md"
       },
       {
         "kind": "read",
@@ -574,10 +582,10 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 139510,
-      "instructionTokens": 67239,
-      "calls": 23,
-      "instructionTokensExcludingWork": 25879
+      "bytes": 133847,
+      "instructionTokens": 66143,
+      "calls": 24,
+      "instructionTokensExcludingWork": 24463
     },
     "steps": [
       {
@@ -599,6 +607,10 @@
       {
         "kind": "read",
         "path": "plugins/coding/directions/WORKFLOW.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/INDEX.md"
       },
       {
         "kind": "read",
@@ -724,10 +736,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 264878,
-      "instructionTokens": 104983,
-      "calls": 43,
-      "instructionTokensExcludingWork": 45223
+      "bytes": 259504,
+      "instructionTokens": 103959,
+      "calls": 44,
+      "instructionTokensExcludingWork": 43879
     },
     "steps": [
       {
@@ -761,6 +773,10 @@
       {
         "kind": "read",
         "path": "plugins/coding/skills/write-code/SKILL.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/coding/standards/INDEX.md"
       },
       {
         "kind": "read",
