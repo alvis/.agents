@@ -736,10 +736,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 258186,
-      "instructionTokens": 103630,
+      "bytes": 255576,
+      "instructionTokens": 102976,
       "calls": 44,
-      "instructionTokensExcludingWork": 43550
+      "instructionTokensExcludingWork": 42896
     },
     "steps": [
       {

@@ -1,9 +1,7 @@
 # React Hooks: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-
 Any single violation blocks approval by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 
@@ -20,12 +18,12 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 ### Dependencies
 
-- DO NOT pass an empty `[]` to `useEffect`/`useCallback`/`useMemo` when it reads outer values — every external read must appear in deps [`RH-DEPS-01`]
+- DO NOT pass an empty `[]` to `useEffect`/`useCallback`/`useMemo` when it reads outer values [`RH-DEPS-01`]
 
 ### Async / Cleanup
 
 - DO NOT skip loading or error state in async hooks — always include both [`RH-ASYNC-01`]
-- DO NOT start async work in `useEffect` without a cancellation flag or `AbortController` — prevents leaks on unmount [`RH-CLEANUP-01`]
+- DO NOT start async work in `useEffect` without a cancellation flag or `AbortController` [`RH-CLEANUP-01`]
 
 ### Stable References
 

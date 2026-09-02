@@ -1,9 +1,7 @@
 # Storybook: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-
 Any single P0 violation blocks approval by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 

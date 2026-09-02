@@ -53,12 +53,8 @@ theming rules were not evaluated.
 
 ## Workflow
 
-1. Identify the surfaces the task touches and load only their standards.
-   Before editing, read only each selected standard's `meta.md`. After editing,
-   apply its `scan.md`; when it identifies a candidate violation, read only the
-   matching `rules/<lowercase-rule-id>.md` when present, or that standard's
-   `write.md` as the bounded fallback when no matching guide exists. Correct
-   the violation and rerun the scan.
+1. Identify the surfaces the task touches, load only their standards, and
+   apply each as a writer under `essential:directions/standards.md`.
 2. When authoring, pair `components` with `accessibility` — every component
    must be accessible; add `hooks` whenever a `use*` function is involved,
    add `storybook` for `*.stories.tsx` files, and decide the
@@ -103,20 +99,17 @@ theming rules were not evaluated.
      result in the implementation or review report. Preserve web-owner raw
      artifacts at their canonical paths and link to the selected web owner's
      canonical report/artifact paths instead of copying them.
-5. When a scan or review flags a violation code, open its matching file under
-   the standard's `rules/` directory when present; otherwise open that
-   standard's `write.md` as the bounded fallback. Apply or route the fix and
-   re-run the relevant `scan.md` heuristic to confirm. Repeat until every
-   flagged code is resolved or a concrete blocker remains, then report the
-   blocker instead of looping.
+5. When a scan or review flags a violation code, apply or route the fix under
+   `essential:directions/standards.md`. Repeat until every flagged code is
+   resolved or a concrete blocker remains, then report the blocker instead of
+   looping.
 
 ## Verification
 
 - Every touched surface has its standard loaded, and `accessibility` is
   loaded alongside `components` whenever authoring.
-- Every flagged violation code was checked against its matching rule guide or
-  bounded `write.md` fallback and either re-scanned clean, routed to its owning
-  skill, or reported as blocked.
+- Every flagged violation code was either re-scanned clean, routed to its
+  owning skill, or reported as blocked.
 - The theming decision is recorded — applied, or explicitly noted as not
   evaluated when the web plugin is absent.
 
