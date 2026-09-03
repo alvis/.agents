@@ -109,6 +109,20 @@ describe("resolveStepBytes", () => {
     ).toThrow(/README/);
   });
 
+  it("returns the real file size for an inject step, measured from disk exactly like a read step", () => {
+    const bytes = resolveStepBytes(
+      { kind: "inject", path: "plugins/essential/hooks/ALLAGENT.md" },
+      repoRoot,
+    );
+    expect(bytes).toBeGreaterThan(0);
+  });
+
+  it("rejects a README.md inject step even if one is passed directly", () => {
+    expect(() =>
+      resolveStepBytes({ kind: "inject", path: "plugins/coding/README.md" }, repoRoot),
+    ).toThrow(/README/);
+  });
+
   it("names the fixture path and tells the reader to update the fixture when a read step's file no longer exists", () => {
     let thrown: unknown;
     try {
@@ -186,6 +200,39 @@ describe("measureScenario", () => {
       steps: [{ kind: "run" as const, label: "$ verify.sh", bytes: 300 }],
     };
     expect(measureScenario("test", scenario, repoRoot).instructionTokensExcludingWork).toBe(tokensForBytes(300));
+  });
+
+  it("reports an inject-only scenario's bytes and tokens but leaves calls at 0: injection costs bytes, never a tool call", () => {
+    const scenario = {
+      description: "hook-injected payloads only",
+      budget: { bytes: 0, instructionTokens: 0, instructionTokensExcludingWork: 0, calls: 0 },
+      steps: [
+        { kind: "inject" as const, path: "plugins/essential/hooks/ALLAGENT.md" },
+        { kind: "inject" as const, path: "plugins/essential/hooks/MAINAGENT.md" },
+      ],
+    };
+    const measured = measureScenario("test", scenario, repoRoot);
+    const allAgentBytes = resolveStepBytes(scenario.steps[0]!, repoRoot);
+    const mainAgentBytes = resolveStepBytes(scenario.steps[1]!, repoRoot);
+    const expectedBytes = allAgentBytes + mainAgentBytes;
+    const expectedTokens = tokensForBytes(allAgentBytes) + tokensForBytes(mainAgentBytes);
+    expect(measured.bytes).toBe(expectedBytes);
+    expect(measured.instructionTokensExcludingWork).toBe(expectedTokens);
+    // No mandated tool call fired, so no per-call overhead/output is charged either.
+    expect(measured.calls).toBe(0);
+    expect(measured.instructionTokens).toBe(25_000 + expectedTokens);
+  });
+
+  it("counts calls only for read/run/work steps in a mixed scenario, excluding inject steps", () => {
+    const scenario = {
+      description: "one inject step, one read step",
+      budget: { bytes: 0, instructionTokens: 0, instructionTokensExcludingWork: 0, calls: 0 },
+      steps: [
+        { kind: "inject" as const, path: "plugins/essential/hooks/ALLAGENT.md" },
+        { kind: "read" as const, path: "plugins/coding/directions/WORKFLOW.md" },
+      ],
+    };
+    expect(measureScenario("test", scenario, repoRoot).calls).toBe(1);
   });
 });
 

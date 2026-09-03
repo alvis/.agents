@@ -20,15 +20,23 @@
 // charged to nobody. A phantom step inflates both sides of a before/after
 // comparison and lets a later slice book its removal as a saving.
 //
+// A fourth step kind, `inject`, models hook-injected payload files
+// (`ALLAGENT.md`, `MAINAGENT.md`, `SUBAGENT.md`) that `SessionStart` and
+// `SubagentStart` hooks pipe into a session's context before the agent
+// issues its first tool call. Injection costs bytes but zero tool calls —
+// unlike a `read` step, nothing "loads" it, so it never increments `calls`
+// or the per-call overhead/output charged to `instructionTokens`.
+//
 // Three token metrics are reported, and they are NOT interchangeable:
 //   - `instructionTokens` is the full context an agent holds after loading
-//     every mandated step: base context + per-call overhead/output + every
-//     step's bytes (read, run, AND work steps). This models real session
-//     cost and is worth watching, but it is not reducible by restructuring
-//     reads: work steps are irreducible content, not instruction overhead.
+//     every mandated step: base context + per-call overhead/output (charged
+//     only for read/run/work calls, never inject) + every step's bytes
+//     (read, run, work, AND inject). This models real session cost and is
+//     worth watching, but it is not reducible by restructuring reads: work
+//     steps are irreducible content, not instruction overhead.
 //   - `instructionTokensExcludingWork` sums tokens(bytes) over every step EXCEPT
-//     `kind: "work"` — i.e. `read` and `run` steps, no base context, no
-//     per-call overhead/output. This mirrors the audit's own
+//     `kind: "work"` — i.e. `read`, `run`, AND `inject` steps, no base
+//     context, no per-call overhead/output. This mirrors the audit's own
 //     `artifacts/scenarios.ts` cost simulator exactly (`if (s.kind !==
 //     "work") instr += add`) and is the metric SC-1 and its slice-10
 //     targets are expressed in. `run` steps (script/tool output the agent
@@ -36,12 +44,14 @@
 //     count here because they are NOT irreducible: the audit's after-model
 //     drops several scripts outright and resizes others, and none of that
 //     saving would register if `run` steps were excluded alongside `work`.
-//     Only `kind: "work"` (the agent's own generated work turns — writing
-//     code, composing a fix, analyzing a diff) is irreducible and excluded.
+//     `inject` steps count here too — hook payloads are exactly the kind of
+//     read-chain content later slices rewrite to shrink. Only `kind: "work"`
+//     (the agent's own generated work turns — writing code, composing a
+//     fix, analyzing a diff) is irreducible and excluded.
 //     When lowering a budget for a later slice, lower `instructionTokensExcludingWork`
 //     against the audit-derived target; `instructionTokens` stays a
 //     secondary, informational figure.
-//   - `bytes` is the raw sum across every step (read, run, and work),
+//   - `bytes` is the raw sum across every step (read, run, work, and inject),
 //     matching `instructionTokens`'s scope.
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
@@ -89,7 +99,21 @@ export interface WorkStep {
   readonly bytes: number;
 }
 
-export type FixtureStep = ReadStep | RunStep | WorkStep;
+/**
+ * One mandated hook-injected payload: a repository-relative file that a
+ * `SessionStart` or `SubagentStart` hook pipes into the session's context
+ * before the agent's first tool call. Measured from disk exactly like a
+ * `ReadStep`, but it costs no tool call — nothing "reads" it, the harness
+ * injects it — so it contributes bytes without incrementing `calls` and
+ * without the per-call overhead/output charged to `instructionTokens`.
+ */
+export interface InjectStep {
+  readonly kind: "inject";
+  /** Repository-relative path, resolved against the repo root at measurement time. */
+  readonly path: string;
+}
+
+export type FixtureStep = ReadStep | RunStep | WorkStep | InjectStep;
 
 export interface ScenarioBudget {
   readonly bytes: number;
@@ -146,10 +170,12 @@ export function resolveStepBytes(step: FixtureStep, repoRoot: string): number {
 }
 
 /**
- * Measures one scenario's mandated read chain: every step is one tool call,
- * so total bytes and instruction tokens accumulate the same way the base
- * context, per-call overhead, and per-call output do in the ported cost
- * model — this is the context an agent must hold before it can act.
+ * Measures one scenario's mandated read chain: every `read`, `run`, and
+ * `work` step is one tool call, so each accumulates the base context,
+ * per-call overhead, and per-call output of the ported cost model. An
+ * `inject` step is not a tool call — a hook injects it — so it contributes
+ * its bytes and nothing else. Together they are the context an agent must
+ * hold before it can act.
  */
 export function measureScenario(
   name: string,
@@ -163,7 +189,7 @@ export function measureScenario(
   for (const step of scenario.steps) {
     const stepBytes = resolveStepBytes(step, repoRoot);
     bytes += stepBytes;
-    calls += 1;
+    if (step.kind !== "inject") calls += 1;
     stepTokens += tokensForBytes(stepBytes);
     if (step.kind !== "work") instructionTokensExcludingWork += tokensForBytes(stepBytes);
   }

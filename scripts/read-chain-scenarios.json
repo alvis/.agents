@@ -2,12 +2,56 @@
   "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
     "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
     "budget": {
-      "bytes": 199241,
-      "instructionTokens": 85694,
+      "bytes": 207137,
+      "instructionTokens": 87669,
       "calls": 34,
-      "instructionTokensExcludingWork": 34814
+      "instructionTokensExcludingWork": 36789
     },
     "steps": [
+      {
+        "kind": "inject",
+        "path": "plugins/client/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/MAINAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/MAINAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/governance/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/production/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/react/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/specification/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/MAINAGENT.md"
+      },
       {
         "kind": "read",
         "path": "plugins/coding/directions/WORKFLOW.md"
@@ -166,13 +210,57 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 460325,
-      "instructionTokens": 165691,
+      "bytes": 468221,
+      "instructionTokens": 167666,
       "calls": 80,
-      "instructionTokensExcludingWork": 82091
+      "instructionTokensExcludingWork": 84066
     },
-    "note": "Re-seeded upward once: select-workflow-applicability.sh and gate-missing-secrets.sh were never modelled as run steps, so inlining them moved 1152 bytes onto a charged surface from one this fixture never charged. Call count is unchanged, which is the tell. Not a regression; do not treat it as licence to re-seed.",
+    "note": "Re-seeded upward once: select-workflow-applicability.sh and gate-missing-secrets.sh were never modelled as run steps, so inlining them moved 1152 bytes onto a charged surface from one this fixture never charged. Call count is unchanged, which is the tell. Not a regression; do not treat it as licence to re-seed. A spawned subagent's own injected payloads are not charged here: this scenario models its subagent as a single `run` step producing a report, not as that subagent's own reads. S4 and S9 model a subagent session in full. Charging the child's injection while ignoring its reads would be less coherent, so this knowingly understates true cost.",
     "steps": [
+      {
+        "kind": "inject",
+        "path": "plugins/client/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/MAINAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/MAINAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/governance/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/production/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/react/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/specification/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/MAINAGENT.md"
+      },
       {
         "kind": "read",
         "path": "plugins/coding/directions/WORKFLOW.md"
@@ -543,12 +631,48 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 114749,
-      "instructionTokens": 60089,
+      "bytes": 120202,
+      "instructionTokens": 61453,
       "calls": 20,
-      "instructionTokensExcludingWork": 19689
+      "instructionTokensExcludingWork": 21053
     },
     "steps": [
+      {
+        "kind": "inject",
+        "path": "plugins/client/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/SUBAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/governance/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/production/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/react/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/specification/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/ALLAGENT.md"
+      },
       {
         "kind": "read",
         "path": "plugins/essential/directions/subagent.md"
@@ -641,12 +765,56 @@
   "S5 Delegate one bounded task to a teammate": {
     "description": "Main agent delegates one bounded task to a teammate and stops at the dispatch.",
     "budget": {
-      "bytes": 12905,
-      "instructionTokens": 29507,
+      "bytes": 20801,
+      "instructionTokens": 31482,
       "calls": 4,
-      "instructionTokensExcludingWork": 3227
+      "instructionTokensExcludingWork": 5202
     },
     "steps": [
+      {
+        "kind": "inject",
+        "path": "plugins/client/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/MAINAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/MAINAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/governance/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/production/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/react/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/specification/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/MAINAGENT.md"
+      },
       {
         "kind": "read",
         "path": "plugins/essential/directions/delegate.md"
@@ -664,17 +832,54 @@
         "label": "Agent(...) dispatch",
         "bytes": 800
       }
-    ]
+    ],
+    "note": "A spawned subagent's own injected payloads are not charged here: this scenario models its subagent as a single `run` step producing a report, not as that subagent's own reads. S4 and S9 model a subagent session in full. Charging the child's injection while ignoring its reads would be less coherent, so this knowingly understates true cost."
   },
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 217562,
-      "instructionTokens": 91232,
+      "bytes": 223015,
+      "instructionTokens": 92596,
       "calls": 37,
-      "instructionTokensExcludingWork": 33392
+      "instructionTokensExcludingWork": 34756
     },
     "steps": [
+      {
+        "kind": "inject",
+        "path": "plugins/client/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/coding/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/essential/hooks/SUBAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/governance/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/production/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/react/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/specification/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "inject",
+        "path": "plugins/web/hooks/ALLAGENT.md"
+      },
       {
         "kind": "read",
         "path": "plugins/essential/directions/subagent.md"
