@@ -86,10 +86,12 @@ fails silently.
 
 Under Grok Build these payloads stay registered but are openly scoped out: its
 `SessionStart` and `SubagentStart` handlers ignore stdout, so no routing text
-injects there. The PreToolUse validators still fire natively, emitting grok's
-top-level `{"decision","reason"}` envelopes. `Stop` behaves the same way — its
-stdout is ignored — so the once-per-session `.state` reminder's block envelope
-stays advisory there until xAI makes `Stop` blocking.
+injects there. The PreToolUse validator still fires natively, emitting grok's
+top-level `{"decision","reason"}` envelope for either outcome, which makes Grok
+the one harness that states an allow: Claude Code and Codex express an allow as
+the context beside it, so a call with nothing to add emits nothing there and
+their permission system decides. An unresolved plugin root exits non-zero on
+both paths.
 
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files
 are re-read on every session, they are byte-budgeted (see below) — put detail in

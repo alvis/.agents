@@ -109,7 +109,9 @@ bash "${CODING_PR_SKILL_DIR}/scripts/resolve-pr.sh" \
 
 Retain its `host`, `number`, `owner`, `repo`, `url`, `headRefOid`,
 `baseRefName`, and `baseRefOid` as `HOST`, `PR_NUMBER`, `OWNER`, `REPO`,
-`PR_URL`, `HEAD_OID`, `BASE_REF`, and `BASE_OID`. Never put a URL into a REST
+`PR_URL`, `HEAD_OID`, `BASE_REF`, and `BASE_OID`. This stays a script: it
+parses and cross-checks the canonical PR URL against the returned metadata and
+enriches it, and a second script still depends on it. Never put a URL into a REST
 path segment or GraphQL `Int!` variable; pass `--hostname "$HOST"` to every
 `gh api` call.
 
@@ -131,7 +133,9 @@ PR supplies `STACK_BASE_REF`/`STACK_BASE_OID`; the top PR supplies
 but do not review each checkout independently. No match is a clean stop naming
 the tree and its HEAD; an unresolvable tangle asks. Resolve every matched URL
 through `resolve-pr.sh` before its review so all paths use the same coordinate
-and metadata contract.
+and metadata contract. It stays a script rather than one `gh` call: it parses the
+canonical URL, cross-checks it against the returned metadata, and enriches it, so
+inlining would give that coordinate contract a second home.
 
 Stop with evidence when a PR is closed, merged, or unreadable. For a single PR,
 record `HEAD_OID`, `BASE_REF`, and `BASE_OID`. For a stack, record the same fields
@@ -206,7 +210,24 @@ discussion cannot support a `fixed`, `does_not_apply`, or de-duplication
 decision.
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/fetch-review-discussion.sh"
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" --paginate
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" --paginate
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate
+gh api graphql --hostname "$HOST" \
+  -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUMBER" -f query='
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviewThreads(first:100,after:$cursor){
+        pageInfo{hasNextPage endCursor}
+        nodes{id isResolved comments(first:100){
+          pageInfo{hasNextPage endCursor}
+          nodes{databaseId body url path line commit{oid} author{login}}
+        }}
+      }
+    }
+  }
+}'
 ```
 
 Page `reviewThreads` and each thread's `comments` connection to exhaustion.
@@ -315,13 +336,13 @@ compiler-test glob. Never combine files owned by different test roots in one
 invocation:
 
 ```bash
-bash "${CODING_PR_SKILL_DIR}/scripts/review-scan.sh" \
+bun run "${CODING_PR_SKILL_DIR}/../../scripts/scanlib/core.ts" \
   <changed-files-owned-by-project> --category all --before 5 --after 10 \
   --test-root <project-root> [--test-pattern <compiler-test-glob> ...]
 ```
 
-The wrapper resolves the scanner from the installed PR skill and forwards every
-group's classification arguments. Surface a non-zero scanner failure rather
+That path resolves the scanner from the installed PR skill directory up to the
+coding plugin root; pass every group's classification arguments to it. Surface a non-zero scanner failure rather
 than skipping silently. Candidates are advisory until confirmed against the
 rule they cite.
 

@@ -74,36 +74,36 @@ describe("fn:main", () => {
     await main([join(root, "state"), "-o", join(root, "out.json")], NOW);
 
     expect(said).toStrictEqual([
-      "state-board.ts: read 1 live stream, set aside 1",
+      "state/cli.ts: read 1 live stream, set aside 1",
     ]);
   });
 
   it("should refuse a run with no output path, and print how to give one", async () => {
     expect(await main([join(root, "state")], NOW)).toBe(2);
     expect(said.join("\n")).toBe(
-      "usage: bun scripts/state-board.ts <.state> -o <board.json>\n" +
-        "state-board.ts: error: missing the -o <board.json> flag",
+      "usage: bun scripts/render-page/state/cli.ts <.state> -o <board.json>\n" +
+        "state/cli.ts: error: missing the -o <board.json> flag",
     );
   });
 
   it("should refuse an output flag that swallowed the next flag", async () => {
     expect(await main([join(root, "state"), "-o"], NOW)).toBe(2);
     expect(said.join("\n")).toContain(
-      'state-board.ts: error: -o needs an output path, received ""',
+      'state/cli.ts: error: -o needs an output path, received ""',
     );
   });
 
   it("should refuse more than one tree, saying how many it was given", async () => {
     expect(await main(["one", "two", "-o", join(root, "out.json")], NOW)).toBe(2);
     expect(said.join("\n")).toContain(
-      "state-board.ts: error: expected exactly one .state directory, received 2",
+      "state/cli.ts: error: expected exactly one .state directory, received 2",
     );
   });
 
   it("should refuse a directory that is not a state tree, naming what it wanted", async () => {
     expect(await main([root, "-o", join(root, "out.json")], NOW)).toBe(1);
     expect(said.join("\n")).toBe(
-      `state-board.ts: error: no workstreams to read: ${join(root, "works")} is not a directory, so this is not a .state tree`,
+      `state/cli.ts: error: no workstreams to read: ${join(root, "works")} is not a directory, so this is not a .state tree`,
     );
   });
 });

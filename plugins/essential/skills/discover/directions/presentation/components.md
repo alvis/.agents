@@ -1,7 +1,7 @@
 # JSON block catalogue
 
 Every board this skill ships is one JSON file rendered by
-`scripts/render-page.ts`. The author writes data; the builder produces the
+`scripts/render-page/cli.ts`. The author writes data; the builder produces the
 bytes. This catalogue is the vocabulary that data is written in: the page
 envelope, the section, each block type, and the inline runs a sentence can
 carry.

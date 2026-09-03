@@ -8,8 +8,6 @@ argument-hint: "[--project=<path>] [--architecture|--no-architecture] [--readme-
 
 # Document package
 
-Set `CODING_DOCUMENT_SKILL_DIR` to the absolute directory containing this loaded `SKILL.md` before invoking its scripts.
-
 Produce accurate package documentation from code. This skill owns package `readme.md` content and durable `docs/architecture/*.md` artifacts; it does not author product specifications, Notion pages, or implementation changes.
 
 ## Boundaries
@@ -50,7 +48,7 @@ Load [references/authoring-rules.md](references/authoring-rules.md) for the conc
 3. Build an evidence map before drafting: manifest metadata, public exports, entry points, scripts, environment/configuration, tested examples, error behavior, dependency direction, and important source modules. Classify the package archetype (library, CLI, service, data/IaC, stateless app, or monorepo) and map each intended claim to a file or executable command.
 4. Keep artifact ownership separate. `readme.md` explains audience, installation, quick start, public usage/API, configuration, and links. A durable `docs/architecture/<architecture-slug>.md` explains boundaries, components, runtime/data flow, dependency direction, extension points, and operational constraints; do not duplicate usage tutorials. Compute links relative to the package `readme.md` rather than assuming the documents are siblings. New files use lowercase names. If only a legacy uppercase README exists, do not create a duplicate: report the compatibility migration and rename it with all links atomically only when repository evidence makes that safe.
 5. Draft from the evidence map. Use real imports, commands, paths, inputs, outputs, and failure cases that were verified against code/tests. Never invent a convenience API. Preserve the existing voice and integrate updates into the owning sections.
-6. Generate a table of contents only when the document benefits from one. Use `bun run "${CODING_DOCUMENT_SKILL_DIR}/scripts/toc_width.ts"` for width calculations; never use a checkout-specific absolute path.
+6. Generate a table of contents only when the document benefits from one, keeping its link row on a single line so it does not wrap on a narrow view.
 7. Create or update `docs/architecture/<architecture-slug>.md` when explicitly requested or when the package has multiple public/runtime entry points, cross-process or persistent data flow, meaningful dependency layering, or at least three cooperating components whose relationship is not clear from `readme.md`. Name it per `naming.md` in the essential plugin's `references/` directory and repository capability, not a task title. At this write decision, read `${ESSENTIAL_ROOT}/templates/docs/readme.md` and `${ESSENTIAL_ROOT}/templates/docs/architecture.md`, using the root derived from the injected state contract. Reconcile `docs/architecture/README.md` and `docs/README.md`; individual architectural choices remain ADRs under `docs/architecture/decisions/`. Before creating or superseding one, apply the ADR contract at `${ESSENTIAL_ROOT}/references/adr.md` and the template at `${ESSENTIAL_ROOT}/templates/docs/adr.md`: effective ADRs are indexed directly under `decisions/`, superseded ADRs move under `decisions/superseded/`, and a new successor stands alone without naming the old ADR.
 8. The main agent applies the coherent documentation patch. A delegated run returns the patch for it to apply. Run the verification below and the audit checklist in `references/authoring-rules.md` as the owning writer's self-review. When the independent-review predicate above applies, delegate that same checklist to a read-only reviewer after the self-review. When a check fails, fix the cause and re-run that check; repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
 
@@ -59,7 +57,6 @@ Load [references/authoring-rules.md](references/authoring-rules.md) for the conc
 - Every documented export, command, environment variable, path, link, and dependency exists in the evidence map and matches the source.
 - Documentation/build/test examples were executed where safe, and each ran as documented.
 - The owning writer's self-review found no unsupported claims, wrong archetype, README/architecture overlap, unusable examples, stale text, or broken durable-index links. When the independent-review predicate applied, its read-only review found none either.
-- Any generated table of contents was produced with `toc_width.ts`, not by hand.
 
 ## Completion
 

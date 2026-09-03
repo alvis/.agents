@@ -17,9 +17,14 @@ deny() {
   output_pretooluse_decision "deny" "$1"
 }
 
+# The reminder an allowed dispatch used to attach repeated a mandate already
+# carried by directions/delegate.md, which the dispatcher reads before composing
+# the handover, so it changed no decision while costing context on every
+# successful call. Only the reminder goes: the decision still routes through the
+# harness chain, so Grok keeps its allow envelope and an unresolved plugin root
+# still fails loud.
 allow() {
-  output_pretooluse_decision "allow" \
-    "Remind you to follow instructions in essential:directions/delegate.md"
+  output_pretooluse_decision "allow" "dispatch fields present"
 }
 
 input=$(cat)

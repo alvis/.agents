@@ -222,7 +222,7 @@ function parseArgs(argv: readonly string[]): ParsedArguments {
   const here = import.meta.dirname;
   let profile: string | undefined;
   let codingRoot = resolve(here, "..");
-  let genericScanner = resolve(here, "scan_potential_violations.ts");
+  let genericScanner = resolve(here, "scanlib/core.ts");
   let testRoot: string | undefined;
   const testPatterns: string[] = [];
   const files: string[] = [];

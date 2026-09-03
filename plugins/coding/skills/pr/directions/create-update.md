@@ -97,7 +97,7 @@ if [ "$PUBLICATION_VCS" = jj ]; then
 fi
 ```
 
-`PUBLICATION_VCS=jj` is part of the sourced resolver contract: while `PUBLICATION_GIT_DIR` exposes the shared remote configuration, the resolver must not inspect its backing Git HEAD for branch-scoped settings.
+`resolve-push-remote.sh` stays a script: it resolves the push remote through four ordered fallbacks and probes each candidate with `gh`, which is not a single wrapped command. `PUBLICATION_VCS=jj` is part of the sourced resolver contract: while `PUBLICATION_GIT_DIR` exposes the shared remote configuration, the resolver must not inspect its backing Git HEAD for branch-scoped settings.
 
 Record `REMOTE`, receiving `HOST/$REPOSITORY`, and `PUSH_OWNER` in the publication plan. On zero or ambiguous GitHub candidates, preserve the candidate evidence and stop rather than selecting one. PR discovery is always scoped with `--repo "$HOST/$REPOSITORY"`, then filtered to exact `headRepositoryOwner.login == "$PUSH_OWNER"`; a branch name alone never identifies a PR.
 
@@ -110,7 +110,22 @@ Always load [stacked-prs.md](stacked-prs.md) and enforce its mandatory archetype
 After stack discovery, resolve each selected head and its intended PR base to immutable revision IDs. Encode them in `SELECTED_STACK_JSON` as objects with `head` and `base` fields plus the discovered `bookmark` and PR identity, ordered bottom-up; a standalone target has one object. Derive the canary target from that map: the last selected head is the target revision and the first selected head's base is the target base revision. The tip's immediate PR base is not the selected canary base.
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/select-verification-target.sh"
+SELECTED_HEAD_COUNT=$(jq -er 'length | select(. > 0)' <<<"$SELECTED_STACK_JSON")
+TARGET_SHA=$(jq -er '.[-1].head | select(type == "string" and length > 0)' \
+  <<<"$SELECTED_STACK_JSON")
+TARGET_BASE=$(jq -er '.[0].base | select(type == "string" and length > 0)' \
+  <<<"$SELECTED_STACK_JSON")
+case "$SELECTED_HEAD_COUNT" in
+  1)
+    TARGET_KIND=standalone
+    ;;
+  *)
+    test "$SELECTED_HEAD_COUNT" -gt 1 || exit 2
+    TARGET_KIND=stack-tip
+    ;;
+esac
+printf 'TARGET_KIND=%s\nTARGET_SHA=%s\nTARGET_BASE=%s\n' \
+  "$TARGET_KIND" "$TARGET_SHA" "$TARGET_BASE"
 ```
 
 With `--no-verify`, record `local_verification: skipped_by_user` with the exact ordered bookmark, PR, head, and base map, then continue to publication. Do not create a parity receipt, treat the skip as a missing-secret approval, or reuse the skip after this invocation.
@@ -148,13 +163,15 @@ If the immediate predecessor is selected, set `PR_BASE` to its bookmark and `AUT
 Bind `HOST` and `REPOSITORY` to the receiving repository for this PR, using the existing PR URL on update or the intended PR target on create. Fetch its complete label inventory before publication:
 
 ```bash
-REPOSITORY_LABELS=$(bash \
-  "${CODING_PR_SKILL_DIR}/scripts/list-repository-labels.sh" \
-  "$HOST" "$REPOSITORY")
+REPOSITORY_LABELS=$(set -euo pipefail
+pages=$(gh api --hostname "$HOST" --paginate --slurp \
+  "repos/$REPOSITORY/labels?per_page=100")
+jq -ce '[.[][] | {name, description}] | sort_by(.name, (.description // ""))' \
+  <<<"$pages")
 ```
 
 <IMPORTANT>
-The helper returns deterministic JSON containing every exact label `name` and `description` from every API page. Inspect both fields and choose zero or more suitable names only from that output. Never create, guess, substitute, or remove labels. Set `SELECTED_LABELS` to a JSON array of those exact choices, including `[]` when no label is suitable.
+That block returns deterministic JSON containing every exact label `name` and `description` from every API page. Inspect both fields and choose zero or more suitable names only from that output. Never create, guess, substitute, or remove labels. Set `SELECTED_LABELS` to a JSON array of those exact choices, including `[]` when no label is suitable.
 </IMPORTANT>
 
 #### Validate selected repository labels
@@ -237,7 +254,8 @@ After creation, read back that numeric PR with `--repo "$HOST/$REPOSITORY"` and 
 When the head has one open PR, edit it and retain draft state:
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/update-pr.sh"
+gh pr edit "$PR" --title "$TITLE" --body-file - --base "$PR_BASE" <<<"$BODY"
+gh pr ready "$PR" --undo
 ```
 
 #### Attach selected repository labels
@@ -483,4 +501,4 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
 - Every head was pushed under a lease — one explicit affected-bookmark `jj git push` on the jj path, `git push --force-with-lease` on the git path; each new PR started as a draft, uses the authored title/body, and has the intended stack base. The review loop verifies approved surfaces are ready for review.
 - Review convergence produced a substantive `APPROVE` on each final head, including required replies and repair heads; or the configured review maximum was exhausted and green CI plus missing substantive approval is reported.
 - Self-contained black-zone drafts may be reported as published and green while carrying `approval_blocked: authorization_required` plus the complete list of blocked PR URLs and exact head/base OIDs. This is not review convergence or merge readiness. Only the review workflow may clear each blocker, by verifying a current OWNER comment immediately before it submits `APPROVE`.
-- Report success only after the final poll observes every PR green. Include the stack map, resolved commit refs, the template used per change (repo path or bundled default), local results, review passes, replies, repair commits, push/restack actions, per-PR check states, CI wall times, and any blocker (with its authoring exit code where relevant). Return every local project path created or materially rewritten during repair as `generated_files`. The main agent applies the shared size pass only to eligible `.state` work Markdown.
+- Report success only after the final poll observes every PR green. Include the stack map, resolved commit refs, the template used per change (repo path or bundled default), local results, review passes, replies, repair commits, push/restack actions, per-PR check states, CI wall times, and any blocker (with its authoring exit code where relevant). Return every local project path created or materially rewritten during repair as `generated_files`. Keep any `.state` work Markdown within `essential:references/output-manifest.md`.

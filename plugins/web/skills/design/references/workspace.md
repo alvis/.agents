@@ -42,7 +42,7 @@ Load every child in the ordered [`design.md`](../templates/design.md) manifest. 
 
 Record each visual choice immediately. Never record only “#2 chosen”; preserve enough concrete composition, hierarchy, content, type, palette, spacing, responsive, state, motion, and boundary detail to reproduce the choice without the image.
 
-If the design child exceeds 16,384 bytes in the main agent's final batch pass, retain it as the overview and move coherent sections to lowercase same-stem children such as `design/<design-slug>/20-visual-system.md`. Never split early merely because it crossed the 12,288-byte authoring guide.
+If the design child would exceed 16,384 bytes, retain it as the overview and move coherent sections to lowercase same-stem children such as `design/<design-slug>/20-visual-system.md`. Never split early merely because it crossed the 12,288-byte authoring guide.
 
 ## Evidence lifecycle
 

@@ -50,7 +50,7 @@ restoring it.
 `data-term` glossary spans, `<mark>` inside `<pre>`, and source-ref chips are
 all *inline* — they live inside a sentence, not beside it. The renderer's
 `prose` block is a plain string passed through `escapeHtml`
-(`render-page.ts:675-682`) and there is **no HTML pass-through anywhere**.
+(`scripts/render-page/escape.ts`) and there is **no HTML pass-through anywhere**.
 Picking any row marked **⚠ inline** means adopting either a rich-text
 sub-format in the JSON or a restricted inline grammar, which changes the
 contract for every existing example. These rows are cheap to want and expensive

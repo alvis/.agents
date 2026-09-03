@@ -27,10 +27,10 @@ const ROOT = resolve(import.meta.dirname, "..");
  * which is what keeps reading `.state` out of the renderer's own tree.
  */
 const ROOTS = [
-  "render-page.ts",
+  "render-page/cli.ts",
   "render-page/runtime/boot.ts",
   "render-page/runtime/main.ts",
-  "state-board.ts",
+  "render-page/state/cli.ts",
 ];
 
 /**
@@ -72,7 +72,7 @@ const AMBIENT = [
 const COMMENT = /\/\*[\s\S]*?\*\/|^[ \t]*\/\/[^\n]*$/gmu;
 
 /** how many edges the tree holds, as a graph read the way a bundler reads one. */
-const EDGES = 466;
+const EDGES = 464;
 
 /** one module against another. */
 interface Edge {

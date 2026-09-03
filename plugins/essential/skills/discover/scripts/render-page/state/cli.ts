@@ -14,12 +14,12 @@ function stamp(now: Date): string {
 }
 
 /**
- * runs the state-board command line interface.
+ * runs the state board command line interface.
  *
  * this reads `.state` and writes page data — it never renders. Keeping the two
  * apart is what lets `renderPage` stay a pure function of its data: the board
  * this produces is an ordinary data file, indistinguishable from a hand-written
- * one, and `render-page.ts` turns it into a page without knowing where it came
+ * one, and `render-page/cli.ts` turns it into a page without knowing where it came
  * from.
  * @param argv arguments after the script name
  * @param now when the board is being built
@@ -29,7 +29,7 @@ export async function main(
   argv = Bun.argv.slice(2),
   now = new Date(),
 ): Promise<number> {
-  const usage = "usage: bun scripts/state-board.ts <.state> -o <board.json>";
+  const usage = "usage: bun scripts/render-page/state/cli.ts <.state> -o <board.json>";
   const output = argv.indexOf("-o");
   const target = output === -1 ? "" : (argv[output + 1] ?? "");
   const positional =
@@ -45,7 +45,7 @@ export async function main(
           ? `expected exactly one .state directory, received ${positional.length}`
           : "";
   if (complaint) {
-    console.error(`${usage}\nstate-board.ts: error: ${complaint}`);
+    console.error(`${usage}\nstate/cli.ts: error: ${complaint}`);
     return 2;
   }
   try {
@@ -54,13 +54,16 @@ export async function main(
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, `${JSON.stringify(stateBoard(tree, stamp(now)), null, 2)}\n`);
     console.error(
-      `state-board.ts: read ${tree.streams.length} live stream${tree.streams.length === 1 ? "" : "s"}, set aside ${tree.excluded.length}`,
+      `state/cli.ts: read ${tree.streams.length} live stream${tree.streams.length === 1 ? "" : "s"}, set aside ${tree.excluded.length}`,
     );
 
     return 0;
   } catch (error) {
-    console.error(`state-board.ts: error: ${(error as Error).message}`);
+    console.error(`state/cli.ts: error: ${(error as Error).message}`);
 
     return 1;
   }
 }
+
+
+if (import.meta.main) process.exit(await main());

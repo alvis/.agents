@@ -41,13 +41,12 @@ adapters, providers, or runtimes.
 
 ### TOC discipline
 
-- Exactly one line, ≤110 **displayed** characters.
-  `bun run "${CODING_DOCUMENT_SKILL_DIR}/scripts/toc_width.ts" <file>` is the source of truth —
-  run it before finalizing; any `OVER` row fails (non-zero exit).
-- Counting rules (mirror the script): `&emsp;` = 2; `&nbsp;`/`&ensp;` = 1;
-  emoji/CJK = 2; combining marks (VS16/ZWJ) = 0; `[caption](url)` counts the
-  caption only; ASCII = 1. Exclude the `<div align="center">…</div>` wrapper
-  but include the leading `•&emsp;&emsp;` and trailing `&emsp;&emsp;•`.
+- Keep the link row on exactly one line, ≤110 **displayed** characters — the
+  width at which a centered row wraps on a narrow view. Count it by hand:
+  `&emsp;` = 2; `&nbsp;`/`&ensp;` = 1; emoji/CJK = 2; combining marks (VS16,
+  ZWJ) = 0; `[caption](url)` counts the caption only; ASCII = 1. Exclude the
+  `<div align="center">…</div>` wrapper; include the leading `•&emsp;&emsp;`
+  and trailing `&emsp;&emsp;•`.
 - Prioritize hard-to-spot, high-value anchors; skip anchors already obvious on
   first scroll (e.g. Quick Start at the top).
 - Shortening: prefer full words with full meaning — `Architecture` not `Arch`.
@@ -145,8 +144,9 @@ warnings:
 4. **Tree accuracy** — the architecture file tree matches the real structure at
    depth 2–3.
 5. **Link integrity** — relative links resolve to actual files.
-6. **TOC discipline** — run `toc_width.ts` against every drafted file; any
-   `OVER` row is fatal. Shorten captions, never change anchors.
+6. **TOC discipline** — every drafted file's TOC link row stays on one line
+   within the 110-displayed-character budget.
+   Shorten captions, never change anchors.
 7. **Folder notation** — no trailing `/` in any path (regex check).
 8. **Diagram theme** — no `style`/`fill:`/`stroke:`/hex in Mermaid fences; no
    undefined node references.

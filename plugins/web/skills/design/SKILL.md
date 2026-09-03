@@ -88,4 +88,4 @@ Stop before unapproved mutation or when ownership cannot be resolved. Missing br
 
 ## Completion
 
-Return status, target, authorization mode, direction, work/design/evidence paths, changed source, render evidence, gates, evaluator verdict, promotions, and blockers. Return explicit final paths generated or materially rewritten as `generated_files`. Do not run `wc -c` or split while writers are active; the main agent reconciles `design.md`, combines manifests after all writers finish, and runs the single final size pass only for eligible work Markdown inside the target `.state/`, as defined by the Essential contract.
+Return status, target, authorization mode, direction, work/design/evidence paths, changed source, render evidence, gates, evaluator verdict, promotions, and blockers. Return explicit final paths generated or materially rewritten as `generated_files`. The main agent reconciles `design.md` and combines manifests after all writers finish; no size pass runs over the result. Each writer keeps its own work Markdown inside the target `.state/` within `essential:references/output-manifest.md` as it writes.

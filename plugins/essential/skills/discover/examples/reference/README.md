@@ -6,7 +6,7 @@ to see the target look and interaction, and read
 `directions/presentation/components.md` ("Decision-first devices") for the
 distilled recipes. They are intentionally *not* part of the example
 suite — they are hand-written HTML with their own capture wiring, whereas every
-suite board is JSON rendered by `scripts/render-page.ts`.
+suite board is JSON rendered by `scripts/render-page/cli.ts`.
 
 - `readiness-verdict-board.html` — verdict dashboard: board-theme accent from
   the shell's olive family, `--ui-verdict-*` ramp, stat rails, filter chips,

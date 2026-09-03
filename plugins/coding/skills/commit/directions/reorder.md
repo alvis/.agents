@@ -1,6 +1,8 @@
 # `--reorder [--up-to <rev>]` — re-linearise history with content-equivalence guard
 
 Deliver a clean linear chain up to a target rev, preserving the merged tree exactly. The user's hard requirement: **"ensure the content remain the same at the end"** — implemented via the dual-checksum guard in [verify.sh](../scripts/verify.sh). See [SKILL.md](../SKILL.md).
+`verify.sh` stays a script: `jj op restore` is recovery, not detection, and nothing
+recovers from drift no one noticed. The dual checksum is what notices.
 
 ## When triggered
 
@@ -18,7 +20,9 @@ jj op log -n1 --no-graph -T 'self.id().short()'
 
 Record the op id. `jj op restore <id>` rewinds the entire reorder if anything goes wrong.
 
-The PreToolUse hook also fires `backup.sh` on the first rewriting op, capturing both `GIT_TREE_SHA` (git's `write-tree` of the working copy) and `CONTENT_HASH` (covers untracked files jj/git don't track). Both feed Step 5 verify.
+The PreToolUse hook also fires `backup.sh` on the first rewriting op, capturing both `GIT_TREE_SHA` (git's `write-tree` of the working copy) and `CONTENT_HASH` (covers untracked files jj/git don't track). Both feed Step 5 verify. `backup.sh` stays a script because `CONTENT_HASH` covers
+untracked files no VCS snapshot records, so the operation log cannot reconstruct it
+afterwards.
 
 ### 2. Identify the range
 

@@ -62,8 +62,6 @@ codex plugin add specification@alvis
 
 Codex reads `.agents/plugins/marketplace.json`, a structural projection of the authoritative Claude catalog. Install the workflow's listed plugins explicitly because Claude's plugin dependency metadata is harness-specific. Ask Codex to run `essential:install-agents` for the Codex harness, then start a fresh session so the native TOML specialist definitions are loaded. Role-binding context is withheld until its required specialist is installed. Open `/hooks` after installation and trust the bundled plugin hooks; Codex skips new or changed context-injection hooks until their definitions are reviewed.
 
-In T3-hosted Plan Mode, Codex emits the plan without a plan-transition tool call. Essential therefore validates the current turn's `<proposed_plan>` from the Codex transcript at Stop and requests one corrected response when needed. The first malformed plan may render before that feedback arrives.
-
 ### Grok Build
 
 ```bash

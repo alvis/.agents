@@ -148,7 +148,7 @@
       },
       {
         "kind": "run",
-        "label": "$ validate-scoped-save",
+        "label": "$ validate_scoped_save.ts",
         "bytes": 300
       },
       {
@@ -166,11 +166,12 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 458580,
-      "instructionTokens": 165254,
+      "bytes": 460325,
+      "instructionTokens": 165691,
       "calls": 80,
-      "instructionTokensExcludingWork": 81654
+      "instructionTokensExcludingWork": 82091
     },
+    "note": "Re-seeded upward once: select-workflow-applicability.sh and gate-missing-secrets.sh were never modelled as run steps, so inlining them moved 1152 bytes onto a charged surface from one this fixture never charged. Call count is unchanged, which is the tell. Not a regression; do not treat it as licence to re-seed.",
     "steps": [
       {
         "kind": "read",
@@ -394,7 +395,7 @@
       },
       {
         "kind": "run",
-        "label": "$ scan_potential_violations",
+        "label": "$ scanlib/core.ts",
         "bytes": 600
       },
       {
@@ -446,7 +447,7 @@
       },
       {
         "kind": "run",
-        "label": "$ validate-scoped-save",
+        "label": "$ validate_scoped_save.ts",
         "bytes": 300
       },
       {
@@ -490,7 +491,7 @@
       },
       {
         "kind": "run",
-        "label": "$ select-verification-target.sh",
+        "label": "$ derive canary target (inline jq)",
         "bytes": 150
       },
       {
@@ -515,7 +516,7 @@
       },
       {
         "kind": "run",
-        "label": "$ list-repository-labels.sh",
+        "label": "$ gh api repos/:owner/:repo/labels",
         "bytes": 300
       },
       {
@@ -668,10 +669,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 217783,
-      "instructionTokens": 91287,
+      "bytes": 217562,
+      "instructionTokens": 91232,
       "calls": 37,
-      "instructionTokensExcludingWork": 33447
+      "instructionTokensExcludingWork": 33392
     },
     "steps": [
       {

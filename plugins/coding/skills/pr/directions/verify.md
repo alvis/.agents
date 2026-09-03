@@ -84,7 +84,24 @@ For each parsed workflow, apply this decision contract. The parser supplies
 are deliberately absent because they cannot change the decision:
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/select-workflow-applicability.sh"
+case "$HAS_PULL_REQUEST_TRIGGER" in
+  1)
+    CI_PARITY_WORKFLOW_DECISION=include
+    CI_PARITY_APPLICABILITY_MODE=conservative_pull_request
+    CI_PARITY_UNEVALUATED_FILTERS=base_ref,event_type,paths
+    ;;
+  0)
+    CI_PARITY_WORKFLOW_DECISION=exclude
+    CI_PARITY_APPLICABILITY_MODE=not_applicable
+    CI_PARITY_UNEVALUATED_FILTERS=
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+printf 'CI_PARITY_WORKFLOW_DECISION=%s\n' "$CI_PARITY_WORKFLOW_DECISION"
+printf 'CI_PARITY_APPLICABILITY_MODE=%s\n' "$CI_PARITY_APPLICABILITY_MODE"
+printf 'CI_PARITY_UNEVALUATED_FILTERS=%s\n' "$CI_PARITY_UNEVALUATED_FILTERS"
 ```
 
 Inspect the selected workflows and command chain for `env`, `secrets.*`,
@@ -102,7 +119,27 @@ value, enforce the stop or exact-approval decision before any local command or
 push:
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/gate-missing-secrets.sh"
+case "$MISSING_SECRET_NAMES" in
+  "")
+    CI_PARITY_SECRET_GATE=run_local
+    CI_PARITY_OVERALL=pending_local_run
+    ;;
+  *)
+    if test "${MISSING_SECRET_APPROVED-false}" = true \
+      && test "${MISSING_SECRET_APPROVAL_SHA-}" = "$TARGET_SHA" \
+      && test "${MISSING_SECRET_APPROVAL_NAMES-}" = "$MISSING_SECRET_NAMES"
+    then
+      CI_PARITY_SECRET_GATE=approved_without_local_run
+      CI_PARITY_OVERALL=approved_without_local_run
+    else
+      printf 'CI_PARITY_SECRET_GATE=stop_before_push\n'
+      printf 'CI_PARITY_OVERALL=blocked\n'
+      exit 42
+    fi
+    ;;
+esac
+printf 'CI_PARITY_SECRET_GATE=%s\n' "$CI_PARITY_SECRET_GATE"
+printf 'CI_PARITY_OVERALL=%s\n' "$CI_PARITY_OVERALL"
 ```
 
 Record expected hosted check/job names from the selected workflows at
