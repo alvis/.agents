@@ -2,10 +2,10 @@
   "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
     "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
     "budget": {
-      "bytes": 207137,
-      "instructionTokens": 87669,
+      "bytes": 204202,
+      "instructionTokens": 86936,
       "calls": 34,
-      "instructionTokensExcludingWork": 36789
+      "instructionTokensExcludingWork": 36056
     },
     "steps": [
       {
@@ -210,10 +210,10 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 468221,
-      "instructionTokens": 167666,
+      "bytes": 467263,
+      "instructionTokens": 167427,
       "calls": 80,
-      "instructionTokensExcludingWork": 84066
+      "instructionTokensExcludingWork": 83827
     },
     "note": "Re-seeded upward once: select-workflow-applicability.sh and gate-missing-secrets.sh were never modelled as run steps, so inlining them moved 1152 bytes onto a charged surface from one this fixture never charged. Call count is unchanged, which is the tell. Not a regression; do not treat it as licence to re-seed. A spawned subagent's own injected payloads are not charged here: this scenario models its subagent as a single `run` step producing a report, not as that subagent's own reads. S4 and S9 model a subagent session in full. Charging the child's injection while ignoring its reads would be less coherent, so this knowingly understates true cost.",
     "steps": [
@@ -631,10 +631,10 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 120202,
-      "instructionTokens": 61453,
-      "calls": 20,
-      "instructionTokensExcludingWork": 21053
+      "bytes": 122108,
+      "instructionTokens": 62250,
+      "calls": 21,
+      "instructionTokensExcludingWork": 21530
     },
     "steps": [
       {
@@ -672,6 +672,10 @@
       {
         "kind": "inject",
         "path": "plugins/web/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/working-attitude.md"
       },
       {
         "kind": "read",
@@ -765,10 +769,10 @@
   "S5 Delegate one bounded task to a teammate": {
     "description": "Main agent delegates one bounded task to a teammate and stops at the dispatch.",
     "budget": {
-      "bytes": 20801,
-      "instructionTokens": 31482,
-      "calls": 4,
-      "instructionTokensExcludingWork": 5202
+      "bytes": 22600,
+      "instructionTokens": 32253,
+      "calls": 5,
+      "instructionTokensExcludingWork": 5653
     },
     "steps": [
       {
@@ -817,6 +821,10 @@
       },
       {
         "kind": "read",
+        "path": "plugins/essential/references/working-attitude.md"
+      },
+      {
+        "kind": "read",
         "path": "plugins/essential/directions/delegate.md"
       },
       {
@@ -838,10 +846,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 223015,
-      "instructionTokens": 92596,
-      "calls": 37,
-      "instructionTokensExcludingWork": 34756
+      "bytes": 224921,
+      "instructionTokens": 93393,
+      "calls": 38,
+      "instructionTokensExcludingWork": 35233
     },
     "steps": [
       {
@@ -879,6 +887,10 @@
       {
         "kind": "inject",
         "path": "plugins/web/hooks/ALLAGENT.md"
+      },
+      {
+        "kind": "read",
+        "path": "plugins/essential/references/working-attitude.md"
       },
       {
         "kind": "read",
