@@ -211,7 +211,7 @@ verify them when changing payloads or their unconditional read chain.
 | Each modelled read-chain scenario within its seeded budget (bytes, instruction tokens, instruction tokens excluding work turns, tool calls) | `scripts/read_chain_budget.spec.ts` |
 | `plugins/coding/directions/WORKFLOW.md` ≤ 9,600 bytes | same |
 | `.state/` work Markdown flagged over 16,384 bytes | `plugins/essential/scripts/check-markdown-size` |
-| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/orchestration.md` |
+| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/delegate.md` |
 | Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
 
 An agent metadata `description` must also end with the exact sentence

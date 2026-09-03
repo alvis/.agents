@@ -36,7 +36,7 @@ adversarial-verifier subagents**. Each verifier votes **once per claim** — thr
 independent agents over the same claim give three independent votes. Keep at
 most ~25 claims per verifier and each report under ~1000 tokens. The three
 verifiers must not see each other's verdicts. Compose each first task handover
-from [subagent-handover.md](../../../directions/subagent-handover.md):
+from [delegate.md](../../../directions/delegate.md):
 put the skeptical checklist and output shape in Requirements, isolation in
 Boundary, and only the assigned claim batch and source paths in Context.
 

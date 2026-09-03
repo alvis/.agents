@@ -2,9 +2,8 @@
 set -euo pipefail
 
 # PreToolUse gate for subagent dispatch: enforces the first-prompt field format
-# in directions/subagent-handover.md, the message ceiling and
-# teammate-name format in directions/orchestration.md, and the stable-reference
-# shape in references/naming.md. Presence and shape only.
+# in directions/delegate.md, together with its message ceiling and
+# teammate-name format, and the stable-reference shape in references/naming.md. Presence and shape only.
 # Compatible with bash 3.2+
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,7 +19,7 @@ deny() {
 
 allow() {
   output_pretooluse_decision "allow" \
-    "Remind you to follow instructions in essential:directions/orchestration.md"
+    "Remind you to follow instructions in essential:directions/delegate.md"
 }
 
 input=$(cat)
@@ -38,7 +37,7 @@ name=$(printf '%s' "$input" | jq -r '.name // ""')
 # Checked before the prompt guard below: Codex's spawn_agent carries a name and
 # a task but no prompt, and a malformed name is still a malformed name there.
 if [[ -n "$name" ]] && ! printf '%s' "$name" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+){2,}$'; then
-  deny "name \"${name}\" must be lowercase kebab <short-name>-<role>-<task>. See essential:directions/orchestration.md."
+  deny "name \"${name}\" must be lowercase kebab <short-name>-<role>-<task>. See essential:directions/delegate.md."
 fi
 
 if [[ "$(printf '%s' "$input" | jq -r '.prompt | type')" != "string" ]]; then
@@ -47,7 +46,7 @@ fi
 
 prompt=$(printf '%s' "$input" | jq -r '.prompt')
 
-# subagent-handover.md governs the first handover to a named teammate. Only the
+# delegate.md governs the first handover to a named teammate. Only the
 # main agent assigns a name, so a named dispatch is that handover; a nested
 # one-off spawn supplies just its type, task, and context, and is not checked.
 if [[ -n "$name" ]]; then
@@ -63,7 +62,7 @@ if [[ -n "$name" ]]; then
   done
 
   if [[ -n "$missing" ]]; then
-    deny "first prompt is missing ${missing}. See essential:directions/subagent-handover.md."
+    deny "first prompt is missing ${missing}. See essential:directions/delegate.md."
   fi
 
   # naming.md admits a work ID, runtime task ID, PR ID, or full commit SHA — all
@@ -77,7 +76,7 @@ if [[ -n "$name" ]]; then
   fi
 fi
 
-# orchestration.md scopes the ceiling to every dispatch, named or not.
+# delegate.md scopes the ceiling to every dispatch, named or not.
 length=$(printf '%s' "$input" | jq -r '.prompt | length')
 if [[ "$length" -gt "$MESSAGE_CEILING" ]]; then
   deny "prompt is ${length} characters, over the ${MESSAGE_CEILING} ceiling. Externalize the detail to a file and reference its path."

@@ -29,9 +29,9 @@ publication-bound change require independent review even when one agent
 implemented it, and that owner still runs its focused mechanical checks.
 </IMPORTANT>
 
-Before delegating, orchestrating, or reviewing across a team, read
-`essential:directions/orchestration.md` and route with
-`coding:references/ROUTING.md`. Hand the delegate full
+Before delegating, read `essential:directions/delegate.md`; before orchestrating
+or reviewing across a team, read `essential:directions/orchestration.md`. Route
+with `coding:references/ROUTING.md`. Hand the delegate full
 paths to every relevant skill, direction, template, and standard — a subagent
 starts blind.
 

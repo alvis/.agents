@@ -66,8 +66,8 @@ map, the affected scope, and your recommended disposition.
 
 | Read | When |
 | --- | --- |
-| [orchestration.md](orchestration.md) | Before delegating, escalating, or recording a review |
-| [subagent-handover.md](subagent-handover.md) | Before composing a first task handover of your own |
+| [delegate.md](delegate.md) | Before delegating or composing a first task handover of your own |
+| [orchestration.md](orchestration.md) | Before escalating or recording a review |
 | [scripted-execution.md](../references/scripted-execution.md) | Before composing a scripted-execution launch request |
 | [state-systems.md](../references/state-systems.md) | Before using project documentation, work state, or an external specification authority |
 | [state.md](../references/state.md) | Before lifecycle-managed work |

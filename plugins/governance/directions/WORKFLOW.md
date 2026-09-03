@@ -11,7 +11,7 @@ Read this before creating, updating, or reviewing agents, skills, standards, or 
 | Create or update a skill | `governance:write-skill`; select `governance:standards/authoring/` under the procedure below, then read the skill template |
 | Verify a skill | `governance:write-skill`; run its verification workflow without rewriting a compliant skill |
 | Add delegation to an authored artifact | Also select `governance:standards/delegation/` under the procedure below |
-| Work delegation | Before work delegation, read `governance:references/ROUTING.md` and the injected `essential:directions/orchestration.md` contract |
+| Work delegation | Before work delegation, read `governance:references/ROUTING.md` and the injected `essential:directions/delegate.md` contract |
 
 ## Standards
 

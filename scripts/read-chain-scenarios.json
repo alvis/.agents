@@ -2,10 +2,10 @@
   "S1 Tier-1 bug fix inline (coding:fix), TS repo, then commit": {
     "description": "Main agent fixes a tier-1 bug in a TypeScript repository inline and commits it.",
     "budget": {
-      "bytes": 199197,
-      "instructionTokens": 85683,
+      "bytes": 199241,
+      "instructionTokens": 85694,
       "calls": 34,
-      "instructionTokensExcludingWork": 34803
+      "instructionTokensExcludingWork": 34814
     },
     "steps": [
       {
@@ -166,10 +166,10 @@
   "S2 Tier-2 feature (write-code) with work stream, delegated review, commit, PR": {
     "description": "Main agent builds a tier-2 feature under a work stream, delegates its review, commits, and opens a pull request.",
     "budget": {
-      "bytes": 461941,
-      "instructionTokens": 166414,
-      "calls": 81,
-      "instructionTokensExcludingWork": 82494
+      "bytes": 458580,
+      "instructionTokens": 165254,
+      "calls": 80,
+      "instructionTokensExcludingWork": 81654
     },
     "steps": [
       {
@@ -370,15 +370,11 @@
       },
       {
         "kind": "read",
+        "path": "plugins/essential/directions/delegate.md"
+      },
+      {
+        "kind": "read",
         "path": "plugins/essential/directions/orchestration.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/essential/directions/subagent-handover.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/essential/references/team-lifecycle.md"
       },
       {
         "kind": "read",
@@ -546,10 +542,10 @@
   "S4 Subagent: code-quality-critic reviews one change": {
     "description": "Subagent reviews one change as the code-quality critic and writes a review report.",
     "budget": {
-      "bytes": 120701,
-      "instructionTokens": 61576,
+      "bytes": 114749,
+      "instructionTokens": 60089,
       "calls": 20,
-      "instructionTokensExcludingWork": 21176
+      "instructionTokensExcludingWork": 19689
     },
     "steps": [
       {
@@ -644,27 +640,15 @@
   "S5 Delegate one bounded task to a teammate": {
     "description": "Main agent delegates one bounded task to a teammate and stops at the dispatch.",
     "budget": {
-      "bytes": 30382,
-      "instructionTokens": 34837,
-      "calls": 7,
-      "instructionTokensExcludingWork": 7597
+      "bytes": 12905,
+      "instructionTokens": 29507,
+      "calls": 4,
+      "instructionTokensExcludingWork": 3227
     },
     "steps": [
       {
         "kind": "read",
-        "path": "plugins/essential/directions/orchestration.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/essential/directions/subagent-handover.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/essential/references/naming.md"
-      },
-      {
-        "kind": "read",
-        "path": "plugins/essential/references/team-lifecycle.md"
+        "path": "plugins/essential/directions/delegate.md"
       },
       {
         "kind": "read",
@@ -684,10 +668,10 @@
   "S9 Subagent: frontend-implementer builds one React component": {
     "description": "Subagent builds one React component as the frontend implementer and runs the lint and type/test pass.",
     "budget": {
-      "bytes": 223735,
-      "instructionTokens": 92774,
+      "bytes": 217783,
+      "instructionTokens": 91287,
       "calls": 37,
-      "instructionTokensExcludingWork": 34934
+      "instructionTokensExcludingWork": 33447
     },
     "steps": [
       {

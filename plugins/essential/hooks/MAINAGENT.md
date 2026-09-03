@@ -22,4 +22,4 @@ Do not send until it:
 - identifies and justifies the recommendation when material.
 </IMPORTANT>
 
-Before delegation/review, read `{{PLUGIN_DIR}}/directions/orchestration.md`; before a first task handover, read `{{PLUGIN_DIR}}/directions/subagent-handover.md`.
+Before delegating or composing a first task handover, read `{{PLUGIN_DIR}}/directions/delegate.md`; before orchestrating or recording review, read `{{PLUGIN_DIR}}/directions/orchestration.md`.
