@@ -35,7 +35,7 @@ Classify the request before editing: design-only; implementation/refinement expl
 
 For live, implementation, or facelift work, confirm the isolated Chrome DevTools session, open the target, and attach `agent-browser` through its CDP port. If unavailable, stop live visual work; static evidence may continue only with explicitly lower confidence. Detect the actual framework, rendering command, styling system, root stylesheet, and owning source. Invoke `web:css` for root theme or color-mode work.
 
-Use `./references/workspace.md` to derive:
+Use the "Design work artifacts" section of `./references/brief.md` to derive:
 
 - `<work-dir>/design/<design-slug>.md` — the task design contract and detailed visual-choice log;
 - `<work-dir>/artifacts/design/<design-slug>/` — boards, previews, captures, diffs, and inventories;
@@ -54,10 +54,10 @@ Use three specialist roles. When `frontend-implementer` is unavailable, return a
 - `aesthetic-evaluator` receives only the contract, reference renders, and build captures, never builder reasoning. Facelifts add the critic and perf/a11y lenses in `./directions/facelift.md`.
 
 1. Capture source structure, desktop/mobile renders, computed tokens, states, content hierarchy, and any applicable durable design.
-2. Prepare the design child metadata required by the shared contract and a three-part direction summary: visual thesis, content plan, interaction thesis. Load every child in the ordered [design-reference manifest](references/guardrails.md), then apply `references/psychology.md` and relevant `references/component-patterns.md` guidance.
+2. Prepare the design child metadata required by the shared contract and a three-part direction summary: visual thesis, content plan, interaction thesis. Load [`references/brief.md`](references/brief.md) — the single design reference — and apply its guardrails, component-pattern, and psychology guidance.
 3. Unless skipping is valid, generate and inspect a 3–5 candidate direction board using `directions/boards.md`, send the rendered board, capture the choice, and return presented/rejected/chosen details for the main agent to append to the design child's decision log.
 4. Generate `N` materially distinct alternatives for each page area under the evidence `boards/` directory. Select one area at a time so later boards use earlier decisions. Quick mode records provisional top-ranked choices.
-5. Return the complete proposed design child from every ordered child in the [design template manifest](templates/design.md), covering its applicable visual system, layout, states, accessibility, implementation mapping, evidence, and resumption sections plus every applicable `world-class-checklist.md` row.
+5. Return the complete proposed design child from every ordered child in the [design template manifest](templates/design.md), covering its applicable visual system, layout, states, accessibility, implementation mapping, evidence, and resumption sections plus every applicable World-Class Element Checklist row from `references/brief.md`.
 6. When needed, prepare `previews/tokens/preview.html` from `templates/preview.html`, render desktop/mobile, and obtain sign-off before implementation. A delegated run returns the preview bytes and renders; the main agent stores them under the evidence path.
 
 ## Authorized implementation loop

@@ -164,7 +164,7 @@ The type scale is documented as a table — no per-level size tokens (`--text-bo
 
 ### Motion, Transitions & Separators
 
-The World-Class Element Checklist spec for this project (values follow [Motion Specifics](../references/guardrails.md#motion-specifics); picks come from the connective-tissue board):
+The World-Class Element Checklist spec for this project (values follow [Motion Specifics](../references/brief.md#motion-specifics); picks come from the connective-tissue board):
 
 - **Page transition**: {{STYLE — e.g., "View Transitions API crossfade + 8px upward drift, 240ms cubic-bezier(0.16, 1, 0.3, 1)"}}
 - **Scroll-reveal language**: {{TRIGGER, DISTANCE, STAGGER — e.g., "IntersectionObserver at 20% visibility; opacity 0→1 + translateY(16px)→0; 90ms stagger per chunk; once-only"}}
@@ -238,7 +238,7 @@ Fully-round elements (avatars, pills, toggles) use the `9999px` literal — a sh
 
 ## 6. Depth & Elevation
 
-Shadows are mode-dependent — they go through the two-tier chain like colors. Dark-mode values use light-overlay stepping (semi-transparent white rings/washes), because drop shadows are nearly invisible on dark surfaces (see [Surfaces](../references/guardrails.md#surfaces)).
+Shadows are mode-dependent — they go through the two-tier chain like colors. Dark-mode values use light-overlay stepping (semi-transparent white rings/washes), because drop shadows are nearly invisible on dark surfaces (see [Surfaces](../references/brief.md#surfaces)).
 
 | Tier-2 Token | Role | Tier-1 Light | Tier-1 Dark |
 |---|---|---|---|
