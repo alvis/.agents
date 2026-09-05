@@ -3,13 +3,13 @@
 When fixing a `coding:review-code` finding, pin the identical task contract so
 the rerun produces comparable alignment verdicts.
 
-1. Read the work item's `state.md` (and any `state/*.md` children) directly.
+1. Apply the fix skill's State gate to the resolved work item.
 2. From the task table, determine `plan_source: state.md` and the applicable
    full task IDs.
 3. Treat an explicit `--plan`, review-returned plan identity, or mission-capsule
    identity as an assertion. Reject any mismatch; none may override state.
-4. Read root state in full and use the review finding plus linked authoritative
-   spec/design as the behavior contract. Follow an explicit
+4. Use the review finding plus relevant linked authoritative spec/design as
+   the behavior contract. Follow an explicit
    `state/plan.md` link only for procedure keyed by existing
    task IDs; reject any duplicate or conflicting ID, edge, requiredness,
    target, or acceptance mapping.
