@@ -8,9 +8,6 @@ argument-hint: "[specifier] [--scope=SCOPE] [--skip-unused] [--profile=ABSOLUTE_
 
 # Linting
 
-Before any `jj` decision or command, follow
-`coding:directions/jj.md`.
-
 Set `CODING_LINT_SKILL_DIR` to the absolute directory containing this loaded
 `SKILL.md` before invoking its scripts.
 
@@ -20,6 +17,8 @@ Apply generic coding standards mechanically. This skill owns file discovery, sco
 
 - Use for: mechanical standards enforcement, lint-error correction, and consistent formatting on eligible source files, with an optional pre-flight unused-code prune.
 - Do not use for: modifying configuration files, installing or updating lint tooling, authoring lint rules, or processing binary, gitignored, generated, or vendor files. Behavior-changing repairs belong to `coding:fix`; structural cleanup belongs to `coding:refactor`.
+- Eligible source files are `.ts/.tsx/.js/.jsx/.py/.go/.rs/.rb/.java/.kt/.swift/.c/.cpp/.h/.hpp/.cs/.php/.sh/.vue/.svelte/.astro` and similar. Skip text and content files (`.md/.mdx/.json/.yaml/.toml/.html/.svg/.csv`) and throwaway scripts that won't be committed.
+- This skill runs its own scan-and-aggregate cycle internally; never lint by hand in its place.
 
 ## Inputs
 
@@ -69,12 +68,18 @@ only when an independent-review or coordinated topology applies.
    - Always exclude ignored files, dependencies, generated output, and paths outside the repository.
    - When the selected files include compiler tests, group files by owning project and resolve each project's configured type-test mechanism and discovery patterns before batching. Keep each batch within one project root, pass that absolute root as `--test-root` and every applicable compiler-test glob as a repeated `--test-pattern`, and never combine files owned by different test roots in one runner invocation; do not infer test status from filenames alone.
 3. Apply profile eligibility and exclusions when supplied. Stop cleanly if no files remain.
-4. Discover generic coding standards from active plugin context: collect the standard file paths listed under the "Plugin Constitution > Standards" sections of the system prompt (fall back to filesystem pattern search for `**/standards/**` when absent), select the set named by the linting Delegation Rule by matching names to filename stems (partial-stem matching tolerates renamed or split standards), and add testing standards when any target is a `*.spec.*` or `*.test.*` file or matches a configured compiler-test pattern. Add profile standards without replacing or duplicating generic standards. Before editing, the implementing owner reads only each selected standard's `meta.md`.
+4. Select generic standards from [the Coding index](../../standards/INDEX.md)
+   using the discovered artifacts, languages, and configured compiler-test
+   classification. Apply `essential:directions/standards.md`. Resolve profile
+   standards as exact directories in the enabled extension plugin's index;
+   reject missing or unindexed targets. Add them without replacing or
+   duplicating generic standards. Never infer selection from prompt headings,
+   filename-stem matching, or an unrestricted standards-tree search.
 5. Batch related files that share one owning project root, with at most two files per runner invocation. Batching does not authorize delegation.
 6. For each owned batch, the implementing owner:
    - Run `bun run ${CODING_LINT_SKILL_DIR}/../../scripts/lint_profile_runner.ts [--profile=<absolute-path>] [--test-root=<project-root> --test-pattern=<compiler-test-glob> ...] <files>` exactly once. The runner resolves Coding resources from its installed location and forwards compiler-test classification only to the generic scanner.
    - The runner executes the generic scanner exactly once, then each profile scanner exactly once in declared order. Profile resources resolve relative to the absolute profile path.
-   - Treat scanner output as advisory. Apply each selected standard's `scan.md`; confirm a violation against its matching `rules/<lowercase-rule-id>.md` guide when present, or that standard's `write.md` as the bounded fallback when no matching per-rule guide exists.
+   - Treat scanner output as advisory. Apply each selected standard as a writer under `essential:directions/standards.md`.
    - Apply generic and profile standards only within the requested scope.
    - Run project lint, type, and focused test commands after edits.
    - Self-review the resulting diff, rerun affected scans after corrections, and record `violations_found`, `status`, files changed, checks run, and remaining issues.

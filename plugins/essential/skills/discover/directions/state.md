@@ -35,7 +35,7 @@ the streams set aside with the reason for each, and the reading problems the
 tree presented.
 
 Use the **project state** direction in [presentation](presentation.md). The
-board is generated from the tree rather than written by hand — `state-board.ts`
-reads `.state` and emits the board data, `render-page.ts` renders it — so the
+board is generated from the tree rather than written by hand — `render-page/state/cli.ts`
+reads `.state` and emits the board data, `scripts/render-page/cli.ts` renders it — so the
 work in this mode is reading the tree correctly and saying what it could not
 read, not authoring sections.

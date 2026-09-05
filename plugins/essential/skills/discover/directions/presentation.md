@@ -78,7 +78,7 @@ sidebar quick-links are not hand-authored; the runtime derives them at run time
 from the sections actually present.
 
 Every board — including a generated user artifact — is authored as one JSON
-data file and rendered by `scripts/render-page.ts`. Never write the page's
+data file and rendered by `scripts/render-page/cli.ts`. Never write the page's
 markup, stylesheet, or script: the renderer owns every byte of the output, so
 the shell, the drawer, the annotation wiring, and the generated-prompt host are
 not yours to author, reproduce, or opt out of. What you author is the board's
@@ -224,9 +224,9 @@ workspace and render it.
 
 ```bash
 # one board
-scripts/render-page.ts <board>.json -o <board>.html
+bun run scripts/render-page/cli.ts <board>.json -o <board>.html
 # a whole run, every board carrying the same set list
-scripts/render-page.ts --set <run>.json -o <dir>
+bun run scripts/render-page/cli.ts --set <run>.json -o <dir>
 ```
 
 A run file names each board's data, its output, and the label and blurb the set

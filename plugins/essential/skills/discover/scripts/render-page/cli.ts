@@ -11,8 +11,8 @@ import { renderRun } from "./run.ts";
  */
 export async function main(argv = Bun.argv.slice(2)): Promise<number> {
   const usage =
-    "usage: bun scripts/render-page.ts <data.json> -o <out.html>\n" +
-    "       bun scripts/render-page.ts --set <run.json> -o <out-dir>";
+    "usage: bun scripts/render-page/cli.ts <data.json> -o <out.html>\n" +
+    "       bun scripts/render-page/cli.ts --set <run.json> -o <out-dir>";
   const set = argv.indexOf("--set");
   const rest = set === -1 ? argv : argv.filter((_, index) => index !== set);
   const output = rest.indexOf("-o");
@@ -31,7 +31,7 @@ export async function main(argv = Bun.argv.slice(2)): Promise<number> {
           ? `expected exactly one ${subject}, received ${positional.length}`
           : "";
   if (complaint) {
-    console.error(`${usage}\nrender-page.ts: error: ${complaint}`);
+    console.error(`${usage}\nrender-page/cli.ts: error: ${complaint}`);
     return 2;
   }
   try {
@@ -47,7 +47,10 @@ export async function main(argv = Bun.argv.slice(2)): Promise<number> {
 
     return 0;
   } catch (error) {
-    console.error(`render-page.ts: error: ${(error as Error).message}`);
+    console.error(`render-page/cli.ts: error: ${(error as Error).message}`);
     return 1;
   }
 }
+
+
+if (import.meta.main) process.exit(await main());

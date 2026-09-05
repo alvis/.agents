@@ -9,9 +9,6 @@ argument-hint: "<area> [--dry-run] [--target-version=X.Y]"
 
 # Modernize
 
-Before any `jj` decision or command, follow
-`coding:directions/jj.md`.
-
 Upgrade code to the latest syntax, APIs, and patterns the project already
 supports, with features discovered at runtime from the reference catalog and
 gated by the detected TypeScript/Node.js versions. `coding:refactor` owns

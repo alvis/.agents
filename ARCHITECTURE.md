@@ -6,9 +6,8 @@ The coding plugin ships an advisory scanner that finds mechanically recognizable
 
 ```text
 plugins/coding/scripts/
-├── scan_potential_violations.ts  # stable command-line entry point
 ├── scanlib                      # discovery, file selection, execution, and rendering
-│   ├── core.ts                  # command-line contract and scan pipeline
+│   ├── core.ts                  # command-line entry point, contract, and scan pipeline
 │   ├── jsdoc.ts                 # shared JSDoc token and prose extraction
 │   ├── loader.ts                # automatic RULE and RULES module discovery
 │   ├── predicates.ts            # reusable file applicability gates
@@ -17,18 +16,17 @@ plugins/coding/scripts/
 └── scanners                     # one independently loadable module per candidate rule
 ```
 
-- **Command-line entry point** (`plugins/coding/scripts/scan_potential_violations.ts`): imports the shared engine and returns its status.
-- **Engine** (`plugins/coding/scripts/scanlib/core.ts`): parses arguments, walks supported source files, applies rules, and renders contextual matches plus a summary.
+- **Engine and command-line entry point** (`plugins/coding/scripts/scanlib/core.ts`): parses arguments, walks supported source files, applies rules, and renders contextual matches plus a summary; run directly, it sets the process exit code from that status.
 - **Loader** (`plugins/coding/scripts/scanlib/loader.ts`): imports every public module under `scanners` and isolates a broken module so one extension cannot disable the advisory pass.
 - **Predicates** (`plugins/coding/scripts/scanlib/predicates.ts`): centralizes language, test, index, and suffix selection.
 - **Rule modules** (`plugins/coding/scripts/scanners/*.ts`): recognize one mechanically detectable candidate shape and append `Match` values.
-- **Test suite** (`plugins/coding/scripts/scan_potential_violations.spec.ts`): exercises rule behavior directly and uses golden fixtures where the rendered command-line interface is the behavior under test.
+- **Test suite** (`plugins/coding/scripts/scanlib/core.spec.ts`): exercises rule behavior directly and uses golden fixtures where the rendered command-line interface is the behavior under test.
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
-    Caller[Lint or review workflow] --> CLI[scan_potential_violations.ts]
+    Caller[Lint or review workflow] --> CLI[scanlib/core.ts]
     CLI --> Engine[scanlib.core.run]
     Engine --> Loader[loadRules]
     Loader --> Modules[scanners modules]
@@ -100,7 +98,7 @@ The interfaces are:
 ## Command-line contract
 
 ```text
-bun run scan_potential_violations.ts [paths ...]
+bun run scanlib/core.ts [paths ...]
   [--category all|<rule-id>]
   [--before <lines>]
   [--after <lines>]

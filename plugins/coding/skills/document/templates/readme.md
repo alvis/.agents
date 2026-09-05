@@ -73,12 +73,6 @@ Table of Contents — DISCIPLINE:
   • The link row itself must stay on ONE line (no wrapping of the bullet list).
   • Blank lines inside the centering `<div>` are REQUIRED for GitHub's markdown
     parser to render inline links — they do NOT count as multi-line.
-  • **TOC budget**: Keep the TOC ≤110 **displayed** characters. Run
-    `bun run scripts/toc_width.ts <file>` — it is authoritative. Key counts:
-    `&emsp;` = 2, emoji/CJK = 2, `&nbsp;`/`&ensp;` = 1, `[caption](url)` drops
-    to `caption` only. So `&emsp;&emsp;•&emsp;&emsp;` is 9 displayed chars
-    (2+2+1+2+2), not 5. Exclude the `<div>` wrapper from the count; include
-    the leading `•&emsp;&emsp;` and trailing `&emsp;&emsp;•`.
   • Prefer hard-to-spot / high-value anchors; skip anchors already obvious on
     first scroll (e.g. Quick Start at the top).
   • Shorten link captions only when the shorter form uses full English words

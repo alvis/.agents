@@ -206,7 +206,24 @@ discussion cannot support a `fixed`, `does_not_apply`, or de-duplication
 decision.
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/fetch-review-discussion.sh"
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" --paginate
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" --paginate
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate
+gh api graphql --hostname "$HOST" \
+  -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUMBER" -f query='
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviewThreads(first:100,after:$cursor){
+        pageInfo{hasNextPage endCursor}
+        nodes{id isResolved comments(first:100){
+          pageInfo{hasNextPage endCursor}
+          nodes{databaseId body url path line commit{oid} author{login}}
+        }}
+      }
+    }
+  }
+}'
 ```
 
 Page `reviewThreads` and each thread's `comments` connection to exhaustion.
@@ -315,13 +332,13 @@ compiler-test glob. Never combine files owned by different test roots in one
 invocation:
 
 ```bash
-bash "${CODING_PR_SKILL_DIR}/scripts/review-scan.sh" \
+bun run "${CODING_PR_SKILL_DIR}/../../scripts/scanlib/core.ts" \
   <changed-files-owned-by-project> --category all --before 5 --after 10 \
   --test-root <project-root> [--test-pattern <compiler-test-glob> ...]
 ```
 
-The wrapper resolves the scanner from the installed PR skill and forwards every
-group's classification arguments. Surface a non-zero scanner failure rather
+That path resolves the scanner from the installed PR skill directory up to the
+coding plugin root; pass every group's classification arguments to it. Surface a non-zero scanner failure rather
 than skipping silently. Candidates are advisory until confirmed against the
 rule they cite.
 

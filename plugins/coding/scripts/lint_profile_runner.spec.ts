@@ -128,6 +128,39 @@ describe("command-line argument handling", () => {
 });
 
 describe("profile-driven scanner execution", () => {
+  it("should run the bundled generic scanner when no override is provided", () => {
+    const root = temporaryRoot();
+    const source = resolve(root, "source.ts");
+    writeFileSync(source, "let value = 1;\n");
+
+    const result = runBun([process.execPath, "run", runner, source]);
+
+    expect(result.exitCode, result.stderr).toBe(0);
+    const report = JSON.parse(result.stdout);
+    expect({
+      status: report.status,
+      files: report.files,
+      scannerRuns: report.scanner_runs.map(
+        (run: { label: string; exit_code: number; stdout?: string }) => ({
+          label: run.label,
+          exitCode: run.exit_code,
+          stdout: run.stdout,
+        }),
+      ),
+    }).toEqual({
+      status: "compliant",
+      files: [source],
+      scannerRuns: [
+        {
+          label: "generic",
+          exitCode: 0,
+          stdout: expect.stringContaining(
+            "let: 1 matches in 1 files",
+          ),
+        },
+      ],
+    });
+  });
   it("should forward compiler-test context for an explicit configured file", () => {
     const root = temporaryRoot();
     const generic = resolve(root, "coding/scripts/generic.ts");

@@ -1,29 +1,33 @@
 # Jujutsu guide
 
-This is the coding plugin's canonical cross-skill source for deciding when and
-how to use Jujutsu (`jj`). Coding `SKILL.md` files link here instead of
-inlining setup and situation selection. Route-specific references retain exact
-transactions, non-`jj` gates, and handoffs where their owning skill needs them.
+This is the coding plugin's canonical source for how to run Jujutsu (`jj`).
+`coding:directions/WORKFLOW.md` owns when to use `jj` and mutation ownership —
+`coding:commit` for local history, `coding:pr` for publication. Route-specific
+references retain exact transactions, non-`jj` gates, and handoffs where their
+owning skill needs them.
 
-## Ownership
+Read through the situation guide for shared setup and safety, then read only
+the recipe selected there. Reuse the guide within the task; its state checks
+still run at each operation that requires them.
 
-- `coding:commit` owns every local history mutation: new changes, descriptions,
-  splits, edits, squashes, rebases, abandons, and bookmark movement.
-- `coding:pr create|update|merge` owns remote publication, PR bases, and CI.
-- Other coding skills may inspect `jj` state but must hand mutations to those
-  owners.
-- Use `jj` when it is installed and functionally colocated with the repository.
-  Plain Git remains supported when `jj` is unavailable or colocation cannot be
-  established safely.
+<IMPORTANT>
+Never rewrite published or merged history — squashing, rebasing, abandoning, or
+describing a change that has already been pushed or landed. Correct it with a
+new change unless explicit authority permits rewriting shared history. This
+applies to every operation below, not only the merged-work row of the situation
+guide.
 
-## Require jj 0.44 or newer
+Never use `--all` for routine publication. Push all and only the bookmarks
+selected by the PR workflow, then verify every remote head and PR base.
+After every rewrite, verify the stack is linear, conflict-free, and
+self-contained; run the affected lint, type, test, and build gates before
+publication.
+</IMPORTANT>
 
-The coding plugin relies on commands and safety flags available in Jujutsu
-0.44.0 or newer. Before using `jj`, run `coding:sync-tool --only jj --check`.
-If the check fails, run `coding:sync-tool --only jj`, then repeat the check.
-Do not approximate a missing command with a mixed Git/`jj` sequence.
+## Setup when first using `jj`
 
-## Initialize before work
+`jj` requires 0.44+ — run `coding:sync-tool --only jj --check`, run
+`coding:sync-tool --only jj` if it fails, then repeat the check.
 
 For an ordinary Git checkout that has not been initialized, run this before
 editing:
@@ -97,7 +101,7 @@ jj op log -n1 --no-graph -T 'self.id().short()'
 | Fix a review bug in a mutable stacked change | save the stack tip; `jj edit <owning-change>`; fix and verify; `jj edit <saved-tip>`; republish the affected suffix with `coding:pr update` | [stacked review fixes](#fix-a-review-bug-in-a-stack) |
 | Distribute retrospective fixes | `jj absorb`, then targeted `jj squash --from @ --into <ancestor>` for leftovers | [retrospective workflow](../skills/commit/directions/retrospective.md) |
 | Reorder a stack | `jj rebase --insert-before` or `--insert-after` through `coding:commit` | [reorder workflow](../skills/commit/directions/reorder.md) |
-| Work in parallel | `jj workspace add` from a shared initialized repository | [parallel workflow](../skills/commit/directions/parallel.md) |
+| Work in parallel | `jj workspace add` from a shared initialized repository | [work in parallel](#work-in-parallel) |
 | Remove a truly empty change | `jj abandon <change>` after proving it is empty | [empty-change scenario](../skills/commit/directions/empty.md) |
 | Resolve a divergent change ID | inspect both sides, preserve unique content, then abandon only the redundant side | [divergence scenario](../skills/commit/directions/divergent.md) |
 | Correct already-merged work | create a corrective change unless explicit authority permits rewriting shared history | [merged-change workflow](../skills/commit/directions/merged.md) |
@@ -208,13 +212,16 @@ before publication. Only that action's explicit `--no-verify` skips the gate.
 
 ## Fix a review bug in a stack
 
-When review finds a bug in stacked commits, stacked branches, or stacked PRs,
-repair the earliest mutable change that owns the faulty artifact. Do not append
-an unrelated fix at the tip merely to avoid rewriting the unmerged stack.
+When review finds a bug in a stack whose rewrite is authorized, repair the
+earliest mutable change that owns the faulty artifact. Unmerged does not mean
+unpublished: without authority to rewrite every affected published revision,
+create a corrective change instead.
 
 1. Resolve and inspect the owning change and its descendants. Record the
    current stack-tip change ID before switching revisions.
-2. Confirm it is mutable and not merged into the destination.
+2. Confirm it is mutable and not merged into the destination. Check the owning
+   change and every descendant that will be rebased for publication; require
+   explicit rewrite authority for each published revision before continuing.
 3. Capture the current operation ID.
 4. Run `jj edit <owning-change>`.
 5. Apply the bug fix and run the focused validation while `@` is that change.
@@ -254,48 +261,7 @@ If `jj workspace add` cannot resolve the base, fetch the selected remote and
 retry only after confirming the exact revision. If two workspaces edited the
 same change ID, stop normal integration and use the divergence route.
 
-## Command reference
-
-### Changes and content
-
-| Command | Purpose |
-| --- | --- |
-| `jj new [<rev>...]` | Create a new empty change, optionally on selected parent revisions. |
-| `jj edit <change>` | Make a mutable existing change the working-copy change. Required for a review fix owned by one stacked change. |
-| `jj describe <rev> -m "<message>"` | Set the change description. |
-| `jj split [<paths>]` | Split the current change interactively or by path. |
-| `jj squash --from <src> --into <dst> [<paths>]` | Move all or selected content into an ancestor. |
-| `jj absorb [-i] [<paths>]` | Distribute matching working-copy changes into mutable ancestors. |
-| `jj abandon <rev>` | Remove a change from visible history and rebase descendants. |
-| `jj arrange [<revset>...]` | Interactively reorder or abandon selected mutable revisions. |
-| `jj fix -s <revset> [<fileset>...]` | Rewrite matching file versions through configured deterministic tools. |
-| `jj run --ignore-changes -r <revset> -- <command>` | Run a read-only command in isolated revision working copies. |
-
-### Stack and refs
-
-| Command | Purpose |
-| --- | --- |
-| `jj rebase -s <src> -d <dst>` | Move a change and its descendants. |
-| `jj rebase -r <rev> --insert-before <other>` | Insert one revision before another. |
-| `jj rebase -r <rev> --insert-after <other>` | Insert one revision after another. |
-| `jj bookmark list` | Inspect local and tracked bookmarks. |
-| `jj bookmark set <name> --revision <rev>` | Create or move the selected bookmark. |
-| `jj bookmark move <name> --to <rev>` | Fast-forward an existing bookmark. |
-| `jj bookmark advance [<name>...] --to <rev>` | Advance the closest or named bookmarks to a descendant revision. |
-| `jj bookmark forget <name>` | Remove a local bookmark without deleting commits. |
-
-### Git interoperation and publication
-
-| Command | Purpose |
-| --- | --- |
-| `jj git fetch --remote <remote>` | Refresh the selected remote's refs. |
-| `jj git import` | Import refs after an explicitly authorized Git-side operation. |
-| `jj git push --remote <remote> --bookmark <name>` | Publish one selected bookmark through the PR workflow. |
-
-Never use `--all` for routine publication. Push all and only the bookmarks
-selected by the PR workflow, then verify every remote head and PR base.
-
-### Inspection and recovery
+## Inspection and recovery
 
 | Command | Purpose |
 | --- | --- |
@@ -305,7 +271,3 @@ selected by the PR workflow, then verify every remote head and PR base.
 | `jj op log` | Inspect history-shaping operations. |
 | `jj op restore <operation-id>` | Restore `jj` repository state to a captured operation. |
 | `jj workspace list` | Inventory registered `jj` workspaces. |
-
-After every rewrite, verify the stack is linear, conflict-free, and
-self-contained; run the affected lint, type, test, and build gates before
-publication.

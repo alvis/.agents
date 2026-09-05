@@ -75,8 +75,8 @@ The evidence ledger uses these fields:
    Then render the board, which is self-contained and makes no network request:
 
    ```bash
-   scripts/render-page.ts <board>.json -o <board>.html   # one board
-   scripts/render-page.ts --set run.json -o <dir>        # a set, cross-linked
+   bun run scripts/render-page/cli.ts <board>.json -o <board>.html   # one board
+   bun run scripts/render-page/cli.ts --set run.json -o <dir>        # a set, cross-linked
    ```
 
    Present the rendered file in preference order: the LLM environment's built-in local HTML viewer, then a safe cloud artifact viewer, then a local browser such as Chrome. Capture the user's answers and section annotations in the page's single generated prompt and transfer them back to the ledger.
@@ -94,4 +94,4 @@ The evidence ledger uses these fields:
 
 ## Completion
 
-Report the selected mode, starting point, material unknowns found or resolved, accepted assumptions, decisions and rejected alternatives, persistent workspace when any, readiness verdict (`ready`, `more-discovery`, or `blocked`), and the single recommended next owner. Return explicit final paths generated or materially rewritten as `generated_files`; the main agent reconciles overviews and runs the size pass only for eligible work Markdown inside the target `.state/`. Runtime trigger behavior is reported as exercised only when an executable evaluation actually ran.
+Report the selected mode, starting point, material unknowns found or resolved, accepted assumptions, decisions and rejected alternatives, persistent workspace when any, readiness verdict (`ready`, `more-discovery`, or `blocked`), and the single recommended next owner. Return explicit final paths generated or materially rewritten as `generated_files`; the main agent reconciles overviews. Each writer keeps its own work Markdown inside the target `.state/` within `essential:references/output-manifest.md` as it writes. Runtime trigger behavior is reported as exercised only when an executable evaluation actually ran.

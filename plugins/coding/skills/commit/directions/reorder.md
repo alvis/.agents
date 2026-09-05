@@ -18,7 +18,7 @@ jj op log -n1 --no-graph -T 'self.id().short()'
 
 Record the op id. `jj op restore <id>` rewinds the entire reorder if anything goes wrong.
 
-The PreToolUse hook also fires `backup.sh` on the first rewriting op, capturing both `GIT_TREE_SHA` (git's `write-tree` of the working copy) and `CONTENT_HASH` (covers untracked files jj/git don't track). Both feed Step 5 verify.
+The PreToolUse hook also fires `backup.sh` on the first rewriting op, capturing both `GIT_TREE_SHA` (git's `write-tree` of the working copy) and `CONTENT_HASH` (covers untracked files jj/git don't track). Both feed Step 5 verify. `CONTENT_HASH` covers untracked files no VCS snapshot records, so the operation log cannot reconstruct them afterwards.
 
 ### 2. Identify the range
 

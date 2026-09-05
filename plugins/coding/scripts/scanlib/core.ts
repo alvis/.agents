@@ -309,3 +309,7 @@ export async function run(
   );
   return 0;
 }
+
+if (import.meta.main) {
+  process.exitCode = await run();
+}
