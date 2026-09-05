@@ -56,12 +56,8 @@ Debug and inspect Next.js applications by combining Chrome DevTools MCP and the 
 5. When this skill creates or modifies any visible page or component, integrate design quality:
    - Invoke the `design` skill first for all visual decisions — layout, color, typography, spacing, animation. Do not implement UI without it; it iterates in a browser feedback loop toward 10/10 in all 12 design categories, within its own rework budget, and reports whatever still falls short as a residual gap for confirmation.
    - After implementation, spawn a subagent to run the `audit` skill on the affected URL/component; it checks compliance against the web plugin's `standards/design/scan.md`. P0 and P1 findings block UI completion unless closed under the canonical [audit disposition rules](../audit/templates/review.md): a non-fixed closure requires explicit risk-acceptance authority, an accountable owner, non-placeholder rationale, durable acceptance evidence, and a concrete recheck condition. P2 and P3 are ranked follow-up, and info is advisory.
-   - Before editing, read only the web plugin's `standards/design/meta.md`.
-     After editing, apply `standards/design/scan.md`; for each violation, read
-     its matching `standards/design/rules/<lowercase-rule-id>.md` guide when
-     present. If no matching per-rule guide exists, read
-     `standards/design/write.md` as the bounded fallback. Correct the violation
-     and rerun the scan.
+   - Apply the web plugin's `design` standard as a writer under
+     `essential:directions/standards.md`.
 6. If the issue is not resolved, try the fallback tool or a different approach and loop back to step 3.
 7. When done, optionally close skill-opened sessions with `next-browser close`; never close a browser session owned by another skill.
 8. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
