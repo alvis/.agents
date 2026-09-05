@@ -239,6 +239,122 @@ describe("opencode adapter manifest validation", () => {
     ).rejects.toThrow(/missing headings: Requirements, Boundary, Direction, Context/);
   });
 
+  it("should reject the current disk-backed OpenCode plan before exit", async () => {
+    const planDirectory = join(sandbox.project, ".opencode", "plans");
+    mkdirSync(planDirectory, { recursive: true });
+    writeFileSync(join(planDirectory, "123-current.md"), "# Goal\nIncomplete.\n");
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {
+        project: { current: async () => ({ data: { vcs: "git" } }) },
+        session: { get: async () => ({ data: { slug: "current", time: { created: 123 } } }) },
+      },
+      directory: sandbox.project,
+      worktree: sandbox.project,
+    });
+
+    await expect(hooks["tool.execute.before"](
+      { callID: "native-plan-invalid", sessionID: "session", tool: "plan_exit" },
+      { args: {} },
+    )).rejects.toThrow(/missing headings/);
+  });
+
+  it("should validate the current plan without replacing native arguments", async () => {
+    const planDirectory = join(sandbox.project, ".opencode", "plans");
+    mkdirSync(planDirectory, { recursive: true });
+    writeFileSync(join(planDirectory, "124-complete.md"),
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {
+        project: { current: async () => ({ data: { vcs: "git" } }) },
+        session: { get: async () => ({ data: { slug: "complete", time: { created: 124 } } }) },
+      },
+      directory: sandbox.project,
+      worktree: sandbox.project,
+    });
+    const output = { args: {} };
+
+    await expect(hooks["tool.execute.before"](
+      { callID: "native-plan-valid", sessionID: "session", tool: "plan_exit" },
+      output,
+    )).resolves.toBeUndefined();
+    expect(output.args).toEqual({});
+  });
+
+  it("should reject a missing current plan instead of reading another session", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {
+        project: { current: async () => ({ data: { vcs: "git" } }) },
+        session: { get: async () => ({ data: { slug: "missing", time: { created: 125 } } }) },
+      },
+      directory: sandbox.project,
+      worktree: sandbox.project,
+    });
+
+    await expect(hooks["tool.execute.before"](
+      { callID: "native-plan-missing", sessionID: "session", tool: "plan_exit" },
+      { args: {} },
+    )).rejects.toThrow(/plan.*(?:unavailable|read|missing)/i);
+  });
+
+  it("should reject traversal in session plan metadata", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {
+        project: { current: async () => ({ data: { vcs: "git" } }) },
+        session: { get: async () => ({ data: { slug: "../../outside", time: { created: 126 } } }) },
+      },
+      directory: sandbox.project,
+      worktree: sandbox.project,
+    });
+
+    await expect(hooks["tool.execute.before"](
+      { callID: "native-plan-traversal", sessionID: "session", tool: "plan_exit" },
+      { args: {} },
+    )).rejects.toThrow(/(?:invalid|unsafe).*plan|plan.*(?:metadata|invalid|unsafe)/i);
+  });
+
+  it("should validate non-VCS plans from OpenCode's XDG data directory", async () => {
+    const dataHome = join(sandbox.root, "data");
+    vi.stubEnv("XDG_DATA_HOME", dataHome);
+    const planDirectory = join(dataHome, "opencode", "plans");
+    mkdirSync(planDirectory, { recursive: true });
+    writeFileSync(join(planDirectory, "127-global.md"), "# Goal\nIncomplete.\n");
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {
+        project: { current: async () => ({ data: {} }) },
+        session: { get: async () => ({ data: { slug: "global", time: { created: 127 } } }) },
+      },
+      directory: sandbox.project,
+      worktree: sandbox.project,
+    });
+
+    await expect(hooks["tool.execute.before"](
+      { callID: "native-plan-global", sessionID: "session", tool: "plan_exit" },
+      { args: {} },
+    )).rejects.toThrow(/missing headings/);
+  });
+
+  it("should report session lookup failure before native plan exit", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {
+        project: { current: async () => ({ data: { vcs: "git" } }) },
+        session: { get: async () => { throw new Error("service unavailable"); } },
+      },
+      directory: sandbox.project,
+      worktree: sandbox.project,
+    });
+
+    await expect(hooks["tool.execute.before"](
+      { callID: "native-plan-lookup", sessionID: "session", tool: "plan_exit" },
+      { args: {} },
+    )).rejects.toThrow(/Plan validation is unavailable/);
+  });
+
   it("should enforce the OpenCode task alias with the native dispatch validator", async () => {
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
