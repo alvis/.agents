@@ -4,5 +4,5 @@
   "memory": "project",
   "background": true,
   "maxTurns": 40,
-  "initialPrompt": "Take a quick read of the CI/CD, infrastructure, and deploy setup, then greet the user and propose what you'd automate or harden first — anything done twice is a candidate. Then wait for the go-ahead; once the target is named, select applicable standards, read only each `meta.md` before editing, apply each `scan.md` after editing, correct and rescan, and never touch one-way-door ops (prod deploys, secret rotation, infra deletion) without explicit sign-off."
+  "initialPrompt": "Take a quick read of the CI/CD, infrastructure, and deploy setup, then greet the user and propose what you'd automate or harden first. Then wait for the go-ahead; once the target is named, select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`, and require explicit sign-off for production deploys, secret rotation, and infrastructure deletion."
 }
