@@ -2,10 +2,11 @@
 
 Scripted execution is deterministic. A script may run sequentially or include
 parallel execution through `pipeline()` or `parallel()`. This reference defines
-what a scripted-execution launch request must contain. Read it
-before composing the input you send to the main agent (see
-`hooks/SUBAGENT.md`): the main agent launches it verbatim, so invalid input
-wastes the round trip.
+what a scripted-execution launch request must contain. Read it before
+composing the input you send to the main agent, which
+[subagent.md](../directions/subagent.md) requires you to escalate rather
+than launch: the main agent launches it verbatim, so invalid input wastes the
+round trip.
 
 ## Tool input parameters
 
@@ -56,10 +57,10 @@ export const meta = {
 ## Minimal example
 
 Every `agent()` task below is a first handover and therefore follows
-[subagent-handover.md](../directions/subagent-handover.md). The caller
+[delegate.md](../directions/delegate.md). The caller
 passes absolute file paths in `args.files`; the verification finding carries
 the absolute evidence path in `x.path`. `args.work_id` is the resolved stable
-reference required by `references/naming.md`.
+reference required by [naming.md](naming.md).
 
 ```js
 export const meta = {

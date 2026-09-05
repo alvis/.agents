@@ -34,7 +34,7 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 ## Workflow
 
-Subagent dispatch in steps 4, 5, and 7 follows `plugins/governance/standards/delegation/`, tightened by the brief's own bounds (fanout, judge count, refute passes) named below. Every first task handover follows [subagent-handover.md](../../directions/subagent-handover.md); blind roles leave Context empty when additional history would violate their isolation contract.
+Subagent dispatch in steps 4, 5, and 7 follows `plugins/governance/standards/delegation/`, tightened by the brief's own bounds (fanout, judge count, refute passes) named below. Every first task handover follows [delegate.md](../../directions/delegate.md); blind roles leave Context empty when additional history would violate their isolation contract.
 
 1. **Classify the invocation.** `--resume` wins; else `--brief` or a positional path resolving to a brief file means a pre-filled brief; else the positional is goal text. Record the flag overrides and apply them onto `budget.max_rounds` / `eval.backend` before any validation.
    - Resume: verify `<run-dir>/research-brief.md` exists and `rounds/` is non-empty, reconstruct `{round, survivors, best, fanout, leaderboard}` from the `rounds/round-NN/` files (schemas in [references/dossier.md](references/dossier.md)), and jump to step 5. A run dir failing either check is not resumable — report it and fall back to asking for a goal.
@@ -87,4 +87,4 @@ generated_files: [<absolute final paths generated or materially rewritten>]
 
 </report>
 
-A partial or blocked run still reports this block with `status: aborted`, the last completed round, and the blocker in place of `best_artifact` commentary. The main agent uses `generated_files` to size-check only eligible work Markdown inside the target `.state/`.
+A partial or blocked run still reports this block with `status: aborted`, the last completed round, and the blocker in place of `best_artifact` commentary. Follow [output-manifest.md](../../references/output-manifest.md) for the manifest and writer-owned work-Markdown size obligations.

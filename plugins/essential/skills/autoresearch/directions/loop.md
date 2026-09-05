@@ -38,7 +38,7 @@ Neither mechanism owns them: a change here changes both. `<...>` placeholders co
 (`templates/brief.md` field names) and the current round's state. The programmatic backend's mechanical-intelligence
 eval runner is not duplicated here — it follows the procedure in `directions/eval-backends.md`, the same prompt
 SKILL.md Step 4 uses for the baseline calibration; the human protocol likewise lives there. Each block follows
-[subagent-handover.md](../../../directions/subagent-handover.md).
+[delegate.md](../../../directions/delegate.md).
 
 ### Candidate Generator (high intelligence; low for mechanical parameter sweeps)
 

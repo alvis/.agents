@@ -64,4 +64,4 @@ and rerun the scan.
 
 ## Completion
 
-Report the parsed instruction; context sources discovered; files created with a one-line purpose each; counts of types defined, functions drafted, and markers placed; verification commands with results; and next steps — complete production stubs with `coding:complete-code`, then route pending test markers to `coding:complete-test`. Return every created or materially rewritten path as `generated_files` to the main agent. Do not run file sizing; after all artifact writers finish, the main agent checks only eligible work Markdown inside the target `.state/`.
+Report the parsed instruction; context sources discovered; files created with a one-line purpose each; counts of types defined, functions drafted, and markers placed; verification commands with results; and next steps — complete production stubs with `coding:complete-code`, then route pending test markers to `coding:complete-test`. Follow `essential:references/output-manifest.md` when writing eligible work Markdown, and return every created or materially rewritten path as `generated_files` to the main agent.

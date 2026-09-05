@@ -31,7 +31,7 @@ mode the command runs inside the candidate's own worktree (after the brief's `se
 in artifact mode it runs in the run dir with the candidate's artifact path substituted in.
 
 Its first task handover follows
-[subagent-handover.md](../../../directions/subagent-handover.md) and
+[delegate.md](../../../directions/delegate.md) and
 uses this payload:
 
 ```text

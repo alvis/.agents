@@ -4,7 +4,7 @@ The backbone every other plugin depends on. Essential owns the cross-plugin **st
 
 ## The contracts
 
-Contracts load progressively — only the small `hooks/ALLAGENT.md`, `hooks/MAINAGENT.md`, and `hooks/SUBAGENT.md` entry points are injected, and once per session `hooks/STOP.md` blocks with a `.state` reminder; everything else is read at the moment it matters.
+Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLAGENT.md`, `hooks/MAINAGENT.md`, and `hooks/SUBAGENT.md` entry points; everything else is read at the moment it matters. Once per session, `hooks/STOP.md` blocks with a `.state` reminder. Grok ignores context-injection and Stop stdout, so the reminder is advisory there.
 
 | Reference | Read when | Owns |
 | --- | --- | --- |
@@ -24,8 +24,9 @@ Contracts load progressively — only the small `hooks/ALLAGENT.md`, `hooks/MAIN
 | `references/work-memory-topology.md` | When creating, locating, or migrating ignored work files | Commented `.state` file map |
 | `./directions/change-control.md` | On a mid-execution finding | Task-local / plan-level / spec-level routing |
 | `./directions/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
-| `references/team-lifecycle.md` | At spawn and wind-down moments | Team forming/retiring, model and effort selection |
-| `./directions/subagent-handover.md` | Before a first task handover | Required prompt fields, extensible Context, durable path compression, later-message boundary |
+| `./directions/subagent.md` | At the start of an assigned subagent task | The whole worker contract: stable reference, report shape and ceiling, read-only state and resolver gate, escalation, ineligibility transfer |
+| `references/output-manifest.md` | When returning a `generated_files` manifest, or writing Markdown into `.state/` | Manifest shape, the 16,384-byte work-Markdown rule the writer observes, the general length rule |
+| `./directions/delegate.md` | Before dispatching a subagent or composing a first task handover | Specialist routing, required prompt fields, extensible Context, message ceiling, teammate naming, nesting, intelligence resolution |
 
 Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` (shared durable directory entrypoints), and `./templates/initiative.md` (Essential's initiative-domain semantic authority). Domain plugins own their own semantic templates.
 
@@ -35,7 +36,6 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 - **`scripts/state-lease`** — the on-disk main-agent lease (`ensure | acquire | heartbeat | release | status | takeover`). The file stores only the token's SHA-256 digest, so reading it never confers the lease; exactly one live token may write main-agent-owned state; a live foreign lease is never replaced; an expired foreign lease yields only to an explicit, journaled takeover.
 - **`scripts/state-write`** — the lease-verified write path: verifies the presented token, refuses free/expired/foreign leases, heartbeats, and applies the temp-write + atomic rename in one call, so a working main agent can never expire its own lease by working.
 - **`skills/doctor/scripts/state-doctor`** — read-only structural checker: duplicate or malformed task IDs, dangling dependencies, cycles, impossible roll-ups, contradictory mark/status pairs, missing evidence annotations, broken file references, unsuperseded decisions, ADR archive/index/integrity drift, stale leases, overview drift. Advisory by default; `--strict` for irreversible or release-critical moments. It never silently edits files.
-- **`scripts/check-markdown-size`** — the 16,384-byte gate for work Markdown.
 
 ## Skills
 

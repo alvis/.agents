@@ -205,7 +205,7 @@ verify them when changing payloads or their unconditional read chain.
 | `memory` is `"project"`; body has exactly one `## Memory` section | same |
 | Every injected payload ≤ 2,000 bytes, per plugin | Author review |
 | Every plugin's unconditional hook read chain ≤ 40,960 bytes | Author review |
-| `.state/` work Markdown flagged over 16,384 bytes | `plugins/essential/scripts/check-markdown-size` |
+| Every writer keeps eligible `.state/` work Markdown within `plugins/essential/references/output-manifest.md` | Author review; optional diagnostic: `plugins/essential/scripts/check-markdown-size` |
 | Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/orchestration.md` |
 | Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
 
