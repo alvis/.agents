@@ -27,10 +27,13 @@ evidence. [ALLAGENT.md](../hooks/ALLAGENT.md) owns mandatory gates and changed-p
 
 ## Required ingredients
 
-Every plan makes these ingredients available in this order. Use headings for a
-persisted or material plan; compact plans may use labeled lines. When another
-artifact owns an ingredient, give the exact path and only the summary needed to
-navigate it.
+For low-risk conversational plans, a short statement of the verifiable goal,
+scope, material assumptions, next step, and proportionate check is sufficient;
+omit empty categories and do not create a plan artifact for formatting alone.
+
+Persisted or material plans make the following ingredients available in order.
+When another artifact owns an ingredient, give its exact path and only the
+summary needed to navigate it.
 
 ### Goal
 
@@ -112,8 +115,8 @@ Goal, Requirements, and Boundary remain fixed and the owning workflow grants
 that authority. Surface any proposed contract change to its owner before
 continuing.
 
-Before handing off, approving, or executing a plan, verify that every required
-ingredient is present or linked, the goal has a measurable bar, requirements
-are testable, boundaries expose exclusions, direction is executable, context is
-current, every context link resolves, every listed record is directly related,
-and each decision/recent-work summary is at most 19 words.
+Before handing off, approving, or executing a plan, check its risk-appropriate
+contract above: the goal is verifiable, scope and assumptions are clear, and the
+next step and validation are executable. For persisted or material plans, also
+verify that ingredients are present or linked, context is current, links resolve,
+records are directly related, and each record summary is at most 19 words.
