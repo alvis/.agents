@@ -56,6 +56,28 @@ function stateSystemAccess(document: string): Record<string, string> {
   );
 }
 
+function jsonIntelligenceProjection(document: string): Record<string, string> {
+  const frontmatter = JSON.parse(document.split("---\n", 3)[1]!) as Record<
+    string,
+    unknown
+  >;
+  return Object.fromEntries(
+    ["model", "effort"]
+      .filter((field) => field in frontmatter)
+      .map((field) => [field, String(frontmatter[field])]),
+  );
+}
+
+function codexIntelligenceProjection(
+  document: string,
+): Record<string, string> {
+  return Object.fromEntries(
+    [...document.matchAll(/^(model|model_reasoning_effort) = "([^"]+)"$/gm)].map(
+      (match) => [match[1]!, match[2]!],
+    ),
+  );
+}
+
 function writeTemplate(
   pluginRoot: string,
   name = "test-agent",
@@ -178,6 +200,43 @@ describe("agent stitching", () => {
     expect(grok).not.toContain("## Memory");
     expect(stitchGrokAgentDefinition(template)).toBe(grok);
   });
+
+  it.each([
+    ["mechanical", "gpt-5.6-luna", "high"],
+    ["low", "gpt-5.6-sol", "medium"],
+    ["medium", "gpt-6-astra", "low"],
+    ["high", "gpt-6-astra", "medium"],
+    ["xhigh", "gpt-6-astra", "high"],
+    ["max", "gpt-6-astra", "xhigh"],
+    ["inherit", undefined, undefined],
+  ])(
+    "should project %s intelligence consistently for every harness",
+    (intelligence, model, modelReasoningEffort) => {
+      const root = temporaryRoot();
+      const template = writeTemplate(root, "test-agent", {
+        metadata: { intelligence },
+      });
+
+      const claude = jsonIntelligenceProjection(
+        stitchAgentDefinition(template),
+      );
+      const codex = codexIntelligenceProjection(
+        stitchCodexAgentDefinition(template),
+      );
+      const grok = jsonIntelligenceProjection(
+        stitchGrokAgentDefinition(template),
+      );
+
+      expect({ claude, codex, grok }).toEqual({
+        claude: intelligenceLevels[intelligence]!.claude,
+        codex:
+          model === undefined
+            ? {}
+            : { model, model_reasoning_effort: modelReasoningEffort },
+        grok: intelligenceLevels[intelligence]!.grok,
+      });
+    },
+  );
 
   it.each([
     ["a memory path", "\nSee also `.claude/agent-memory/test-agent/EXTRA.md`."],

@@ -11,7 +11,7 @@
     },
     "codex": {
       "model": "gpt-5.6-luna",
-      "model_reasoning_effort": "low"
+      "model_reasoning_effort": "high"
     },
     "grok": {
       "model": "inherit"
@@ -29,8 +29,8 @@
       "effort": "low"
     },
     "codex": {
-      "model": "gpt-5.6-luna",
-      "model_reasoning_effort": "max"
+      "model": "gpt-5.6-sol",
+      "model_reasoning_effort": "medium"
     },
     "grok": {
       "model": "inherit",
@@ -49,8 +49,8 @@
       "effort": "medium"
     },
     "codex": {
-      "model": "gpt-5.6-sol",
-      "model_reasoning_effort": "medium"
+      "model": "gpt-6-astra",
+      "model_reasoning_effort": "low"
     },
     "grok": {
       "model": "inherit",
@@ -69,8 +69,8 @@
       "effort": "high"
     },
     "codex": {
-      "model": "gpt-5.6-sol",
-      "model_reasoning_effort": "high"
+      "model": "gpt-6-astra",
+      "model_reasoning_effort": "medium"
     },
     "grok": {
       "model": "inherit",
@@ -89,8 +89,8 @@
       "effort": "xhigh"
     },
     "codex": {
-      "model": "gpt-5.6-sol",
-      "model_reasoning_effort": "xhigh"
+      "model": "gpt-6-astra",
+      "model_reasoning_effort": "high"
     },
     "grok": {
       "model": "inherit",
@@ -109,8 +109,8 @@
       "effort": "max"
     },
     "codex": {
-      "model": "gpt-5.6-sol",
-      "model_reasoning_effort": "max"
+      "model": "gpt-6-astra",
+      "model_reasoning_effort": "xhigh"
     },
     "grok": {
       "model": "inherit",
