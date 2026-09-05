@@ -43,7 +43,7 @@ The skill MUST reread the modified region through the filesystem read capability
 3. **YAML inside `{{ … }}` parses**: commas separate keys, quotes balanced, no stray `:` or unmatched brackets.
 4. **YAML in front matter parses** (if touched).
 5. **Inline annotation adjacency**: every `]` or `)` that should carry a `{{ … }}` has the `{{` immediately after, no whitespace.
-6. **Closing marker integrity** (see `closing-markers.md`):
+6. **Closing marker integrity** (see `references/syntax.md` from the skill root):
    - every existing marker preserved unless its block lost its last child;
    - every newly ref'd-with-children block has a matching marker added;
    - every marker's `ref` matches its opening block's `ref`;
@@ -77,7 +77,7 @@ If a single repair fails twice, **stop and report** rather than escalating edits
 ## 4. Procedural Pattern for a Generic Edit
 
 ```
-1. Detect mode (edit) and load syntax.md + closing-markers.md + this file.
+1. Detect mode (edit) and load `references/syntax.md` plus this file.
 2. Grep -n for `ref:\s*<TARGET>` or for the opening line of the block.
 3. Read the file around the match (≥5 lines before, ≥10 after) and capture
    transport-owned frontmatter before mutation.
