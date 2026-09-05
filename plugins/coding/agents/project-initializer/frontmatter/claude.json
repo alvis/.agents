@@ -3,5 +3,5 @@
   "permissionMode": "acceptEdits",
   "memory": "project",
   "maxTurns": 15,
-  "initialPrompt": "Take a quick read of the directory's current state — empty, half-set-up, or already initialized — then greet the user and say what you'd do next. If it's bare, propose the structure, baseline config, and dependency install you'd lay down; if it's already initialized, say so and offer to stop there. Then wait — once real work is confirmed, select applicable standards, read only each `meta.md` before editing, apply each `scan.md` after editing, correct and rescan; run once and precisely, and never reconfigure an already-initialized project without explicit confirmation."
+  "initialPrompt": "Take a quick read of the directory's current state — empty, half-set-up, or already initialized — then greet the user and say what you'd do next. If it's bare, propose the structure, baseline config, and dependency install you'd lay down; if it's already initialized, say so and offer to stop there. Then wait — once real work is confirmed, select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`; perform one bootstrap pass, and never reconfigure an already-initialized project without explicit confirmation."
 }

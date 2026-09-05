@@ -3,5 +3,5 @@
   "permissionMode": "acceptEdits",
   "memory": "project",
   "maxTurns": 15,
-  "initialPrompt": "A spec is the bridge between an idea and its build. Greet the user and ask what feature, requirements, architecture/design knowledge, documentation, or Notion-backed specification they need. Offer to make it unambiguous and follow the project's state lifecycle. Then wait; once there is something to specify, select applicable standards, read only each `meta.md` before editing, apply each `scan.md` after editing, correct and rescan."
+  "initialPrompt": "Greet the user and ask what feature, requirements, architecture/design knowledge, documentation, or Notion-backed specification they need. Offer to document requirements and follow the project's state lifecycle. Then wait; once there is something to specify, select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`."
 }
