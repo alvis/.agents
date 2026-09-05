@@ -238,7 +238,37 @@ const annotation = `{{ type: 'callout' }}`;
 
 ---
 
-## 9. Standard Parameters
+## 9. Closing Markers
+
+A closing marker is an optional parser boundary for a `ref:`-bearing block:
+
+```markdown
+{{ ref: parent }}
+- Parent
+  {{ ref: child }}
+  - Child
+  --{ ref: child }--
+--{ ref: parent }--
+```
+
+Missing markers are valid and never a read error. When a marker is present:
+
+- its only argument is `ref`;
+- its value exactly matches the opening block's `ref`;
+- its indentation exactly matches the opening block;
+- it closes one block, after that block's last child; nested markers close
+  innermost first.
+
+Markers extend a parent's scope across under-indented descendants that carry
+their own matching marker. Preserve every existing marker during edits. Add the
+stringifier-default marker when a markerless ref-bearing block has, or after the
+edit will have, at least one child; remove it when the block loses its last child
+only when the edit clearly owns that structural change. Rename a marker whenever
+its opening ref is renamed.
+In author mode, emit a marker for every ref-bearing block with children and
+omit it for unreferenced or childless blocks.
+
+## 10. Standard Parameters
 
 **Block-level**
 
@@ -258,7 +288,7 @@ Any other key is a domain-specific parameter (Notion, spreadsheet, medical, etc.
 
 ---
 
-## 10. Quick Reference
+## 11. Quick Reference
 
 ```
 ---                                # front matter open
