@@ -1,42 +1,43 @@
 # Working attitude
 
-Apply this attitude to any coding work: the best code is the code never
-written. [Making plans](../directions/plan.md) owns how much plan, evidence,
-and validation a given risk level warrants.
+For every task, choose the minimum sufficient work that meets the explicit
+requirements and applicable standards. Understand the affected flow before
+changing it; inspect only enough context to decide and verify safely.
+[Making plans](../directions/plan.md) owns planning depth, and
+[Orchestration](../directions/orchestration.md) owns delegation and review.
 
-## Code-scoped lean work
+## Choose the first sufficient option
 
-Before writing anything, climb this ladder and stop at the first rung that
-holds:
+Use this as a quick decision reflex, not a separate research project. Skip
+inapplicable options and stop when the requirements are satisfied:
 
-1. **Does this need to exist at all?** Speculative need = skip it and say so in
-   one line. (YAGNI)
-2. **Does a foundational module already do it?** Search the codebase's shared
-   packages, utilities, types, constants, and error modules before adding a helper.
-3. **Does nearby code already establish the pattern?** Reuse an existing local
-   function or convention instead of inventing a parallel one.
-4. **The native platform covers it?** Prefer `node:` built-ins, a database
-   constraint over application code, and CSS over JavaScript.
-5. **An installed dependency solves it?** Use it. Never add a dependency for
-   what a few lines can do.
-6. **Only then:** write the minimum code that works to the project's applicable
-   standards.
+1. **Need:** Does the requested outcome require this work? Omit speculative
+   additions; preserve everything explicitly requested.
+2. **Reuse:** Can an existing artifact, shared module, local pattern, or result
+   satisfy it? Check the relevant source before creating another.
+3. **Standard library:** Can the language's built-ins solve it directly?
+4. **Native capability:** Can the platform, database, tool, or existing workflow
+   provide it? Prefer a database constraint or CSS where it fits the behavior.
+5. **Installed dependency:** Can an already available dependency satisfy it
+   without more machinery than the task warrants?
+6. **Minimum sufficient solution:** Add only the content, code, abstraction, or
+   dependency needed for the actual outcome; justify added machinery by a
+   concrete requirement.
 
-### Lean-code rules
+## Stop at sufficient evidence
 
-- No unrequested abstractions: no interface with one implementation, factory
-  for one product, or configuration for a value that never changes.
-- Prefer deletion over addition and boring over clever. Use the fewest files
-  possible; the shortest working diff wins.
-- Lean never means non-compliant: applicable coding standards still apply in
-  full — no `any`, TDD, 100% coverage.
-- Mark deliberate simplifications with a `lean:` comment naming the ceiling
-  and the upgrade path.
+Keep simple, reversible work inline when the owning workflow permits. Add
+investigation, artifacts, coordination, or verification only to resolve a
+material unknown, protect the outcome, or satisfy an explicit contract. Once
+the required evidence passes, continue to completion; broaden or repeat checks
+only after changed inputs, failures, unresolved concerns, or a required gate.
 
-### Non-negotiable exceptions
+Favor maintainable simplicity over the shortest diff. Explain a simplification
+only when its limit changes a future decision; require no ceremonial comment.
 
 <IMPORTANT>
-Never simplify away input validation at trust boundaries, error handling that
-prevents data loss, security measures, accessibility basics, tests, required
-validation, or anything explicitly requested.
+Minimum work preserves correctness, safety, accessibility, trust-boundary
+validation, data-loss protection, explicit requirements, applicable standards,
+and required review or validation. Test depth follows the risk and claims under
+the owning standard; this policy adds no blanket coverage target.
 </IMPORTANT>
