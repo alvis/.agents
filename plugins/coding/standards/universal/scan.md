@@ -1,11 +1,8 @@
 # Universal: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
-
-> **During linting**: Only apply a rule's fix if it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
+Protocol: `essential:directions/standards.md`.
+During linting, fix only mechanical corrections — formatting, naming, documentation, casing, import ordering, field/function reordering; report without fixing anything that would add logic, change control flow, introduce runtime validation, or alter program behavior.
 
 ## Quick Scan
 

@@ -6,7 +6,7 @@
 
 Cargo's dependency resolver selects which feature unions and platform-specific dependencies are activated when multiple crates in the workspace share a transitive dependency. Resolver v1 (the legacy default for the 2015 edition) unifies features across `[dependencies]`, `[dev-dependencies]`, and `[build-dependencies]`, which leaks test-only features into production builds. Resolver v2 introduced per-target feature isolation, and **resolver v3** — the default for Rust 2024-edition workspaces on Rust 1.84+ — adds MSRV-aware version selection so transitive crates do not pull in versions that exceed the workspace's pinned toolchain.
 
-Because the workspace `Cargo.toml` is what cargo reads first, the resolver MUST be declared at the workspace level (per-crate `package.resolver` is ignored when the crate is part of a workspace). Targeting Rust 1.95+ on the 2024 edition (per `meta.md`), declare `resolver = "3"` explicitly. Even though it is the edition-2024 default, explicit declaration makes the choice visible to reviewers and locks behaviour against future edition changes.
+Because the workspace `Cargo.toml` is what cargo reads first, the resolver MUST be declared at the workspace level (per-crate `package.resolver` is ignored when the crate is part of a workspace). For the target in [required verification](../scan.md#required-verification), declare `resolver = "3"` explicitly. Even though it is the edition-2024 default, explicit declaration makes the choice visible to reviewers and locks behaviour against future edition changes.
 
 ## Fix
 

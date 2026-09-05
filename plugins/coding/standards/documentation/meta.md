@@ -4,7 +4,7 @@ _Compact rules for comments, JSDoc, inline documentation, and maintenance._
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - General Coding Principles (standard:universal) - clarity, maintainability, and consistency baseline
 

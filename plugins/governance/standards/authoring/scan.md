@@ -1,9 +1,7 @@
 # Governance Authoring Invariants: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<lowercase-rule-id>.md`.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 

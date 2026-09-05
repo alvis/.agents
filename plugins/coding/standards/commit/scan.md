@@ -1,27 +1,29 @@
 # Commit Messages: Violation Scan
 
-> **Prerequisite**: Read `meta.md` first for authority, inputs, exceptions, and
-> rule groups.
-
 Any violation is an issue that requires a fix. Use `write.md` for compliant
 outcomes and load the matching guide from `rules/`.
+Protocol: `essential:directions/standards.md`.
 
 ## Mechanical Scans
 
-- Match the candidate subject against the canonical regex in
+- `CMT-HEAD-01` — Match the candidate subject against the canonical regex in
   [write.md](write.md). Run it against the exact string that will be written,
   before the mutation. A non-match is a violation, not an authoring hint.
-- Confirm the type is in the closed allowlist in [write.md](write.md); a
-  regex match alone does not prove the type is allowed under a repository
-  policy that narrows it.
-- Measure subject length and body line length in characters.
+- `CMT-HEAD-01` — Confirm the type is in the closed allowlist in
+  [write.md](write.md); a regex match alone does not prove the type is allowed
+  under a repository policy that narrows it.
+- `CMT-SUBJ-01` — Measure subject length in characters.
+- `CMT-BODY-01` — Measure body line length in characters.
 
 ## Semantic Scans
 
-Judge whether the subject is imperative rather than past tense, whether the
-scope names one concern rather than a package list, and whether the body
-explains why rather than restating the diff. Syntax alone cannot establish
-these findings.
+Syntax alone cannot establish these findings.
+
+- `CMT-SUBJ-01` — Judge whether the subject is imperative rather than past tense.
+- `CMT-HEAD-02` — Judge whether the scope names one concern rather than a
+  package list.
+- `CMT-BODY-01` — Judge whether the body explains why rather than restating the
+  diff.
 
 Do not report branch names, PR titles, draft state, labels, stack position,
 history mutation, or merge order as violations of this standard. They belong to

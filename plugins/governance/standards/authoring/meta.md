@@ -4,7 +4,7 @@ _Repository-wide policy for authoring coherent, operational skills, agents, and 
 
 ## Dependent Standards
 
-You MUST also read the following standard when the authored artifact dispatches subagents:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - Delegated Execution (standard:delegation) - batching, message, report, review, and retry limits
 

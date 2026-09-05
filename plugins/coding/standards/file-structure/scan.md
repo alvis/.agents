@@ -1,8 +1,7 @@
 # File and Directory Structure Standards: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 

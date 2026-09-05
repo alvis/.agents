@@ -4,7 +4,7 @@ _Compact operational rules for error modeling, logging behavior, and observabili
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - Universal Coding Principles (standard:universal) - root-cause and consistency baseline
 - Function Design Standards (standard:function) - boundary handling and side-effect placement

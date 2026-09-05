@@ -1,31 +1,32 @@
 # Pull-Request Changes: Violation Scan
 
-> **Prerequisite**: Read `meta.md` first for authority, inputs, exceptions, and
-> rule groups.
-
 Any violation is an issue that requires a fix. Use `write.md` for compliant
 outcomes and load the matching guide from `rules/`.
+Protocol: `essential:directions/standards.md`.
 
 ## Mechanical Scans
 
-- Classify each exact base/head surface with
+- `GIT-PR-SIZE-01`…`GIT-PR-SIZE-04` — Classify each exact base/head surface with
   [classify-pr-size.ts](../../skills/pr/scripts/classify-pr-size.ts) with Bun; never
   estimate a zone or reproduce its arithmetic.
-- Validate a rendered PR message with
+- `GIT-PR-02` — Validate a rendered PR message with
   [scan-pr-message.ts](../../skills/pr/scripts/scan-pr-message.ts) with Bun, passing its
   selected template, exact head/base OIDs, zone, archetype, and generated
   paths. A nonzero result is a standard violation, not an authoring hint.
 
 ## Semantic Scans
 
-Inspect the implementation diff for public shape or feature prerequisite
-scaffolding stranded without its first implementation, migrations coupled to
-logic, mechanical changes hiding behavior, generated output that is unmarked
-or unrelated to the authored change, and nontrivial behavior lacking a feature
-flag. A declaration that is itself a complete type-level implementation and a
-standalone initialization whose requested result is the runnable or buildable
-baseline are complete rather than stranded. Syntax alone cannot establish
-these findings.
+Syntax alone cannot establish these findings.
+
+- `GIT-PR-TYPE-02`…`GIT-PR-TYPE-05` — Inspect the implementation diff for public
+  shape or feature prerequisite scaffolding stranded without its first
+  implementation, migrations coupled to logic, mechanical changes hiding
+  behavior, and generated output that is unmarked or unrelated to the authored
+  change. A declaration that is itself a complete type-level implementation and
+  a standalone initialization whose requested result is the runnable or
+  buildable baseline are complete rather than stranded.
+- `GIT-PR-STACK-04` — Inspect the implementation diff for nontrivial behavior
+  lacking a feature flag.
 
 Do not report commit messages, branch names, PR titles, draft state, labels,
 stack position, history mutation, or merge order as standard violations. They

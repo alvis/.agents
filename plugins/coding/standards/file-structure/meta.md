@@ -4,7 +4,7 @@ _Requirements for discoverable file names, coherent exports, bounded modules, an
 
 ## Dependent Standards
 
-You MUST also read the following standards when applicable:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - Naming Standards (standard:naming) - Defines identifier and verb-first function naming.
 - TypeScript Standards (standard:typescript) - Defines module and barrel export behavior, including `TYP-MODL-04`.

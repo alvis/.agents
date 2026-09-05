@@ -2,25 +2,14 @@
 
 _Compact Rust rules for ownership hygiene, typed errors, async discipline, module layout, parameter ergonomics, and toolchain pins._
 
-## Target
+## Runtime and Tooling
 
-Rust **stable 1.95+** on the **Rust 2024 edition**. Rules assume and exploit modern features: `let-else`, async `fn` in traits, generic associated types (GATs), the edition-2024 prelude, and `[lints]` table in `Cargo.toml`. Toolchain is pinned via `rust-toolchain.toml`.
-
-## Tooling
-
-All Rust code MUST pass the following tools on every commit:
-
-- **`rustfmt`** - formatter (zero-config). Layout, import ordering, and whitespace.
-- **`clippy`** - lints. Denies `clippy::all` + `clippy::pedantic` at workspace level; curated allow-list per `RST-CORE-04`.
-- **`cargo-nextest`** - test runner. `cargo test` is forbidden as the canonical command.
-- **`bacon`** - background check/clippy/test loop. Replaces `cargo watch`; configured via `bacon.toml`.
-- **`rustup`** - toolchain manager. Channel and components pinned via `rust-toolchain.toml`.
-
-Every rule in this standard declares a `Tool Coverage:` line stating which checks are enforced by `clippy`, which by `rustfmt`, and which require human review. Reviewers MUST NOT re-litigate mechanical checks the tools already enforce - focus review effort on semantic rules the tools cannot verify.
+[Required verification](scan.md#required-verification) owns the runtime target,
+per-commit tool checks, and division between mechanical and semantic review.
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - General Coding Principles (standard:universal) - baseline correctness and consistency constraints
 - Naming Standards (standard:naming) - overlaid and specialized by `RST-NAME-*` for Rust conventions (`snake_case`, `PascalCase`, `SCREAMING_SNAKE_CASE`)

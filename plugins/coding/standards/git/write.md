@@ -1,8 +1,5 @@
 # Pull-Request Changes: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` first for authority, inputs, exceptions, and
-> rule groups. Use `scan.md` to verify the result.
-
 ## Key Principles
 
 - Render and scan the selected PR message template.

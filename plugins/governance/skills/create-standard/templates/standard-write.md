@@ -1,8 +1,8 @@
 # [Standard Title]: Compliant Code Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
+Protocol: `essential:directions/standards.md`.
 
-<!-- INSTRUCTION: This file is the compliant code patterns tier — used when writing new code -->
+<!-- INSTRUCTION: This file supplies compliant patterns on demand and confirms triggered scan candidates when no rule guide exists -->
 <!-- INSTRUCTION: Focus on what TO DO, not what to avoid (that belongs in scan.md) -->
 <!-- INSTRUCTION: Keep examples minimal, using `...` for brevity -->
 

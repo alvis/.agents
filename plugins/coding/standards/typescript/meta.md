@@ -4,7 +4,7 @@ _Compact TypeScript rules for type safety, imports, module structure, and interf
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - General Coding Principles (standard:universal) - baseline correctness and consistency constraints
 - Naming Standards (standard:naming) - symbol naming must align with the naming contract

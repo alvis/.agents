@@ -2,14 +2,6 @@
 
 _WCAG compliance standards for inclusive web development_
 
-## Dependent Standards
-
-🚨 **[IMPORTANT]** You MUST also read the following standards together with this file
-
-- General Principles (plugin:coding:standard:universal) - Accessibility builds on fundamental coding principles of clarity, consistency, and user-centered design
-- Documentation Standards (plugin:coding:standard:documentation) - All accessibility features and decisions must be properly documented for compliance and team understanding
-
-**Note**: This standard requires the coding plugin to be enabled for referenced coding standards.
 
 ## Core Principles
 

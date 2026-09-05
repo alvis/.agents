@@ -18,8 +18,8 @@ owns revisions to existing standards.
 
 ## Boundaries
 
-- Use for: establishing a missing reusable policy as a new three-tier
-  standard with a unique rule-ID prefix.
+- Use for: establishing a missing reusable policy as a new standard with a
+  unique rule-ID prefix.
 - Do not use for: revising an existing standard (`update-standard`), creating
   skills (`write-skill`), writing to a repository-level shorthand root,
   overwriting an existing directory, or policy that belongs to an existing
@@ -34,7 +34,9 @@ owns revisions to existing standards.
 - **Prerequisites**: the installed governance templates
   [standard-meta.md](../../skills/create-standard/templates/standard-meta.md),
   [standard-scan.md](../../skills/create-standard/templates/standard-scan.md), and
-  [standard-write.md](../../skills/create-standard/templates/standard-write.md).
+  [standard-write.md](../../skills/create-standard/templates/standard-write.md);
+  the target plugin's [standards index](../../standards/INDEX.md) pattern; and the
+  selection protocol at `essential:directions/standards.md`.
 
 ## Workflow
 
@@ -47,12 +49,13 @@ owns revisions to existing standards.
    exception policy, rule groups, and stable IDs before drafting examples.
    The rule prefix is a unique short uppercase mnemonic.
 3. Create the target directory and `rules/`. Populate `meta.md` from the meta
-   template: dependencies use `standard:<name>` within the plugin or
+   template: explanatory relationships use `standard:<name>` within the plugin or
    `plugin:<plugin>:standard:<name>` across plugins; every declared group
    matches the chosen prefix.
 4. Populate `scan.md` from the scan template. Every quick-scan item and
    matrix row names one declared rule ID and describes a mechanically or
-   reviewably detectable violation.
+   reviewably detectable violation. Put mandatory inputs, runtime/tool
+   prerequisites, and before-mutation checks on this entry path.
 5. Populate `write.md` from the write template. Every rule ID has actionable
    compliant guidance; patterns and decisions do not contradict scan
    criteria.
@@ -61,7 +64,12 @@ owns revisions to existing standards.
    an undeclared ID.
 7. Remove all template placeholders and instructions. Keep examples only when
    they disambiguate detection or compliance.
-8. Run the verification below; when a check fails, fix the cause and re-run
+8. Register the standard as a row in `plugins/<plugin>/standards/INDEX.md`,
+   naming what it applies to and its directory. Preserve applicable
+   cross-standard requirements in the INDEX selection or independent scan
+   triggers with canonical rule-guide links. References cannot authorize
+   loading an undeclared plugin. An unindexed standard is never selected.
+9. Run the verification below; when a check fails, fix the cause and re-run
    that check. Repeat until every check passes or a concrete blocker remains,
    then report the blocker instead of looping.
 
@@ -71,6 +79,10 @@ owns revisions to existing standards.
   bullets/matrix, write summaries, and rule filenames. Fail when an ID is
   undeclared, missing from scan or write, duplicated, uses another prefix, or
   links to a missing guide.
+- The INDEX row exists and names this standard's directory.
+- Walk a clean candidate from INDEX through scan: mandatory checks must be
+  reached without an exception or violation. Walk a violating candidate to
+  its guide using the actual filename case, or to write when no guide exists.
 - Resolve every local Markdown link from its containing file. Verify
   dependent-standard targets exist and no dependency cycle is introduced.
 - Run `claude plugin validate --strict plugins/<plugin>` and

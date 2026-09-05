@@ -1,8 +1,5 @@
 # Naming: Compliant Code Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-> **Compliance**: Also follow `scan.md` in this directory to avoid violations during writing. When unsure about a specific rule, consult its detailed guidance in `rules/<rule-id>.md`.
-
 ## Key Principles
 
 - Names must communicate domain intent at point-of-use; avoid vague placeholders like `data`, `temp`, `value`

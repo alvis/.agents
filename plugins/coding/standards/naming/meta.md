@@ -4,7 +4,7 @@ _Compact naming rules for functions, types, variables, and data operations._
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - General Coding Principles (standard:universal) - baseline quality and consistency rules
 - TypeScript Standards (standard:typescript) - naming must align with type-safety and import rules

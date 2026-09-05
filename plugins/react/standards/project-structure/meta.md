@@ -2,14 +2,6 @@
 
 _Standards for where React code lives: routes, features, shared components, utilities, and types — and how code is promoted between them._
 
-## Dependent Standards
-
-🚨 **[IMPORTANT]** You MUST also read the following standards together with this file
-
-- React Component Standards (standard:components) - Component naming, props, state, and performance rules apply to every file placed under this layout
-- File Naming Standards (plugin:coding:standard:file-structure) - PascalCase component files, camelCase hook files, and co-located tests/stories underpin the directory layout
-
-**Note**: This standard requires the coding plugin to be enabled for referenced coding standards.
 
 ## Core Principles
 

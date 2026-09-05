@@ -1,8 +1,5 @@
 # Commit Messages: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` first for authority, inputs, exceptions, and
-> rule groups. Use `scan.md` to verify the result.
-
 ## Key Principles
 
 - Validate the subject against the regex below BEFORE any `jj describe` or

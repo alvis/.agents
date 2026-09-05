@@ -2,21 +2,6 @@
 
 _Standards for React component structure, patterns, and performance optimization_
 
-## Dependent Standards
-
-🚨 **[IMPORTANT]** You MUST also read the following standards together with this file
-
-- TypeScript Standards (plugin:coding:standard:typescript) - object shapes use interfaces; React component props use the explicit type-alias exception in `RC-STRUCT-02`
-- Function Standards (plugin:coding:standard:function) - React components are functions and component handlers are functions
-- Testing Standards (plugin:coding:standard:testing) - Storybook interaction assertions and testing patterns are essential for quality
-- Documentation Standards (plugin:coding:standard:documentation) - Components require proper JSDoc and props-type documentation
-- General Principles (plugin:coding:standard:universal) - Foundational coding principles that apply to all component code
-- File Naming Standards (plugin:coding:standard:file-structure) - Specific component file naming patterns (Button.tsx, Button.stories.tsx)
-- Accessibility Standards (standard:accessibility) - Frontend components must follow accessibility requirements
-- Storybook Standards (standard:storybook) - Component stories document behavior and verify accessibility; this standard enforces story existence per component
-- React Project Structure Standards (standard:project-structure) - Component placement and barrel conventions within the project tree
-
-**Note**: This standard requires the coding plugin to be enabled for referenced coding standards.
 
 ## Core Principles
 

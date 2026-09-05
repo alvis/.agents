@@ -1,9 +1,7 @@
 # React Project Structure: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md`.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 
@@ -25,11 +23,11 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 - DO NOT import from `features/<other>/**` inside `features/<this>/**` — cross-feature reuse means promotion to `src/components/` or `src/utilities/` [`RPS-FEAT-01`]
 - DO NOT mix container (data-fetching/orchestration) and presentational (prop-in/JSX-out) responsibilities in the same file under `features/<domain>/` [`RPS-FEAT-02`]
-- DO NOT create `features/ui/` or `features/shared/` — "shared" is not a domain [`RPS-FEAT-03`]
+- DO NOT create `features/ui/` or `features/shared/` [`RPS-FEAT-03`]
 
 ### `src/utilities/` and `src/types/`
 
-- DO NOT use JSX, hooks, or React imports inside `src/utilities/` — utilities must be React-unaware [`RPS-UTIL-01`]
+- DO NOT use JSX, hooks, or React imports inside `src/utilities/` [`RPS-UTIL-01`]
 - DO NOT put domain-specific types in `src/types/` — they belong in `src/features/<domain>/types/` [`RPS-UTIL-01`]
 
 ### Promotion
