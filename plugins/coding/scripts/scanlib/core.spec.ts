@@ -13,16 +13,16 @@ import { isAbsolute, resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { run } from "./scanlib/core.ts";
-import { loadRules } from "./scanlib/loader.ts";
-import { deriveRuleIdPrefixes } from "./scanlib/prefixes.ts";
+import { run } from "./core.ts";
+import { loadRules } from "./loader.ts";
+import { deriveRuleIdPrefixes } from "./prefixes.ts";
 import {
   isSpecFile,
   isTestFile,
   pythonFiles,
   sourceFiles,
   tsOnly,
-} from "./scanlib/predicates.ts";
+} from "./predicates.ts";
 
 interface FixtureCase {
   readonly category: string;
@@ -45,7 +45,7 @@ interface ParsedReport {
 }
 
 const here = import.meta.dirname;
-const fixtures = resolve(here, "../tests/fixtures");
+const fixtures = resolve(here, "../../tests/fixtures");
 const SPEC_CORPUS = [
   "import { compute } from './source';",
   "",
@@ -492,7 +492,7 @@ describe("scanner command-line handling", () => {
         : ["--test-pattern", pattern];
       const result = spawnSync(
         "bun",
-        [resolve(here, "scan_potential_violations.ts"), ".", ...option],
+        [resolve(here, "core.ts"), ".", ...option],
         { cwd: temporaryRoot(), encoding: "utf8" },
       );
       expect(result.status).toBe(2);

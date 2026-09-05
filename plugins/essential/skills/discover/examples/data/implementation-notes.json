@@ -245,7 +245,7 @@
               "title": "The state mode is a second executable, not a renderer flag",
               "planned": "A `--mode=state` that reads the `.state` tree.",
               "found": "The renderer is a pure function of its data, and the module graph enforces it: nothing reachable from the page module may import a `node:` builtin. A `--state` flag on the render CLI would have put a directory walk one import away from that boundary.",
-              "chose": "`scripts/state-board.ts` reads the tree and writes ordinary page data; `render-page.ts` renders that data knowing nothing about where it came from. The board it produces is indistinguishable from a hand-written one.",
+              "chose": "`scripts/render-page/state/cli.ts` reads the tree and writes ordinary page data; `render-page/cli.ts` renders that data knowing nothing about where it came from. The board it produces is indistinguishable from a hand-written one.",
               "revisit": "If a second data source ever wants the same treatment, the shape generalises; one is not yet a pattern."
             },
             {

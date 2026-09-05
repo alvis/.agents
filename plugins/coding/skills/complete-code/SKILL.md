@@ -9,8 +9,6 @@ argument-hint: "<scope>"
 
 # Complete Code
 
-Before any `jj` decision or command, follow `coding:directions/jj.md`.
-
 Finish only explicit production implementation stubs. The surrounding contract, types, tests, and specification must already make the intended behavior clear. `coding:complete-test` owns test authoring; `coding:write-code` owns new functionality.
 
 ## Boundaries
@@ -42,11 +40,8 @@ This skill may read and run existing tests to discover and verify the establishe
   > `--test-only` was removed; use `coding:complete-test <scope>`.
 - **Prerequisites**: select `universal`, `function`, `typescript`,
   `documentation`, and `observability`, plus `testing` when touching tests to
-  verify a contract. Before editing, read only each selected standard's
-  `meta.md`. After editing, apply its `scan.md`; when the scan identifies a
-  violation, read the matching `rules/<lowercase-rule-id>.md` guide when
-  present. If that standard has no matching per-rule guide, read its `write.md`
-  as the bounded fallback. Correct the violation and rerun the affected scan.
+  verify a contract. Apply each as a writer under
+  `essential:directions/standards.md`.
 
 ## State gate
 

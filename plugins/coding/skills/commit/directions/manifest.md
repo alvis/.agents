@@ -9,7 +9,7 @@ The lifecycle parent writes immutable JSON under `<work-root>/artifacts/history/
 To avoid hand-computed hashes or status records, the parent first writes an ignored scope request with schema `state-scoped-save-request/v1`, `work_id`, `scope_complete: true`, the full `publication_paths` as `{path, origin}` entries, the exact dirty `selected_paths`, and the child `generated_file_manifests` used to derive them. Invoke `coding:commit --prepare-paths-from=<scope-request>`; this no-history route resolves `repo`, `work_root`, and `base_rev` from the active work state and runs only:
 
 ```bash
-bash "${CODING_COMMIT_SKILL_DIR}/scripts/validate-scoped-save.sh" build \
+bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" build \
   --repo "<repo>" --work-root "<work-root>" --base-rev "<base_rev>" \
   --scope "<scope-request>"
 ```
@@ -104,7 +104,7 @@ The producer reconciles all child `generated_files` receipts with the diff from 
 Perform all checks again immediately before the first history or index mutation:
 
 ```bash
-bash "${CODING_COMMIT_SKILL_DIR}/scripts/validate-scoped-save.sh" preflight \
+bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" preflight \
   --repo "<repo>" --manifest "<manifest>" \
   --manifest-sha256 "<sha256>"
 ```
@@ -146,7 +146,7 @@ Validate the conventional message before the commit. No amend, reset, branch, bo
 After the save and before reporting success:
 
 ```bash
-bash "${CODING_COMMIT_SKILL_DIR}/scripts/validate-scoped-save.sh" verify \
+bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" verify \
   --repo "<repo>" --manifest "<manifest>" \
   --manifest-sha256 "<sha256>" --snapshot "<preflight-snapshot>" \
   --snapshot-sha256 "<preflight-snapshot-sha256>" \
@@ -162,7 +162,7 @@ bash "${CODING_COMMIT_SKILL_DIR}/scripts/validate-scoped-save.sh" verify \
 If any proof fails, stop. For plain Git, while current `HEAD` is still exactly the failed saved commit and its sole parent is preflight `old_head`, run:
 
 ```bash
-bash "${CODING_COMMIT_SKILL_DIR}/scripts/validate-scoped-save.sh" recover \
+bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" recover \
   --repo "<repo>" --manifest "<manifest>" \
   --manifest-sha256 "<sha256>" --snapshot "<preflight-snapshot>" \
   --snapshot-sha256 "<preflight-snapshot-sha256>" \

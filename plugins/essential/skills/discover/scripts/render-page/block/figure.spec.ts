@@ -33,8 +33,14 @@ describe("fn:renderBlock tree", () => {
     title: "Layout",
     root: "scripts/",
     items: [
-      { name: "render-page.ts", note: "the entry" },
-      { name: "render-page/", children: [{ name: "block.ts" }, { name: "page.ts" }] },
+      {
+        name: "render-page/",
+        children: [
+          { name: "cli.ts", note: "the entry" },
+          { name: "block.ts" },
+          { name: "page.ts" },
+        ],
+      },
       { name: "test-support.ts" },
     ],
   };
@@ -42,7 +48,7 @@ describe("fn:renderBlock tree", () => {
   it("should draw the rules so the last entry at each level closes it", () => {
     const drawn = html(tree);
 
-    expect(drawn).toContain("├── render-page.ts");
+    expect(drawn).toContain("├── render-page/");
     expect(drawn).toContain("└── test-support.ts");
     expect(drawn).toContain("│   ├── block.ts");
     expect(drawn).toContain("│   └── page.ts");

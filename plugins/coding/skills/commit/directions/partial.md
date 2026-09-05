@@ -53,7 +53,49 @@ be created directly on its bound SHA. A target absent both locally and remotely
 is new and remains bound to the current `HEAD` creation base:
 
 ```bash
-source "${CODING_COMMIT_SKILL_DIR}/scripts/classify-target-route.sh"
+case "$REMOTE_TARGET_SHA" in
+  "")
+    case "$LOCAL_TARGET_SHA" in
+      "")
+        TARGET_ROUTE=new-target
+        TARGET_BASE=$TARGET_CREATION_BASE
+        ;;
+      *)
+        if test "$TARGET_CREATION_BASE" != "$LOCAL_TARGET_SHA"; then
+          printf '%s\n' 'HEAD must equal local target before partial commit' >&2
+          exit 1
+        fi
+        TARGET_ROUTE=local-only
+        TARGET_BASE=$LOCAL_TARGET_SHA
+        ;;
+    esac
+    ;;
+  *)
+    if test -n "$LOCAL_TARGET_SHA"; then
+      if test "$LOCAL_TARGET_SHA" != "$REMOTE_TARGET_SHA"; then
+        printf '%s\n' \
+          'local and remote target bookmarks diverge; reconcile before partial commit' >&2
+        exit 1
+      fi
+      if test "$TARGET_CREATION_BASE" != "$LOCAL_TARGET_SHA"; then
+        printf '%s\n' \
+          'HEAD must equal synchronized target before partial commit' >&2
+        exit 1
+      fi
+      TARGET_ROUTE=synchronized
+      TARGET_BASE=$LOCAL_TARGET_SHA
+    else
+      if test "$TARGET_CREATION_BASE" != "$REMOTE_TARGET_SHA"; then
+        printf '%s\n' 'HEAD must equal fetched target before partial commit' >&2
+        exit 1
+      fi
+      TARGET_ROUTE=remote-only
+      TARGET_BASE=$REMOTE_TARGET_SHA
+    fi
+    ;;
+esac
+test -n "$TARGET_BASE"
+printf 'TARGET_ROUTE=%s\nTARGET_BASE=%s\n' "$TARGET_ROUTE" "$TARGET_BASE"
 ```
 
 If the target is already merged on origin → defer to [merged.md](./merged.md).
@@ -98,8 +140,23 @@ Capture the new change id from the second line.
 ### 5. Set the target bookmark
 
 ```bash
-source "${CODING_COMMIT_SKILL_DIR}/scripts/move-target-bookmark.sh" \
-  <target> <new-change-id>
+TARGET=<target>
+NEW_CHANGE_ID=<new-change-id>
+case "$TARGET_ROUTE" in
+  remote-only)
+    jj bookmark create "$TARGET" --revision "$REMOTE_TARGET_SHA"
+    jj bookmark move "$TARGET" --to "$NEW_CHANGE_ID"
+    ;;
+  local-only|synchronized)
+    jj bookmark move "$TARGET" --to "$NEW_CHANGE_ID"
+    ;;
+  new-target)
+    jj bookmark set "$TARGET" --revision "$NEW_CHANGE_ID"
+    ;;
+  *)
+    exit 3
+    ;;
+esac
 ```
 
 - Run exactly the classified branch. For `remote-only`, create the missing
@@ -155,7 +212,18 @@ bookmark sync, not PR publication; do not invoke a publication action.
 Choose one push from `TARGET_ROUTE`; an unknown route stops without publishing:
 
 ```bash
-source "${CODING_COMMIT_SKILL_DIR}/scripts/push-target-bookmark.sh" <target>
+TARGET=<target>
+case "$TARGET_ROUTE" in
+  remote-only|synchronized)
+    jj git push --bookmark "$TARGET"
+    ;;
+  local-only|new-target)
+    jj git push --bookmark "$TARGET" --allow-new
+    ;;
+  *)
+    exit 3
+    ;;
+esac
 ```
 
 Run exactly one matching push. Do not derive or generate a numbered `pr` bookmark.

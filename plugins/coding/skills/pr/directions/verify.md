@@ -84,7 +84,24 @@ For each parsed workflow, apply this decision contract. The parser supplies
 are deliberately absent because they cannot change the decision:
 
 ```bash
-source "${CODING_PR_SKILL_DIR}/scripts/select-workflow-applicability.sh"
+case "$HAS_PULL_REQUEST_TRIGGER" in
+  1)
+    CI_PARITY_WORKFLOW_DECISION=include
+    CI_PARITY_APPLICABILITY_MODE=conservative_pull_request
+    CI_PARITY_UNEVALUATED_FILTERS=base_ref,event_type,paths
+    ;;
+  0)
+    CI_PARITY_WORKFLOW_DECISION=exclude
+    CI_PARITY_APPLICABILITY_MODE=not_applicable
+    CI_PARITY_UNEVALUATED_FILTERS=
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+printf 'CI_PARITY_WORKFLOW_DECISION=%s\n' "$CI_PARITY_WORKFLOW_DECISION"
+printf 'CI_PARITY_APPLICABILITY_MODE=%s\n' "$CI_PARITY_APPLICABILITY_MODE"
+printf 'CI_PARITY_UNEVALUATED_FILTERS=%s\n' "$CI_PARITY_UNEVALUATED_FILTERS"
 ```
 
 Inspect the selected workflows and command chain for `env`, `secrets.*`,

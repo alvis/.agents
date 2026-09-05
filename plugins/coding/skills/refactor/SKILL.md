@@ -9,9 +9,6 @@ argument-hint: "<area> [--focus=naming|structure|redundancy|docs|all]"
 
 # Refactor Code
 
-Before any `jj` decision or command, follow
-`coding:directions/jj.md`.
-
 Improve green code's structure, readability, naming, and documentation
 without changing behavior, keeping every test passing throughout.
 `coding:fix` owns failing code; `coding:write-code` owns new functionality;
@@ -48,12 +45,8 @@ step 2 is its concrete application to file size.
 ## Standards
 
 Select `universal`, `typescript`, `function`, `documentation`, and `naming`,
-plus `file-structure` when creating or moving files. Before editing, read only
-each selected standard's `meta.md`. After editing, apply its `scan.md`; when
-the scan identifies a violation, read the matching
-`rules/<lowercase-rule-id>.md` guide when present. If that standard has no
-matching per-rule guide, read its `write.md` as the bounded fallback. Correct
-the violation and rerun the affected scan.
+plus `file-structure` when creating or moving files. Apply each as a writer
+under `essential:directions/standards.md`.
 
 ## Workflow
 

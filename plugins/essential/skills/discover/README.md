@@ -17,7 +17,7 @@ that build is owed.
 | Column | What it is | Where it lived |
 | --- | --- | --- |
 | 🏛️ **Had** | The legacy pipeline: a composer plus a shared runtime. Removed | `scripts/build-artifact.ts`, `assets/html/discovery.js` (2,282 lines), `assets/html/discovery.css` (5,255 lines), 15 boards under `examples/src/` | <!-- doc-path-gate: ignore -->
-| 🆕 **New** | The JSON renderer, as it stood when this was written: two files, four board kinds | `scripts/render-page.ts` (1,268 lines), `scripts/page-diagram.ts` (726 lines) | <!-- doc-path-gate: ignore -->
+| 🆕 **New** | The JSON renderer's original four-board snapshot | Now maintained under `scripts/render-page/`; `scripts/render-page/cli.ts` is the entrypoint |
 | 🔍 **Ref** | The single-file page held up as clearer to navigate | `examples/reference/` sibling; archived as `artifacts/rival-specimen.html` (1,007 lines) | <!-- doc-path-gate: ignore -->
 
 ## Legend
@@ -50,7 +50,7 @@ restoring it.
 `data-term` glossary spans, `<mark>` inside `<pre>`, and source-ref chips are
 all *inline* — they live inside a sentence, not beside it. The renderer's
 `prose` block is a plain string passed through `escapeHtml`
-(`render-page.ts:675-682`) and there is **no HTML pass-through anywhere**.
+(`scripts/render-page/escape.ts`) and there is **no HTML pass-through anywhere**.
 Picking any row marked **⚠ inline** means adopting either a rich-text
 sub-format in the JSON or a restricted inline grammar, which changes the
 contract for every existing example. These rows are cheap to want and expensive

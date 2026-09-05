@@ -8,9 +8,8 @@ argument-hint: "<resolve|checkout|author|verify|create|update|review|stack|merge
 
 # Pull Requests
 
-Before any `jj` decision or command, follow
-`coding:directions/jj.md`. Its stacked-review repair
-route precedes `coding:pr update` publication.
+When running a `jj` operation, follow `coding:directions/jj.md`; its
+stacked-review repair route precedes `coding:pr update` publication.
 
 Before any script call, set `CODING_PR_SKILL_DIR` to the absolute directory
 containing this loaded `SKILL.md`. This works in all three harnesses; not every harness exposes a plugin-root

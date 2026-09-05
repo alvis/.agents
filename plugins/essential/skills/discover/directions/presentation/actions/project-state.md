@@ -7,8 +7,8 @@ what changed most recently. It answers "what is the state of things right
 now", which is the one question a hand-written status update is always
 slightly wrong about.
 
-It is the only direction whose data is not authored. `state-board.ts` reads
-`.state` and writes the board data; `render-page.ts` renders it. That is a
+It is the only direction whose data is not authored. `render-page/state/cli.ts` reads
+`.state` and writes the board data; `scripts/render-page/cli.ts` renders it. That is a
 constraint on what the direction can promise: whatever the tree does not say,
 the board cannot show, and the honest response to a gap is to draw it rather
 than to fill it in.

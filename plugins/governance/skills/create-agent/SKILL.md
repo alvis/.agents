@@ -55,8 +55,8 @@ anything is written. `update-agent` owns changes to existing definitions.
    and derive:
    - positive trigger phrases, near-miss exclusions, owned outcome, and stop
      condition;
-   - the exact standards and repo-derived context verbatim from the context
-     catalog — invent no standard or path;
+   - role context from the context catalog and standard names and paths from
+     their owning indexes — invent no standard or path;
    - fixed intelligence level, launch-appropriate `permissionMode`, and memory and
      isolation settings from
      [intelligence.md](directions/intelligence.md)
@@ -95,25 +95,19 @@ anything is written. `update-agent` owns changes to existing definitions.
    an explicit wait, then the posture-specific progressive clause and one
    role-specific guardrail. It must NOT restate identity, announce that no task
    was given, or load standards before concrete work arrives. Once work is
-   named, it selects applicable standards and reads only each `meta.md` before
-   editing or review. A writer then scans its produced change after editing; a
-   read-only role scans the owner-produced revision at review or verification
-   start, reports without editing, and rescans only a new owner-produced
-   revision. The prompt must agree with `base.md`.
+   named, it selects applicable standards and applies them under
+   `essential:directions/standards.md` in its posture. The prompt must agree
+   with `base.md`.
 7. Write `base.md` as the role's own continuous working voice, preserving the
    template's functional sections: role/mission, expertise and operating
-   style, communication style, exact base context, coordination loop and stop
+   style, role-specific communication behavior, exact base context, coordination loop and stop
    rule, and collaboration/spawn posture. "Voice" means stable role-specific
    instructions, not a disposable persona, personalized identity, or decorative biography.
-   Base context names only the role-scoped standard directories from
-   `context-catalog.md` and preserves the template's progressive contract:
-   selected `meta.md` before work, then only the matching rule guide or
-   bounded `write.md` fallback identified through `scan.md`. Preserve the
-   role's charter by selecting exactly one template branch: writers apply the
-   scan after editing, correct, and rescan; read-only roles apply it at review
-   or verification start, report findings without editing, and rescan only a
-   new revision from the owning writer. Never instruct whole-directory
-   preload.
+   Base context names the role-scoped standard directories assigned by
+   `context-catalog.md`, using their indexes' paths, and links task selection and application at
+   `essential:directions/standards.md`. Preserve the role's charter by
+   selecting exactly one template branch, writer or read-only. Role context
+   does not restrict task-based selection. Never instruct whole-directory preload.
    Start with one H1 title and do not write an intelligence line; the stitcher
    derives exactly one line beneath the rendered title from `meta.json`.
 8. Add or update the task-to-agent routing row in the owning plugin's

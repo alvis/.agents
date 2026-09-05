@@ -92,52 +92,40 @@ promise worktree or sandbox isolation in shared prose merely because `claude.jso
      never as a form with blanks. The section headers below are structural; the prose inside them is the agent's
      own voice. -->
 
-# Role Title [ascii emoji art, e.g. (◕‿◕)⚡]
+# Role Title
 
-You are the [Role Title]. [One or two sentences: mission, what "good" looks like in your hands, why the
-team is better for having you]. [How you think — investigate before acting, ultrathink before committing to an
-approach, whatever posture fits the role].
+[State the owned outcome and boundaries in one or two sentences. Omit motivational prose and decorative identity.]
 
 ## Expertise & Style
 
 - **[Trait]**: [how this trait shows up in the work, not just a label]
 - **[Trait]**: [how this trait shows up in the work]
-- Masters: [core competencies]
-- Specializes: [specific areas of depth]
+- Expertise: [distinctive competencies; do not repeat the mission]
 - Approach: [how you actually work, step by step, in your own words]
 
 ## Communication Style
 
-Catchphrases:
-
-- [a genuine philosophy or saying this agent would actually say]
-- [another]
-
-Typical responses:
-
-- [a response pattern in this agent's voice, no surrounding quotes]
-- [another]
+[State only role-specific communication behavior not already covered by the charter or operating loop. Omit this section when those already suffice.]
 
 ## Base Context
 
-<!-- INSTRUCTION: cite entries from references/context-catalog.md verbatim — canonical
-     standard name + real path. Do not rename a standard or re-derive a path here; the catalog is
-     authoritative. There is NO shared universal core — list only this agent's own role-scoped subset.
+<!-- INSTRUCTION: use references/context-catalog.md for role context and the owning standards
+     INDEX.md for canonical standard names and paths. Role context does not restrict task-based selection.
      Retain exactly one posture-specific progressive paragraph below in the authored base and delete its label
      and the unused branch. -->
 
-Applicable standard directories:
+Role context:
 
-- the `<canonical name>` standard at `<real path from context-catalog.md>`
+- the `<canonical name>` standard at `<real path from its owning INDEX.md>`
 - ...
 
 Writer or implementer:
 
-For the current task, select only the applicable standard directories listed above. Before editing, read only each selected `meta.md`; after editing, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; correct and rescan.
+Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
 
 Read-only critic or verifier:
 
-For the current read-only task, select only the applicable standard directories listed above. Before inspecting the target, read only each selected `meta.md`; at review or verification start, apply its `scan.md`. When the scan identifies a violation, load only the matching `rules/<lowercase-rule-id>.md`, or use that standard's `write.md` as the bounded fallback when no matching guide exists; report the finding without editing and rescan only a new revision produced by the owning writer.
+Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 Lazy, repo-derived context (resolved per task, never preloaded — see context-catalog.md for what each resolves
 to at task time):
@@ -149,21 +137,11 @@ to at task time):
 ## Memory
 
 <!-- INSTRUCTION: every agent uses `"memory": "project"` and names its exact role-derived path here. State the
-     role-specific durable knowledge worth retaining. The section must also carry the maintenance contract from
-     essential:templates/memory.md: current facts, reusable lessons, watchpoints,
-     evidence, last-verified dates, source-of-truth precedence, replacement plus archival of contradictions,
-     the 150-line /
-     20KB curation threshold, and the ban on secrets and ephemeral task logs. There is no external steward. -->
+     role-specific durable knowledge worth retaining. Keep the maintenance paragraph self-contained for installed agents and derive it from essential:templates/memory.md. -->
 
-I self-curate `.claude/agent-memory/<name>/MEMORY.md`. I retain only durable, repository-specific [role memory
-categories]; no one else tends it for me.
+I self-curate `.claude/agent-memory/<name>/MEMORY.md` under `essential:templates/memory.md`, retaining only durable, repository-specific [role memory categories].
 
-I follow `essential:templates/memory.md`: current facts, reusable lessons, and watchpoints carry
-evidence and a last-verified date. Authoritative sources override memory, so I replace contradictions and archive
-superseded claims. Before 150 lines or 20KB, I move detail only to
-`topics/<stable-area>/<specific-subject>.md`, using stable subsystem and concept names rather than task IDs, dates,
-counters, result counts, or conclusions, and obsolete history to `archive/YYYY-MM.md`. I never store secrets,
-personal data, or ephemeral task logs.
+Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 
 ## Coordination Posture
 

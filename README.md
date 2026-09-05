@@ -177,7 +177,7 @@ This path avoids Notion and remote publication entirely. It leaves verified code
 
 ## Agent team
 
-A cross-harness 22-agent team is organized into a main-session Project Manager, domain leads, and their teammates. Shared operation lives in `plugins/essential/hooks/ALLAGENT.md` and `plugins/essential/hooks/MAINAGENT.md`, subagent conduct including the scripted-execution proxy protocol lives in `plugins/essential/hooks/SUBAGENT.md`, owner-specific routing lives in each contributing plugin's `plugins/<owner>/hooks/ALLAGENT.md`, and per-agent delegation topology lives in each agent definition. A plugin that owns an injected domain policy carries a `plugins/<owner>/hooks/MAINAGENT.md`, injected at `SessionStart` only: `coding` selects topology by semantic risk and `web` binds design initiatives to `design-lead`. Each lead wraps its `## Collaboration` map in an `<IMPORTANT>` tag, marking it as the map the lead routes from.
+A cross-harness 22-agent team is organized into a main-session Project Manager, domain leads, and their teammates. Shared operation lives in `plugins/essential/hooks/ALLAGENT.md` and `plugins/essential/hooks/MAINAGENT.md`, subagent conduct lives in `plugins/essential/directions/subagent.md`, a subagent's one mandated pre-read from `plugins/essential/hooks/SUBAGENT.md`, the scripted-execution proxy protocol lives in `plugins/essential/references/scripted-execution.md`, owner-specific routing lives in each contributing plugin's `plugins/<owner>/hooks/ALLAGENT.md`, and per-agent delegation topology lives in each agent definition. A plugin that owns an injected domain policy carries a `plugins/<owner>/hooks/MAINAGENT.md`, injected at `SessionStart` only: `coding` selects topology by semantic risk and `web` binds design initiatives to `design-lead`. Each lead wraps its `## Collaboration` map in an `<IMPORTANT>` tag, marking it as the map the lead routes from.
 
 Install via the `essential:install-agents` skill in the active harness. Canonical sources live under `plugins/<owner>/agents/<name>/` as `base.md` plus `frontmatter/meta.json`, `claude.json`, `codex.json`, and `grok.json`. The installer discovers source-checkout siblings, enabled same-marketplace plugins, and explicitly trusted marketplaces passed with `--include-marketplace`; it validates the complete discovered roster, stages stitched files, and copies them into the selected harness's personal agent directory. It overwrites current same-named discoveries and leaves unrelated or stale files untouched. Edits require a re-install, and changes take effect in the next session.
 
@@ -251,7 +251,7 @@ frontend-implementer/desktop-implementer/mobile-implementer → aesthetic-evalua
 data-architect ↔ ml-engineer: schema design and data-profiling consults
 harness-eval-engineer ↔ testing-evangelist: test-strategy and harness alignment
 any producer → principal-engineer: blocked on a hard technical problem
-any agent → main agent: scripted-execution launch request (see plugins/essential/hooks/SUBAGENT.md)
+any agent → main agent: scripted-execution launch request (see plugins/essential/references/scripted-execution.md)
 ```
 
 Only the main agent names persistent teammates. It chooses one of the three short names in the role description, formats `<short-name>-<role>-<task>`, and avoids collisions. Nested agents may spawn only certainly one-off helpers, specify `subagent_type`, and omit configured names; for continuing work they message the best-known teammate directly by `agent_id` and ask the main agent to suggest an owner only when they cannot identify one.
@@ -273,7 +273,7 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 - Topology follows the owning domain's risk policy. The Project Manager forms a team only when that policy requires one, appoints domain leads, and handles staffing and user/session proxies. Each selected lead gathers teammate advice, decomposes its assigned work, owns the domain's implementation decisions, assigns and monitors the pieces across its team, and reconciles delivery. `plugins/essential/hooks/ALLAGENT.md` carries shared operation rules; each owner plugin's `plugins/<owner>/hooks/ALLAGENT.md` carries only its task-to-specialist rows.
 - Subagents reply to the assigning teammate's `agent_id`. Roles and configured names are never direct-message addresses. For continuing work they message the best-known teammate directly when they have its ID, ask the main agent to resolve the ID when the teammate is known, and ask the main agent to suggest a warm peer by folder/feature history or spawn a new named teammate only when they cannot identify the owner.
-- Subagents proxy deterministic scripted execution through the main agent: they compose the complete launch input, send it through the direct teammate-messaging capability, and wait for the result (see `plugins/essential/hooks/SUBAGENT.md`). Plans authored by a specialist in plan mode flow back to the main agent the same way for presentation.
+- Subagents proxy deterministic scripted execution through the main agent: they compose the complete launch input, send it through the direct teammate-messaging capability, and wait for the result (see `plugins/essential/references/scripted-execution.md`). Plans authored by a specialist in plan mode flow back to the main agent the same way for presentation.
 
 ### Notes
 
@@ -296,9 +296,9 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 One command validates this repository, with nothing to install: the Vitest command canonicalized in the Validation section of the root `AGENTS.md`.
 
-That single command is the whole gate: alongside the unit tests it enforces the injected-payload byte budgets, the skill policy limits, agent-template stitching, documentation path resolution, and the preserved-Python inventory gate, and CI runs exactly it on Ubuntu and macOS.
+That single command is the whole gate: alongside the unit tests it enforces the skill policy limits, agent-template stitching, documentation path resolution, and the preserved-Python inventory gate, and CI runs exactly it on Ubuntu and macOS. Hook byte budgets require author review, as listed in AGENTS.md.
 
-The one check that stays outside, because it needs the installed CLI:
+These checks require the installed harness CLIs and stay outside the suite:
 
 ```bash
 claude plugin validate --strict .

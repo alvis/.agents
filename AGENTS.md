@@ -38,6 +38,7 @@ plus `gh`, and optionally `jj`, for publishing.
 | Skill | `plugins/<p>/skills/<name>/SKILL.md` (+ the content directories below) |
 | Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex,grok}.json` |
 | Standard | `plugins/<p>/standards/<name>/{meta,scan,write}.md` + `rules/` |
+| Standards index | `plugins/<p>/standards/INDEX.md` |
 | Injected payload | `plugins/<p>/hooks/{ALLAGENT,MAINAGENT,SUBAGENT}.md` |
 | Routing table | `plugins/<p>/references/ROUTING.md` |
 | Workflow entry point | `plugins/<p>/directions/WORKFLOW.md` |
@@ -86,9 +87,12 @@ fails silently.
 Under Grok Build these payloads stay registered but are openly scoped out: its
 `SessionStart` and `SubagentStart` handlers ignore stdout, so no routing text
 injects there. The PreToolUse validators still fire natively, emitting grok's
-top-level `{"decision","reason"}` envelopes. `Stop` behaves the same way — its
-stdout is ignored — so the once-per-session `.state` reminder's block envelope
-stays advisory there until xAI makes `Stop` blocking.
+top-level `{"decision","reason"}` envelope for either outcome, which makes Grok
+the one harness that states an allow: Claude Code and Codex express an allow as
+a `PreToolUse` context envelope, including an empty `additionalContext` when the
+reason is empty, and their permission system decides. An unresolved plugin root
+exits non-zero on both paths. Grok also ignores `Stop` stdout, so the once-per-session `.state`
+reminder's block envelope remains advisory there.
 
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files
 are re-read on every session, they are byte-budgeted (see below) — put detail in
@@ -111,7 +115,7 @@ its main purpose.
 | `examples/` | A worked instance of a delivered work product |
 | `scripts/` | Strictly mechanical executables |
 | `assets/` | Static, non-generated files, including anything copied to a destination |
-| `standards/` | Rules a produced file must satisfy, in the four-part shape above |
+| `standards/` | Four-part standard directories in the shape above, plus the `INDEX.md` that indexes them |
 | `references/` | Plain description of something, and nothing else |
 
 `references/` is the residue, not the default: it holds lookup tables and background
@@ -128,7 +132,9 @@ skill's private tree is the signal that the file was placed too deep.
 Name files in one word where the plugin or skill already supplies the rest of the
 context: a `directions/` entry is `jj.md`, not `manage-jj.md`, unless a sibling forces
 the qualifier. Uppercase names are reserved for shipped entry points that a hook or a
-router names by convention — `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`.
+router names by convention — `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`,
+and the `INDEX.md` that each `plugins/<p>/directions/WORKFLOW.md` and
+`essential:directions/standards.md` name, which sits at the root it indexes.
 
 Not everything has to move. Reclassify a file only when it clearly belongs somewhere
 else; a file that genuinely is a plain reference stays in `references/`.
@@ -206,7 +212,7 @@ verify them when changing payloads or their unconditional read chain.
 | Every injected payload ≤ 2,000 bytes, per plugin | Author review |
 | Every plugin's unconditional hook read chain ≤ 40,960 bytes | Author review |
 | Every writer keeps eligible `.state/` work Markdown within `plugins/essential/references/output-manifest.md` | Author review; optional diagnostic: `plugins/essential/scripts/check-markdown-size` |
-| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/orchestration.md` |
+| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/delegate.md` |
 | Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
 
 An agent metadata `description` must also end with the exact sentence
@@ -216,10 +222,9 @@ distinct capitalized names.
 ## Authoring rules
 
 <IMPORTANT>
-Select applicable standards by action. Before editing, read only each selected
-standard's `meta.md`; after editing, apply its `scan.md`. When a scan identifies
-a violation, read only the matching rule guide before correcting it, then repeat
-that scan. These are the sources, not summaries.
+Selecting and applying a standard has one home:
+`plugins/essential/directions/standards.md`. Follow it there rather than any
+restatement of its read order. The rules below are the sources, not summaries.
 </IMPORTANT>
 
 - `plugins/governance/standards/authoring/meta.md` — one coherent
@@ -244,15 +249,17 @@ lowercase kebab, never personalized.
 One command validates this repository, with no install step:
 
 ```bash
-bunx vitest@^4.0.0 run --globals --exclude '**/fixtures/**'
+bunx --bun vitest@^4.0.0 run
 ```
+
+The `--bun` flag is load-bearing; `.github/workflows/ci.yml`'s header comment
+says why.
 
 No root `package.json` and no lockfile exists by design: `bunx` resolves the
 runner into its own cache, so the tree stays zero-dependency and a run leaves
 behind only git-ignored caches. That pin is a range (`^4`), not an exact
 version — minor-version drift between runs is the accepted trade for the
-zero-dependency tree. The fixture exclusion keeps the preserved Python corpus
-payloads from being collected as tests.
+zero-dependency tree.
 
 Mechanical gates are colocated `*.spec.ts`, so the suites and gates cannot drift
 apart. `.github/workflows/ci.yml` runs that command on every pull request and push
