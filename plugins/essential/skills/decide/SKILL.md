@@ -68,4 +68,4 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 ## Completion
 
-Report the recommendation, user decision, deferred decisions, and—after an approved handoff—the invoked skill and context passed. When no option survives, name the eliminating constraint rather than forcing a recommendation. Return explicit final paths generated or materially rewritten as `generated_files`; the main agent size-checks only eligible work Markdown inside the target `.state/`.
+Report the recommendation, user decision, deferred decisions, and—after an approved handoff—the invoked skill and context passed. When no option survives, name the eliminating constraint rather than forcing a recommendation. Return explicit final paths generated or materially rewritten as `generated_files`; follow [output-manifest.md](../../references/output-manifest.md) for the manifest and writer-owned work-Markdown size obligations.

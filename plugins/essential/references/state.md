@@ -1,6 +1,6 @@
 # State lifecycle
 
-Read [state-systems.md](state-systems.md) before working on any project, then read this contract before lifecycle-managed work. Local state is the working memory and project-management record throughout the work lifecycle. This contract defines its paths, ownership, promotion, and final size check. Domain skills own artifact content; Essential owns this cross-plugin lifecycle. All lead-role agents must read [truth.md](truth.md) once before working on any project: it defines the kinds of truth these artifacts carry, the constitutional rules, validity, and `capability_id`. Per-moment detail lives in the references named below; read each when its moment arrives, not before.
+Read [state-systems.md](state-systems.md) before working on any project, then read this contract before lifecycle-managed work. Local state is the working memory and project-management record throughout the work lifecycle. This contract defines its paths, ownership, and promotion. Domain skills own artifact content; Essential owns this cross-plugin lifecycle. All lead-role agents must read [truth.md](truth.md) once before working on any project: it defines the kinds of truth these artifacts carry, the constitutional rules, validity, and `capability_id`. Per-moment detail lives in the references named below; read each when its moment arrives, not before.
 
 ## Resolve the workspace first
 
@@ -88,6 +88,6 @@ Remember that `.state/` is ignored: one reflexive `git clean -fdx` deletes every
 
 `"$ESSENTIAL_ROOT/skills/doctor/scripts/state-doctor" --work-dir <work_dir> \ --repository-root <durable_root>` is a read-only structural checker (broken IDs, cycles, contradictory statuses, missing evidence annotations, dead links, unsuperseded decisions, lease conflicts, overview drift). It never judges prose or blocks by default — findings inform the main agent's own reading. Run it before large dispatch batches, handover, and retirement; pass `--strict` (nonzero exit on errors) when work is irreversible or release-critical and treat failure as stop-and-report.
 
-## Output manifest and final size loop
+## Output manifests
 
-Every artifact-writing skill returns the explicit final paths it generated or materially rewrote, and the main agent runs exactly one batch size pass over them at the end of a run. Read [output-manifest.md](output-manifest.md) for the manifest shape, the checker invocation, and the split round it can demand.
+Every artifact-writing skill returns the explicit final paths it generated or materially rewrote. Read [output-manifest.md](output-manifest.md) for the manifest shape and each writer's work-Markdown size obligations.

@@ -77,4 +77,4 @@ review_rerun: /coding:review-code <scope> --plan=<plan_source>
 
 </report>
 
-Return every created or materially rewritten path as `generated_files` to the main agent. Do not run file sizing; after all artifact writers finish, the main agent checks only eligible work Markdown inside the target `.state/`.
+Follow `essential:references/output-manifest.md` when writing eligible work Markdown, and return every created or materially rewritten path as `generated_files` to the main agent.

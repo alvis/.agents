@@ -64,4 +64,4 @@ For alignment, discover active work design paths first, then read `docs/design/R
 
 Deliver raw `report.json`, `action-log.jsonl`, optional `report-final.json`, cited evidence, applicable proposed canonical review content, and the main-agent reconciliation summary. Return `success` only when deterministic and required manual review are complete; `partial` for coverage defects or warnings; `blocked` when the CLI or target cannot run.
 
-Only the main agent reports imported final paths in `generated_files`; a delegated auditor reports temporary evidence separately. Do not run `wc -c`, split files, or reconcile `review.md` while writers are active; the main agent combines manifests, reconciles the roll-up, and size-checks only eligible work Markdown inside the target `.state/`, as defined by the Essential contract.
+Only the main agent reports imported final paths in `generated_files`; a delegated auditor reports temporary evidence separately. After writers finish, the main agent combines manifests and reconciles the roll-up. Each writer follows `essential:references/output-manifest.md` for eligible work Markdown as it writes.

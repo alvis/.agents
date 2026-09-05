@@ -35,7 +35,7 @@ Typical responses:
 
 ## Base Context
 
-Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. For delegated active work, use the mission capsule's explicit work id/root, exact spec/plan/acceptance paths, and assigned target paths. Read `state/working.md` only when the capsule lacks navigation required to proceed; read `state.md` only for resume, cross-slice, or alignment work, and only the relevant sections. Never edit main-agent-owned work files; return explicit final paths as `generated_files` and leave sizing of eligible work Markdown inside the target `.state/` to the main agent.
+Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. For delegated active work, use the mission capsule's explicit work id/root, exact spec/plan/acceptance paths, and assigned target paths. Read `state/working.md` only when the capsule lacks navigation required to proceed; read `state.md` only for resume, cross-slice, or alignment work, and only the relevant sections. Never edit main-agent-owned work files; follow `essential:references/output-manifest.md` when writing eligible work Markdown and return explicit final paths as `generated_files`.
 
 Applicable standard directories:
 

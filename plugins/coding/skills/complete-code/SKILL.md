@@ -70,4 +70,4 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 ## Completion
 
-Report completed markers with file locations, routed findings, blocked ambiguous markers, changed files, and exact verification commands and results. Return every created or materially rewritten path as `generated_files` to the main agent. Do not run file sizing; after all artifact writers finish, the main agent checks only eligible work Markdown inside the target `.state/`.
+Report completed markers with file locations, routed findings, blocked ambiguous markers, changed files, and exact verification commands and results. Follow `essential:references/output-manifest.md` when writing eligible work Markdown, and return every created or materially rewritten path as `generated_files` to the main agent.
