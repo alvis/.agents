@@ -63,7 +63,8 @@ function runHook({
   active = false,
   environment = "codex",
   lines = [createAssistantMessage(turnId, validPlan)],
-  permissionMode = "plan",
+  permissionMode = "bypassPermissions",
+  lastAssistantMessage,
   runtimeRoot,
   transcriptPath,
 }: {
@@ -71,6 +72,7 @@ function runHook({
   readonly environment?: "claude" | "codex" | "grok";
   readonly lines?: readonly string[];
   readonly permissionMode?: string;
+  readonly lastAssistantMessage?: string;
   readonly runtimeRoot?: string;
   readonly transcriptPath?: string;
 } = {}): ReturnType<typeof spawnSync> {
@@ -98,6 +100,7 @@ function runHook({
       encoding: "utf8",
       env: environmentVariables,
       input: JSON.stringify({
+        last_assistant_message: lastAssistantMessage,
         hook_event_name: "Stop",
         permission_mode: permissionMode,
         session_id: sessionId,
@@ -125,17 +128,6 @@ describe("Codex plan Stop validator", () => {
     expect(result.stdout).toBe("");
   });
 
-  it.each(["commentary", "final_answer"])(
-    "should accept a valid plan emitted during %s",
-    (phase) => {
-      const result = runHook({
-        lines: [createAssistantMessage(turnId, validPlan, phase)],
-      });
-      expect(result.status, result.stderr).toBe(0);
-      expect(result.stdout).toBe("");
-    },
-  );
-
   it("should return the existing heading feedback", () => {
     const result = runHook({
       lines: [
@@ -153,7 +145,6 @@ describe("Codex plan Stop validator", () => {
   });
 
   it.each([
-    ["missing", "No plan envelope."],
     ["unclosed", "<proposed_plan>\n## Goal\n"],
     ["reversed", `</proposed_plan>\n${validPlan.slice(0, -17)}`],
     ["multiple", `${validPlan}\n${validPlan}`],
@@ -181,19 +172,73 @@ describe("Codex plan Stop validator", () => {
     expect(result.stdout).toBe("");
   });
 
-  it("should reject a tagless response newer than the current turn plan", () => {
+  it("should allow an ordinary response newer than the current turn plan", () => {
+    const result = runHook({
+      permissionMode: "plan",
+      lines: [
+        createAssistantMessage(turnId, "<proposed_plan>"),
+        createAssistantMessage(turnId, "The requested explanation is complete."),
+      ],
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  });
+
+  it("should validate the direct response before a valid transcript plan", () => {
     const decision = parseHookOutput(
-      runHook({
-        lines: [
-          createAssistantMessage(turnId, validPlan),
-          createAssistantMessage(turnId, "Plan omitted."),
-        ],
-      }),
+      runHook({ lastAssistantMessage: "<proposed_plan>" }),
     );
     expect(decision.decision).toBe("block");
-    expect(decision.reason).toContain(
-      "exactly one complete <proposed_plan> block",
+  });
+
+  it("should accept a direct plan without reading an unavailable transcript", () => {
+    const result = runHook({
+      permissionMode: "plan",
+      lastAssistantMessage: validPlan,
+      transcriptPath: "/private/unavailable/transcript.jsonl",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  });
+
+  it("should ignore malformed commentary after the current final response", () => {
+    const result = runHook({
+      permissionMode: "plan",
+      lines: [
+        createAssistantMessage(turnId, validPlan),
+        createAssistantMessage(turnId, "<proposed_plan>", "commentary"),
+      ],
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  });
+
+  it("should report missing current response without borrowing another turn's plan", () => {
+    const decision = parseHookOutput(
+      runHook({
+        permissionMode: "plan",
+        lines: [createAssistantMessage("turn-previous", "<proposed_plan>")],
+      }),
     );
+    expect(decision).toEqual({
+      systemMessage: expect.stringContaining("Plan validation is unavailable"),
+    });
+  });
+
+  it("should allow an inline explanation of plan delimiters", () => {
+    const result = runHook({
+      lastAssistantMessage: "The `<proposed_plan>` delimiter starts a plan.",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  });
+
+  it("should allow an incomplete plan example inside a code fence", () => {
+    const result = runHook({
+      lastAssistantMessage: "Example:\n```markdown\n<proposed_plan>\n## Goal\n```",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
   });
 
   it("should stop visibly when the permitted retry is still invalid", () => {
@@ -201,7 +246,7 @@ describe("Codex plan Stop validator", () => {
     try {
       const first = parseHookOutput(
         runHook({
-          lines: [createAssistantMessage(turnId, "No plan envelope.")],
+          lines: [createAssistantMessage(turnId, "<proposed_plan>")],
           runtimeRoot: root,
         }),
       );
@@ -209,7 +254,7 @@ describe("Codex plan Stop validator", () => {
       const decision = parseHookOutput(
         runHook({
           active: true,
-          lines: [createAssistantMessage(turnId, "No plan envelope.")],
+          lines: [createAssistantMessage(turnId, "<proposed_plan>")],
           runtimeRoot: root,
         }),
       );
@@ -251,7 +296,7 @@ describe("Codex plan Stop validator", () => {
       const firstPlanDecision = parseHookOutput(
         runHook({
           active: true,
-          lines: [createAssistantMessage(turnId, "No plan envelope.")],
+          lines: [createAssistantMessage(turnId, "<proposed_plan>")],
           runtimeRoot: root,
         }),
       );
@@ -260,7 +305,7 @@ describe("Codex plan Stop validator", () => {
       const retryDecision = parseHookOutput(
         runHook({
           active: true,
-          lines: [createAssistantMessage(turnId, "No plan envelope.")],
+          lines: [createAssistantMessage(turnId, "<proposed_plan>")],
           runtimeRoot: root,
         }),
       );
@@ -273,15 +318,17 @@ describe("Codex plan Stop validator", () => {
   it("should report an unavailable transcript without exposing its path", () => {
     const transcriptPath = "/private/unavailable/codex-transcript.jsonl";
     const decision = parseHookOutput(runHook({ transcriptPath }));
-    expect(decision.decision).toBe("block");
-    expect(decision.reason).toContain("Plan validation is unavailable");
-    expect(decision.reason).not.toContain(transcriptPath);
+    expect(decision).toEqual({
+      systemMessage: expect.stringContaining("Plan validation is unavailable"),
+    });
+    expect(decision.systemMessage).not.toContain(transcriptPath);
   });
 
   it("should report malformed transcript JSON as unavailable", () => {
     const decision = parseHookOutput(runHook({ lines: ["not json"] }));
-    expect(decision.decision).toBe("block");
-    expect(decision.reason).toContain("Plan validation is unavailable");
+    expect(decision).toEqual({
+      systemMessage: expect.stringContaining("Plan validation is unavailable"),
+    });
   });
 
   it.each([

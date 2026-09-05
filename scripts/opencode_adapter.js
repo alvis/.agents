@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { spawn } from "node:child_process"
 import { lstat, readFile, realpath } from "node:fs/promises"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
+import { homedir } from "node:os"
 import { fileURLToPath } from "node:url"
 
 const adapterDirectory = dirname(fileURLToPath(import.meta.url))
@@ -482,6 +483,52 @@ async function isSuppressedByProjectProjection(manifest, contract, worktree) {
   }
 }
 
+/**
+ * reads the current session plan using OpenCode's Session.plan storage contract
+ * @returns {Promise<string>} the disk-backed plan presented by plan_exit
+ */
+async function readSessionPlan(client, sessionID, directory, worktree) {
+  const [sessionResult, projectResult] = await Promise.all([
+    client.session.get({ path: { id: sessionID } }),
+    client.project.current({ query: { directory } }),
+  ]).catch((error) => {
+    throw new Error("Plan validation is unavailable: current session metadata lookup failed", {
+      cause: error,
+    })
+  })
+  const session = sessionResult.data
+  const project = projectResult.data
+  if (
+    typeof session?.slug !== "string" ||
+    !/^[A-Za-z0-9_-]+$/.test(session.slug) ||
+    !Number.isSafeInteger(session?.time?.created) ||
+    session.time.created < 0 ||
+    typeof project !== "object" ||
+    project === null
+  ) {
+    throw new Error("Plan validation is unavailable: invalid current session metadata")
+  }
+  // mirrors Session.plan in OpenCode v1; project VCS determines plan storage
+  const dataHome = process.env.XDG_DATA_HOME
+  const globalData = dataHome && isAbsolute(dataHome)
+    ? dataHome
+    : join(homedir(), ".local", "share")
+  if (project.vcs && (typeof worktree !== "string" || !isAbsolute(worktree))) {
+    throw new Error("Plan validation is unavailable: missing current worktree")
+  }
+  const planDirectory = project.vcs
+    ? join(worktree, ".opencode", "plans")
+    : join(globalData, "opencode", "plans")
+  const planPath = join(planDirectory, `${session.time.created}-${session.slug}.md`)
+  try {
+    return await readFile(planPath, "utf8")
+  } catch (error) {
+    throw new Error("Plan validation is unavailable: the current session plan cannot be read", {
+      cause: error,
+    })
+  }
+}
+
 export const AlvisMarketplace = async ({ client, directory, worktree }) => {
   const { contract, manifest } = await loadProjection(configRoot)
   if (await isSuppressedByProjectProjection(manifest, contract, worktree)) return {}
@@ -560,12 +607,18 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
     "tool.execute.before": async (input, output) => {
       const advice = []
       for (const { plugin, receipt } of await bindingsForTool("before", input)) {
+        const toolInput = input.tool === "plan_exit"
+          ? {
+              ...output.args,
+              plan: await readSessionPlan(client, input.sessionID, directory, worktree),
+            }
+          : output.args
         const result = await runHookReceipt(
           configRoot,
           manifest,
           plugin,
           receipt,
-          { tool_input: output.args, tool_name: input.tool },
+          { tool_input: toolInput, tool_name: input.tool },
           directory,
         )
         const parsed = parseHookOutput(result, input.tool)

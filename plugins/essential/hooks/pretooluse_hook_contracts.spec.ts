@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -327,6 +328,81 @@ describe("question validator", () => {
 });
 
 describe("plan validator", () => {
+  it("should validate Grok's session-local plan before exit", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "grok-plan-"));
+    try {
+      const transcriptPath = resolve(root, "updates.jsonl");
+      writeFileSync(transcriptPath, "");
+      writeFileSync(resolve(root, "plan.md"), "## Context\nIncomplete.\n");
+      const result = spawnSync("bash", ["-c", commandFor(plans)], {
+        encoding: "utf8",
+        env: harnessEnvironment("GROK_PLUGIN_ROOT"),
+        input: JSON.stringify({
+          toolName: "exit_plan_mode",
+          toolInput: {},
+          transcriptPath,
+        }),
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(grokDenialReason(JSON.parse(result.stdout))).toContain("missing headings");
+      writeFileSync(resolve(root, "plan.md"), compliantPlan);
+      const corrected = spawnSync("bash", ["-c", commandFor(plans)], {
+        encoding: "utf8",
+        env: harnessEnvironment("GROK_PLUGIN_ROOT"),
+        input: JSON.stringify({ toolName: "exit_plan_mode", toolInput: {}, transcriptPath }),
+      });
+      expect(corrected.status, corrected.stderr).toBe(0);
+      expectGrokAllow(JSON.parse(corrected.stdout));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should deny Grok plan exit without a recoverable session plan", () => {
+    const result = spawnSync("bash", ["-c", commandFor(plans)], {
+      encoding: "utf8",
+      env: harnessEnvironment("GROK_PLUGIN_ROOT"),
+      input: JSON.stringify({ toolName: "exit_plan_mode", toolInput: {} }),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(grokDenialReason(JSON.parse(result.stdout))).toMatch(/plan/i);
+  });
+
+  it("should validate Claude's explicit disk plan before exit", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "claude-plan-"));
+    try {
+      const planFilePath = resolve(root, "approved plan.md");
+      writeFileSync(planFilePath, "## Context\nIncomplete.\n");
+      const result = spawnSync("bash", ["-c", commandFor(plans)], {
+        encoding: "utf8",
+        env: harnessEnvironment("CLAUDE_PLUGIN_ROOT"),
+        input: JSON.stringify({ tool_name: "ExitPlanMode", tool_input: { planFilePath } }),
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(denialReason(JSON.parse(result.stdout))).toContain("missing headings");
+      writeFileSync(planFilePath, compliantPlan);
+      const corrected = spawnSync("bash", ["-c", commandFor(plans)], {
+        encoding: "utf8",
+        env: harnessEnvironment("CLAUDE_PLUGIN_ROOT"),
+        input: JSON.stringify({ tool_name: "ExitPlanMode", tool_input: { planFilePath } }),
+      });
+      expect(corrected.status, corrected.stderr).toBe(0);
+      expectAllowed(JSON.parse(corrected.stdout));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should deny Claude plan exit without inline or disk content", () => {
+    const result = spawnSync("bash", ["-c", commandFor(plans)], {
+      encoding: "utf8",
+      env: harnessEnvironment("CLAUDE_PLUGIN_ROOT"),
+      input: JSON.stringify({ tool_name: "ExitPlanMode", tool_input: {} }),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(denialReason(JSON.parse(result.stdout))).toMatch(/plan/i);
+  });
+
   it("should name only a missing Context heading", () =>
     expect(
       denialReason(

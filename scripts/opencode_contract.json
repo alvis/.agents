@@ -63,6 +63,7 @@
         "enforcement_mode": "before",
         "event": "PreToolUse",
         "matcher": "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode",
+        "opencode_aliases": ["plan_exit"],
         "supporting_resource": "hooks/scripts/context.sh"
       },
       "validate-plan-stop": {

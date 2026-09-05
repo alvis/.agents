@@ -25,20 +25,41 @@ if ! printf '%s' "$input" | jq -e . >/dev/null 2>&1; then
   allow
 fi
 
-# Claude Code and Codex send snake_case tool_input; Grok Build sends camelCase
-# toolInput. Collapse once so every field read below is key-agnostic.
-input=$(printf '%s' "$input" | jq -c '(.tool_input // .toolInput)')
+harness="$(resolve_harness)" || {
+  echo "plugin root unset" >&2
+  exit 1
+}
+tool_name="$(jq -r '.tool_name // .toolName // empty' <<<"$input")"
+tool_input="$(jq -c '.tool_input // .toolInput // {}' <<<"$input")"
+plan_path=""
 
-# The plan body travels inline in tool_input.plan. Codex's update_plan carries a
-# step array under the same key and has no headings to check, so anything that
-# is not plan prose passes straight through. Known no-op under Grok Build: its
-# exit_plan_mode reads plan.md from the session directory on disk and sends no
-# plan field, so this gate fail-opens there by design.
-if [[ "$(printf '%s' "$input" | jq -r '.plan | type')" != "string" ]]; then
+# Grok reads the session plan rather than accepting model-supplied plan prose.
+# Its transcript is session_dir/updates.jsonl; both paths share one session root.
+if [[ "$harness" == "grok" && "$tool_name" == "exit_plan_mode" ]]; then
+  transcript_path="$(jq -r '(.transcript_path // .transcriptPath) | select(type == "string") // empty' <<<"$input")"
+  if [[ "$transcript_path" != /* || ! -f "$transcript_path" || ! -r "$transcript_path" ]]; then
+    deny "Plan validation is unavailable: the current Grok session transcript is missing. Restore session access before presenting the plan."
+  fi
+  plan_path="$(dirname "$transcript_path")/plan.md"
+elif [[ "$(jq -r '.plan | type' <<<"$tool_input")" == "string" ]]; then
+  plan="$(jq -r '.plan' <<<"$tool_input")"
+elif [[ "$tool_name" == "ExitPlanMode" ]]; then
+  plan_path="$(jq -r '.planFilePath | select(type == "string") // empty' <<<"$tool_input")"
+  if [[ "$plan_path" != /* ]]; then
+    deny "Plan validation is unavailable: ExitPlanMode did not provide plan content or an absolute planFilePath. Restore the current plan before presenting it."
+  fi
+elif [[ "$tool_name" == "exit_plan_mode" || "$tool_name" == "plan_exit" ]]; then
+  deny "Plan validation is unavailable: the plan-exit event did not provide the current plan."
+else
+  # progress step arrays and entering plan mode do not present plan prose
   allow
 fi
 
-plan=$(printf '%s' "$input" | jq -r '.plan')
+if [[ -n "$plan_path" ]]; then
+  if [[ ! -f "$plan_path" || ! -r "$plan_path" ]] || ! plan="$(cat "$plan_path")"; then
+    deny "Plan validation is unavailable: the current session plan cannot be read. Restore it before presenting the plan."
+  fi
+fi
 
 missing=""
 for heading in Goal Requirements Boundary Direction Context; do

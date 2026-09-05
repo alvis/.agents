@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Codex Plan Mode in T3 emits a plan response without calling a plan tool, so
-# PreToolUse cannot see it; recover the current turn's plan from the transcript
-# at Stop and pass it through the existing heading validator.
+# Codex Plan Mode in T3 emits a plan response without calling a plan tool.
+# Validate the current final response at Stop, independently of approval policy.
 # Compatible with bash 3.2+
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,8 +34,7 @@ harness="$(resolve_harness)" || {
   echo "plugin root unset" >&2
   exit 1
 }
-permission_mode="$(jq -r '.permission_mode // .permissionMode // empty' <<<"$input")"
-if [[ "$harness" != "codex" || "$permission_mode" != "plan" ]]; then
+if [[ "$harness" != "codex" ]]; then
   exit 0
 fi
 
@@ -44,49 +42,72 @@ active="$(jq -r '(.stop_hook_active // .stopHookActive // false) == true' <<<"$i
 session_id="$(jq -r '(.session_id // .sessionId) | select(type == "string") // empty' <<<"$input")"
 turn_id="$(jq -r '(.turn_id // .turnId) | select(type == "string") // empty' <<<"$input")"
 transcript_path="$(jq -r '(.transcript_path // .transcriptPath) | select(type == "string") // empty' <<<"$input")"
-unavailable_reason="Plan validation is unavailable for this turn. Re-emit exactly one complete <proposed_plan> block with the required headings."
+unavailable_reason="Plan validation is unavailable for this turn: the current assistant response could not be read."
 if ! retry_digest="$(printf '%s\0%s' "$session_id" "$turn_id" | git hash-object --stdin 2>/dev/null)"; then
   exit 1
 fi
 retry_flag="${TMPDIR:-/tmp}/essential-plan-stop-${retry_digest}"
 
-if [[ -z "$turn_id" || -z "$transcript_path" || ! -f "$transcript_path" || ! -r "$transcript_path" ]]; then
-  stop_with_feedback "$unavailable_reason" "$active" "$retry_flag"
-fi
-if [[ ! -s "$transcript_path" ]] ||
-   ! jq -R 'select(length > 0) | fromjson' "$transcript_path" >/dev/null 2>&1; then
-  stop_with_feedback "$unavailable_reason" "$active" "$retry_flag"
-fi
-
-encoded_message="$({
-  jq -Rr --arg turn_id "$turn_id" '
+# the event text is current even when the asynchronous transcript has not flushed
+if jq -e '.last_assistant_message | type == "string"' <<<"$input" >/dev/null; then
+  message="$(jq -r '.last_assistant_message' <<<"$input")"
+else
+  if [[ -z "$turn_id" || -z "$transcript_path" || ! -f "$transcript_path" || ! -r "$transcript_path" ]] ||
+     [[ ! -s "$transcript_path" ]] ||
+     ! jq -R 'select(length > 0) | fromjson' "$transcript_path" >/dev/null 2>&1; then
+    jq -cn --arg reason "$unavailable_reason" '{systemMessage: $reason}'
+    exit 0
+  fi
+  encoded_message="$(jq -Rr --arg turn_id "$turn_id" '
     fromjson?
     | select(.type == "response_item")
     | .payload
-    | select(.type == "message" and .role == "assistant")
+    | select(.type == "message" and .role == "assistant" and .phase == "final_answer")
     | select(.internal_chat_message_metadata_passthrough.turn_id == $turn_id)
     | [.content[]? | select(.type == "output_text") | .text]
     | map(select(type == "string"))
     | join("")
     | @base64
-  ' "$transcript_path" || true
-} | tail -n 1)"
+  ' "$transcript_path" | tail -n 1)"
+  if [[ -z "$encoded_message" ]]; then
+    jq -cn --arg reason "$unavailable_reason" '{systemMessage: $reason}'
+    exit 0
+  fi
+  message="$(printf '%s' "$encoded_message" | jq -Rr '@base64d')"
+fi
+
+# delimiters inside examples are prose, not a plan presentation
+candidate="$(jq -Rsc '
+  split("\n") as $lines
+  | reduce range(0; $lines | length) as $index
+    ({fence: "", opening: [], closing: []};
+      ($lines[$index] | sub("\r$"; "")) as $line
+      | if .fence != "" then
+          .fence as $fence
+          | if ($line | test("^ {0,3}" + $fence[0:1] + "{" + ($fence | length | tostring) + ",}[ \t]*$"))
+            then .fence = "" else . end
+        elif ($line | test("^ {0,3}(`{3,}|~{3,})")) then
+          .fence = ($line | capture("^ {0,3}(?<marker>`{3,}|~{3,})").marker)
+        elif ($line | test("^ {0,3}<proposed_plan>[ \t]*$")) then
+          .opening += [$index]
+        elif ($line | test("^ {0,3}</proposed_plan>[ \t]*$")) then
+          .closing += [$index]
+        else . end)
+  | . + {lines: $lines}
+' <<<"$message")"
+opening_count="$(jq '.opening | length' <<<"$candidate")"
+closing_count="$(jq '.closing | length' <<<"$candidate")"
+if [[ "$opening_count" == "0" && "$closing_count" == "0" ]]; then
+  exit 0
+fi
 
 envelope_reason="T3/Codex Plan Mode must emit exactly one complete <proposed_plan> block. Re-emit the corrected plan without an additional plan block."
-if [[ -z "$encoded_message" ]]; then
+if [[ "$opening_count" != "1" || "$closing_count" != "1" ]] ||
+   ! jq -e '.opening[0] < .closing[0]' <<<"$candidate" >/dev/null; then
   stop_with_feedback "$envelope_reason" "$active" "$retry_flag"
 fi
 
-message="$(printf '%s' "$encoded_message" | jq -Rr '@base64d')"
-opening_count="$(printf '%s' "$message" | jq -Rrs '[scan("<proposed_plan>")] | length')"
-closing_count="$(printf '%s' "$message" | jq -Rrs '[scan("</proposed_plan>")] | length')"
-if [[ "$opening_count" != "1" || "$closing_count" != "1" ||
-  "$message" != *"<proposed_plan>"*"</proposed_plan>"* ]]; then
-  stop_with_feedback "$envelope_reason" "$active" "$retry_flag"
-fi
-
-plan="${message#*<proposed_plan>}"
-plan="${plan%%</proposed_plan>*}"
+plan="$(jq -r '.lines[.opening[0] + 1:.closing[0]] | join("\n")' <<<"$candidate")"
 validator_input="$(jq -cn --arg plan "$plan" '{tool_input: {plan: $plan}}')"
 if ! validator_output="$(printf '%s' "$validator_input" | "$SCRIPTS_DIR/validate-plan")" ||
    ! printf '%s' "$validator_output" | jq -e . >/dev/null 2>&1; then
