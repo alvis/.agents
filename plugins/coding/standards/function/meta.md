@@ -4,7 +4,7 @@ _Compact rules for function design, interfaces, parameters, purity, and immutabi
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - General Coding Principles (standard:universal) - baseline design constraints and consistency rules
 

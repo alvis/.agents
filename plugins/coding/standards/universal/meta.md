@@ -4,7 +4,7 @@ _Core engineering principles that apply to all implementation work._
 
 ## Dependent Standards
 
-You MUST also read the following standards if applicable together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - TypeScript Standards (standard:typescript) - strict typing and import discipline
 - Naming Standards (standard:naming) - identifier consistency and intent clarity

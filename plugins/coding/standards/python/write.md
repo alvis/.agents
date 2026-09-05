@@ -1,14 +1,10 @@
 # Python: Compliant Code Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-> **Compliance**: Also follow `scan.md` in this directory to avoid violations during writing. When unsure about a specific rule, consult its detailed guidance in `rules/<rule-id>.md`.
-
 ## Key Principles
 
 - Strictness at boundaries, clarity everywhere else — validate once at the edge, then trust typed internals.
-- Both `ruff` AND `ty` must pass; lint covers style/safety, type-check covers correctness.
+- Follow [required verification](scan.md#required-verification) for runtime and tools.
 - Every rule declares a **Tool Coverage** line — the standard exists only where tooling cannot enforce judgment.
-- Target Python 3.13+: PEP 695 `type X = ...`, `Self`, `@override`, `ExceptionGroup` / `except*`, `asyncio.TaskGroup`.
 - Pydantic at trust boundaries only (CLI, config, HTTP, external APIs); internal components use `@dataclass(frozen=True, slots=True)`.
 - Never `from __future__ import annotations` — it breaks runtime type introspection on 3.13+.
 

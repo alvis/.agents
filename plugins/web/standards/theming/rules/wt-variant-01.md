@@ -13,6 +13,7 @@ The rule has three pillars:
 ## Fix
 
 - Use semantic union literals for `variant`: `primary | secondary | ghost | danger`
+- Expose `variant` at the top level; nested theme config and free-form `string` types hide the semantic role contract.
 - Use semantic union literals for `size`: `sm | md | lg`
 - Remove any `brand`, `client`, `color`, or visually descriptive variant unions — those concerns live in CSS variables and `[data-brand]` scoping (color mode lives on `[data-theme]` per `CSS-MODE-*`, not on a prop either)
 - Name CSS tokens with the pattern `--<category>-<role>[-<modifier>]`:

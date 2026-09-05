@@ -4,7 +4,7 @@ _Compact testing rules for TDD, coverage discipline, fixture design, and mocks._
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - TypeScript Standards (standard:typescript) - tests must follow strict typing and import rules
 - General Coding Principles (standard:universal) - tests must preserve baseline quality constraints

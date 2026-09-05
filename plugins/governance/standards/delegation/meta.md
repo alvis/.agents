@@ -4,7 +4,7 @@ _Operational policy for skills whose workflows dispatch subagents._
 
 ## Dependent Standards
 
-You MUST also read the following standard together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - Governance Authoring Invariants (standard:authoring) - content boundaries and operational sufficiency for assignments and reports
 

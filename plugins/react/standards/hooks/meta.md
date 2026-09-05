@@ -2,18 +2,6 @@
 
 _Standards for custom hooks design, patterns, and best practices_
 
-## Dependent Standards
-
-🚨 **[IMPORTANT]** You MUST also read the following standards together with this file
-
-- Functions Standards (plugin:coding:standard:function) - React hooks are functions with specific rules and patterns
-- Function Naming Standards (plugin:coding:standard:naming) - Hook naming conventions (useX pattern) and best practices
-- TypeScript Standards (plugin:coding:standard:typescript) - Type safety for hook parameters, return types, and generics
-- Documentation Standards (plugin:coding:standard:documentation) - Hook documentation patterns and JSDoc requirements
-- Testing Standards (plugin:coding:standard:testing) - Hook testing strategies with React Testing Library
-- General Principles (plugin:coding:standard:universal) - Foundational coding standards for all React hooks
-
-**Note**: This standard requires the coding plugin to be enabled for referenced coding standards.
 
 ## Core Principles
 

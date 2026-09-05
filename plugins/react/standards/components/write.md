@@ -1,8 +1,5 @@
 # React Components: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-> **Compliance**: Also follow `scan.md` in this directory to avoid violations during writing. When unsure about a specific rule, consult its detailed guidance in `rules/<rule-id>.md`.
-
 ## File Organization
 
 ### Naming Conventions

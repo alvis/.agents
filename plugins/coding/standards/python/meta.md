@@ -2,22 +2,14 @@
 
 _Compact Python rules for type-system hygiene, imports, module structure, concurrency, exceptions, and naming._
 
-## Target
+## Runtime and Tooling
 
-Python **3.13+**. Rules assume and exploit modern features: PEP 695 `type X = ...` aliases and generic syntax, `@override`, `Self`, `TypeIs`, `ExceptionGroup` / `except*`, and runtime-introspectable annotations.
-
-## Tooling
-
-All Python code MUST pass **both** tools on every commit:
-
-- **`ruff`** - linter and formatter (Astral, Rust-based). Single tool for style, lint, import sorting, and formatting.
-- **`ty`** - static type checker (Astral, Rust-based). Validates types, protocols, and overloads.
-
-Every rule in this standard declares a `Tool Coverage:` line stating which checks are enforced by `ruff`, which by `ty`, and which require human review. Reviewers MUST NOT re-litigate mechanical checks the tools already enforce - focus review effort on semantic rules the tools cannot verify.
+[Required verification](scan.md#required-verification) owns the runtime target,
+per-commit tool checks, and division between mechanical and semantic review.
 
 ## Dependent Standards
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - General Coding Principles (standard:universal) - baseline correctness and consistency constraints
 - Naming Standards (standard:naming) - overlaid and specialized by `PYT-NAME-*` for Python conventions (`snake_case`, `PascalCase`, `_protected`, dunders)

@@ -1,9 +1,7 @@
 # Web Theming: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-
 Any single violation blocks approval by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 
@@ -15,6 +13,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 ### Variant & Token Naming
 
 - DO NOT name variants by visual or brand identity (`blue`, `rounded`, `wide`, `example`, `client="…"`, `brand="…"`) — variants are semantic intent (`primary | secondary | ghost | danger`) [`WT-VARIANT-01`]
+- DO NOT hide the semantic variant contract in nested theme config or type variants as free-form `string` — expose a top-level semantic union [`WT-VARIANT-01`].
 - DO NOT name CSS variables by position (`--ink-0`, `--bg-1`) or by visual leaf (`--c-violet`, `--line-soft`, `--glass-bg`) — tokens express role (`--color-ink-heading`, `--color-accent`, `--color-surface-glass`) [`WT-VARIANT-01`]
 - DO NOT include color words anywhere in token names (`--color-accent-violet`, `--bg-blue`) — strip the color word; the role is `accent` (`--color-accent`). For multiple accents, differentiate by role (`--color-accent-primary`, `--color-link`, `--color-callout`), not by color [`WT-VARIANT-01`]
 - DO NOT mint size-tier custom tokens (`--radius-md`, `--shadow-sm`, `--text-body-lg`) — use Tailwind utilities (`rounded-md`, `shadow-sm`, `text-lg`) for default sizes, or mint role-named tokens (`--radius-card`, `--shadow-elevated`, `--text-body`) when the value carries a role [`WT-VARIANT-01`]
@@ -22,13 +21,24 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 ### Tailwind v4.3 Integration
 
-- DO NOT define semantic tokens outside the library's `@theme { … }` block, and do NOT place component CSS outside `@layer components` — Tailwind v4.3 ownership is fixed [`WT-TAILWIND-01`]
+- DO NOT define semantic tokens outside the library's `@theme { … }` block, and do NOT place component CSS outside `@layer components` [`WT-TAILWIND-01`]
 - DO NOT import client `theme.css` before the library stylesheet, or app CSS before client `theme.css` — order is library → client theme → app [`WT-TAILWIND-02`]
 
 ### Override Strategy
 
+- DO NOT place client brand identity or app-specific feature imports in a shared theming package — keep client overrides in the client app [`WT-OVERRIDE-01`].
+
 - DO NOT fork a shared component or add `client="…"` / `isMarketingHero` props to re-skin — override via scoped CSS variables (`.checkout-flow { --button-primary-bg: … }`) or a thin wrapper [`WT-OVERRIDE-01`]
 - DO NOT mutate the shared component when a client needs structural or behavioral change — expose a slot, headless primitive, or client-owned wrapper [`WT-OVERRIDE-02`]
+
+## Framework boundary
+
+React prop-shape, native-element inheritance, and workspace-promotion checks
+are unavailable from Web alone. When React components or their package placement
+are in scope, return a blocking `unavailable` verdict and request verification
+from an eligible React owner. Approval remains blocked until that owner returns
+the applicable checks against the reviewed revision. Do not load an undeclared
+plugin or claim those checks passed.
 
 ## Rule Matrix
 

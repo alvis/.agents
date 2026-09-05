@@ -1,8 +1,5 @@
 # React Hooks: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-> **Compliance**: Also follow `scan.md` in this directory to avoid violations during writing. When unsure about a specific rule, consult its detailed guidance in `rules/<rule-id>.md`.
-
 ## File Naming
 
 Hook files use `camelCase.ts` starting with lowercase `use`. The file basename must match the exported hook identifier and start with `use` so React's lint rules (`react-hooks/rules-of-hooks`, `react-hooks/exhaustive-deps`) detect them. See `RH-NAMING-01`.

@@ -1,14 +1,11 @@
 # Rust: Compliant Code Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-> **Compliance**: Also follow `scan.md` in this directory to avoid violations during writing. When unsure about a specific rule, consult its detailed guidance in `rules/<rule-id>.md`.
-
 ## Key Principles
 
 - Borrow over clone — accept `&str`/`&[T]`/`&Path` at boundaries; allocate only when ownership is genuinely taken.
 - Typed errors with `thiserror` in libraries; `anyhow` lives at the binary boundary only, never in a library's public API.
 - Every rule declares a **Tool Coverage** line — the standard exists only where tooling cannot enforce judgment.
-- Target Rust 1.95+ on the 2024 edition: `let-else`, async `fn` in traits, GATs, `[lints]` table, edition-2024 prelude.
+- Follow [required verification](scan.md#required-verification) for runtime and tools.
 - `cargo nextest run` is the only test command; `bacon` is the only dev loop. `cargo test`/`cargo watch` are forbidden.
 - `clippy::all` + `clippy::pedantic` are denied at workspace level; the curated allow-list below is the only sanctioned relaxation.
 - `unsafe` requires a `// SAFETY:` block; `#[allow(...)]` requires a `// reason:` postfix.

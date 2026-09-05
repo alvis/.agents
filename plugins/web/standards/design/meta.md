@@ -2,9 +2,6 @@
 
 _Compact rules for visual hierarchy, typography, color, spacing, consistency, accessibility, states, navigation, content, responsiveness, iconography, and branding._
 
-## Dependent Standards
-
-None — this is the web plugin's foundational design standard.
 
 ## What's Stricter Here
 

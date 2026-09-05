@@ -2,17 +2,6 @@
 
 _Standards for client-owned theming: how shared web/component libraries expose a CSS-variable contract and how client apps override it without forking._
 
-## Dependent Standards
-
-🚨 **[IMPORTANT]** You MUST also read the following standards together with this file
-
-- React Component Standards (plugin:react:standard:components) - Variant prop typing follows component prop rules; specifically `RC-PROPS-01` (flat, union-literal variants) and `RC-STRUCT-04` (element-prop inheritance)
-- React Project Structure Standards (plugin:react:standard:project-structure) - Where shared theming files live within a workspace package follows the `RPS-WS-*` placement rules
-- CSS Standards (plugin:web:standard:css) - Color-mode handling via `data-theme` follows the `CSS-MODE-*` rules; brand theming composes on top
-- Naming Standards (plugin:coding:standard:naming) - Token names, scope class names, and `data-brand` values follow naming conventions
-- TypeScript Standards (plugin:coding:standard:typescript) - Variant unions and theme-aware prop types use strict TypeScript typing throughout
-
-**Note**: This standard requires the coding plugin to be enabled for referenced coding standards.
 
 > 🎨 **`data-brand` vs `data-theme`** — `data-brand` carries brand identity (`example`, `globex`); `data-theme` is reserved for color mode (`light`, `dark`; absent = system) per `CSS-MODE-*` in `plugin:web:standard:css`. They compose: `<html data-brand="example" data-theme="dark">` selects the Example brand in dark mode. Brand-scoped overrides in this standard use `[data-brand="…"]`, never `[data-theme="…"]`.
 

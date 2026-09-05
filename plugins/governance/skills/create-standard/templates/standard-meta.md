@@ -3,18 +3,18 @@
 _[Brief description of what this standard covers and its purpose]_
 
 <!-- INSTRUCTION: Replace all [placeholder] values with actual content -->
-<!-- INSTRUCTION: This file is the always-loaded metadata tier. Keep it concise — no code examples, no violation lists, no patterns -->
-<!-- INSTRUCTION: Its purpose is to declare dependencies, exception policy, and rule group prefixes -->
+<!-- INSTRUCTION: This file is read for rationale and exceptions. Keep it concise — no code examples, violation lists, or patterns -->
+<!-- INSTRUCTION: Mandatory inputs, runtime/tool requirements, and detection criteria must be reachable through scan.md -->
 
 ## Dependent Standards
 
-<!-- INSTRUCTION: List all standards that must be read together with this one -->
+<!-- INSTRUCTION: Explain related standards; applicability belongs only in the owning standards INDEX.md -->
 <!-- INSTRUCTION: Use the plugin reference format:
      - Same plugin: standard:name (e.g., standard:typescript)
      - Cross-plugin: `plugin:<plugin>:standard:<standard>` (e.g., `plugin:coding:standard:typescript`)
 -->
 
-You MUST also read the following standards together with this file:
+Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
 
 - [Related Standard 1] (standard:[name]) - [how it relates to this standard]
 - [Related Standard 2] (standard:[name]) - [how it relates to this standard]

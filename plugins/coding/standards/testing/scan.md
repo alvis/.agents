@@ -1,17 +1,15 @@
 # Testing: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
-
-> **During linting**: Only apply a rule's fix if it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
+Protocol: `essential:directions/standards.md`.
+During linting, apply a rule's fix only when it is a mechanical correction — formatting, naming, documentation, casing, import ordering, or field/function reordering. If the fix would add new logic, change control flow, introduce runtime validation, or alter program behavior, report the violation without fixing it.
 
 > **Scanner-backed rules**: `TST-CORE-03`, `TST-CORE-08`, `TST-CORE-10`, `TST-CORE-11`, `TST-DATA-04`, `TST-DATA-06`, `TST-MOCK-10`, `TST-MOCK-11`, `TST-STRU-01`, and `TST-STRU-03` have advisory mechanical scanner support (`plugins/coding/scripts/scanners/`). The scanner surfaces candidates only — always re-verify each hit against the rule guide before flagging. For `TST-CORE-10`, current scanner support detects checked-in-file reads only; exact declaration, signature, schema-inventory, export-inventory, and re-export-layout assertions remain semantic review checks. A checked-in file read is compliant only when the file feeds an executed consumer or generator and every assertion targets runtime behavior or generated-result structure. The `TST-MOCK-10` and `TST-MOCK-11` scanners inspect JavaScript and TypeScript spec files.
 
 ## Quick Scan
 
 - DO NOT bypass TypeScript safety requirements in tests [`TST-CORE-01`]
+- DO NOT implement behavior before its failing test; when an initially passing regression test covers already-correct behavior, temporarily mutate the implementation to prove the test fails for the named regression, then restore the implementation and rerun the test green before retaining it [`TST-CORE-02`](rules/tst-core-02.md)
 - DO NOT use non-compliant test naming: `it(...)` must start with `should`; `describe(...)` titles scoped to a symbol must use the correct approved prefix: `fn:` function, `op:` operation, `sv:` service, `cl:` class, `mt:` method, `gt:` getter, `st:` setter, `re:` regex, `ty:` allowed compiler-observable type subject, `rc:` React component, `hk:` hook, `cmd:` CLI command; the `ty:` suffix is the symbol name only, with scenarios in nested suites or test names — DO NOT change an existing valid prefix to a different prefix; IMPORTANT: general-purpose `describe(...)` titles (e.g. grouping by scenario or context) must **NOT** use prefixes [`TST-CORE-03`]
 - DO NOT add tests that provide no unique path or behavior (including a test whose name claims a path its input never reaches) [`TST-CORE-04`]
 - DO NOT add artificial variation-only tests [`TST-CORE-05`]
@@ -59,6 +57,7 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 | Rule ID | Violation | Bad Examples |
 |---|---|--- |
 | `TST-CORE-01` | Test code bypasses TypeScript safety requirements | `const svc: any = {}`; `const mockRepo: any = {` |
+| `TST-CORE-02` | Behavior is implemented before its failing test, or an initially passing regression test is retained without a temporary sensitivity mutation followed by restored green behavior | Implement, then add the test; retain an initially passing regression test without proving it fails when the named behavior is temporarily broken |
 | `TST-CORE-03` | Test naming format is non-compliant (`it`/`describe`) | `it("returns user", fn)`; `describe("processUser", () => { ... })`; `describe("fn:edge cases", () => { ... })` |
 | `TST-CORE-04` | Test adds no unique path or behavior | `it("same case #2", fn)`; `it("should return user again with same input", fn)` |
 | `TST-CORE-05` | Artificial variation tests are added | `tax(10); tax(20); tax(30)`; `it("should apply 10% discount for $101", fn)` when behavior is identical |

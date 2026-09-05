@@ -1,7 +1,5 @@
 # Governance Authoring Invariants: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 ## Key Principles
 
 - Keep only content that changes what someone does.

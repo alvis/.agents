@@ -1,9 +1,7 @@
 # React Components: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies and rule groups.
-
 Any single violation blocks approval by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md` to confirm the violation and follow its fix guidance.
+Protocol: `essential:directions/standards.md`.
 
 ## Quick Scan
 
@@ -22,12 +20,12 @@ If a violation is detected, load the matching rule guide at `./rules/<rule-id>.m
 
 ### Props Design
 
-- DO NOT design deeply nested config object props (`config.display.variant`) — keep props flat, simple, and focused [`RC-PROPS-01`]
+- DO NOT design deeply nested config object props (`config.display.variant`) [`RC-PROPS-01`]
 - DO NOT pile on prop flags to configure variants (`showHeader`, `headerStyle`) when composition (`<Card.Header>`) expresses intent better [`RC-PROPS-02`]
 
 ### State Management
 
-- DO NOT lift state to a parent when only one child uses it — keep state local to where it's used [`RC-STATE-01`]
+- DO NOT lift state to a parent when only one child uses it [`RC-STATE-01`]
 - DO NOT prop-drill the same value through 3+ levels — use Context for deep nesting [`RC-STATE-02`]
 
 ### Performance

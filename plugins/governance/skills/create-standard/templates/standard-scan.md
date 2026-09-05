@@ -1,13 +1,14 @@
 # [Standard Title]: Violation Scan
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
+Protocol: `essential:directions/standards.md`.
 
 <!-- INSTRUCTION: This file is the violation detection tier — used during code review and linting -->
 <!-- INSTRUCTION: Every item must reference a rule ID from the rule groups defined in meta.md -->
 <!-- INSTRUCTION: Keep descriptions concise but specific enough to detect violations unambiguously -->
 
 Any single violation blocks submission by default.
-If a violation is detected, load the matching rule guide at `./rules/<rule-id>.md`.
+<!-- INSTRUCTION: Put mandatory inputs, runtime/tool prerequisites, and before-mutation checks here so they remain reachable on a clean scan -->
+<!-- INSTRUCTION: Link cross-standard checks to canonical rule paths with independent detection triggers; do not infer filename case from the displayed rule ID -->
 
 ## Quick Scan
 

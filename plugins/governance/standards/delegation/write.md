@@ -1,7 +1,5 @@
 # Delegated Execution: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 ## Key Principles
 
 - Delegate for context economy, not ceremony.

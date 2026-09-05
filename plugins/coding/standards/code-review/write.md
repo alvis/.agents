@@ -1,7 +1,5 @@
 # Code Review Standards: Compliant Patterns
 
-> **Prerequisite**: Read `meta.md` in this directory first for dependencies, exception policy, and rule groups.
-
 ## Key Principles
 
 - Verify correctness and security before lower-impact concerns.

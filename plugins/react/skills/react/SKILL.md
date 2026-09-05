@@ -25,54 +25,29 @@ implementation teams or duplicate another skill's workflow.
 
 - **Required**: the files or task at hand, enough to identify which React
   surfaces are touched (components, hooks, stories, structure, theming).
-- **Prerequisites**: set `REACT_PLUGIN_ROOT` by resolving `../..` from the
-  absolute directory containing this loaded `SKILL.md`; React standards live
-  under `${REACT_PLUGIN_ROOT}/standards/`.
 
 ## Standards
 
-Standards live under `${REACT_PLUGIN_ROOT}/standards/`; rule
-files in each standard's `rules/` directory define the prefixed violation
-codes:
-
-- `accessibility` (`A11Y-*`): semantics, keyboard access, ARIA, focus, forms,
-  and screen readers.
-- `components` (`RC-*`): component boundaries, props, state, naming, and
-  performance.
-- `hooks` (`RH-*`): dependencies, cleanup, stable references, return shapes,
-  and composition.
-- `project-structure` (`RPS-*`): placement, feature boundaries, and promotion
-  paths.
-- `storybook` (`SB-*`): story naming, coverage, controls, interactions, and
-  purity.
-
-For shared-component theme contracts (`[data-brand]` scopes, CSS-variable
-overrides, Tailwind theme integration), apply the web plugin's `theming`
-standard (`WT-*`) when that plugin is available; otherwise record that
-theming rules were not evaluated.
+Select every applicable standard from [the React standards
+index](../../standards/INDEX.md), then apply the selection under [the shared
+standards protocol](../../../essential/directions/standards.md). These are the
+sole selection and application contracts for this router.
 
 ## Workflow
 
-1. Identify the surfaces the task touches and load only their standards.
-   Before editing, read only each selected standard's `meta.md`. After editing,
-   apply its `scan.md`; when it identifies a candidate violation, read only the
-   matching `rules/<lowercase-rule-id>.md` when present, or that standard's
-   `write.md` as the bounded fallback when no matching guide exists. Correct
-   the violation and rerun the scan.
-2. When authoring, pair `components` with `accessibility` — every component
-   must be accessible; add `hooks` whenever a `use*` function is involved,
-   add `storybook` for `*.stories.tsx` files, and decide the
-   `project-structure` reusability tier before drafting.
-3. Route the work itself:
+1. Identify the surfaces the task touches and follow the linked index and
+   protocol to select and apply their standards.
+2. Route the work itself:
    - Mechanical enforcement across one or more eligible files: `react:lint`
      — never route React linting through generic lint first.
    - Feature or bug implementation: `coding:write-code` with the applicable
      React standards.
    - Generic semantic review: `coding:review-code` with the applicable React
      standards.
-   - Visual design or runtime diagnosis: recommend an optional web skill when
-     available; otherwise state the recommendation without invoking it.
-4. After any task builds or changes a component, route rendered verification
+   - Visual design, theming, or runtime diagnosis: recommend an optional web
+     skill when available and hand the work to its owner; otherwise state the
+     recommendation without invoking it.
+3. After any task builds or changes a component, route rendered verification
    before reporting completion:
    - Use the project's Storybook workflow when Storybook is available. If it
      is unavailable, use another repeatable rendered surface or isolated
@@ -103,25 +78,21 @@ theming rules were not evaluated.
      result in the implementation or review report. Preserve web-owner raw
      artifacts at their canonical paths and link to the selected web owner's
      canonical report/artifact paths instead of copying them.
-5. When a scan or review flags a violation code, open its matching file under
-   the standard's `rules/` directory when present; otherwise open that
-   standard's `write.md` as the bounded fallback. Apply or route the fix and
-   re-run the relevant `scan.md` heuristic to confirm. Repeat until every
-   flagged code is resolved or a concrete blocker remains, then report the
-   blocker instead of looping.
+4. When a scan or review flags a violation code, apply or route the fix under
+   `essential:directions/standards.md`. Repeat until every flagged code is
+   resolved or a concrete blocker remains, then report the blocker instead of
+   looping.
 
 ## Verification
 
-- Every touched surface has its standard loaded, and `accessibility` is
-  loaded alongside `components` whenever authoring.
-- Every flagged violation code was checked against its matching rule guide or
-  bounded `write.md` fallback and either re-scanned clean, routed to its owning
-  skill, or reported as blocked.
-- The theming decision is recorded — applied, or explicitly noted as not
-  evaluated when the web plugin is absent.
+- Every touched surface has every standard selected for it by the React index.
+- Every flagged violation code was either re-scanned clean, routed to its
+  owning skill, or reported as blocked.
+- Optional Web work is recommended and handed to its owner when the task
+  includes visual design, theming, or runtime diagnosis.
 
 ## Completion
 
 Report the standards loaded, violation codes flagged and their resolution
-(fixed, routed, or blocked), routing decisions made, and whether theming was
-evaluated or explicitly skipped.
+(fixed, routed, or blocked), routing decisions made, and any optional Web
+recommendation or handoff.
