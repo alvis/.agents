@@ -1,6 +1,6 @@
 # Harness compatibility
 
-This manually maintained matrix covers the 54 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
+This manually maintained matrix covers the 55 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
 
 Claude Code, Codex, and Grok Build are native targets. OpenCode support targets stable V1 through `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
 
@@ -23,7 +23,7 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | Skill resources and references | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode bundles complete plugin trees and retargets projected Markdown links. |
 | Standards and scanners | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | Runtime prerequisites still apply to scripts invoked by a skill. |
 | Bundled scripts | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode copies plugin executables and retargets projected skill-root paths to the bundle. |
-| Session context payloads | ✅ Native | ✅ Native | 🟡 Adapted | 🧪 Experimental | OpenCode resolves receipt audiences through `experimental.chat.system.transform`; unresolved sessions receive only identifier mapping. |
+| Session context payloads | ✅ Native | ✅ Native | 🧪 Experimental | 🧪 Experimental | Grok's user `AGENTS.md` attachment directs `GROK.md` to invoke the enabled-payload loader; passive SessionStart output remains ignored. On Grok 1.0.30, fresh sessions received the attachment and read `GROK.md`, but skipped the loader or chose the wrong path/audience. One asked without reading `questions.md`; child execution remains unverified. Direct loader runs produced the complete expected main/subagent context. OpenCode resolves receipt audiences through `experimental.chat.system.transform`; unresolved sessions receive only identifier mapping. |
 | Skill-scoped hooks | ✅ Native | ✅ Native | ❌ Unavailable | 🟡 Adapted | Grok Build ignores skill-frontmatter hooks. OpenCode runs the command-filtered commit guards from resolved receipts because its plugin API exposes no skill-scope event. |
 | Question guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | Native validators normalize object options and Codex async string options/free text, reject malformed input, and return corrective feedback. OpenCode runs the receipt-bound validator before `question` and retains allow advice for the matching result. Live delivery remains unverified. |
 | Subagent dispatch guard | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode validates `task` prompts through the receipt alias; the host has no persistent teammate identity. |
@@ -73,7 +73,8 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `essential:doctor` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-doctor`. Source: [SKILL.md](plugins/essential/skills/doctor/SKILL.md). |
 | `essential:handoff` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-handoff`. Source: [SKILL.md](plugins/essential/skills/handoff/SKILL.md). |
 | `essential:handover` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-handover`. Source: [SKILL.md](plugins/essential/skills/handover/SKILL.md). |
-| `essential:install-agents` skill | ✅ Native | ✅ Native | ✅ Native | ❌ Unavailable | The projector already installs OpenCode agents; this skill's installer supports Claude Code, Codex, and Grok Build. Source: [SKILL.md](plugins/essential/skills/install-agents/SKILL.md). |
+| `essential:install` skill | ✅ Native | ✅ Native | ✅ Native | ❌ Unavailable | Owns native agents; only Grok also receives the startup attachment. OpenCode agents remain projector-owned. Source: [SKILL.md](plugins/essential/skills/install/SKILL.md). |
+| `essential:uninstall` skill | ✅ Native | ✅ Native | ✅ Native | ❌ Unavailable | Removes unmodified installer-owned agents and the Grok attachment; preserves edited and unrelated files. Source: [SKILL.md](plugins/essential/skills/uninstall/SKILL.md). |
 | `essential:install-output-styles` skill | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | Claude-only by contract. Source: [SKILL.md](plugins/essential/skills/install-output-styles/SKILL.md). |
 | `essential:install-statusline` skill | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | Claude-only by contract. Source: [SKILL.md](plugins/essential/skills/install-statusline/SKILL.md). |
 | `essential:takeover` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-takeover`. Source: [SKILL.md](plugins/essential/skills/takeover/SKILL.md). |

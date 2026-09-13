@@ -49,7 +49,8 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 | `essential:takeover` | Resuming paused work from the on-disk work directories: checks leases, resolves blocking decisions, and drives streams to their success criteria. |
 | `essential:doctor` | Health-checking `.state/`: runs the structural doctor, diagnoses format drift against the current contracts, and offers user-approved migration to the latest structure — judged by reading the contracts, never a version token. |
 | `essential:handoff` | A zero-context cross-domain orchestration plan another agent can execute verbatim. |
-| `essential:install-agents` | Installing/refreshing the stitched specialist agent roster into `~/.claude/agents/`. |
+| `essential:install` | Installing or refreshing native specialist agents and Grok's startup attachment. |
+| `essential:uninstall` | Removing owned agents and the Grok attachment while preserving edited or unrelated files. |
 | `essential:install-output-styles` | Installing bundled Claude Code output styles into `~/.claude/output-styles/`. |
 | `essential:install-statusline` | Installing the bundled Bullet Train statusline. |
 

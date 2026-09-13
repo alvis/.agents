@@ -1,6 +1,6 @@
 # Intelligence-Level Heuristic
 
-Shared decision guide for `create-agent` and `update-agent`. Agent metadata owns one `intelligence` value in `frontmatter/meta.json`. Read the `essential:install-agents` mapping at `plugin:essential/install-agents/references/intelligence-levels.json`; its `rank` orders the levels, `best_for` gives task examples, and harness projections derive native agent configuration. Pick the lowest ranked level whose examples clear the role's bar. Use `inherit` only when the active harness must resolve the agent before skill ownership.
+Shared decision guide for `create-agent` and `update-agent`. Agent metadata owns one `intelligence` value in `frontmatter/meta.json`. Read the `essential:install` mapping at `plugin:essential/install/references/intelligence-levels.json`; its `rank` orders the levels, `best_for` gives task examples, and harness projections derive native agent configuration. Pick the lowest ranked level whose examples clear the role's bar. Use `inherit` only when the active harness must resolve the agent before skill ownership.
 
 ## Other settings
 

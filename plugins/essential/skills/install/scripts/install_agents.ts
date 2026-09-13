@@ -1,19 +1,11 @@
 import {
-  copyFileSync,
   existsSync,
-  mkdirSync,
-  mkdtempSync,
   readFileSync,
   readdirSync,
   realpathSync,
-  renameSync,
-  rmSync,
   statSync,
-  writeFileSync,
 } from "node:fs";
-import { randomUUID } from "node:crypto";
-import { homedir, tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 
 import {
   AgentTemplateError,
@@ -26,11 +18,29 @@ import {
   stitchGrokAgentDefinition,
 } from "./stitch_agent.ts";
 
-type PluginRecord = Record<string, unknown>;
-/** harnesses whose agent templates this installer stitches and installs */
-type HarnessName = "claude" | "codex" | "grok";
+import { GrokPluginError, readGrokPlugins } from "../../../scripts/grok.ts";
+import {
+  defaultAgentDestination,
+  installManagedFiles,
+} from "../../../scripts/installation.ts";
+import {
+  canonicalDirectory,
+  InstallationError,
+} from "../../../scripts/installation/transaction.ts";
+import type {
+  HarnessName,
+  InstallationFile,
+  InstallationOptions,
+} from "../../../scripts/installation.ts";
 
-/** One discovered agent template directory and the plugin that owns it. */
+type PluginRecord = Record<string, unknown>;
+/** discovery and installation settings */
+export interface InstallOptions extends InstallationOptions {
+  readonly pluginRecords?: readonly PluginRecord[];
+  readonly includeMarketplaces?: readonly string[];
+}
+
+/** a discovered agent template directory and its owning plugin */
 export interface AgentTemplate {
   readonly owner: string;
   readonly name: string;
@@ -88,18 +98,14 @@ function pluginTemplates(owner: string, pluginRoot: string): AgentTemplate[] {
 }
 
 /**
- * lists installed plugin records by shelling out to the harness CLI.
+ * lists installed plugin records by shelling out to the harness CLI
  * @param harness plugin manager whose list command runs
  * @returns normalized plugin records as plain objects
  */
 export function readPluginRecords(harness: HarnessName): PluginRecord[] {
-  const command =
-    harness === "claude"
-      ? ["claude", "plugin", "list", "--json"]
-      : harness === "codex"
-        ? ["codex", "plugin", "list", "--json"]
-        : ["grok", "plugin", "list", "--json"];
-  let completed: ReturnType<typeof Bun.spawnSync>;
+  if (harness === "grok") return readGrokPluginRecords();
+  const command = [harness, "plugin", "list", "--json"];
+  let completed: Bun.SyncSubprocess<"pipe", "pipe">;
   try {
     completed = Bun.spawnSync(command, { stdout: "pipe", stderr: "pipe" });
   } catch (error) {
@@ -121,23 +127,6 @@ export function readPluginRecords(harness: HarnessName): PluginRecord[] {
     throw new AgentTemplateError(
       `invalid JSON from ${harness} plugin list: ${(error as Error).message}`,
     );
-  }
-  if (harness === "grok") {
-    // Grok Build records carry {status, name, repo_key, version, path, source,
-    // marketplace}; enablement is the record's own status field.
-    if (!Array.isArray(payload))
-      throw new AgentTemplateError(
-        "grok plugin list --json did not return a list",
-      );
-    return payload.filter(
-      (record): record is PluginRecord =>
-        record !== null && typeof record === "object" && !Array.isArray(record),
-    ).map((record) => ({
-      id: `${String(record.name)}@${String(record.marketplace ?? "")}`,
-      enabled: record.status === "enabled",
-      version: record.version,
-      installPath: record.path,
-    }));
   }
   if (harness === "claude") {
     if (!Array.isArray(payload))
@@ -173,8 +162,126 @@ export function readPluginRecords(harness: HarnessName): PluginRecord[] {
 function lastUpdated(record: PluginRecord): string {
   return typeof record.lastUpdated === "string" ? record.lastUpdated : "";
 }
+
+function readGrokPluginRecords(): PluginRecord[] {
+  const plugins = readGrokPlugins();
+  // installation metadata only supplies trust labels; inspection owns paths and enablement
+  let listed: Bun.SyncSubprocess<"pipe", "pipe">;
+  try {
+    listed = Bun.spawnSync(["grok", "plugin", "list", "--json"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+  } catch (error) {
+    throw new AgentTemplateError(
+      `cannot list Grok plugins: ${(error as Error).message}`,
+      { cause: error },
+    );
+  }
+  if (listed.exitCode !== 0) {
+    const detail =
+      listed.stderr.toString().trim() || listed.stdout.toString().trim();
+    throw new AgentTemplateError(
+      `cannot list Grok plugins: ${detail || `exit ${listed.exitCode}`}`,
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(listed.stdout.toString());
+  } catch (error) {
+    throw new AgentTemplateError(
+      `invalid JSON from grok plugin list: ${(error as Error).message}`,
+      { cause: error },
+    );
+  }
+  if (!Array.isArray(parsed))
+    throw new AgentTemplateError(
+      "grok plugin list --json did not return a list",
+    );
+  const metadata = parsed.filter(isRecord);
+  return plugins.map((plugin) => {
+    const matches = metadata.filter(
+      (record) =>
+        record.name === plugin.name &&
+        [record.path, record.source].some(
+          (path) =>
+            typeof path === "string" &&
+            isDirectory(path) &&
+            isDirectory(plugin.path) &&
+            realpathSync(path) === realpathSync(plugin.path),
+        ),
+    );
+    const marketplaces = new Set(
+      matches
+        .map((record) => record.marketplace)
+        .filter(
+          (marketplace): marketplace is string =>
+            typeof marketplace === "string" && marketplace !== "",
+        ),
+    );
+    if (marketplaces.size > 1)
+      throw new AgentTemplateError(
+        `conflicting Grok marketplace metadata: ${plugin.name}`,
+      );
+    return {
+      id: `${plugin.name}@${[...marketplaces][0] ?? ""}`,
+      enabled: plugin.enabled,
+      installPath: plugin.path,
+    };
+  });
+}
+
+function grokPluginRoots(
+  essentialRoot: string,
+  records: readonly PluginRecord[],
+  includeMarketplaces: readonly string[],
+): Array<readonly [string, string]> {
+  const enabled = records.filter((record) => record.enabled === true);
+  const essentials = enabled.filter(
+    (record) =>
+      typeof record.id === "string" &&
+      record.id.split("@")[0] === "essential" &&
+      typeof record.installPath === "string" &&
+      realpathSync(record.installPath) === essentialRoot,
+  );
+  if (essentials.length !== 1)
+    throw new AgentTemplateError(
+      `expected one enabled Essential plugin in grok inspect: ${essentialRoot}`,
+    );
+  const marketplace = String(essentials[0]!.id).split("@")[1] ?? "";
+  const trusted = new Set([marketplace, ...includeMarketplaces]);
+  for (const included of includeMarketplaces)
+    if (!cacheComponent.test(included) || included === "." || included === "..")
+      throw new AgentTemplateError(
+        `invalid included marketplace name: ${display(included)}`,
+      );
+  return enabled
+    .filter((record) => {
+      if (
+        typeof record.id !== "string" ||
+        record.id.split("@").length !== 2 ||
+        typeof record.installPath !== "string"
+      )
+        throw new AgentTemplateError("invalid enabled Grok plugin record");
+      const ownerMarketplace = record.id.split("@")[1]!;
+      if (ownerMarketplace !== "") return trusted.has(ownerMarketplace);
+      return (
+        marketplace === "" &&
+        dirname(realpathSync(record.installPath)) === dirname(essentialRoot)
+      );
+    })
+    .map(
+      (record) =>
+        [String(record.id).split("@")[0]!, String(record.installPath)] as const,
+    )
+    .sort(([left], [right]) => left.localeCompare(right));
+}
+
+function isRecord(value: unknown): value is PluginRecord {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 /**
- * resolves the installed cache directory of one Codex plugin record.
+ * resolves the installed cache directory of one Codex plugin record
  * @param essentialRoot installed path of the essential plugin
  * @param record one record from the Codex plugin list
  * @returns existing versioned cache directory of the record's plugin
@@ -216,7 +323,7 @@ export function codexCachePluginRoot(
 }
 
 /**
- * pairs every enabled plugin owner with its best installed root directory.
+ * pairs every enabled plugin owner with its best installed root directory
  * @param essentialRoot installed path of the essential plugin
  * @param records records from the harness plugin list
  * @param harness plugin manager the records came from
@@ -230,6 +337,8 @@ export function installedPluginRoots(
   includeMarketplaces: readonly string[] = [],
 ): Array<readonly [string, string]> {
   const resolvedEssential = realpathSync(essentialRoot);
+  if (harness === "grok")
+    return grokPluginRoots(resolvedEssential, records, includeMarketplaces);
   let essentialRecords: readonly PluginRecord[];
   if (harness === "codex") {
     if (
@@ -310,7 +419,7 @@ export function installedPluginRoots(
 }
 
 /**
- * discovers agent template directories across source checkout or installed roots.
+ * discovers agent template directories across source checkout or installed roots
  * @param essentialRoot path of the essential plugin
  * @param options pluginRecords supply harness records directly; harness selects
  *   the plugin manager; includeMarketplaces adds trusted marketplaces
@@ -327,7 +436,7 @@ export function discoverAgentTemplates(
   const harness = options.harness ?? "claude";
   const parent = dirname(essentialRoot);
   const roots: Array<readonly [string, string]> =
-    basename(parent) === "plugins"
+    harness !== "grok" && basename(parent) === "plugins"
       ? readdirSync(parent, { withFileTypes: true })
           .filter((entry) => entry.isDirectory())
           .sort((left, right) => left.name.localeCompare(right.name))
@@ -350,7 +459,7 @@ function preflight(
     readonly allowLegacy: boolean;
   },
 ): Array<readonly [string, string]> {
-  if (templates.length === 0)
+  if (templates.length === 0 && harness !== "grok")
     throw new AgentTemplateError("no agent templates discovered");
   const seen = new Map<string, AgentTemplate>();
   return templates.map((template) => {
@@ -380,22 +489,8 @@ function preflight(
   });
 }
 
-function replaceFile(source: string, target: string): void {
-  mkdirSync(dirname(target), { recursive: true });
-  const temporary = join(
-    dirname(target),
-    `.${basename(target)}.${randomUUID()}.tmp`,
-  );
-  try {
-    copyFileSync(source, temporary);
-    renameSync(temporary, target);
-  } finally {
-    rmSync(temporary, { force: true });
-  }
-}
-
 /**
- * stages every discovered template and installs it atomically into the destination.
+ * stages every discovered template and installs it atomically into the destination
  * @param essentialRoot path of the essential plugin
  * @param destination directory receiving the stitched agent files
  * @param options pluginRecords, harness, and includeMarketplaces feed discovery;
@@ -405,12 +500,7 @@ function replaceFile(source: string, target: string): void {
 export function installAgents(
   essentialRoot: string,
   destination: string,
-  options: {
-    readonly pluginRecords?: readonly PluginRecord[];
-    readonly harness?: HarnessName;
-    readonly includeMarketplaces?: readonly string[];
-    readonly stdout?: (text: string) => void;
-  } = {},
+  options: InstallOptions = {},
 ): number {
   const root = realpathSync(essentialRoot);
   const harness = options.harness ?? "claude";
@@ -430,54 +520,46 @@ export function installAgents(
       `missing Essential lead direction: ${sourceDirection}`,
     );
   const sourceStateSystems = resolve(root, stateSystemsReferencePath);
-  if (!existsSync(sourceStateSystems))
+  if (templates.length > 0 && !existsSync(sourceStateSystems))
     throw new AgentTemplateError(
       `missing Essential state-system authority: ${sourceStateSystems}`,
     );
-  const installedEssential = resolve(destination, ".essential");
+  const canonicalDestination = canonicalDirectory(destination);
+  const installedEssential = resolve(canonicalDestination, ".essential");
   const staged = preflight(templates, harness, {
     essentialRoot: root,
     referenceRoot: installedEssential,
     allowLegacy: basename(dirname(root)) !== "plugins",
   });
   const suffix = harness === "codex" ? ".toml" : ".md";
-  const stage = mkdtempSync(join(tmpdir(), `${harness}-agents-`));
   const write =
-    options.stdout ?? ((text: string) => process.stdout.write(text));
-  try {
-    const stagedDirection = resolve(stage, leadAgentDirectionPath);
-    const stagedStateSystems = resolve(stage, stateSystemsReferencePath);
-    if (installsDirection) {
-      mkdirSync(dirname(stagedDirection), { recursive: true });
-      copyFileSync(sourceDirection, stagedDirection);
-    }
-    mkdirSync(dirname(stagedStateSystems), { recursive: true });
-    copyFileSync(sourceStateSystems, stagedStateSystems);
-    for (const [name, content] of staged)
-      writeFileSync(resolve(stage, `${name}${suffix}`), content, "utf8");
-    mkdirSync(destination, { recursive: true });
-    if (installsDirection) {
-      const installedDirection = resolve(
-        installedEssential,
-        leadAgentDirectionPath,
-      );
-      replaceFile(stagedDirection, installedDirection);
-      write(`installed: ${installedDirection}\n`);
-    }
-    const installedStateSystems = resolve(
-      installedEssential,
-      stateSystemsReferencePath,
-    );
-    replaceFile(stagedStateSystems, installedStateSystems);
-    write(`installed: ${installedStateSystems}\n`);
-    for (const [name] of staged) {
-      const target = resolve(destination, `${name}${suffix}`);
-      replaceFile(resolve(stage, basename(target)), target);
-      write(`installed: ${target}\n`);
-    }
-  } finally {
-    rmSync(stage, { recursive: true, force: true });
-  }
+    options.stdout ??
+    ((text: string): void => {
+      process.stdout.write(text);
+    });
+  const files: InstallationFile[] = staged.map(([name, content]) => ({
+    path: `${name}${suffix}`,
+    content,
+    kind: "agent",
+  }));
+  if (staged.length > 0)
+    files.unshift({
+      path: `.essential/${stateSystemsReferencePath}`,
+      content: readFileSync(sourceStateSystems),
+      kind: "support",
+    });
+  if (installsDirection)
+    files.push({
+      path: `.essential/${leadAgentDirectionPath}`,
+      content: readFileSync(sourceDirection),
+      kind: "support",
+    });
+  installManagedFiles(
+    canonicalDestination,
+    files,
+    { ...options, harness, stdout: write },
+    resolve(root, "directions/GROK.md"),
+  );
   write(`done — installed ${staged.length} agent(s) into ${destination}\n`);
   return staged.length;
 }
@@ -490,7 +572,7 @@ function cliError(message: string): never {
   process.exit(2);
 }
 /**
- * parses installer flags and drives installAgents for one harness.
+ * parses installer flags and drives installAgents for one harness
  * @param argv arguments following the script name
  * @returns process exit code: 0 success, 2 usage error
  */
@@ -517,14 +599,14 @@ export function main(argv = process.argv.slice(2)): number {
       pluginRoot = argument.slice("--plugin-root=".length);
     else if (argument === "--harness") {
       const selected = value();
-      if (!new Set(["claude", "codex", "grok"]).has(selected))
+      if (selected !== "claude" && selected !== "codex" && selected !== "grok")
         cliError(
           `argument --harness: invalid choice: '${selected}' (choose from 'claude', 'codex', 'grok')`,
         );
       harness = selected;
     } else if (argument.startsWith("--harness=")) {
       const selected = argument.slice("--harness=".length);
-      if (!new Set(["claude", "codex", "grok"]).has(selected))
+      if (selected !== "claude" && selected !== "codex" && selected !== "grok")
         cliError(
           `argument --harness: invalid choice: '${selected}' (choose from 'claude', 'codex', 'grok')`,
         );
@@ -538,19 +620,17 @@ export function main(argv = process.argv.slice(2)): number {
       includeMarketplaces.push(argument.slice("--include-marketplace=".length));
     else cliError(`unrecognized arguments: ${argument}`);
   }
-  destination ??= resolve(
-    harness === "claude"
-      ? resolve(homedir(), ".claude")
-      : harness === "codex"
-        ? (process.env.CODEX_HOME ?? resolve(homedir(), ".codex"))
-        : (process.env.GROK_HOME ?? resolve(homedir(), ".grok")),
-    "agents",
-  );
+  destination ??= defaultAgentDestination(harness);
   try {
     installAgents(pluginRoot, destination, { harness, includeMarketplaces });
     return 0;
   } catch (error) {
-    if (error instanceof AgentTemplateError) cliError(error.message);
+    if (
+      error instanceof AgentTemplateError ||
+      error instanceof InstallationError ||
+      error instanceof GrokPluginError
+    )
+      cliError(error.message);
     throw error;
   }
 }

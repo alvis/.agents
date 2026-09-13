@@ -4,9 +4,19 @@
 
 The files under `plugins/` are the source of truth. Claude Code consumes each `.claude-plugin` manifest; Codex consumes the committed `.codex-plugin` manifests and `.agents/plugins/marketplace.json`. Both are native targets and must remain behaviorally aligned. Maintain the marketplace manifests manually when the plugin set or source manifests change.
 
-Grok Build is a compatibility consumer: xAI documents direct loading of Claude marketplaces, plugins, skills, agents, MCP servers, hooks, and instructions. The committed `.grok-plugin/marketplace.json` keeps its marketplace catalog aligned with the native manifests.
+Grok Build is a native target with compatibility adapters for individual features: xAI documents direct loading of Claude marketplaces, plugins, skills, agents, MCP servers, hooks, and instructions. The committed `.grok-plugin/marketplace.json` keeps its marketplace catalog aligned with the native manifests.
 
 OpenCode support targets stable V1 only. Its documented extension layout differs from this marketplace, so `scripts/install_opencode.ts` produces a managed directory projection and installs `scripts/opencode_adapter.js` as a local plugin. OpenCode V2 and `opencode2` are outside this contract.
+
+## Native installation and Grok context
+
+`essential:install` and `essential:uninstall` share installation ownership and transaction mechanics under Essential's `scripts/`. A destination-local receipt records installed files and their content hashes; uninstall removes only matching owned content and retains edited files and needed support. Conflicting unowned files are preserved. Installation stages changes, publishes the receipt last, and rolls back failed operations.
+
+Grok alone adds a managed instruction in its user `AGENTS.md` to read the packaged `directions/GROK.md`. The bootstrap invokes its adjacent plugin's `scripts/context.ts` with an explicit main or subagent audience. This loader shares the `grok inspect --json` reader in `scripts/grok.ts` with agent installation, selects every enabled plugin, and reads the applicable payloads before emitting any context. Discovery or read failures return an error; absent optional payloads are skipped. Installer marketplace trust filtering remains separate from context loading.
+
+Canonical instructions remain in the payloads, and their `{{PLUGIN_DIR}}` references resolve against their reported plugin roots. The loader's own path stays anchored to the `GROK.md` that was read, even when discovery reports another Essential installation. Conditional workflows remain lazy. The model must read the bootstrap and loader output; this does not imply automatic `@` expansion or consumption of passive SessionStart output. Reinstallation refreshes moved bootstrap references; uninstall preserves surrounding user rules.
+
+Claude and Codex retain native context hooks. OpenCode V1 retains its receipt-bound system transform. None of these context routes depends on installed specialist agents or another harness's setup. Native installer receipts do not grant removal authority over OpenCode's projection.
 
 ## Native plan validation
 
@@ -51,7 +61,7 @@ The adapter validates the manifest's resolved hook receipts, then:
 
 - adds absent MCP definitions to the merged configuration, mapping Claude HTTP servers to OpenCode remote servers and command definitions to local arrays;
 - preserves an existing user or project MCP entry with the same name and logs a warning;
-- builds root, child, and unresolved context from each receipt's audience, adding `MAINAGENT` only after its required projected lead is verified;
+- builds root, child, and unresolved context from each receipt's audience, adding `MAINAGENT` for root sessions without requiring an installed lead;
 - executes receipt-bound context scripts and payloads through `experimental.chat.system.transform`, mutating `output.system` in place;
 - iterates receipt-bound before hooks for `question`, `task`, available plan aliases, and skill-scoped command aliases, rejecting denials before execution;
 - retains allow advice by session and call identity, appends it to the matching result, and clears it after consumption, session idle/deletion, or disposal;

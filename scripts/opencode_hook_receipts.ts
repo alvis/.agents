@@ -197,13 +197,8 @@ function parseSkillRegistrations(
 function nativePayloadCommand(
   event: string,
   payloadName: string,
-  guardedLeadAgent?: string,
 ): string {
-  const leadGuard =
-    payloadName === "MAINAGENT" && guardedLeadAgent !== undefined
-      ? `if [ -n "\${PLUGIN_ROOT:-}" ] && [ ! -f "\${CODEX_HOME:-\${HOME}/.codex}/agents/${guardedLeadAgent}.toml" ]; then exit 0; fi; `
-      : "";
-  return `${PLUGIN_ROOT_GUARD}${leadGuard}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
+  return `${PLUGIN_ROOT_GUARD}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
 }
 
 function nativeScriptCommand(scriptName: string, policy: JsonObject): string {
@@ -254,38 +249,15 @@ function receiptFromGlobalRegistration(
     hookContract(contract).payloads,
     "payload policies",
   );
-  const leadAgents = objectValue(
-    hookContract(contract).lead_agents,
-    "lead agent policies",
-  );
   for (const [payloadName, rawPayloadPolicy] of Object.entries(payloadPolicies)) {
     const payloadPolicy = objectValue(
       rawPayloadPolicy,
       `payload policy ${payloadName}`,
     );
     if (payloadPolicy[registration.event] === undefined) continue;
-    const leadAgent =
-      payloadName === "MAINAGENT" && typeof leadAgents[pluginName] === "string"
-        ? (leadAgents[pluginName] as string)
-        : undefined;
-    if (payloadName === "MAINAGENT" && leadAgent === undefined) continue;
-    const nativeGuardedPlugins =
-      payloadName === "MAINAGENT"
-        ? stringArray(
-            payloadPolicy.native_guarded_plugins,
-            "native guarded MAINAGENT plugins",
-          )
-        : [];
-    const guardedLeadAgent = nativeGuardedPlugins.includes(pluginName)
-      ? leadAgent
-      : undefined;
     if (
       registration.command !==
-      nativePayloadCommand(
-        registration.event,
-        payloadName,
-        guardedLeadAgent,
-      )
+      nativePayloadCommand(registration.event, payloadName)
     ) {
       continue;
     }
@@ -296,15 +268,11 @@ function receiptFromGlobalRegistration(
       payloadPolicy[registration.event],
       `${payloadName} ${registration.event} audiences`,
     );
-    const requirements: Record<string, string> = {};
-    if (guardedLeadAgent !== undefined) {
-      requirements.projected_agent = guardedLeadAgent;
-    }
     return {
       audiences,
       enforcement_mode: "context",
       managed_resource: `${bundlePath}/hooks/${payloadName}.md`,
-      requirements,
+      requirements: {},
       source_event: registration.event,
       source_order: 0,
       source_plugin: pluginName,

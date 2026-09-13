@@ -155,28 +155,12 @@ function writeLegacyProjection(sandbox: Sandbox): LegacyProjection {
   return { externalTarget, legacyPath };
 }
 
-function sourceHookRegistrationCount(): number {
-  const gitDirectory = execFileSync(
-    "git",
-    ["rev-parse", "--absolute-git-dir"],
-    { cwd: repositoryRoot, encoding: "utf8" },
-  ).trim();
-  const paths = execFileSync(
-    "git",
-    [
-      `--git-dir=${gitDirectory}`,
-      `--work-tree=${realpathSync(repositoryRoot)}`,
-      "ls-files",
-      "plugins/*/hooks/hooks.json",
-      "plugins/*/skills/*/SKILL.md",
-    ],
-    { cwd: repositoryRoot, encoding: "utf8" },
-  )
-    .trim()
-    .split("\n")
-    .filter(Boolean);
+function projectedHookRegistrationCount(target: string, digests: Readonly<Record<string, string>>): number {
+  const paths = Object.keys(digests).filter((path) =>
+    /^alvis\/plugins\/[^/]+\/(?:hooks\/hooks\.json|skills\/[^/]+\/SKILL\.md)$/.test(path),
+  );
   return paths.reduce((count, relativePath) => {
-    const text = readFileSync(join(repositoryRoot, relativePath), "utf8");
+    const text = readFileSync(join(target, relativePath), "utf8");
     if (relativePath.endsWith("hooks.json")) {
       const source = JSON.parse(text) as {
         hooks: Record<string, readonly { readonly hooks: readonly unknown[] }[]>;
@@ -728,7 +712,7 @@ describe("project-scope installation", () => {
     }
   }, spawnTimeout);
 
-  it("should account for every shipped global and skill-scoped hook", async () => {
+  it("should account for every generated global and skill-scoped hook", async () => {
     const sandbox = await createSandbox();
     try {
       const result = await runInstaller(
@@ -746,8 +730,8 @@ describe("project-scope installation", () => {
         readonly name: string;
       }[];
       const receipts = plugins.flatMap((plugin) => plugin.hooks);
-      expect(receipts).toHaveLength(sourceHookRegistrationCount());
       const digests = manifest.file_digests as Record<string, string>;
+      expect(receipts).toHaveLength(projectedHookRegistrationCount(targetOf(sandbox), digests));
       for (const plugin of plugins) {
         for (const receipt of plugin.hooks) {
           expect(receipt.source_plugin).toBe(plugin.name);

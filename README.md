@@ -29,7 +29,7 @@ Practical consequences you will see day to day:
 - **Completed work stays completed.** When a decision or spec change invalidates a finished task, its row keeps `✓ done` and gains `validity: stale (<reason>)`; new remediation tasks carry the rework. The system recomputes only what the changed truth touched instead of restarting everything — and history is never falsified.
 - **Approvals bind to exact revisions.** "Approved" names the artifact, its hash or immutable revision, the reviewer, and the scope. An approval of v7 never silently carries to v8.
 - **Concurrency is technical, not social.** One coordinator per work stream holds an on-disk lease (`state-lease`); state writes are atomic and bump a monotonic `State revision`; an append-only journal records causality so drift between tables is settled by evidence, not guesswork. A small read-only `state-doctor` catches structural defects (cycles, dangling dependencies, contradictory statuses) without ever judging prose.
-- **Context is revealed progressively.** Only the tiny `plugins/<p>/hooks/ALLAGENT.md` / `plugins/<p>/hooks/MAINAGENT.md` / `plugins/<p>/hooks/SUBAGENT.md` entry points are injected into every session. Contracts load on demand at the moment they matter, so agents spend context on your work, not on ceremony.
+- **Context is revealed progressively.** Small hook payloads carry shared and audience-specific instructions. Claude and Codex inject them natively; Grok receives bootstrap instructions, and OpenCode V1 uses its context adapter. Contracts load on demand at the moment they matter, so agents spend context on your work, not on ceremony.
 
 ## Install
 
@@ -41,7 +41,7 @@ claude plugin marketplace add alvis/.claude --scope project
 claude plugin install specification@alvis --scope project
 ```
 
-`specification` is the recommended end-to-end bundle; its declared dependencies install `coding` and `essential`. After installation, ask Claude to run `/essential:install-agents`, restart the session, and run `/reload-plugins` after marketplace updates.
+`specification` is the recommended end-to-end bundle; its declared dependencies install `coding` and `essential`. After installation, ask Claude to run `/essential:install`, restart the session, and run `/reload-plugins` after marketplace updates.
 
 | Scope | Use |
 |---|---|
@@ -60,7 +60,7 @@ codex plugin add coding@alvis
 codex plugin add specification@alvis
 ```
 
-Codex reads `.agents/plugins/marketplace.json`, a structural projection of the authoritative Claude catalog. Install the workflow's listed plugins explicitly because Claude's plugin dependency metadata is harness-specific. Ask Codex to run `essential:install-agents` for the Codex harness, then start a fresh session so the native TOML specialist definitions are loaded. Role-binding context is withheld until its required specialist is installed. Open `/hooks` after installation and trust the bundled plugin hooks; Codex skips new or changed context-injection hooks until their definitions are reviewed.
+Codex reads `.agents/plugins/marketplace.json`, a structural projection of the authoritative Claude catalog. Install the workflow's listed plugins explicitly because Claude's plugin dependency metadata is harness-specific. Ask Codex to run `essential:install` for the Codex harness, then start a fresh session so the native TOML specialist definitions are loaded. Context loading does not depend on specialist installation. Open `/hooks` after installation and trust the bundled plugin hooks; Codex skips new or changed context-injection hooks until their definitions are reviewed.
 
 In T3-hosted Plan Mode, Codex emits the plan without a plan-transition tool call. Essential therefore validates the current turn's `<proposed_plan>` from the Codex transcript at Stop and requests one corrected response when needed. The first malformed plan may render before that feedback arrives.
 
@@ -73,9 +73,9 @@ grok plugin install plugins/specification --trust
 
 Grok reads `.grok-plugin/marketplace.json`, a structural projection of the authoritative Claude catalog, and validates each plugin's thin `.grok-plugin/plugin.json` adapter. Install is source-scoped: `grok plugin install` takes a local path directly and `--trust` enables it, while `marketplace add` only lists discovery entries.
 
-Grok discovers plugin agents only from direct `agents/*.md` children, so this repository's split layout yields none there — agents come from the installer. Ask Grok to run `essential:install-agents` with `--harness grok`; specialists land in `${GROK_HOME:-~/.grok}/agents/*.md`.
+Ask Grok to run [essential:install](plugins/essential/skills/install/SKILL.md). It stitches this repository's agent templates into Grok's personal agent directory and adds a managed reference to [GROK.md](plugins/essential/directions/GROK.md) in the user `AGENTS.md`. Start a fresh session afterward. The bootstrap directs Grok to a loader that discovers enabled plugins and returns their instructions for the current main or subagent session. Grok 1.0.30 read the bootstrap but did not reliably execute those instructions; see [compatibility](COMPATIBILITY.md) for the observed limits.
 
-Scoped out under Grok Build: its `SessionStart` and `SubagentStart` handlers ignore stdout, so the routing-payload injection is a registered no-op there. The PreToolUse gates run natively, emitting top-level `{"decision","reason"}` envelopes over camelCase `toolInput` stdin; the plan-heading gate fail-opens because Grok's `exit_plan_mode` sends no plan field.
+Grok's `SessionStart` and `SubagentStart` handlers still ignore stdout; the bootstrap supplies the missing instruction route. Native tool guards remain registered. See [compatibility](COMPATIBILITY.md) for the verified behavior and limits.
 
 ### OpenCode V1
 
@@ -179,7 +179,7 @@ This path avoids Notion and remote publication entirely. It leaves verified code
 
 A cross-harness 22-agent team is organized into a main-session Project Manager, domain leads, and their teammates. Shared operation lives in `plugins/essential/hooks/ALLAGENT.md` and `plugins/essential/hooks/MAINAGENT.md`, subagent conduct lives in `plugins/essential/directions/subagent.md`, a subagent's one mandated pre-read from `plugins/essential/hooks/SUBAGENT.md`, the scripted-execution proxy protocol lives in `plugins/essential/references/scripted-execution.md`, owner-specific routing lives in each contributing plugin's `plugins/<owner>/hooks/ALLAGENT.md`, and per-agent delegation topology lives in each agent definition. A plugin that owns an injected domain policy carries a `plugins/<owner>/hooks/MAINAGENT.md`, injected at `SessionStart` only: `coding` selects topology by semantic risk and `web` binds design initiatives to `design-lead`. Each lead wraps its `## Collaboration` map in an `<IMPORTANT>` tag, marking it as the map the lead routes from.
 
-Install via the `essential:install-agents` skill in the active harness. Canonical sources live under `plugins/<owner>/agents/<name>/` as `base.md` plus `frontmatter/meta.json`, `claude.json`, `codex.json`, and `grok.json`. The installer discovers source-checkout siblings, enabled same-marketplace plugins, and explicitly trusted marketplaces passed with `--include-marketplace`; it validates the complete discovered roster, stages stitched files, and copies them into the selected harness's personal agent directory. It overwrites current same-named discoveries and leaves unrelated or stale files untouched. Edits require a re-install, and changes take effect in the next session.
+Use [essential:install](plugins/essential/skills/install/SKILL.md) to install or refresh agents in Claude Code, Codex, or Grok Build. It stages definitions from the canonical split templates, protects conflicting files, and records ownership for [essential:uninstall](plugins/essential/skills/uninstall/SKILL.md). Uninstall preserves edited and unrelated files. Grok installation also manages its startup attachment; the other harnesses never touch Grok configuration. OpenCode V1 retains its own projector. Changes take effect in the next session.
 
 ### Roster
 

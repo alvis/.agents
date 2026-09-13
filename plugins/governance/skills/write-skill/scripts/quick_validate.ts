@@ -52,7 +52,7 @@ const MODEL_SELECTION_FIELDS = new Set([
 ]);
 const CLAUDE_TIMEOUT_MILLISECONDS = 30_000;
 const INTELLIGENCE_MAPPING =
-  "essential/skills/install-agents/references/intelligence-levels.json";
+  "essential/skills/install/references/intelligence-levels.json";
 
 /** One policy problem found in a skill file, optionally bound to a body line. */
 export type PolicyIssue = { message: string; line?: number };
@@ -563,7 +563,7 @@ function intelligenceLevels(): Set<string> {
         ancestor,
         "essential",
         version,
-        "skills/install-agents/references/intelligence-levels.json",
+        "skills/install/references/intelligence-levels.json",
       );
       if (existsSync(versioned)) candidates.push(versioned);
     }

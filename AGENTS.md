@@ -33,7 +33,7 @@ Runtime prerequisites: Bash, `jq`, Git, Bun, and Python 3 — the preserved exte
 | Workflow entry point | `plugins/<p>/directions/WORKFLOW.md` |
 | Shared executables | `plugins/essential/scripts/` |
 
-There are **no source `commands/` directories**. Agents ship from `agents/` as templates (`base.md` body + split JSON files under `frontmatter/`) that `/essential:install-agents` installs as Claude Markdown, Codex TOML, or Grok Markdown. Every plugin depends on `essential`; `web` and `react` also depend on `coding`.
+There are **no source `commands/` directories**. Agents ship from `agents/` as templates (`base.md` body + split JSON files under `frontmatter/`) that `/essential:install` installs as Claude Markdown, Codex TOML, or Grok Markdown. Every plugin depends on `essential`; `web` and `react` also depend on `coding`.
 
 ## The injection contract
 
@@ -51,7 +51,7 @@ Claude Code sets `CLAUDE_PLUGIN_ROOT`, Codex sets `PLUGIN_ROOT`, and Grok Build 
 - `MAINAGENT.md` — `SessionStart` only; carries the owner's main-session decision gate (`coding` selects topology by semantic risk; `web` binds design initiatives to `design-lead`).
 - `SUBAGENT.md` — `essential` only, `SubagentStart`.
 
-Under Grok Build these payloads stay registered but are openly scoped out: its `SessionStart` and `SubagentStart` handlers ignore stdout, so no routing text injects there. The PreToolUse validators still fire natively, emitting grok's top-level `{"decision","reason"}` envelope for either outcome, which makes Grok the one harness that states an allow: Claude Code and Codex express an allow as a `PreToolUse` context envelope, including an empty `additionalContext` when the reason is empty, and their permission system decides. An unresolved plugin root exits non-zero on both paths. Grok also ignores `Stop` stdout, so the pending-checkpoint `.state` recovery hook's block envelope remains advisory there.
+Under Grok Build these payloads stay registered, but its `SessionStart` and `SubagentStart` handlers ignore stdout. `essential:install` attaches the packaged `plugins/essential/directions/GROK.md` bootstrap through Grok's user `AGENTS.md`; it directs Grok to load enabled plugins' payloads through `plugins/essential/scripts/context.ts` with the same audience boundaries. Model compliance remains experimental; see `COMPATIBILITY.md`. `essential:uninstall` removes the owned attachment and unmodified installed agents. The PreToolUse validators still fire natively, emitting grok's top-level `{"decision","reason"}` envelope for either outcome, which makes Grok the one harness that states an allow: Claude Code and Codex express an allow as a `PreToolUse` context envelope, including an empty `additionalContext` when the reason is empty, and their permission system decides. An unresolved plugin root exits non-zero on both paths. Grok also ignores `Stop` stdout, so the pending-checkpoint `.state` recovery hook's block envelope remains advisory there.
 
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files are re-read on every session, they are byte-budgeted (see below) — put detail in the content directory that owns it and link to it at the decision point.
 
@@ -87,6 +87,7 @@ This repository does not use runtime feature flags. Coding's reusable feature-fl
 
 These plugins are built to one model of how knowledge ages: `plugins/essential/references/truth.md`. Read it before changing how a skill records, reads, or retires anything. The invariants below are what it forbids while you edit these sources, and each is the rule a locally sensible change breaks first.
 
+- **Harnesses are independently configured.** Claude Code, Codex, Grok Build, and OpenCode V1 must use their own installation and capabilities. Never make instruction loading or operation under one harness depend on another harness's files, agents, CLI, or setup. Check optional capabilities when the operation needs them; missing specialists never suppress unrelated instructions. Preserve OpenCode's adapter boundary and disclose unsupported behavior in `COMPATIBILITY.md`.
 - **Every native harness, or none.** Claude Code, Codex, and Grok Build are one target, not a primary plus a port. Anything in their native contract — hook command, script, agent or skill projection, installed path, config format, tool name — works under all of them or is not done. Reading one harness's value resolves to nothing under the others and almost always fails silent rather than loud, so resolve every harness-specific value through one ordered chain that a new harness extends by one segment, keep that chain in exactly one place, terminate it so an unrecognized harness exits non-zero instead of injecting nothing, and prove each harness in isolation: a test that leaves the other harnesses' variables inherited resolves through the wrong one and proves nothing. A feature only one harness has — Claude Code output styles and statusline today — is scoped to it in the open, saying which harness and why; what this forbids is the unmarked single-harness path in something meant for all of them. Compatibility consumers instead generate from native sources, disclose every gap in `COMPATIBILITY.md`, and reject source shapes an adapter cannot preserve rather than silently dropping them.
 - **One home per fact.** Give every fact exactly one authoritative file. A second mention is derived: it names its source and is rewritten from that source, never patched in place. This is the rule behind "no central roster in a plugin's `plugins/<p>/hooks/ALLAGENT.md`" above — a convenience copy is drift with a head start.
 - **Keep committed artifacts and derived views distinct.** The committed marketplace projections and compatibility matrix are maintained manually. Overviews and the installed plugin cache are derived views, safe to delete and rebuild. `.state/` is operational working memory, not byte-reconstructible; it becomes disposable only after every durable fact is promoted and closure is recorded. Do not add a cache, index, or generated summary that something else then depends on.
@@ -104,9 +105,9 @@ A named validator is the required check. Hook byte budgets have no test gate; ve
 | `SKILL.md` body < 500 lines | `plugins/governance/skills/write-skill/scripts/quick_validate.ts` |
 | Skill `description` 25–60 words (warning) | same |
 | No placeholder text (`[TODO]`, `[Description]`, …) and no unresolved local links | same |
-| Agent metadata `description` ≤ 1024 chars | `plugins/essential/skills/install-agents/scripts/stitch_agent.ts` |
+| Agent metadata `description` ≤ 1024 chars | `plugins/essential/skills/install/scripts/stitch_agent.ts` |
 | Agent metadata `name` matches `^[a-z0-9]+(?:-[a-z0-9]+)*$` and equals its directory name | same |
-| Agent metadata `intelligence` exists in `plugins/essential/skills/install-agents/references/intelligence-levels.json`; harness model/effort fields are derived | same |
+| Agent metadata `intelligence` exists in `plugins/essential/skills/install/references/intelligence-levels.json`; harness model/effort fields are derived | same |
 | Agent harness overlays **omit `tools`** (agents inherit runtime capabilities) | same |
 | Codex overlay values are scalar TOML fields; nickname candidates derive from metadata; stitched Codex and Grok bodies make no promise from Claude-only isolation | same |
 | `memory` is `"project"`; body has exactly one `## Memory` section | same |

@@ -9,19 +9,13 @@
   "canonical_bundle_path": "@plugin:path",
   "projected_bundle_path": "alvis/plugins/<plugin>/<path>",
   "opencode_hooks": {
-    "lead_agents": {
-      "coding": "tech-lead",
-      "essential": "tech-lead",
-      "web": "design-lead"
-    },
     "payloads": {
       "ALLAGENT": {
         "SessionStart": ["root"],
         "SubagentStart": ["child"]
       },
       "MAINAGENT": {
-        "SessionStart": ["root"],
-        "native_guarded_plugins": ["essential", "web"]
+        "SessionStart": ["root"]
       },
       "SUBAGENT": {
         "SubagentStart": ["child"]

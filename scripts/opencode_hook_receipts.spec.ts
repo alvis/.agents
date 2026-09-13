@@ -32,13 +32,8 @@ function globalHooks(
 function payloadCommand(
   event: string,
   payloadName: string,
-  guardedLeadAgent?: string,
 ): string {
-  const leadGuard =
-    guardedLeadAgent === undefined
-      ? ""
-      : `if [ -n "\${PLUGIN_ROOT:-}" ] && [ ! -f "\${CODEX_HOME:-\${HOME}/.codex}/agents/${guardedLeadAgent}.toml" ]; then exit 0; fi; `;
-  return `${PLUGIN_ROOT_GUARD}${leadGuard}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
+  return `${PLUGIN_ROOT_GUARD}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
 }
 
 describe("OpenCode hook receipt command validation", () => {
@@ -66,19 +61,16 @@ describe("OpenCode hook receipt command validation", () => {
     }
   });
 
-  it.each([
-    ["essential", "tech-lead"],
-    ["web", "design-lead"],
-  ])(
-    "should require %s's projected agent for a guarded MAINAGENT payload",
-    async (pluginName, leadAgent) => {
+  it.each(["essential", "web"])(
+    "should project %s's MAINAGENT payload without any installed agent",
+    async (pluginName) => {
       const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
       try {
         await writeFixture(
           pluginRoot,
           "hooks/hooks.json",
           globalHooks(
-            payloadCommand("SessionStart", "MAINAGENT", leadAgent),
+            payloadCommand("SessionStart", "MAINAGENT"),
             "SessionStart",
           ),
         );
@@ -92,9 +84,7 @@ describe("OpenCode hook receipt command validation", () => {
         });
 
         expect(receipts).toHaveLength(1);
-        expect(receipts[0]?.requirements).toEqual({
-          projected_agent: leadAgent,
-        });
+        expect(receipts[0]?.requirements).toEqual({});
       } finally {
         await removeTemporaryDirectory(pluginRoot);
       }

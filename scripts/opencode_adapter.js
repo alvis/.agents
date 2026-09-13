@@ -422,12 +422,6 @@ async function buildSystemContext(
           receipt.requirements.supporting_resource,
         )
       }
-      const requiredAgent = receipt.requirements.projected_agent
-      if (requiredAgent !== undefined) {
-        const agentPath = `agents/${requiredAgent}.md`
-        if (!Object.hasOwn(manifest.file_digests, agentPath)) continue
-        await readManagedFile(projectionRoot, manifest, agentPath)
-      }
       if (receipt.enforcement_mode === "advisory") {
         const advisory = await readReceiptPayload(
           projectionRoot,

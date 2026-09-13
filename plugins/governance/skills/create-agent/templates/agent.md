@@ -4,7 +4,7 @@
      - frontmatter/claude.json — Claude-only frontmatter
      - frontmatter/codex.json — Codex-only fields
      - frontmatter/grok.json — Grok Build-only fields
-     Validate and build only a temporary artifact with Essential's install-agents stitch helper. The stitcher derives one Intelligence level line beneath the rendered H1 from meta.json; never duplicate that line in base.md. Before editing any agent, re-check the live Claude Code docs for the current valid frontmatter key surface — this template mirrors it at time of writing, but the docs win on conflict. Log any conflict you find. -->
+     Validate and build only a temporary artifact with Essential's install stitch helper. The stitcher derives one Intelligence level line beneath the rendered H1 from meta.json; never duplicate that line in base.md. Before editing any agent, re-check the live Claude Code docs for the current valid frontmatter key surface — this template mirrors it at time of writing, but the docs win on conflict. Log any conflict you find. -->
 
 ## frontmatter/meta.json
 

@@ -516,6 +516,38 @@ describe("opencode adapter manifest validation", () => {
     expect(unresolvedContext).not.toContain("Stop hook is advisory");
   });
 
+  it("should deliver main context when the projection has no lead agent", async () => {
+    const projection = join(realpathSync(sandbox.project), ".opencode");
+    const manifestPath = join(projection, "alvis/manifest.json");
+    const contextResource = "alvis/plugins/essential/hooks/MAINAGENT.md";
+    const contextPath = join(projection, contextResource);
+    const originalManifest = readFileSync(manifestPath, "utf8");
+    const originalContext = readFileSync(contextPath, "utf8");
+    const manifest = JSON.parse(originalManifest) as {
+      file_digests: Record<string, string>;
+    };
+    const marker = "context-without-a-lead-agent\n";
+    delete manifest.file_digests["agents/tech-lead.md"];
+    manifest.file_digests[contextResource] = createHash("sha256").update(marker).digest("hex");
+    try {
+      writeFileSync(contextPath, marker);
+      writeFileSync(manifestPath, JSON.stringify(manifest));
+      const { AlvisMarketplace } = await loadAdapter();
+      const hooks = await AlvisMarketplace({
+        client: { session: { get: async () => ({ data: { id: "root-no-lead" } }) } },
+        directory: sandbox.project,
+      });
+      const output: { system: string[] } = { system: [] };
+
+      await hooks["experimental.chat.system.transform"]({ sessionID: "root-no-lead" }, output);
+
+      expect(output.system.join("\n")).toContain(marker.trim());
+    } finally {
+      writeFileSync(contextPath, originalContext);
+      writeFileSync(manifestPath, originalManifest);
+    }
+  });
+
   it("should retain commit backup advice and post-rewrite diagnostics after a repository rewrite", async () => {
     // keep backup traversal independent of the installed adapter bundle
     const repository = join(sandbox.root, "rewrite-repository");
