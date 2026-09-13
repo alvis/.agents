@@ -53,7 +53,7 @@ Essential's `${ESSENTIAL_ROOT}/templates/docs/architecture.md` owns the entrypoi
 
 Reconciling it means: add, update, or remove the Documents line for the document just written or renamed, and revise Goal, Requirements, or Constraints only when the change alters them. Never restate a component document's internals here.
 
-For ADR rows and ADR changes, apply the canonical `${ESSENTIAL_ROOT}/references/adr.md` contract and use its template. The index contains effective ADRs only; history is selected from `decisions/superseded/` by the successor link when a current ADR is known.
+For ADR rows and ADR changes, apply the canonical `${ESSENTIAL_ROOT}/references/adr.md` contract and use its template. Effective records are direct children of `decisions/<domain>/`; archives stay under the same domain's `superseded/` child. The index contains effective ADRs only; history is selected from the relevant `decisions/<domain>/superseded/` directory by the successor link when a current ADR is known.
 
 ## Review audits
 

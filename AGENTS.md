@@ -94,7 +94,7 @@ These plugins are built to one model of how knowledge ages: `plugins/essential/r
 - **Status is not validity.** `done` is terminal history; whether its result still holds is a separate question with a separate answer. A skill choosing what to recompute reads validity, never status, and never flips a completed row back.
 - **Tie evidence to the state it verifies.** Every recorded result names the exact revision and inputs checked. A bare "passed" is not evidence; it is invalid after any checked input changes.
 - **Never test prose by string presence.** Do not add a test that asserts a phrase, sentence, heading, or other prose fragment exists anywhere in repository content. Test executable behavior or machine-checkable structure; review prose against its owning contract.
-- **Supersede, never rewrite.** An accepted decision or shipped contract is replaced without rewriting its historical body. ADRs move to their owning `decisions/superseded/` folder, gain the standard forward header, and leave the successor standing alone; other records follow their owning contract.
+- **Supersede, never rewrite.** An accepted decision or shipped contract is replaced without rewriting its historical body. ADRs stay in their domain and move to `decisions/<domain>/superseded/`, gain the standard forward header, and leave the successor standing alone; other records follow their owning contract.
 
 ## Hard limits
 

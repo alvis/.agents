@@ -23,6 +23,7 @@ import sys
 import time
 from html import unescape
 from pathlib import Path
+from typing import Literal
 from urllib.parse import unquote, urlsplit
 
 MARK_STATUS = {
@@ -1638,8 +1639,10 @@ ADR_LIST_ITEM = re.compile(r"^(?P<indent> *)(?:[-+*]|\d+[.)])(?:\s+|$)")
 ADR_RAW_HTML_CLOSE_TAGS = {"pre", "script", "style", "textarea"}
 ADR_EMPTY_CONTAINER = re.compile(r"^(?:>\s*)+$")
 ADR_NUMERIC_FILENAME = re.compile(r"^adr-[0-9]+(?:-|$)", re.IGNORECASE)
+ADR_DOMAIN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+ADR_ARCHIVE_REFERENCE = re.compile(r"decisions/(?:[^\s|)`<>]+/)?superseded/")
 ADR_INDEX_ARCHIVED_PATH = re.compile(
-    r"(?<![\w/.-])(?P<path>(?:\./)?decisions/superseded/[^\s|)`<>]+\.md)"
+    r"(?<![\w/.-])(?P<path>(?:\./)?decisions/(?:[^\s|)`<>]+/)?superseded/[^\s|)`<>]+\.md)"
     r"(?![\w.-])"
 )
 ADR_METADATA_LINE = re.compile(
@@ -1733,11 +1736,11 @@ def parse_superseded_header(
     return successor, changed, links, len(successor_lines), len(changed_lines)
 
 
-def archive_repair_advice(file: Path, superseded_dir: Path, problems: list[str]) -> str:
+def archive_repair_advice(file: Path, decisions_dir: Path, problems: list[str]) -> str:
     """Offer a convergent repair for the specific archived-ADR defects found."""
-    if file.parent != superseded_dir:
+    if classify_adr_path(file, decisions_dir) != "archived":
         return (
-            "Move the ADR directly under docs/architecture/decisions/superseded/; "
+            "Move the ADR directly under docs/architecture/decisions/<domain>/superseded/; "
             "then add the single standard Status, Superseded by, and What changed "
             "header while preserving the original heading and historical body."
         )
@@ -2295,28 +2298,35 @@ def without_inactive_markdown_regions(text: str) -> str:
     return "".join(lines)
 
 
+def classify_adr_path(
+    file: Path, decisions_dir: Path
+) -> Literal["effective", "archived"] | None:
+    """Classify domain-local placement, including paths whose files are missing."""
+    if not file.is_relative_to(decisions_dir):
+        return None
+    parts = file.relative_to(decisions_dir).parts
+    if len(parts) < 2 or parts[0] == "superseded" or not ADR_DOMAIN.fullmatch(parts[0]):
+        return None
+    if len(parts) == 2:
+        return "effective"
+    if len(parts) == 3 and parts[1] == "superseded":
+        return "archived"
+    return None
+
+
+def is_adr_archive_path(file: Path, decisions_dir: Path) -> bool:
+    """Recognize archive references even in legacy or malformed layouts."""
+    return (
+        file.is_relative_to(decisions_dir)
+        and "superseded" in (file.relative_to(decisions_dir).parts[:-1])
+    )
+
+
 def check_adrs(report: Report, repository_root: Path) -> None:
     """Check effective/archived ADR separation, index coverage, and clarity."""
     architecture_dir = repository_root / "docs" / "architecture"
     decisions_dir = architecture_dir / "decisions"
-    if not decisions_dir.is_dir():
-        return
 
-    current_files = sorted(
-        path
-        for path in decisions_dir.iterdir()
-        if path.is_file() and path.suffix == ".md"
-    )
-    superseded_dir = decisions_dir / "superseded"
-    archived_files = (
-        sorted(
-            path
-            for path in superseded_dir.iterdir()
-            if path.is_file() and path.suffix == ".md"
-        )
-        if superseded_dir.is_dir()
-        else []
-    )
     adr_candidates = sorted(
         path
         for path in decisions_dir.rglob("*")
@@ -2327,6 +2337,17 @@ def check_adrs(report: Report, repository_root: Path) -> None:
         for path in decisions_dir.rglob("*")
         if path.is_file() and path.suffix.casefold() == ".md"
     )
+    current_files = [
+        path
+        for path in all_adr_files
+        if path.suffix == ".md"
+        and classify_adr_path(path, decisions_dir) == "effective"
+    ]
+    archived_files = [
+        path
+        for path in all_adr_files
+        if path.suffix == ".md" and classify_adr_path(path, decisions_dir) == "archived"
+    ]
     for file in adr_candidates:
         if file.suffix != ".md":
             report.error(
@@ -2345,8 +2366,8 @@ def check_adrs(report: Report, repository_root: Path) -> None:
         report.error(
             str(relative),
             "adr-layout",
-            "ADR file is outside the effective decisions directory or its direct superseded archive",
-            "Move the ADR directly under docs/architecture/decisions/ if it is effective, or directly under docs/architecture/decisions/superseded/ if it is archived.",
+            "ADR file is outside a domain's effective directory or its direct superseded archive",
+            "Move the ADR directly under docs/architecture/decisions/<domain>/ if effective, or docs/architecture/decisions/<domain>/superseded/ if archived; use one lowercase kebab-case domain other than superseded.",
         )
     for file in sorted(allowed_files):
         if not ADR_FILENAME.fullmatch(file.stem):
@@ -2372,7 +2393,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 "Rename the archived file to match its retained canonical heading number, "
                 "then update links without editing the historical body; ask the user to "
                 "resolve any provenance ambiguity."
-                if file.parent == superseded_dir
+                if file in archived_files
                 else "Ask the user to resolve the identity provenance; prefer renaming the effective file to match its retained canonical heading number and updating links/index entries, and only edit the accepted heading with explicit approval if provenance proves the heading drifted, while preserving the decision body."
             )
             report.error(
@@ -2398,7 +2419,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 "rename only the effective duplicate or the archived filename as "
                 "provenance permits and update links/index entries without editing "
                 "the archived H1."
-                if file.parent == superseded_dir
+                if file in archived_files
                 else "Assign each ADR a unique positive unpadded numeric identity and update only the affected filename, links, and index entry while preserving the decision bodies."
             )
             report.error(
@@ -2407,7 +2428,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 f"ADR numeric identity {numeric_id} is duplicated: {locations}",
                 repair,
             )
-    current_names = {path.stem for path in current_files}
+    current_paths = {path.resolve() for path in current_files}
 
     for file in current_files:
         text = file.read_text(encoding="utf-8", errors="replace")
@@ -2420,7 +2441,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 str(relative),
                 "adr-superseded",
                 "effective ADR declares status Superseded but is not archived",
-                "Move the file to docs/architecture/decisions/superseded/, prepend the standard header naming its successor, and remove it from the ADR index.",
+                "Move the file to its domain's superseded/ directory, prepend the standard header naming its successor, and remove it from the ADR index.",
             )
         if not status_values:
             report.error(
@@ -2451,13 +2472,11 @@ def check_adrs(report: Report, repository_root: Path) -> None:
         effective_archived_link = False
         for link in adr_index_links(content):
             target = resolve_adr_link(file, link)
-            if target is not None and (
-                target.parent == superseded_dir or superseded_dir in target.parents
-            ):
+            if target is not None and is_adr_archive_path(target, decisions_dir):
                 effective_archived_link = True
                 break
         if (
-            "decisions/superseded/" in content
+            ADR_ARCHIVE_REFERENCE.search(content)
             or effective_archived_link
             or ADR_REPLACEMENT_REFERENCE.search(history_content)
             or ADR_RELATIONSHIP_METADATA.search(history_content)
@@ -2566,7 +2585,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 problems.append(
                     "archived ADR must retain substantive decision content after the metadata"
                 )
-        if file.parent != superseded_dir:
+        if classify_adr_path(file, decisions_dir) != "archived":
             problems.append(
                 "archive must contain ADR files directly, not in a nested folder"
             )
@@ -2607,7 +2626,11 @@ def check_adrs(report: Report, repository_root: Path) -> None:
             target = resolve_adr_link(file, link)
             if target is None:
                 continue
-            if target.parent != decisions_dir or not target.is_file():
+            if (
+                target not in current_paths
+                or not ADR_FILENAME.fullmatch(target.stem)
+                or not target.is_file()
+            ):
                 problems.append(
                     f"successor link does not target an effective ADR: {link}"
                 )
@@ -2692,7 +2715,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 str(relative),
                 "adr-superseded",
                 "; ".join(problems),
-                archive_repair_advice(file, superseded_dir, problems),
+                archive_repair_advice(file, decisions_dir, problems),
             )
 
     index = architecture_dir / "README.md"
@@ -2701,7 +2724,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
             "docs/architecture/README.md",
             "adr-index",
             "ADR index is missing while effective ADRs exist",
-            "Create or restore docs/architecture/README.md and list every effective ADR directly under decisions/.",
+            "Create or restore docs/architecture/README.md and list every effective ADR under decisions/<domain>/.",
         )
     if index.is_file():
         index_text = index.read_text(encoding="utf-8", errors="replace")
@@ -2709,7 +2732,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
             without_yaml_frontmatter(index_text)
         )
         reference_definitions = adr_reference_definitions(index_visible_text)
-        indexed_current: set[str] = set()
+        indexed_current: set[Path] = set()
         index_lines = index_visible_text.splitlines()
         status_column: int | None = None
         table_column_count: int | None = None
@@ -2717,7 +2740,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
         table_active = False
         delimiter_expected = False
         delimiter_seen = False
-        indexed_occurrences: dict[str, int] = {}
+        indexed_occurrences: dict[Path, int] = {}
         archived_index_links: set[str] = set()
         archived_index_plain_paths: set[str] = set()
         for line in index_lines:
@@ -2785,13 +2808,13 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 target = resolve_adr_link(index, link)
                 if target is None:
                     continue
-                if target.parent == decisions_dir:
+                if classify_adr_path(target, decisions_dir) == "effective":
                     if target.is_file():
-                        indexed_occurrences[target.stem] = (
-                            indexed_occurrences.get(target.stem, 0) + 1
+                        indexed_occurrences[target] = (
+                            indexed_occurrences.get(target, 0) + 1
                         )
-                        indexed_current.add(target.stem)
-                        if indexed_occurrences[target.stem] > 1:
+                        indexed_current.add(target)
+                        if indexed_occurrences[target] > 1:
                             report.error(
                                 "docs/architecture/README.md",
                                 "adr-index",
@@ -2835,29 +2858,42 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                             f"ADR index links to missing effective ADR: {link}",
                             "Remove the stale index row or restore the referenced effective ADR.",
                         )
-                elif (
-                    target.parent == superseded_dir or superseded_dir in target.parents
-                ):
+                elif is_adr_archive_path(target, decisions_dir):
                     archived_index_links.add(link)
                     linked_archived_targets.add(target)
             for path in ADR_INDEX_ARCHIVED_PATH.findall(cells[0]):
                 target = resolve_adr_link(index, path)
                 if (
                     target is not None
-                    and (
-                        target.parent == superseded_dir
-                        or superseded_dir in target.parents
-                    )
+                    and is_adr_archive_path(target, decisions_dir)
                     and target not in linked_archived_targets
                 ):
                     archived_index_plain_paths.add(path)
             table_active = True
         for link in adr_index_links(index_visible_text, reference_definitions):
             target = resolve_adr_link(index, link)
-            if target is not None and (
-                target.parent == superseded_dir or superseded_dir in target.parents
-            ):
+            if target is None:
+                continue
+            if is_adr_archive_path(target, decisions_dir):
                 archived_index_links.add(link)
+            elif (
+                target.is_relative_to(decisions_dir)
+                and (
+                    target.suffix.casefold() == ".md"
+                    or ADR_NUMERIC_FILENAME.match(target.name)
+                )
+                and (
+                    classify_adr_path(target, decisions_dir) != "effective"
+                    or target.suffix != ".md"
+                    or not ADR_FILENAME.fullmatch(target.stem)
+                )
+            ):
+                report.error(
+                    "docs/architecture/README.md",
+                    "adr-index",
+                    f"ADR index links to a noncanonical effective ADR path: {link}",
+                    "Replace the stale link with an existing effective ADR at decisions/<domain>/adr-<n>-<decision-slug>.md, or remove the row; use one lowercase kebab-case domain other than superseded.",
+                )
         for link in sorted(archived_index_links):
             if link:
                 report.error(
@@ -2873,12 +2909,12 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 f"ADR index lists an archived ADR path without a rendered link: {path}",
                 "Remove the archived ADR path and keep only rendered links to effective ADRs in the Documents table.",
             )
-        for name in sorted(current_names - indexed_current):
+        for path in sorted(current_paths - indexed_current):
             report.error(
                 "docs/architecture/README.md",
                 "adr-index",
-                f"effective ADR {name}.md is missing from the ADR index",
-                "Add the effective ADR directly under decisions/ to the index table; do not add archived records.",
+                f"effective ADR {path.relative_to(architecture_dir).as_posix()} is missing from the ADR index",
+                "Add the effective ADR under decisions/<domain>/ to the index table; do not add archived records.",
             )
 
 

@@ -12,8 +12,9 @@ Read this before creating or materially rewriting versioned project documentatio
     │   ├── <architecture-concern>.md
     │   ├── <architecture-concern>/*.md
     │   └── decisions/
-    │       ├── adr-<n>-<decision>.md
-    │       └── superseded/adr-<n>-<decision>.md
+    │       └── <domain>/
+    │           ├── adr-<n>-<decision>.md
+    │           └── superseded/adr-<n>-<decision>.md
     ├── design/
     │   ├── README.md
     │   ├── system.md
