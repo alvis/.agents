@@ -1,8 +1,8 @@
-# NAM-CORE-05: Prefer Single-Word Domain Names
+# NAM-CORE-05: Avoid Path-Redundant Filenames
 
 ## Intent
 
-Prefer a single, most-specific domain word for a file name — let the parent directory and the export type carry the rest of the context. The strongest, mechanically-checkable case: a file name must not repeat a word already expressed by the parent directory. When a file lives inside a typed directory (e.g., `services/`, `store/`, `repositories/`), omit the type suffix from the file name.
+Keep path context out of filenames. This rule's mechanically-checkable case is that a file name must not repeat a word already expressed by the parent directory. When a file lives inside a typed directory (e.g., `services/`, `store/`, `repositories/`), omit the type suffix from the file name. Domain-vs-export naming and collision-safe nesting are owned by the [file-structure standard](../../file-structure/write.md).
 
 ## Fix
 
@@ -38,12 +38,12 @@ Read the full path aloud. If a word appears in both the directory name and the f
 Keep more than one word only when a single word would be ambiguous:
 
 - **No typed directory**: When the file is not inside a directory that conveys the type, keep the suffix (e.g., `src/user-service.ts`).
-- **Verb-first function files**: keep verb+noun — `validate-user.ts` for `validateUser()` (see `NAM-FUNC-01`).
+- **Domain-based function modules**: keep the function identifier verb-first, but choose the filename from its domain — `similarity.ts` for `computeSimilarity()` (see the [file-structure standard](../../file-structure/write.md)).
+- **Collision-safe nesting**: if `<domain>.ts` exists and merging would exceed `max-lines`, keep it as the entry and place the concern under `<domain>/<sub-domain>.ts` (see the [file-structure standard](../../file-structure/write.md)).
 - **Generic or ambiguous single word**: keep a qualifier — `api-client.ts`, not `client.ts`.
-- **Name collisions** within the same directory.
 - **React components**: `UserProfile/UserProfile.tsx` is acceptable — React convention requires matching component name to file name.
 - **Tooling suffixes**: `.spec`, `.config` are tooling indicators, not domain-type suffixes. These are not affected by this rule.
 
 ## Related
 
-NAM-CORE-01, file-structure standard
+NAM-CORE-01, [file-structure standard](../../file-structure/write.md)

@@ -9,7 +9,7 @@
 - Booleans use `is*`, `has*`, `can*`, `should*` prefixes
 - Collections use plural names; maps use `*By*` or `*To*` naming
 - No legacy type prefixes (`I`, `T`, `E`)
-- File names must not repeat words from parent directories; let directory context provide the type
+- Filenames must not repeat words from parent directories; domain-derived basenames and collision-safe nesting follow `standard:file-structure`
 - Class companion types use `<Class>Params` / `<Class>Config` / `<Class>Dependencies`; capability fields use explicit action phrases; `#private` fields on the class mirror the capability name 1:1
 
 ## Core Rules Summary
@@ -20,7 +20,7 @@
 - **NAM-CORE-02**: Canonical casing by symbol type: `camelCase` for functions/variables, `PascalCase` for types/classes, `UPPER_SNAKE_CASE` for exported global constants.
 - **NAM-CORE-03**: Only allowlisted abbreviations: `fn`, `params`, `args`, `id`, `url`, `urn`, `uri`, `meta`, `info`.
 - **NAM-CORE-04**: Time and measurement variables include unit suffixes (`timeoutMs`, `intervalSeconds`, `sizeBytes`).
-- **NAM-CORE-05**: File names must not repeat a word already expressed by the parent directory. When inside a typed directory, omit the type suffix (`services/user.ts`, not `services/user-service.ts`).
+- **NAM-CORE-05**: Filenames must not repeat a word already expressed by the parent directory. When inside a typed directory, omit the type suffix (`services/user.ts`, not `services/user-service.ts`); use `standard:file-structure` for domain-vs-export naming and collision-safe nesting.
 
 ### Function Naming (NAM-FUNC)
 
