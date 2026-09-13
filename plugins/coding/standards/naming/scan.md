@@ -12,7 +12,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT use symbol casing that does not match symbol type [`NAM-CORE-02`]
 - DO NOT use non-allowlisted abbreviations [`NAM-CORE-03`]
 - DO NOT omit units from measured values [`NAM-CORE-04`]
-- DO NOT use multi-word file names when a single domain word suffices — incl. repeating the parent directory word [`NAM-CORE-05`]
+- DO NOT repeat parent-directory context in a filename; apply `standard:file-structure` for domain-derived basenames and collision-safe nesting [`NAM-CORE-05`]
 - DO NOT use singular names for collections [`NAM-DATA-01`]
 - DO NOT use map names that hide key-value relationships [`NAM-DATA-02`]
 - DO NOT use boolean names without canonical prefixes [`NAM-DATA-03`]
@@ -32,7 +32,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `NAM-CORE-02` | Casing does not match symbol type | `const User_Name = "x"`; `user_service` |
 | `NAM-CORE-03` | Non-allowlisted abbreviation used | `const usr = getUser()`; `gUsr()` |
 | `NAM-CORE-04` | Unit missing from measured value | `const timeout = 5000` |
-| `NAM-CORE-05` | Multi-word file name where one domain word suffices (incl. repeating parent dir) | `services/user-service.ts`; `store/token-store.ts` |
+| `NAM-CORE-05` | Path-redundant filename | `services/user-service.ts`; `store/token-store.ts` |
 | `NAM-DATA-01` | Collections use singular names | `const user = []` |
 | `NAM-DATA-02` | Map name hides relationship | `const userMap = new Map()` |
 | `NAM-DATA-03` | Boolean missing canonical prefix | `const active = true`; `bIsActive` |
