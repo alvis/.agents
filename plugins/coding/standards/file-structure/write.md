@@ -105,7 +105,7 @@ Examples include `.env.development`, `.env.production`, `.env.test`, and `.env.s
 1. Is it a React component? Use PascalCase; otherwise use kebab-case (`FST-NAME-01`).
 2. What bounded domain or concern does the module own? Name the file for that domain, independent of its main export (`computeSimilarity` → `similarity.ts`) (`FST-NAME-02`).
 3. Does the parent directory already name the type? Drop that suffix unless one word is ambiguous or a framework or tool requires a qualifier (`FST-NAME-03`).
-4. Would merging into an existing domain file preserve one concern and stay within `max-lines`? Merge; otherwise keep `<domain>.ts` as the entry and nest `<domain>/<sub-domain>.ts` (`FST-MODL-03`).
+4. After relocating unrelated concerns, can this coherent concern be merged into `<domain>.ts` without exceeding `max-lines`? If so, create or merge into that file; if an existing `<domain>.ts` makes a separate file impossible and the merge would exceed the limit, or the relocated entry remains over the limit, keep `<domain>.ts` as the entry and nest `<domain>/<sub-domain>.ts` (`FST-MODL-03`).
 5. Are exports unrelated? Split them into their real domain homes (`FST-MODL-01`).
 6. Is this an index or barrel? Apply the barrel boundary and keep logic out (`FST-MODL-02`).
 7. Is the file over `max-lines` after relocation? Use the thin-entry plus helper-directory pattern (`FST-MODL-03`).

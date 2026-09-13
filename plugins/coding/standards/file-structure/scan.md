@@ -9,7 +9,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT repeat type context already supplied by a typed parent directory or use a generic single word when a specific domain name is available [`FST-NAME-03`]
 - DO NOT put unrelated exports in one module [`FST-MODL-01`]
 - DO NOT put implementation logic in an index or violate the barrel-to-barrel and barrel-to-leaf export boundary [`FST-MODL-02`]
-- DO NOT merge a colliding domain concern into `<domain>.ts` when the result would exceed `max-lines`, or scatter it into sibling files instead of `<domain>/<sub-domain>.ts` with `<domain>.ts` as the entry [`FST-MODL-03`]
+- DO NOT split an over-limit file before relocating misplaced concerns, merge a colliding domain concern into `<domain>.ts` when the result would exceed `max-lines`, or scatter remaining sub-domains into sibling files instead of `<domain>/<sub-domain>.ts` with `<domain>.ts` as the entry [`FST-MODL-03`]
 - DO NOT commit environment configuration without the required documented example file or violate the defined override order [`FST-ENVR-01`]
 
 ## Rule Matrix
@@ -21,5 +21,5 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `FST-NAME-03` | Generic or path-redundant name | `services/user-service.ts`; `utils.ts`; `helpers.ts` |
 | `FST-MODL-01` | Unrelated exports share a module | User validation and currency formatting in one file |
 | `FST-MODL-02` | Invalid index/barrel boundary | Logic in `index.ts`; `export * from './user-service'` |
-| `FST-MODL-03` | Collision or arbitrary long-file split | `similarity-vector.ts` beside `similarity.ts` when merging would exceed `max-lines`; `anthropic.schema.ts` | <!-- doc-path-gate: ignore -->
+| `FST-MODL-03` | Unrelocated or arbitrary long-file split | Split before relocating misplaced concerns; `similarity-vector.ts` beside `similarity.ts` when merging would exceed `max-lines`; `anthropic.schema.ts` | <!-- doc-path-gate: ignore -->
 | `FST-ENVR-01` | Environment contract incomplete | `.env.production` without `.env.production.example`; undocumented variables |
