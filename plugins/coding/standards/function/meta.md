@@ -18,8 +18,11 @@ This standard enforces requirements beyond typical function-style guidance:
 | Parameter style left to preference | **Positional/object contract is mandatory**   |
 | Mutable implementations accepted   | **Immutability by default**                   |
 | Multi-purpose functions tolerated  | **Single-responsibility boundaries required** |
+| Options may select separate flows  | **Options configure one shared pipeline**     |
 
 ## Exception Policy
+
+For `FUNC-ARCH-06`, the [rule's scope and adapter allowance](rules/func-arch-06.md) determine compliance. The general exception policy below cannot waive a confirmed violation.
 
 Allowed exceptions only when:
 
@@ -45,3 +48,4 @@ If exception note is missing, submission is rejected.
 - `FUNC-ARCH-*`: Structural function-design rules and helper patterns.
   - `FUNC-ARCH-04`: Never inject the parent class into a child; use a parent factory method (private parent state) or a standalone module-level helper (public parent surface).
   - `FUNC-ARCH-05`: Remove short-circuit guards before small loops; use optional chaining at the call site.
+  - `FUNC-ARCH-06`: Options configure one shared pipeline; separate pipelines belong in separate functions, with bounded adapter dispatch.

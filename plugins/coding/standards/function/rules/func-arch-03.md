@@ -2,7 +2,7 @@
 
 ## Intent
 
-Do not create pass-through wrappers that add no policy, boundary validation, supported-failure mapping, or transformation. Validation of a trusted producer postcondition and remapping of its impossible violation are not value. This is the function-design application of `GEN-DESN-03`, with trust-boundary and producer-postcondition decisions owned by `GEN-SAFE-03`.
+Do not create pass-through wrappers that add no policy, boundary validation, supported-failure mapping, transformation, or bounded dispatch under [FUNC-ARCH-06](func-arch-06.md). Validation of a trusted producer postcondition and remapping of its impossible violation are not value. This is the function-design application of `GEN-DESN-03`, with trust-boundary and producer-postcondition decisions owned by `GEN-SAFE-03`.
 
 ## Fix
 
@@ -17,7 +17,9 @@ function getUserOrThrow(id: string): Promise<User> {
 
 ### Acceptable Wrappers Add Value
 
-A wrapper is justified only when it adds boundary validation, maps a supported failure into the public contract, caches, records required telemetry, or transforms data:
+A wrapper is justified only when it adds boundary validation, maps a supported failure into the public contract, caches, records required telemetry, transforms data, or provides bounded dispatch under [FUNC-ARCH-06](func-arch-06.md). Dispatch adds selection policy; a fixed pass-through call adds none.
+
+Examples of other qualifying behavior:
 
 ```typescript
 // ✅ wrapper adds null-to-throw policy
