@@ -36,7 +36,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `FUNC-ARCH-03` | Wrapper adds no behavioral value | `return service.run(data)`; `validateResult(await internal.run())` |
 | `FUNC-ARCH-04` | Parent class injected into child, or `extends Parent` used purely to share private helpers | `new Child({ parent: this })`; `class Child extends Parent {}` (for shared helpers only) |
 | `FUNC-ARCH-05` | Unnecessary short-circuit guard before small loop | `if (!cb) return; for (const x of items) cb(x)`; `if (!handlers.length) return; for (const h of handlers) h(evt)` |
-| `FUNC-ARCH-06` | Execution selectors in `options`, `config`, `params`, positional arguments, or captured configuration select separate pipelines outside a bounded adapter; distinguish domain facts using the [rule guide](rules/func-arch-06.md) | `if (options.mode === "rebuild") { clearIndex(); scanAll(); } else { readCursor(); applyChanges(); }` |
+| `FUNC-ARCH-06` | Execution selectors in `options`, `config`, `params`, positional arguments, or captured configuration select separate pipelines outside a bounded adapter; distinguish domain facts using the [rule guide](rules/func-arch-06.md) | `if (options.mode === "something") { doSomething(); } else { doAnotherThing(); }` — trace both calls to confirm separate workflows; bounded dispatch is compliant. |
 | `FUNC-SIGN-01` | Missing explicit return type | `function parse(x){ return x }`; `function getUserById(id: string) {` |
 | `FUNC-SIGN-02` | Positional signature is overly long | `createUser(n,e,r,w,d)` |
 | `FUNC-SIGN-03` | Parameter names are non-standard | `fn(payload, cfg, extra)` |

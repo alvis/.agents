@@ -22,12 +22,7 @@ This standard enforces requirements beyond typical function-style guidance:
 
 ## Exception Policy
 
-For `FUNC-ARCH-06`, the [rule's scope and adapter allowance](rules/func-arch-06.md) determine compliance. The general exception policy below cannot waive a confirmed violation.
-
-Allowed exceptions only when:
-
-- False positive
-- No viable workaround exists now
+An exception requires a false positive or no viable workaround. Confirmed [FUNC-ARCH-06](rules/func-arch-06.md) violations are never eligible; bounded adapter dispatch satisfies that rule's scope and needs no exception.
 
 Required exception note fields:
 
