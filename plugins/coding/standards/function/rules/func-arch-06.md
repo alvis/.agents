@@ -3,7 +3,7 @@
 ## Intent
 
 <IMPORTANT>
-Options configure one shared implementation. They may parameterize, add, or omit stages within its processing pipeline, but must not select separately implemented processing pipelines. Separate pipelines belong in separate functions. An adapter/proxy may select among those functions when its responsibility is selection, delegation, and boundary adaptation. A violation fails acceptance even when tests pass.
+Options configure one shared implementation. They may parameterize, add, or omit stages within its processing pipeline, but must not select separately implemented processing pipelines. Separate pipelines belong in separate functions. An adapter/proxy may select and delegate among those functions, with boundary adaptation only when needed. A violation fails acceptance even when tests pass.
 
 The adapter allowance is part of this rule's scope. The general exception policy cannot waive a confirmed violation.
 </IMPORTANT>
@@ -12,7 +12,9 @@ The adapter allowance is part of this rule's scope. The general exception policy
 
 Compare the processing stages, their data flow, and their orchestration across option values, following called helpers when needed. Independently orchestrated flows are separate pipelines even if they share preparation, cleanup, helpers, or a result type. Moving mode branches into helpers or renaming the selector does not establish a shared pipeline.
 
-Apply the rule to behavioral selectors in `options`, `config`, `params`, positional arguments, or captured configuration. Ordinary input-dependent branches, validation, and error handling do not violate this rule merely because control flow differs.
+Apply the rule to execution selectors in `options`, `config`, `params`, positional arguments, or captured configuration. Classify a value by its contract: an execution selector chooses how to process otherwise unchanged domain facts; domain data describes the subject or event being processed. Who supplies the value and where it is stored do not determine that distinction.
+
+For `process(event)`, `event.kind` identifying an order-created or order-cancelled event is domain data: changing it changes the event's meaning. A field choosing rebuild versus incremental processing of the same event is an execution selector, even when named `kind` or embedded in `event`. Ordinary branches on domain facts, validation, and error handling remain outside this prohibition; [single responsibility](func-arch-01.md) still applies.
 
 Adding a compression stage or omitting writes for a dry run configures the same pipeline; neither needs an exception. Calling two complete workflows optional stages does not make them one pipeline.
 
@@ -64,7 +66,7 @@ Extract complete `rebuildIndex` and `updateIndexIncrementally` functions, each o
 
 ## Bound Adapter Dispatch
 
-A provider, format, or algorithm adapter may select a separately implemented pipeline and adapt inputs, outputs, or supported errors at its boundary. It must delegate the selected workflow's orchestration instead of performing its processing stages. Selection itself supplies behavioral value under [FUNC-ARCH-03](func-arch-03.md); unnecessary fixed pass-through wrappers remain prohibited.
+A provider, format, or algorithm adapter qualifies through selection and delegation alone; adapting inputs, outputs, or supported errors is optional when the boundary needs it. It must delegate the selected workflow's orchestration instead of performing its processing stages. Selection itself supplies behavioral value under [FUNC-ARCH-03](func-arch-03.md); unnecessary fixed pass-through wrappers remain prohibited.
 
 ```typescript
 interface CompressionOptions {
@@ -84,7 +86,7 @@ Here `encodeBrotli` and `encodeGzip` each own their algorithm. Inlining both alg
 
 ## Acceptance
 
-- Identify the selector and trace each selected flow through its helpers.
+- Distinguish execution selectors from domain facts using their contract, then trace each selected flow through its helpers.
 - Accept parameter changes and added or omitted stages within shared processing.
 - For separate pipelines, require separate functions and verify any selecting proxy stays within the adapter boundary above.
 - Report a violation with the divergent stages and their owning functions; passing behavior tests does not establish structural compliance.
