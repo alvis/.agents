@@ -10,9 +10,10 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 
 - DO NOT mix multiple responsibilities in one function [`FUNC-ARCH-01`] (→ GEN-DESN-01)
 - DO NOT build multi-line text with string concatenation [`FUNC-ARCH-02`]
-- DO NOT add wrappers that provide no behavioral value; rechecking trusted producer postconditions or remapping their impossible violations does not count [`FUNC-ARCH-03`] (→ GEN-DESN-03, GEN-SAFE-03)
+- DO NOT add wrappers that provide no behavioral value; bounded dispatch under [FUNC-ARCH-06](rules/func-arch-06.md) counts, but rechecking trusted producer postconditions or remapping their impossible violations does not [`FUNC-ARCH-03`] (→ GEN-DESN-03, GEN-SAFE-03)
 - DO NOT inject the parent class into a child (`new Child({ parent: this })`) or use `extends Parent` purely to share private helpers; use a parent factory method or a standalone module-level helper instead [`FUNC-ARCH-04`]
 - DO NOT keep short-circuit guards before loops that average ≤3 iterations; use optional chaining at the call site [`FUNC-ARCH-05`]
+- DO NOT let execution selectors in `options`, `config`, `params`, positional arguments, or captured configuration select independently orchestrated pipelines, including through helpers. Use [FUNC-ARCH-06](rules/func-arch-06.md) to distinguish execution modes from domain facts; shared-stage configuration and bounded selection/delegation are allowed, with boundary adaptation only when needed. A confirmed violation fails acceptance even when tests pass and cannot be waived by the general exception policy [`FUNC-ARCH-06`]
 - DO NOT omit explicit return types [`FUNC-SIGN-01`]
 - DO NOT use overly long positional signatures [`FUNC-SIGN-02`]
 - DO NOT use non-standard parameter names, such as `payload`, `cfg`, or `extra` when canonical names apply [`FUNC-SIGN-03`] (→ NAM-TYPE-02)
@@ -35,6 +36,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `FUNC-ARCH-03` | Wrapper adds no behavioral value | `return service.run(data)`; `validateResult(await internal.run())` |
 | `FUNC-ARCH-04` | Parent class injected into child, or `extends Parent` used purely to share private helpers | `new Child({ parent: this })`; `class Child extends Parent {}` (for shared helpers only) |
 | `FUNC-ARCH-05` | Unnecessary short-circuit guard before small loop | `if (!cb) return; for (const x of items) cb(x)`; `if (!handlers.length) return; for (const h of handlers) h(evt)` |
+| `FUNC-ARCH-06` | Execution selectors in `options`, `config`, `params`, positional arguments, or captured configuration select separate pipelines outside a bounded adapter; distinguish domain facts using the [rule guide](rules/func-arch-06.md) | `if (options.mode === "something") { doSomething(); } else { doAnotherThing(); }` — trace both calls to confirm separate workflows; bounded dispatch is compliant. |
 | `FUNC-SIGN-01` | Missing explicit return type | `function parse(x){ return x }`; `function getUserById(id: string) {` |
 | `FUNC-SIGN-02` | Positional signature is overly long | `createUser(n,e,r,w,d)` |
 | `FUNC-SIGN-03` | Parameter names are non-standard | `fn(payload, cfg, extra)` |
