@@ -2423,8 +2423,8 @@ describe("ADR filenames, archived headers, and placeholders", () => {
   it.each([
     ["decisions/adr-3-stale.md", true],
     ["decisions/adr-3-stale.md", false],
-    ["decisions/Runtime/adr-3-stale.md", true],
-    ["decisions/Runtime/adr-3-stale.md", false],
+    ["decisions/Network/adr-3-stale.md", true],
+    ["decisions/Network/adr-3-stale.md", false],
     ["decisions/runtime/nested/adr-3-stale.md", true],
     ["decisions/runtime/nested/adr-3-stale.md", false],
     ["decisions/runtime/superseded/adr-3-stale.md", true],
