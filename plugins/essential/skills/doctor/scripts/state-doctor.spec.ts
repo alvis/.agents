@@ -103,7 +103,7 @@ async function writeEffectiveAdr(
   body = "",
 ): Promise<string> {
   const architecture = join(root, "docs/architecture");
-  const decisions = join(architecture, "decisions");
+  const decisions = join(architecture, "decisions/runtime");
   await mkdir(decisions, { recursive: true });
   const path = join(decisions, name);
   const prefix = /^adr-(\d+)-/.exec(name)?.[1] ?? "1";
@@ -113,7 +113,7 @@ async function writeEffectiveAdr(
   );
   await writeFile(
     join(architecture, "README.md"),
-    `# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR](decisions/${name}) | Accepted |\n`,
+    `# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR](decisions/runtime/${name}) | Accepted |\n`,
   );
   return path;
 }
@@ -128,14 +128,14 @@ async function writeArchivedAdr(
     "adr-2-current.md",
     "The current choice.\n",
   );
-  const archived = join(current, "../superseded");
+  const archived = join(current, "../../superseded/runtime");
   await mkdir(archived, { recursive: true });
   await writeFile(
     join(archived, "adr-1-old-choice.md"),
     [
       "> **Status:** Superseded",
       ">",
-      `> **Superseded by:** [ADR-2 — ${successorTitle}](../adr-2-current.md)`,
+      `> **Superseded by:** [ADR-2 — ${successorTitle}](../../runtime/adr-2-current.md)`,
       ">",
       "> **What changed:** The complete change replaced the old choice.",
       "",
@@ -151,7 +151,7 @@ async function writeAdrIndex(
   title = "Current",
 ): Promise<void> {
   const architecture = join(workspace.root, "docs/architecture");
-  const decisions = join(architecture, "decisions");
+  const decisions = join(architecture, "decisions/runtime");
   await mkdir(decisions, { recursive: true });
   await writeFile(
     join(decisions, name),
@@ -310,13 +310,13 @@ describe("ADR archival integrity", () => {
     );
     const archived = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       archived,
       (await readFile(archived, "utf8")).replace(
-        "(../adr-2-current.md)",
-        "(<../adr-2-current.md)",
+        "(../../runtime/adr-2-current.md)",
+        "(<../../runtime/adr-2-current.md)",
       ),
     );
     const findings = workspace
@@ -336,7 +336,10 @@ describe("ADR archival integrity", () => {
       "R&amp;D",
     );
     await writeFile(
-      join(workspace.root, "docs/architecture/decisions/adr-2-current.md"),
+      join(
+        workspace.root,
+        "docs/architecture/decisions/runtime/adr-2-current.md",
+      ),
       "# ADR-2: R&D\n\n- Status: `Accepted`\n\nThe current choice.\n",
     );
     expect(
@@ -430,14 +433,17 @@ describe("ADR archival integrity", () => {
 
   it("should require numeric ADR identity uniqueness across current and archive", async () => {
     await writeArchivedAdr(workspace.root, "> retained historical body\n");
-    const decisions = join(workspace.root, "docs/architecture/decisions");
+    const decisions = join(
+      workspace.root,
+      "docs/architecture/decisions/runtime",
+    );
     await writeFile(
       join(decisions, "adr-1-cache.md"),
       "# ADR-1: Cache\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      "| [ADR-1](decisions/adr-1-cache.md) | Accepted |\n| [ADR-2](decisions/adr-2-current.md) | Accepted |\n",
+      "| [ADR-1](decisions/runtime/adr-1-cache.md) | Accepted |\n| [ADR-2](decisions/runtime/adr-2-current.md) | Accepted |\n",
     );
     const findings = workspace
       .run()
@@ -448,8 +454,8 @@ describe("ADR archival integrity", () => {
       );
     expect(new Set(findings.map(({ work }) => work))).toEqual(
       new Set([
-        "docs/architecture/decisions/adr-1-cache.md",
-        "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+        "docs/architecture/decisions/runtime/adr-1-cache.md",
+        "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
       ]),
     );
     expect(findings.every(({ fix }) => Boolean(fix))).toBe(true);
@@ -463,14 +469,17 @@ describe("ADR archival integrity", () => {
       workspace.root,
       "# ADR-4: Old choice\n\n- Status: `Accepted`\n",
     );
-    const decisions = join(workspace.root, "docs/architecture/decisions");
+    const decisions = join(
+      workspace.root,
+      "docs/architecture/decisions/runtime",
+    );
     await writeFile(
       join(decisions, "adr-2-current.md"),
       "# ADR-1: Current\n\n- Status: `Accepted`\n",
     );
     await rename(
-      join(decisions, "superseded/adr-1-old-choice.md"),
-      join(decisions, "superseded/adr-3-old-choice.md"),
+      join(decisions, "../superseded/runtime/adr-1-old-choice.md"),
+      join(decisions, "../superseded/runtime/adr-3-old-choice.md"),
     );
     const findings = workspace
       .run()
@@ -481,8 +490,8 @@ describe("ADR archival integrity", () => {
       );
     expect(new Set(findings.map(({ work }) => work))).toEqual(
       new Set([
-        "docs/architecture/decisions/adr-2-current.md",
-        "docs/architecture/decisions/superseded/adr-3-old-choice.md",
+        "docs/architecture/decisions/runtime/adr-2-current.md",
+        "docs/architecture/decisions/superseded/runtime/adr-3-old-choice.md",
       ]),
     );
     expect(findings.every(({ fix }) => Boolean(fix))).toBe(true);
@@ -560,22 +569,22 @@ describe("ADR archival integrity", () => {
   it.each([
     [
       "contradictory index status",
-      "| Document | Status |\n| --- | --- |\n| [ADR-1](decisions/adr-1-current.md) | Superseded |\n",
+      "| Document | Status |\n| --- | --- |\n| [ADR-1](decisions/runtime/adr-1-current.md) | Superseded |\n",
       "contradicts effective ADR",
     ],
     [
       "missing Status column",
-      "| Document | Authority |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Authority |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
       "has no Status column",
     ],
     [
       "missing Document header",
-      "| Reference | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Reference | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
       "missing from the ADR index",
     ],
     [
       "pipe-bearing heading terminator",
-      "| Document | Status |\n| --- | --- |\n## Notes | detail\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n## Notes | detail\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
       "missing from the ADR index",
     ],
   ])("should report %s", async (_scenario, index, expectedMessage) => {
@@ -671,17 +680,17 @@ describe("references, decisions, and ADR archival foundations", () => {
   });
   it("accepts a canonical archived ADR with one indexed successor", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const decisions = join(architecture, "decisions");
+    const decisions = join(architecture, "decisions/runtime");
     await mkdir(decisions, { recursive: true });
     const old = join(decisions, "adr-1-old-choice.md");
     await writeFile(old, "# ADR-1: Old choice\n\n- Status: `Superseded`\n");
     await writeFile(
       join(architecture, "README.md"),
-      "# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR-1](decisions/adr-1-old-choice.md) | Accepted |\n",
+      "# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR-1](decisions/runtime/adr-1-old-choice.md) | Accepted |\n",
     );
     expect(checks(workspace.run().findings)).toContain("adr-superseded");
-    const archived = join(decisions, "superseded");
-    await mkdir(archived);
+    const archived = join(decisions, "../superseded/runtime");
+    await mkdir(archived, { recursive: true });
     await rename(old, join(archived, "adr-1-old-choice.md"));
     await writeFile(
       join(decisions, "adr-2-new-choice.md"),
@@ -689,11 +698,11 @@ describe("references, decisions, and ADR archival foundations", () => {
     );
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — New choice](../adr-2-new-choice.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Old choice\n\n- Status: `Accepted`\n\n## Decision\n\nThe original choice.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — New choice](../../runtime/adr-2-new-choice.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Old choice\n\n- Status: `Accepted`\n\n## Decision\n\nThe original choice.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR-2](decisions/adr-2-new-choice.md) | Accepted |\n",
+      "# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR-2](decisions/runtime/adr-2-new-choice.md) | Accepted |\n",
     );
     expect(
       workspace.run().findings.some(({ check }) => check.startsWith("adr-")),
@@ -701,7 +710,7 @@ describe("references, decisions, and ADR archival foundations", () => {
   });
   it("offers a fix for every ADR integrity finding", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const decisions = join(architecture, "decisions");
+    const decisions = join(architecture, "decisions/runtime");
     await mkdir(decisions, { recursive: true });
     await writeFile(
       join(decisions, "adr-1-choice.md"),
@@ -709,7 +718,7 @@ describe("references, decisions, and ADR archival foundations", () => {
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| [ADR-1](decisions/adr-1-choice.md) | Accepted |\n",
+      "| [ADR-1](decisions/runtime/adr-1-choice.md) | Accepted |\n",
     );
     const integrity = workspace
       .run()
@@ -719,9 +728,10 @@ describe("references, decisions, and ADR archival foundations", () => {
   });
   it("reports noncanonical effective and archived ADR filenames with fixes", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const decisions = join(architecture, "decisions");
-    const archived = join(decisions, "superseded");
+    const decisions = join(architecture, "decisions/runtime");
+    const archived = join(decisions, "../superseded/runtime");
     await mkdir(archived, { recursive: true });
+    await mkdir(decisions, { recursive: true });
     await writeFile(
       join(decisions, "database.md"),
       "# ADR-1: Database\n\n- Status: `Accepted`\n",
@@ -732,11 +742,11 @@ describe("references, decisions, and ADR archival foundations", () => {
     );
     await writeFile(
       join(archived, "old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Current](../adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Current](../../runtime/adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Database](decisions/database.md) | Accepted |\n| [Current](decisions/adr-2-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Database](decisions/runtime/database.md) | Accepted |\n| [Current](decisions/runtime/adr-2-current.md) | Accepted |\n",
     );
     const findings = workspace
       .run()
@@ -746,8 +756,8 @@ describe("references, decisions, and ADR archival foundations", () => {
       );
     expect(new Set(findings.map(({ work }) => work))).toEqual(
       new Set([
-        "docs/architecture/decisions/database.md",
-        "docs/architecture/decisions/superseded/old-choice.md",
+        "docs/architecture/decisions/runtime/database.md",
+        "docs/architecture/decisions/superseded/runtime/old-choice.md",
       ]),
     );
     expect(findings.every(({ fix }) => Boolean(fix))).toBe(true);
@@ -761,23 +771,23 @@ describe("references, decisions, and ADR archival foundations", () => {
       );
       const architecture = join(workspace.root, "docs/architecture");
       await writeFile(
-        join(architecture, "decisions/adr-3-other.md"),
+        join(architecture, "decisions/runtime/adr-3-other.md"),
         "# ADR-3: Other\n\n- Status: `Accepted`\n",
       );
       const path = join(
         architecture,
-        "decisions/superseded/adr-1-old-choice.md",
+        "decisions/superseded/runtime/adr-1-old-choice.md",
       );
       await writeFile(
         path,
         (await readFile(path, "utf8")).replace(
-          "> **Superseded by:** [ADR-2 — Choice](../adr-2-current.md)",
-          `${metadata}> **Superseded by:** [ADR-2 — Choice](../adr-2-current.md), [ADR-3 — Other](../adr-3-other.md)`,
+          "> **Superseded by:** [ADR-2 — Choice](../../runtime/adr-2-current.md)",
+          `${metadata}> **Superseded by:** [ADR-2 — Choice](../../runtime/adr-2-current.md), [ADR-3 — Other](../../runtime/adr-3-other.md)`,
         ),
       );
       await writeFile(
         join(architecture, "README.md"),
-        "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-2-current.md) | Accepted |\n| [Other](decisions/adr-3-other.md) | Accepted |\n",
+        "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-2-current.md) | Accepted |\n| [Other](decisions/runtime/adr-3-other.md) | Accepted |\n",
       );
       expect(
         workspace
@@ -838,7 +848,7 @@ describe("references, decisions, and ADR archival foundations", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -850,7 +860,7 @@ describe("references, decisions, and ADR archival foundations", () => {
     expect(checks(workspace.run().findings)).toContain("adr-superseded");
   });
 
-  it.each(["../adr-3-missing.md", "adr-1-old-choice.md"])(
+  it.each(["../../runtime/adr-3-missing.md", "adr-1-old-choice.md"])(
     "should reject a successor outside existing effective ADRs: %s",
     async (target) => {
       await writeArchivedAdr(
@@ -859,11 +869,14 @@ describe("references, decisions, and ADR archival foundations", () => {
       );
       const path = join(
         workspace.root,
-        "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+        "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
       );
       await writeFile(
         path,
-        (await readFile(path, "utf8")).replace("../adr-2-current.md", target),
+        (await readFile(path, "utf8")).replace(
+          "../../runtime/adr-2-current.md",
+          target,
+        ),
       );
       expectFixes(
         matchingFindings(
@@ -879,46 +892,56 @@ describe("references, decisions, and ADR archival foundations", () => {
     ["adr-2", false],
     ["adr-99", true],
     ["adr-2\n > superseded-by: adr-2", true],
-  ])("should validate indented successor metadata %s", async (identity, invalid) => {
-    await writeArchivedAdr(
-      workspace.root,
-      "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
-    );
-    const path = join(
-      workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
-    );
-    await writeFile(
-      path,
-      (await readFile(path, "utf8")).replace(
-        "> **Status:** Superseded",
-        `> **Status:** Superseded\n > superseded-by: ${identity}`,
-      ),
-    );
-    expect(checks(workspace.run().findings).has("adr-superseded")).toBe(invalid);
-  });
+  ])(
+    "should validate indented successor metadata %s",
+    async (identity, invalid) => {
+      await writeArchivedAdr(
+        workspace.root,
+        "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
+      );
+      const path = join(
+        workspace.root,
+        "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
+      );
+      await writeFile(
+        path,
+        (await readFile(path, "utf8")).replace(
+          "> **Status:** Superseded",
+          `> **Status:** Superseded\n > superseded-by: ${identity}`,
+        ),
+      );
+      expect(checks(workspace.run().findings).has("adr-superseded")).toBe(
+        invalid,
+      );
+    },
+  );
 
   it.each([
     ["superseded-by: adr-2", false],
     ["superseded-by : adr-99", true],
-  ])("should validate relationship metadata after the change summary: %s", async (metadata, invalid) => {
-    await writeArchivedAdr(
-      workspace.root,
-      "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
-    );
-    const path = join(
-      workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
-    );
-    await writeFile(
-      path,
-      (await readFile(path, "utf8")).replace(
-        "> **What changed:** The complete change replaced the old choice.",
-        `> **What changed:** The complete change replaced the old choice.\n> ${metadata}`,
-      ),
-    );
-    expect(checks(workspace.run().findings).has("adr-superseded")).toBe(invalid);
-  });
+  ])(
+    "should validate relationship metadata after the change summary: %s",
+    async (metadata, invalid) => {
+      await writeArchivedAdr(
+        workspace.root,
+        "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
+      );
+      const path = join(
+        workspace.root,
+        "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
+      );
+      await writeFile(
+        path,
+        (await readFile(path, "utf8")).replace(
+          "> **What changed:** The complete change replaced the old choice.",
+          `> **What changed:** The complete change replaced the old choice.\n> ${metadata}`,
+        ),
+      );
+      expect(checks(workspace.run().findings).has("adr-superseded")).toBe(
+        invalid,
+      );
+    },
+  );
 
   it("should accept matching single-successor metadata", async () => {
     await writeArchivedAdr(
@@ -927,7 +950,7 @@ describe("references, decisions, and ADR archival foundations", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -955,7 +978,7 @@ describe("ADR index rendering and integrity", () => {
   it("ignores nonrendered tables", async () => {
     await writeAdrIndex(
       workspace,
-      "```markdown\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n````\n\n<!--\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n-->\n",
+      "```markdown\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n````\n\n<!--\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n-->\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-index", "missing from the ADR index"),
@@ -965,15 +988,15 @@ describe("ADR index rendering and integrity", () => {
   it.each([
     [
       "raw HTML tables",
-      "<pre>\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n</pre>\n",
+      "<pre>\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n</pre>\n",
     ],
     [
       "generic raw HTML blocks",
-      "<custom>\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n</custom>\n",
+      "<custom>\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n</custom>\n",
     ],
     [
       "attribute-bearing generic raw HTML blocks",
-      '<custom class="raw">\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n</custom>\n',
+      '<custom class="raw">\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n</custom>\n',
     ],
   ])("ignores %s", async (_scenario, index) => {
     await writeAdrIndex(workspace, index);
@@ -985,7 +1008,7 @@ describe("ADR index rendering and integrity", () => {
   it("resumes after a blank line in block HTML", async () => {
     await writeAdrIndex(
       workspace,
-      "<div>\n\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n\n</div>\n",
+      "<div>\n\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n\n</div>\n",
     );
     expect(
       workspace.run().findings.some(({ check }) => check.startsWith("adr-")),
@@ -995,7 +1018,7 @@ describe("ADR index rendering and integrity", () => {
   it("counts links only from the Document cell", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Authority | Status |\n| --- | --- | --- |\n| Architecture | See [ADR](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Authority | Status |\n| --- | --- | --- |\n| Architecture | See [ADR](decisions/runtime/adr-1-current.md) | Accepted |\n",
     );
     expect(
       matchingFindings(workspace, "adr-index", "missing from the ADR index")
@@ -1006,15 +1029,15 @@ describe("ADR index rendering and integrity", () => {
   it.each([
     [
       "requires a Markdown delimiter row",
-      "| Document | Status |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     ],
     [
       "requires the delimiter width to match the header",
-      "| Document | Status |\n| --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     ],
     [
       "requires the delimiter immediately after the header",
-      "| Document | Status |\n| Notes | Value |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| Notes | Value |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     ],
   ])("%s", async (_scenario, index) => {
     await writeAdrIndex(workspace, index);
@@ -1026,7 +1049,7 @@ describe("ADR index rendering and integrity", () => {
   it("rejects duplicate effective entries", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-index", "listed more than once"),
@@ -1036,7 +1059,7 @@ describe("ADR index rendering and integrity", () => {
   it("keeps Status-named data rows active", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Authority | Status |\n| --- | --- | --- |\n| [Current](decisions/adr-1-current.md) | Status | Accepted |\n",
+      "| Document | Authority | Status |\n| --- | --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Status | Accepted |\n",
     );
     expect(checks(workspace.run().findings)).not.toContain("adr-index");
   });
@@ -1044,7 +1067,7 @@ describe("ADR index rendering and integrity", () => {
   it("rejects duplicate Status columns", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Status | Status |\n| --- | --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted | Superseded |\n",
+      "| Document | Status | Status |\n| --- | --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted | Superseded |\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-index", "duplicate Status columns"),
@@ -1054,35 +1077,35 @@ describe("ADR index rendering and integrity", () => {
   it.each([
     [
       "escaped pipes in other cells",
-      "| Document | Authority | Status |\n| --- | --- | --- |\n| [Current](decisions/adr-1-current.md) | Supports A \\| B | Accepted |\n",
+      "| Document | Authority | Status |\n| --- | --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Supports A \\| B | Accepted |\n",
     ],
     [
       "rows without outer pipes",
-      "Document | Status\n--- | ---\n[Current](decisions/adr-1-current.md) | Accepted\n",
+      "Document | Status\n--- | ---\n[Current](decisions/runtime/adr-1-current.md) | Accepted\n",
     ],
     [
       "link titles",
-      '| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md "decision record") | Accepted |\n',
+      '| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md "decision record") | Accepted |\n',
     ],
     [
       "reference-style links",
-      "| Document | Status |\n| --- | --- |\n| [Current][adr] | Accepted |\n\n[adr]: decisions/adr-1-current.md\n",
+      "| Document | Status |\n| --- | --- |\n| [Current][adr] | Accepted |\n\n[adr]: decisions/runtime/adr-1-current.md\n",
     ],
     [
       "collapsed reference links",
-      "| Document | Status |\n| --- | --- |\n| [Current][] | Accepted |\n\n[Current]: decisions/adr-1-current.md\n",
+      "| Document | Status |\n| --- | --- |\n| [Current][] | Accepted |\n\n[Current]: decisions/runtime/adr-1-current.md\n",
     ],
     [
       "shortcut reference links",
-      "| Document | Status |\n| --- | --- |\n| [Current] | Accepted |\n\n[Current]: decisions/adr-1-current.md\n",
+      "| Document | Status |\n| --- | --- |\n| [Current] | Accepted |\n\n[Current]: decisions/runtime/adr-1-current.md\n",
     ],
     [
       "angle-bracket destinations",
-      "| Document | Status |\n| --- | --- |\n| [Current](<decisions/adr-1-current.md>) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](<decisions/runtime/adr-1-current.md>) | Accepted |\n",
     ],
     [
       "formatted table headers",
-      "| **Document** | **Status** |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | **Accepted** |\n",
+      "| **Document** | **Status** |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | **Accepted** |\n",
     ],
   ])("accepts %s", async (_scenario, index) => {
     await writeAdrIndex(workspace, index);
@@ -1094,7 +1117,7 @@ describe("ADR index rendering and integrity", () => {
   it("accepts balanced-bracket labels", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Status |\n| --- | --- |\n| [Cache [v2]](decisions/adr-1-cache-v2.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Cache [v2]](decisions/runtime/adr-1-cache-v2.md) | Accepted |\n",
       "adr-1-cache-v2.md",
       "Cache [v2]",
     );
@@ -1106,19 +1129,19 @@ describe("ADR index rendering and integrity", () => {
   it.each([
     [
       "links inside inline HTML attributes",
-      '| Document | Status |\n| --- | --- |\n| <span data-link="[Current](decisions/adr-1-current.md)">Current</span> | Accepted |\n',
+      '| Document | Status |\n| --- | --- |\n| <span data-link="[Current](decisions/runtime/adr-1-current.md)">Current</span> | Accepted |\n',
     ],
     [
       "a Document header inside an existing table",
-      "| Other | Value |\n| --- | --- |\n| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Other | Value |\n| --- | --- |\n| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     ],
     [
       "indented code tables",
-      "    | Document | Status |\n    | --- | --- |\n    | [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "    | Document | Status |\n    | --- | --- |\n    | [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     ],
     [
       "image destinations",
-      "| Document | Status |\n| --- | --- |\n| ![ADR image](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| ![ADR image](decisions/runtime/adr-1-current.md) | Accepted |\n",
     ],
   ])("ignores %s", async (_scenario, index) => {
     await writeAdrIndex(workspace, index);
@@ -1130,7 +1153,7 @@ describe("ADR index rendering and integrity", () => {
   it("uses the first reference definition", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Status |\n| --- | --- |\n| [Current][adr] | Accepted |\n\n[adr]: decisions/missing.md\n[adr]: decisions/adr-1-current.md\n",
+      "| Document | Status |\n| --- | --- |\n| [Current][adr] | Accepted |\n\n[adr]: decisions/runtime/missing.md\n[adr]: decisions/runtime/adr-1-current.md\n",
     );
     expect(
       matchingFindings(workspace, "adr-index", "missing from the ADR index")
@@ -1141,15 +1164,15 @@ describe("ADR index rendering and integrity", () => {
   it.each([
     [
       "inline-code links",
-      "| Document | Status |\n| --- | --- |\n| `[Choice]` | Accepted |\n\n[Choice]: decisions/adr-1-choice.md\n",
+      "| Document | Status |\n| --- | --- |\n| `[Choice]` | Accepted |\n\n[Choice]: decisions/runtime/adr-1-choice.md\n",
     ],
     [
       "nested image reference labels",
-      "| Document | Status |\n| --- | --- |\n| ![Architecture [Choice]](badge.svg) | Accepted |\n\n[Choice]: decisions/adr-1-current.md\n",
+      "| Document | Status |\n| --- | --- |\n| ![Architecture [Choice]](badge.svg) | Accepted |\n\n[Choice]: decisions/runtime/adr-1-current.md\n",
     ],
     [
       "footnote references",
-      "| Document | Status |\n| --- | --- |\n| Choice[^1] | Accepted |\n\n[^1]: decisions/adr-1-choice.md\n",
+      "| Document | Status |\n| --- | --- |\n| Choice[^1] | Accepted |\n\n[^1]: decisions/runtime/adr-1-choice.md\n",
     ],
   ])("ignores %s", async (_scenario, index) => {
     if (index.includes("adr-1-choice")) await writeEffectiveAdr(workspace.root);
@@ -1166,7 +1189,7 @@ describe("ADR index rendering and integrity", () => {
     await writeEffectiveAdr(workspace.root);
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      "---\nindex-example: >-\n  | Document | Status |\n  | --- | --- |\n  | [Choice](decisions/adr-1-choice.md) | Accepted |\n---\n",
+      "---\nindex-example: >-\n  | Document | Status |\n  | --- | --- |\n  | [Choice](decisions/runtime/adr-1-choice.md) | Accepted |\n---\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-index", "missing from the ADR index"),
@@ -1187,7 +1210,10 @@ describe("ADR filenames, archived headers, and placeholders", () => {
   it.each(["adr-1-current.MD", "adr-1-current.markdown", "adr-1-current"])(
     "rejects the noncanonical numeric ADR filename %s",
     async (filename) => {
-      const decisions = join(workspace.root, "docs/architecture/decisions");
+      const decisions = join(
+        workspace.root,
+        "docs/architecture/decisions/runtime",
+      );
       await mkdir(decisions, { recursive: true });
       await writeFile(
         join(decisions, filename),
@@ -1201,20 +1227,21 @@ describe("ADR filenames, archived headers, and placeholders", () => {
 
   it("requires archived header fields to precede the body", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const decisions = join(architecture, "decisions");
-    const archived = join(decisions, "superseded");
+    const decisions = join(architecture, "decisions/runtime");
+    const archived = join(decisions, "../superseded/runtime");
     await mkdir(archived, { recursive: true });
+    await mkdir(decisions, { recursive: true });
     await writeFile(
       join(decisions, "adr-2-current.md"),
       "# ADR-2: Current\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **What changed:** The complete change replaced the old choice.\n> **Superseded by:** [ADR-2 — Current](../adr-2-current.md)\n>\n# ADR-1: Old choice\n\n- Status: `Accepted`\n",
+      "> **Status:** Superseded\n>\n> **What changed:** The complete change replaced the old choice.\n> **Superseded by:** [ADR-2 — Current](../../runtime/adr-2-current.md)\n>\n# ADR-1: Old choice\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-2-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-2-current.md) | Accepted |\n",
     );
     expect(
       matchingFindings(
@@ -1238,7 +1265,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1279,12 +1306,12 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     ],
   ])("ignores %s before the ADR title", async (_scenario, body) => {
     const architecture = join(workspace.root, "docs/architecture");
-    const decisions = join(architecture, "decisions");
+    const decisions = join(architecture, "decisions/runtime");
     await mkdir(decisions, { recursive: true });
     await writeFile(join(decisions, "adr-1-choice.md"), body);
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Choice](decisions/adr-1-choice.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Choice](decisions/runtime/adr-1-choice.md) | Accepted |\n",
     );
     expect(
       workspace.run().findings.some(({ check }) => check.startsWith("adr-")),
@@ -1294,7 +1321,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
   it("rejects a heading without a rendered title", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Status |\n| --- | --- |\n| [Choice](decisions/adr-1-choice.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Choice](decisions/runtime/adr-1-choice.md) | Accepted |\n",
       "adr-1-choice.md",
       "#",
     );
@@ -1309,7 +1336,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     await writeEffectiveAdr(workspace.root);
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      `${opening}\n| Document | Status |\n| --- | --- |\n| [Choice](decisions/adr-1-choice.md) | Accepted |\n${closing}\n`,
+      `${opening}\n| Document | Status |\n| --- | --- |\n| [Choice](decisions/runtime/adr-1-choice.md) | Accepted |\n${closing}\n`,
     );
     expect(
       matchingFindings(workspace, "adr-index", "missing from the ADR index")
@@ -1321,7 +1348,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     await writeEffectiveAdr(workspace.root);
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      "<!--\n| Document | Status |\n| --- | --- |\n| [Choice](decisions/adr-1-choice.md) | Accepted |\n",
+      "<!--\n| Document | Status |\n| --- | --- |\n| [Choice](decisions/runtime/adr-1-choice.md) | Accepted |\n",
     );
     expect(
       matchingFindings(workspace, "adr-index", "missing from the ADR index")
@@ -1359,7 +1386,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     await writeEffectiveAdr(workspace.root);
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      "<div></div>\n| Document | Status |\n| --- | --- |\n| [Choice](decisions/adr-1-choice.md) | Accepted |\n",
+      "<div></div>\n| Document | Status |\n| --- | --- |\n| [Choice](decisions/runtime/adr-1-choice.md) | Accepted |\n",
     );
     expect(
       matchingFindings(workspace, "adr-index", "missing from the ADR index")
@@ -1370,7 +1397,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
   it("rejects unfilled template fields", async () => {
     await writeAdrIndex(
       workspace,
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
       "adr-1-current.md",
       "<decision title>",
     );
@@ -1542,13 +1569,13 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     const current = await writeEffectiveAdr(
       workspace.root,
       "adr-2-current.md",
-      "See [the old choice](superseded/adr-1-old-choice.md).\n",
+      "See [the old choice](../superseded/runtime/adr-1-old-choice.md).\n",
     );
-    const archived = join(current, "../superseded");
+    const archived = join(current, "../../superseded/runtime");
     await mkdir(archived, { recursive: true });
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Choice](../adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Old choice\n\n- Status: `Accepted`\n\n## Decision\n\nThe original choice.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Choice](../../runtime/adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Old choice\n\n- Status: `Accepted`\n\n## Decision\n\nThe original choice.\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-integrity", "supersession history"),
@@ -1599,28 +1626,28 @@ describe("ADR filenames, archived headers, and placeholders", () => {
 
   it("requires the canonical ADR heading to be the first title", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    await mkdir(join(architecture, "decisions"), { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-1-current.md"),
+      join(architecture, "decisions/runtime/adr-1-current.md"),
       "# Notes\n\n- Status: `Accepted`\n\n# ADR-1: Current\n\nThe decision.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     );
     expectFixes(matchingFindings(workspace, "adr-integrity", "canonical"));
   });
 
   it("rejects an indented-code ADR heading", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    await mkdir(join(architecture, "decisions"), { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-1-current.md"),
+      join(architecture, "decisions/runtime/adr-1-current.md"),
       "    # ADR-1: Current\n\n- Status: `Accepted`\n\nThe decision.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-integrity", "missing its canonical"),
@@ -1629,14 +1656,14 @@ describe("ADR filenames, archived headers, and placeholders", () => {
 
   it("preserves line boundaries around comments", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    await mkdir(join(architecture, "decisions"), { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-1-current.md"),
+      join(architecture, "decisions/runtime/adr-1-current.md"),
       "# <!--\nnote\n-->ADR-1: Current\n\n- Status: `Accepted`\n\nThe decision.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-1-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-current.md) | Accepted |\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-integrity", "missing its canonical"),
@@ -1655,19 +1682,20 @@ describe("ADR filenames, archived headers, and placeholders", () => {
 
   it("rejects duplicate archived header fields", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const archived = join(architecture, "decisions/superseded");
+    const archived = join(architecture, "decisions/superseded/runtime");
     await mkdir(archived, { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-2-current.md"),
+      join(architecture, "decisions/runtime/adr-2-current.md"),
       "# ADR-2: Current\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Current](../adr-2-current.md)\n> **Superseded by:** [ADR-2 — Current](../adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n> **What changed:** The complete change replaced the old choice again.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Current](../../runtime/adr-2-current.md)\n> **Superseded by:** [ADR-2 — Current](../../runtime/adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n> **What changed:** The complete change replaced the old choice again.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| [ADR-2](decisions/adr-2-current.md) | Accepted |\n",
+      "| [ADR-2](decisions/runtime/adr-2-current.md) | Accepted |\n",
     );
     const findings = matchingFindings(
       workspace,
@@ -1686,7 +1714,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1706,19 +1734,20 @@ describe("ADR filenames, archived headers, and placeholders", () => {
 
   it("rejects a backward successor identity", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const archived = join(architecture, "decisions/superseded");
+    const archived = join(architecture, "decisions/superseded/runtime");
     await mkdir(archived, { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-2-current.md"),
+      join(architecture, "decisions/runtime/adr-2-current.md"),
       "# ADR-2: Current\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(archived, "adr-3-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Current](../adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-3: Old choice\n\n- Status: `Accepted`\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Current](../../runtime/adr-2-current.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-3: Old choice\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-2-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-2-current.md) | Accepted |\n",
     );
     expectFixes(
       matchingFindings(workspace, "adr-superseded", "later numeric identity"),
@@ -1727,19 +1756,20 @@ describe("ADR filenames, archived headers, and placeholders", () => {
 
   it("requires the successor label to match its target", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const archived = join(architecture, "decisions/superseded");
+    const archived = join(architecture, "decisions/superseded/runtime");
     await mkdir(archived, { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-3-database.md"),
+      join(architecture, "decisions/runtime/adr-3-database.md"),
       "# ADR-3: Database\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Cache](../adr-3-database.md)\n>\n> **What changed:** The complete change replaced the old choice.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Cache](../../runtime/adr-3-database.md)\n>\n> **What changed:** The complete change replaced the old choice.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| [ADR-3](decisions/adr-3-database.md) | Accepted |\n",
+      "| [ADR-3](decisions/runtime/adr-3-database.md) | Accepted |\n",
     );
     const finding = matchingFindings(
       workspace,
@@ -1757,7 +1787,10 @@ describe("ADR filenames, archived headers, and placeholders", () => {
       "Current choice",
     );
     await writeFile(
-      join(workspace.root, "docs/architecture/decisions/adr-2-current.md"),
+      join(
+        workspace.root,
+        "docs/architecture/decisions/runtime/adr-2-current.md",
+      ),
       "# ADR-2: **Current choice** ##\n\n- Status: `Accepted`\n",
     );
     expect(
@@ -1772,7 +1805,10 @@ describe("ADR filenames, archived headers, and placeholders", () => {
       "Use the current cache",
     );
     await writeFile(
-      join(workspace.root, "docs/architecture/decisions/adr-2-current.md"),
+      join(
+        workspace.root,
+        "docs/architecture/decisions/runtime/adr-2-current.md",
+      ),
       "# ADR-2: Use the **current** cache\n\n- Status: `Accepted`\n",
     );
     expect(
@@ -1784,19 +1820,20 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     "accepts the bracketed successor title %s",
     async (labelTitle) => {
       const architecture = join(workspace.root, "docs/architecture");
-      const archived = join(architecture, "decisions/superseded");
+      const archived = join(architecture, "decisions/superseded/runtime");
       await mkdir(archived, { recursive: true });
+      await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
       await writeFile(
-        join(architecture, "decisions/adr-2-cache-v2.md"),
+        join(architecture, "decisions/runtime/adr-2-cache-v2.md"),
         "# ADR-2: Cache [v2]\n\n- Status: `Accepted`\n",
       );
       await writeFile(
         join(archived, "adr-1-old-choice.md"),
-        `> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — ${labelTitle}](../adr-2-cache-v2.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Old choice\n\n- Status: \`Accepted\`\n\n## Decision\n\nThe original choice.\n`,
+        `> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — ${labelTitle}](../../runtime/adr-2-cache-v2.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Old choice\n\n- Status: \`Accepted\`\n\n## Decision\n\nThe original choice.\n`,
       );
       await writeFile(
         join(architecture, "README.md"),
-        "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-2-cache-v2.md) | Accepted |\n",
+        "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-2-cache-v2.md) | Accepted |\n",
       );
       expect(
         workspace
@@ -1813,13 +1850,13 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
       (await readFile(path, "utf8")).replace(
-        "[ADR-2 — Choice](../adr-2-current.md)",
-        '<span data-link="[ADR-2 — Current](../adr-2-current.md)">Current</span>',
+        "[ADR-2 — Choice](../../runtime/adr-2-current.md)",
+        '<span data-link="[ADR-2 — Current](../../runtime/adr-2-current.md)">Current</span>',
       ),
     );
     expect(
@@ -1838,7 +1875,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1863,7 +1900,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1926,7 +1963,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     await writeArchivedAdr(workspace.root, "");
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1951,7 +1988,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1972,7 +2009,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -1988,14 +2025,14 @@ describe("ADR filenames, archived headers, and placeholders", () => {
   });
 
   it("uses the explicit active repository root for ADR scans", async () => {
-    const wrong = join(workspace.root, "docs/architecture/decisions");
+    const wrong = join(workspace.root, "docs/architecture/decisions/runtime");
     await mkdir(wrong, { recursive: true });
     await writeFile(
       join(wrong, "adr-1-wrong.md"),
       "# ADR-1: Wrong tree\n\n- Status: `Superseded`\n",
     );
     const active = join(workspace.root, "active-worktree");
-    const decisions = join(active, "docs/architecture/decisions");
+    const decisions = join(active, "docs/architecture/decisions/runtime");
     await mkdir(decisions, { recursive: true });
     await writeFile(
       join(decisions, "adr-2-current.md"),
@@ -2003,7 +2040,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     await writeFile(
       join(active, "docs/architecture/README.md"),
-      "| Document | Status |\n| --- | --- |\n| [ADR-2](decisions/adr-2-current.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [ADR-2](decisions/runtime/adr-2-current.md) | Accepted |\n",
     );
     expect(
       workspace
@@ -2015,7 +2052,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
   it("runs ADR scans when the state directory is absent", async () => {
     const repository = await mkdtemp(join(tmpdir(), "state-doctor-repo-"));
     try {
-      const decisions = join(repository, "docs/architecture/decisions");
+      const decisions = join(repository, "docs/architecture/decisions/runtime");
       await mkdir(decisions, { recursive: true });
       await writeFile(
         join(decisions, "adr-1-current.md"),
@@ -2023,7 +2060,7 @@ describe("ADR filenames, archived headers, and placeholders", () => {
       );
       await writeFile(
         join(repository, "docs/architecture/README.md"),
-        "| Document | Status |\n| --- | --- |\n| [ADR-1](decisions/adr-1-current.md) | Accepted |\n",
+        "| Document | Status |\n| --- | --- |\n| [ADR-1](decisions/runtime/adr-1-current.md) | Accepted |\n",
       );
       const result = spawnSync(doctor, ["--state-dir", ".state", "--json"], {
         cwd: repository,
@@ -2083,26 +2120,41 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     expect(checks(workspace.run().findings)).not.toContain("adr-integrity");
   });
 
-  it("reports an unrecognized ADR subdirectory", async () => {
+  it.each([
+    "adr-1-old.md",
+    "superseded/adr-1-old.md",
+    "runtime/superseded/adr-1-old.md",
+    "runtime/nested/adr-1-old.md",
+    "superseded/runtime/nested/adr-1-old.md",
+    "Runtime/adr-1-old.md",
+    "run_time/adr-1-old.md",
+    "-runtime/adr-1-old.md",
+    "runtime--core/adr-1-old.md",
+  ])("should reject noncanonical domain placement %s", async (relative) => {
     const misplaced = join(
       workspace.root,
-      "docs/architecture/decisions/legacy",
+      "docs/architecture/decisions",
+      relative,
     );
-    await mkdir(misplaced, { recursive: true });
-    await writeFile(
-      join(misplaced, "adr-1-old.md"),
-      "# ADR-1: Old\n\n- Status: `Accepted`\n",
+    await mkdir(join(misplaced, ".."), { recursive: true });
+    await writeFile(misplaced, "# ADR-1: Old\n\n- Status: `Accepted`\n");
+    expect(workspace.run().findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          check: "adr-layout",
+          severity: "error",
+          work: `docs/architecture/decisions/${relative}`,
+          fix: expect.any(String),
+        }),
+      ]),
     );
-    expect(
-      workspace.run().findings.find(({ check }) => check === "adr-layout")?.fix,
-    ).toBeTruthy();
   });
 
   it("rejects an unfilled archived change summary", async () => {
     await writeArchivedAdr(workspace.root, "");
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
@@ -2120,15 +2172,18 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     await writeArchivedAdr(workspace.root, "");
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     const current = join(
       workspace.root,
-      "docs/architecture/decisions/adr-2-current.md",
+      "docs/architecture/decisions/runtime/adr-2-current.md",
     );
     await writeFile(
       path,
-      (await readFile(path, "utf8")).replace("../adr-2-current.md", current),
+      (await readFile(path, "utf8")).replace(
+        "../../runtime/adr-2-current.md",
+        current,
+      ),
     );
     expect(
       matchingFindings(workspace, "adr-superseded", "portable relative path")
@@ -2143,13 +2198,13 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     const path = join(
       workspace.root,
-      "docs/architecture/decisions/superseded/adr-1-old-choice.md",
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
     );
     await writeFile(
       path,
       (await readFile(path, "utf8")).replace(
-        "](../adr-2-current.md)",
-        "] (../adr-2-current.md)",
+        "](../../runtime/adr-2-current.md)",
+        "] (../../runtime/adr-2-current.md)",
       ),
     );
     expect(
@@ -2165,14 +2220,14 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     await writeArchivedAdr(workspace.root, "");
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      "| [ADR-2](decisions/adr-2-current.md) | Accepted |\n| [ADR-1](decisions/superseded/adr-1-old-choice.md) | Superseded |\n",
+      "| [ADR-2](decisions/runtime/adr-2-current.md) | Accepted |\n| [ADR-1](decisions/superseded/runtime/adr-1-old-choice.md) | Superseded |\n",
     );
     expect(checks(workspace.run().findings)).toContain("adr-index");
   });
 
   it.each([
-    "decisions/superseded/adr-1-old-choice.md",
-    "`decisions/superseded/adr-1-old-choice.md`",
+    "decisions/superseded/runtime/adr-1-old-choice.md",
+    "`decisions/superseded/runtime/adr-1-old-choice.md`",
   ])("rejects the unlinked archived path %s", async (archivedCell) => {
     await writeArchivedAdr(
       workspace.root,
@@ -2180,28 +2235,254 @@ describe("ADR filenames, archived headers, and placeholders", () => {
     );
     await writeFile(
       join(workspace.root, "docs/architecture/README.md"),
-      `| Document | Status |\n| --- | --- |\n| [New choice](decisions/adr-2-current.md) | Accepted |\n| ${archivedCell} | Superseded |\n`,
+      `| Document | Status |\n| --- | --- |\n| [New choice](decisions/runtime/adr-2-current.md) | Accepted |\n| ${archivedCell} | Superseded |\n`,
     );
     expectFixes(
       matchingFindings(workspace, "adr-index", "lists an archived ADR path"),
     );
   });
 
+  it("should accept indexed effective ADRs and successors across two domains", async () => {
+    await writeArchivedAdr(
+      workspace.root,
+      "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
+    );
+    const architecture = join(workspace.root, "docs/architecture");
+    await mkdir(join(architecture, "decisions/data-store"));
+    await writeFile(
+      join(architecture, "decisions/data-store/adr-3-storage.md"),
+      "# ADR-3: Storage\n\n- Status: `Accepted`\n\nStore durable records.\n",
+    );
+    const archived = join(
+      architecture,
+      "decisions/superseded/runtime/adr-1-old-choice.md",
+    );
+    await writeFile(
+      archived,
+      (await readFile(archived, "utf8")).replace(
+        "[ADR-2 — Choice](../../runtime/adr-2-current.md)",
+        "[ADR-2 — Choice](../../runtime/adr-2-current.md), [ADR-3 — Storage](../../data-store/adr-3-storage.md)",
+      ),
+    );
+    await writeFile(
+      join(architecture, "README.md"),
+      "| Document | Status |\n| --- | --- |\n| [Runtime](decisions/runtime/adr-2-current.md) | Accepted |\n| [Storage](decisions/data-store/adr-3-storage.md) | Accepted |\n",
+    );
+
+    expect(
+      workspace.run().findings.filter(({ check }) => check.startsWith("adr-")),
+    ).toEqual([]);
+  });
+
+  it("should report cross-domain duplicate identities and index coverage by full path", async () => {
+    await writeEffectiveAdr(workspace.root);
+    const architecture = join(workspace.root, "docs/architecture");
+    await mkdir(join(architecture, "decisions/storage"));
+    await writeFile(
+      join(architecture, "decisions/storage/adr-1-choice.md"),
+      "# ADR-1: Choice\n\n- Status: `Accepted`\n",
+    );
+    const findings = workspace.run().findings;
+
+    expect(
+      findings.filter(({ check }) => check === "adr-integrity"),
+    ).toMatchObject([
+      {
+        work: "docs/architecture/decisions/runtime/adr-1-choice.md",
+        severity: "error",
+      },
+      {
+        work: "docs/architecture/decisions/storage/adr-1-choice.md",
+        severity: "error",
+      },
+    ]);
+    expect(findings.filter(({ check }) => check === "adr-index")).toMatchObject(
+      [{ work: "docs/architecture/README.md", severity: "error" }],
+    );
+  });
+
+  it("should reject a missing cross-domain successor", async () => {
+    await writeArchivedAdr(
+      workspace.root,
+      "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
+    );
+    const archived = join(
+      workspace.root,
+      "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
+    );
+    await writeFile(
+      archived,
+      (await readFile(archived, "utf8")).replace(
+        "../../runtime/adr-2-current.md",
+        "../../storage/adr-2-current.md",
+      ),
+    );
+
+    expect(
+      workspace
+        .run()
+        .findings.filter(({ check }) => check === "adr-superseded"),
+    ).toMatchObject([
+      {
+        work: "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
+        severity: "error",
+      },
+    ]);
+  });
+
+  it.each([
+    "[Previous](../superseded/storage/adr-1-old.md)",
+    "docs/architecture/decisions/superseded/storage/adr-1-old.md",
+    "`docs/architecture/decisions/superseded/storage/adr-1-old.md`",
+    "../superseded/runtime/adr-1-old.md",
+    "`../superseded/runtime/adr-1-old.md`",
+    "../superseded/storage/adr-1-old.md",
+    "`../superseded/storage/adr-1-old.md`",
+    "superseded/adr-1-old.md",
+    "`superseded/adr-1-old.md`",
+    "../storage/superseded/adr-1-old.md",
+    "`../storage/superseded/adr-1-old.md`",
+  ])(
+    "should reject cross-domain archived history in effective content: %s",
+    async (body) => {
+      await writeEffectiveAdr(workspace.root, "adr-2-current.md", body);
+
+      expect(
+        workspace
+          .run()
+          .findings.filter(({ check }) => check === "adr-integrity"),
+      ).toMatchObject([
+        {
+          work: "docs/architecture/decisions/runtime/adr-2-current.md",
+          severity: "error",
+        },
+      ]);
+    },
+  );
+
+  it("should report a missing current index target in another domain", async () => {
+    await writeEffectiveAdr(workspace.root);
+    const index = join(workspace.root, "docs/architecture/README.md");
+    await writeFile(
+      index,
+      (await readFile(index, "utf8")).replace(
+        "decisions/runtime/adr-1-choice.md",
+        "decisions/storage/adr-1-choice.md",
+      ),
+    );
+
+    expect(
+      workspace.run().findings.filter(({ check }) => check === "adr-index"),
+    ).toMatchObject([
+      { work: "docs/architecture/README.md", severity: "error" },
+      { work: "docs/architecture/README.md", severity: "error" },
+    ]);
+  });
+
+  it.each([
+    "../../adr-2-current.md",
+    "../../storage/nested/adr-2-current.md",
+    "../../storage/choice.md",
+    "../storage/adr-2-current.md",
+  ])(
+    "should reject an existing noncanonical successor target %s",
+    async (destination) => {
+      await writeArchivedAdr(
+        workspace.root,
+        "# ADR-1: Old choice\n\n- Status: `Accepted`\n\nThe original choice.\n",
+      );
+      const archiveDir = join(
+        workspace.root,
+        "docs/architecture/decisions/superseded/runtime",
+      );
+      const target = join(archiveDir, destination);
+      await mkdir(join(target, ".."), { recursive: true });
+      await rename(join(archiveDir, "../../runtime/adr-2-current.md"), target);
+      const archived = join(archiveDir, "adr-1-old-choice.md");
+      await writeFile(
+        archived,
+        (await readFile(archived, "utf8")).replace(
+          "../../runtime/adr-2-current.md",
+          destination,
+        ),
+      );
+
+      expect(
+        workspace
+          .run()
+          .findings.filter(
+            ({ check, work }) =>
+              check === "adr-superseded" &&
+              work ===
+                "docs/architecture/decisions/superseded/runtime/adr-1-old-choice.md",
+          ),
+      ).toMatchObject([{ severity: "error" }]);
+    },
+  );
+
+  it.each([
+    ["decisions/adr-3-stale.md", true],
+    ["decisions/adr-3-stale.md", false],
+    ["decisions/Network/adr-3-stale.md", true],
+    ["decisions/Network/adr-3-stale.md", false],
+    ["decisions/runtime/nested/adr-3-stale.md", true],
+    ["decisions/runtime/nested/adr-3-stale.md", false],
+    ["decisions/runtime/superseded/adr-3-stale.md", true],
+    ["decisions/runtime/superseded/adr-3-stale.md", false],
+  ] as const)(
+    "should report a noncanonical index target %s (exists: %s)",
+    async (target, exists) => {
+      await writeEffectiveAdr(workspace.root);
+      const architecture = join(workspace.root, "docs/architecture");
+      if (exists) {
+        const path = join(architecture, target);
+        await mkdir(join(path, ".."), { recursive: true });
+        await writeFile(path, "# ADR-3: Stale\n\n- Status: `Accepted`\n");
+      }
+      await writeFile(
+        join(architecture, "README.md"),
+        `| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-1-choice.md) | Accepted |\n| [Stale](${target}) | Accepted |\n`,
+      );
+
+      expect(
+        workspace.run().findings.filter(({ check }) => check === "adr-index"),
+      ).toMatchObject([
+        { work: "docs/architecture/README.md", severity: "error" },
+      ]);
+    },
+  );
+
+  it("should report a stale flat index link without a decisions directory", async () => {
+    const architecture = join(workspace.root, "docs/architecture");
+    await mkdir(architecture, { recursive: true });
+    await writeFile(
+      join(architecture, "README.md"),
+      "| Document | Status |\n| --- | --- |\n| [Stale](decisions/adr-3-stale.md) | Accepted |\n",
+    );
+
+    expect(
+      workspace.run().findings.filter(({ check }) => check === "adr-index"),
+    ).toMatchObject([
+      { work: "docs/architecture/README.md", severity: "error" },
+    ]);
+  });
+
   it("does not match archived filename substrings in current index entries", async () => {
     const architecture = join(workspace.root, "docs/architecture");
-    const archived = join(architecture, "decisions/superseded");
+    const archived = join(architecture, "decisions/superseded/runtime");
     await mkdir(archived, { recursive: true });
+    await mkdir(join(architecture, "decisions/runtime"), { recursive: true });
     await writeFile(
-      join(architecture, "decisions/adr-2-notes-adr-1-cache.md"),
+      join(architecture, "decisions/runtime/adr-2-notes-adr-1-cache.md"),
       "# ADR-2: Notes about cache\n\n- Status: `Accepted`\n",
     );
     await writeFile(
       join(archived, "adr-1-cache.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Notes about cache](../adr-2-notes-adr-1-cache.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Cache\n\n- Status: `Accepted`\n\n## Decision\n\nThe original choice.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR-2 — Notes about cache](../../runtime/adr-2-notes-adr-1-cache.md)\n>\n> **What changed:** The complete change replaced the old choice.\n\n# ADR-1: Cache\n\n- Status: `Accepted`\n\n## Decision\n\nThe original choice.\n",
     );
     await writeFile(
       join(architecture, "README.md"),
-      "| Document | Status |\n| --- | --- |\n| [Current](decisions/adr-2-notes-adr-1-cache.md) | Accepted |\n",
+      "| Document | Status |\n| --- | --- |\n| [Current](decisions/runtime/adr-2-notes-adr-1-cache.md) | Accepted |\n",
     );
     expect(
       workspace
