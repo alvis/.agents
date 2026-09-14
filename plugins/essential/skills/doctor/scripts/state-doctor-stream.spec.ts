@@ -365,11 +365,11 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       join(decisions, "choice.md"),
       "# Invalid\n\n- Status: `Accepted`\n",
     );
-    const archived = join(decisions, "superseded");
-    await mkdir(archived);
+    const archived = join(decisions, "../superseded/runtime");
+    await mkdir(archived, { recursive: true });
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](../choice.md)\n>\n> **What changed:** Replaced.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](../../runtime/choice.md)\n>\n> **What changed:** Replaced.\n",
     );
     const findings = runStateDir(workspace.root).findings;
     expect(
@@ -421,9 +421,9 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeEffectiveAdr(workspace.root, "adr-2-new-choice.md");
     const archived = join(
       workspace.root,
-      "docs/architecture/decisions/runtime/superseded",
+      "docs/architecture/decisions/superseded/runtime",
     );
-    await mkdir(archived);
+    await mkdir(archived, { recursive: true });
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
       "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](/docs/architecture/decisions/runtime/adr-2-new-choice.md)\n>\n> **What changed:** Replaced.\n",
@@ -438,12 +438,12 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await writeEffectiveAdr(workspace.root, "adr-2-new-choice.md");
     const archived = join(
       workspace.root,
-      "docs/architecture/decisions/runtime/superseded",
+      "docs/architecture/decisions/superseded/runtime",
     );
-    await mkdir(archived);
+    await mkdir(archived, { recursive: true });
     await writeFile(
       join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](../adr-2-new-choice.md)\n>\n> **What changed:** <State whether the decision changed>.\n",
+      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](../../runtime/adr-2-new-choice.md)\n>\n> **What changed:** <State whether the decision changed>.\n",
     );
     expect(
       selected(runStateDir(workspace.root).findings, "adr-superseded").some(

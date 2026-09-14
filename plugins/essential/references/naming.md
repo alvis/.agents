@@ -59,7 +59,7 @@ Naming the branch this way is what lets the workspace resolution step select the
 
 - A durable directory entrypoint is the fixed uppercase filename `README.md`; operational indexes and semantic documents keep descriptive lowercase names.
 - Work-local specification files use `.state/works/<work-id>/spec/` and take the owning capability, never the task title.
-- ADRs use `adr-<n>-<decision-slug>.md`, where `<n>` is a positive, monotonically increasing integer without leading zeros (`docs/architecture/decisions/<domain>/adr-7-<decision-slug>.md`). The heading uses the same number: `# ADR-7: <decision title>`. ADRs are never renumbered; superseded ADRs keep their filename under `decisions/<domain>/superseded/`, retaining their domain.
+- ADRs use `adr-<n>-<decision-slug>.md`, where `<n>` is a positive, monotonically increasing integer without leading zeros (`docs/architecture/decisions/<domain>/adr-7-<decision-slug>.md`). The heading uses the same number: `# ADR-7: <decision title>`. ADRs are never renumbered; superseded ADRs keep their filename, with archive placement governed by [the ADR contract](adr.md).
 - Ordinary work-local children take unnumbered semantic `<slug>.md` names — never `part-1`, `misc`, or the task title.
 - Numbered `<nn>-<topic-slug>.md` children, in increments of 10, are reserved for the mechanical split of an oversized file.
 - Two documents whose names would collide in the same directory: the later one takes the next free ordinal, as a work ID does (`change-explainer.md`, then `change-explainer-2.md`) — shortening the base first where the ordinal would not otherwise fit in 48 bytes. Never overwrite a sibling to claim its name.

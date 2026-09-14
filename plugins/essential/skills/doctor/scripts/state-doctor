@@ -1640,7 +1640,7 @@ ADR_RAW_HTML_CLOSE_TAGS = {"pre", "script", "style", "textarea"}
 ADR_EMPTY_CONTAINER = re.compile(r"^(?:>\s*)+$")
 ADR_NUMERIC_FILENAME = re.compile(r"^adr-[0-9]+(?:-|$)", re.IGNORECASE)
 ADR_DOMAIN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
-ADR_ARCHIVE_REFERENCE = re.compile(r"decisions/(?:[^\s|)`<>]+/)?superseded/")
+ADR_ARCHIVE_REFERENCE = re.compile(r"(?<![\w-])superseded/")
 ADR_INDEX_ARCHIVED_PATH = re.compile(
     r"(?<![\w/.-])(?P<path>(?:\./)?decisions/(?:[^\s|)`<>]+/)?superseded/[^\s|)`<>]+\.md)"
     r"(?![\w.-])"
@@ -1740,7 +1740,7 @@ def archive_repair_advice(file: Path, decisions_dir: Path, problems: list[str]) 
     """Offer a convergent repair for the specific archived-ADR defects found."""
     if classify_adr_path(file, decisions_dir) != "archived":
         return (
-            "Move the ADR directly under docs/architecture/decisions/<domain>/superseded/; "
+            "Move the ADR directly under docs/architecture/decisions/superseded/<domain>/; "
             "then add the single standard Status, Superseded by, and What changed "
             "header while preserving the original heading and historical body."
         )
@@ -2305,13 +2305,16 @@ def classify_adr_path(
     if not file.is_relative_to(decisions_dir):
         return None
     parts = file.relative_to(decisions_dir).parts
-    if len(parts) < 2 or parts[0] == "superseded" or not ADR_DOMAIN.fullmatch(parts[0]):
+    archived = len(parts) == 3 and parts[0] == "superseded"
+    if archived:
+        parts = parts[1:]
+    if (
+        len(parts) != 2
+        or parts[0] == "superseded"
+        or not ADR_DOMAIN.fullmatch(parts[0])
+    ):
         return None
-    if len(parts) == 2:
-        return "effective"
-    if len(parts) == 3 and parts[1] == "superseded":
-        return "archived"
-    return None
+    return "archived" if archived else "effective"
 
 
 def is_adr_archive_path(file: Path, decisions_dir: Path) -> bool:
@@ -2366,8 +2369,8 @@ def check_adrs(report: Report, repository_root: Path) -> None:
         report.error(
             str(relative),
             "adr-layout",
-            "ADR file is outside a domain's effective directory or its direct superseded archive",
-            "Move the ADR directly under docs/architecture/decisions/<domain>/ if effective, or docs/architecture/decisions/<domain>/superseded/ if archived; use one lowercase kebab-case domain other than superseded.",
+            "ADR file is outside an effective domain directory or a superseded domain archive",
+            "Move the ADR directly under docs/architecture/decisions/<domain>/ if effective, or docs/architecture/decisions/superseded/<domain>/ if archived; use one lowercase kebab-case domain other than superseded.",
         )
     for file in sorted(allowed_files):
         if not ADR_FILENAME.fullmatch(file.stem):
@@ -2441,7 +2444,7 @@ def check_adrs(report: Report, repository_root: Path) -> None:
                 str(relative),
                 "adr-superseded",
                 "effective ADR declares status Superseded but is not archived",
-                "Move the file to its domain's superseded/ directory, prepend the standard header naming its successor, and remove it from the ADR index.",
+                "Move the file to decisions/superseded/<domain>/, prepend the standard header naming its successor, and remove it from the ADR index.",
             )
         if not status_values:
             report.error(

@@ -23,14 +23,14 @@
 
 <!-- OPTIONAL SUPERSEDED HEADER
 
-After moving this file to docs/architecture/decisions/<domain>/superseded/, prepend this header and preserve the document body unchanged:
+After moving this file to docs/architecture/decisions/superseded/<domain>/, prepend this header and preserve the document body unchanged:
 
 > **Status:** Superseded
 >
-> **Superseded by:** [ADR-<n> — <title>](../adr-<n>-<slug>.md)
+> **Superseded by:** [ADR-<n> — <title>](../../<successor-domain>/adr-<n>-<slug>.md)
 >
 > **What changed:** <State whether the change is partial or complete and summarize the changed choice.>
 
-Use `../adr-<n>-<slug>.md` for a successor in the same domain and `../../<successor-domain>/adr-<n>-<slug>.md` for a successor in another domain. List multiple successor links on the same Superseded by line, separated by commas. Optionally add this metadata line to the prepended header, listing exactly those successors with no duplicates:
+Use `../../<successor-domain>/adr-<n>-<slug>.md` for every successor, including one in the same domain. List multiple successor links on the same Superseded by line, separated by commas. Optionally add this metadata line to the prepended header, listing exactly those successors with no duplicates:
 
 > superseded-by: adr-<n>[, adr-<n>...] -->
