@@ -28,7 +28,7 @@ The original report describes an upload failure with emoji filenames.
 
 ### 🔎 Current Findings
 
-Triage reproduced the failure on the reported version and traced it to filename encoding. The linked analysis comment contains revision-bound evidence.
+**Conclusion:** Reproduction observed on the reported version; the failure traces to filename encoding. The linked analysis comment contains revision-bound evidence.
 
 ### 🔗 Related Work
 
@@ -50,7 +50,9 @@ Both reports reproduce the same encoding failure before upload reaches storage. 
 
 This requests resumable uploads, which the documented flow does not provide. Bug triage ends here; product prioritization is next.
 
-For maintenance work, use `Classified as Task` and explain the requested maintenance and absence of a reported malfunction.
+### 🏷️ Classified as Task
+
+This requests a behavior-preserving private refactor with no reported malfunction. Bug triage ends here; implementation planning is next.
 
 ## Missing information
 
@@ -66,11 +68,17 @@ Please provide the application version, upload method, exact steps, expected res
 
 ### 🔎 Analysis
 
-The filename encoder throws before sending the storage request. The handler turns that failure into HTTP 500.
+**Conclusion:** Static inspection identifies a likely filename-encoding cause; reproduction was not run.
 
 ### 🧪 Evidence
 
-The inspected encoder and handler locations must each appear here as standalone GitHub permalinks pinned to the inspected commit. Report whether reproduction was observed; otherwise label the explanation a likely cause.
+The encoder path can throw before sending the storage request:
+
+https://github.com/example/project/blob/0123456789abcdef0123456789abcdef01234567/src/encode.ts#L42-L58
+
+The handler turns that failure into HTTP 500:
+
+https://github.com/example/project/blob/0123456789abcdef0123456789abcdef01234567/src/upload.ts#L91-L104
 
 ### 🛠️ Next Step
 
@@ -82,7 +90,7 @@ Use Unicode-safe encoding and cover the failing filename with a regression case.
 
 ### 🔎 Analysis
 
-I inspected filename validation and the storage-request path but could not establish the cause from the available evidence.
+**Conclusion:** Inconclusive. I inspected filename validation and the storage-request path but could not establish the cause from the available evidence.
 
 ### ❓ Reproduction Needed
 
