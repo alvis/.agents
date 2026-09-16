@@ -1,6 +1,6 @@
 # Response examples
 
-These fictional examples demonstrate tone, not findings. Replace all facts, issue references, revisions, and URLs with verified inputs. The cause example uses non-link permalink tokens: a real response must replace each token with a verified standalone link before publication.
+These fictional examples demonstrate tone, not findings. Replace all facts, issue references, revisions, and URLs with verified inputs. The cause example uses non-link permalink tokens: a real response must replace each entire token line with a verified standalone link before publication.
 
 ## Create
 
@@ -78,11 +78,11 @@ Please provide the application version, upload method, exact steps, expected res
 
 The encoder path can throw before sending the storage request:
 
-`VERIFIED_ENCODER_PERMALINK`
+VERIFIED_ENCODER_PERMALINK
 
 The handler turns that failure into HTTP 500:
 
-`VERIFIED_HANDLER_PERMALINK`
+VERIFIED_HANDLER_PERMALINK
 
 ### 🛠️ Next Step
 

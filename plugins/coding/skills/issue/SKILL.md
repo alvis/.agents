@@ -21,7 +21,7 @@ Own `create`, `update`, `lookup`, and `triage`. Infer the action from intent; pa
 
 1. Read [directions/github.md](directions/github.md) for retrieval, writes, metadata, and read-back mechanics.
 2. Execute exactly the requested action: [directions/create.md](directions/create.md), [directions/update.md](directions/update.md), [directions/lookup.md](directions/lookup.md), or [directions/triage.md](directions/triage.md). Create and triage call lookup as a read-only substep.
-3. For a body or comment, select applicable repository templates from `.github/ISSUE_TEMPLATE/` and contributing instructions. Translate issue-form fields into Markdown, preserving required questions. Use [templates/body.md](templates/body.md) or [templates/triage.md](templates/triage.md) for missing response types. Use [examples/responses.md](examples/responses.md) for tone, never as evidence.
+3. For a create or update body, select applicable repository templates from `.github/ISSUE_TEMPLATE/` and contributing instructions. Translate issue-form fields into Markdown, preserving required questions. For a triage comment, use [templates/triage.md](templates/triage.md) and incorporate applicable repository-specific required content without replacing its canonical response layout. Use [templates/body.md](templates/body.md) for a missing body type and [examples/responses.md](examples/responses.md) for tone, never as evidence.
 4. Before each write, reread the target and compare the fields being changed and relevant discussion against the analysis snapshot. Reconcile concurrent human edits; recompute stale conclusions before proceeding.
 5. Verify the written state and report the result below.
 

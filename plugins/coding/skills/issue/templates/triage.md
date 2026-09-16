@@ -1,6 +1,6 @@
 # Triage response
 
-Prefer a repository response template when applicable. Otherwise emit `📌` alone on the first line, a blank line, one concise outcome heading, another blank line, and only the sections needed for that disposition. Separate every heading, paragraph, subsection, and code permalink with blank lines. Render only the selected disposition and relevant related-work section; never publish empty slots or duplicate comments for classification, relationships, and analysis.
+Use this canonical triage-comment layout and incorporate applicable repository-specific required content into it. Emit `📌` alone on the first line, a blank line, one concise outcome heading, another blank line, and only the sections needed for that disposition. Separate every heading, paragraph, subsection, and code permalink with blank lines. Render only the selected disposition and relevant related-work section; never publish empty slots or duplicate comments for classification, relationships, and analysis.
 
 | Disposition | Heading | Required content |
 | --- | --- | --- |
@@ -10,4 +10,4 @@ Prefer a repository response template when applicable. Otherwise emit `📌` alo
 | Supported cause | 🔎 Analysis | One explicit conclusion (reproduced cause, or likely cause from static inspection with reproduction not run); inspected revision; standalone verified code permalinks; next step; no fix claim |
 | Inconclusive | 🔎 Analysis | Explicitly inconclusive conclusion; what was inspected and remains unknown; minimal reproduction request; waiting outcome |
 
-Use `## 🔗 Related Work` for distinct related issues and explain the difference. Use `## 🧪 Evidence` and `## 🛠️ Next Step` when they carry additional evidence/action. Put each GitHub code permalink on its own line between blank lines, with its explanation in neighboring prose. A waiting skip produces no GitHub response; report the reason locally instead.
+Use `### 🔗 Related Work` for distinct related issues and explain the difference. Use `### 🧪 Evidence` and `### 🛠️ Next Step` when they carry additional evidence/action. Put each GitHub code permalink on its own line between blank lines, with its explanation in neighboring prose. A waiting skip produces no GitHub response; report the reason locally instead.
