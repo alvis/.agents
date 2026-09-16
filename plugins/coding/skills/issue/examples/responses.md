@@ -1,6 +1,6 @@
 # Response examples
 
-These fictional examples demonstrate tone, not findings. Replace all facts, issue references, revisions, and URLs with verified inputs. The cause example omits a fabricated permalink: a real response must insert the verified standalone link before publication.
+These fictional examples demonstrate tone, not findings. Replace all facts, issue references, revisions, and URLs with verified inputs. The cause example uses non-link permalink tokens: a real response must replace each token with a verified standalone link before publication.
 
 ## Create
 
@@ -42,13 +42,17 @@ Related to #219, which affects downloads through a different code path.
 
 Both reports reproduce the same encoding failure before upload reaches storage. The failing path and reproduction conditions match. Closing this issue as a duplicate; follow #184 for updates.
 
-## Classification
+## Classification — Feature
 
 📌
 
 ### 🏷️ Classified as Feature
 
 This requests resumable uploads, which the documented flow does not provide. Bug triage ends here; product prioritization is next.
+
+## Classification — Task
+
+📌
 
 ### 🏷️ Classified as Task
 
@@ -74,11 +78,11 @@ Please provide the application version, upload method, exact steps, expected res
 
 The encoder path can throw before sending the storage request:
 
-https://github.com/example/project/blob/0123456789abcdef0123456789abcdef01234567/src/encode.ts#L42-L58
+`VERIFIED_ENCODER_PERMALINK`
 
 The handler turns that failure into HTTP 500:
 
-https://github.com/example/project/blob/0123456789abcdef0123456789abcdef01234567/src/upload.ts#L91-L104
+`VERIFIED_HANDLER_PERMALINK`
 
 ### 🛠️ Next Step
 
