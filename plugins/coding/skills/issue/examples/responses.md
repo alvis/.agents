@@ -1,6 +1,6 @@
 # Response examples
 
-These fictional examples demonstrate tone, not findings. Replace all facts, issue references, revisions, and URLs with verified inputs. The cause example omits a fabricated permalink: a real response must insert the verified standalone link before publication.
+These fictional examples demonstrate tone, not findings. Replace all facts, issue references, revisions, and URLs with verified inputs. The cause example uses non-link permalink tokens: a real response must replace each entire token line with a verified standalone link before publication.
 
 ## Create
 
@@ -28,7 +28,7 @@ The original report describes an upload failure with emoji filenames.
 
 ### 🔎 Current Findings
 
-Triage reproduced the failure on the reported version and traced it to filename encoding. The linked analysis comment contains revision-bound evidence.
+**Conclusion:** Reproduction observed on the reported version; the failure traces to filename encoding. The linked analysis comment contains revision-bound evidence.
 
 ### 🔗 Related Work
 
@@ -42,7 +42,7 @@ Related to #219, which affects downloads through a different code path.
 
 Both reports reproduce the same encoding failure before upload reaches storage. The failing path and reproduction conditions match. Closing this issue as a duplicate; follow #184 for updates.
 
-## Classification
+## Classification — Feature
 
 📌
 
@@ -50,7 +50,13 @@ Both reports reproduce the same encoding failure before upload reaches storage. 
 
 This requests resumable uploads, which the documented flow does not provide. Bug triage ends here; product prioritization is next.
 
-For maintenance work, use `Classified as Task` and explain the requested maintenance and absence of a reported malfunction.
+## Classification — Task
+
+📌
+
+### 🏷️ Classified as Task
+
+This requests a behavior-preserving private refactor with no reported malfunction. Bug triage ends here; implementation planning is next.
 
 ## Missing information
 
@@ -66,11 +72,17 @@ Please provide the application version, upload method, exact steps, expected res
 
 ### 🔎 Analysis
 
-The filename encoder throws before sending the storage request. The handler turns that failure into HTTP 500.
+**Conclusion:** Static inspection identifies a likely filename-encoding cause; reproduction was not run.
 
 ### 🧪 Evidence
 
-The inspected encoder and handler locations must each appear here as standalone GitHub permalinks pinned to the inspected commit. Report whether reproduction was observed; otherwise label the explanation a likely cause.
+The encoder path can throw before sending the storage request:
+
+VERIFIED_ENCODER_PERMALINK
+
+The handler turns that failure into HTTP 500:
+
+VERIFIED_HANDLER_PERMALINK
 
 ### 🛠️ Next Step
 
@@ -82,7 +94,7 @@ Use Unicode-safe encoding and cover the failing filename with a regression case.
 
 ### 🔎 Analysis
 
-I inspected filename validation and the storage-request path but could not establish the cause from the available evidence.
+**Conclusion:** Inconclusive. I inspected filename validation and the storage-request path but could not establish the cause from the available evidence.
 
 ### ❓ Reproduction Needed
 
