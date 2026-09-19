@@ -2,6 +2,8 @@
 
 The main agent registers a runtime session after acquiring its work lease, before material work. Use the exact session ID supplied by the runtime (the SessionStart context renders it as JSON); a lease label or process ID is not a substitute. This is an internal lifecycle protocol, not a user confirmation gate.
 
+Use the documented invocations below or the scripts' `--help` output as the interface. Read their source only when that interface is unavailable or implementation debugging requires it.
+
 ```bash
 "$ESSENTIAL_ROOT/scripts/state-checkpoint.ts" track \
   --work-dir "$WORK_DIR" --token "$LEASE_TOKEN" --session "$SESSION_ID"

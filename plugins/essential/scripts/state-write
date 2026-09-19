@@ -8,11 +8,17 @@
 # this helper cannot expire its own lease by working; one that lost the lease
 # gets a hard error before the write instead of a doctor finding after it.
 #
-# usage: state-write --work-dir <dir> --token <token> \
-#          --target <work-relative path> [--content-file <path>] [--ttl <s>]
-# Content is read from --content-file, else stdin. Exit codes: 0 written,
-# 2 invalid usage, 4 lease free/expired, 5 foreign lease or wrong token.
+# Run state-write --help for usage.
 set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+usage: state-write --work-dir <dir> --token <token> \
+         --target <work-relative path> [--content-file <path>] [--ttl <s>]
+Content is read from --content-file, else stdin. Exit codes: 0 written,
+2 invalid usage, 4 lease free/expired, 5 foreign lease or wrong token.
+USAGE
+}
 
 invalid() {
   jq -n --arg message "$1" '{status:"invalid", error:$message}'
@@ -44,7 +50,7 @@ while [[ $# -gt 0 ]]; do
     --content-file=*) content_file="${1#--content-file=}"; shift ;;
     --ttl) [[ $# -ge 2 ]] || invalid "--ttl requires a value"; ttl="$2"; shift 2 ;;
     --ttl=*) ttl="${1#--ttl=}"; shift ;;
-    -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 0 ;;
+    -h|--help) usage; exit 0 ;;
     *) invalid "unknown argument: $1" ;;
   esac
 done
