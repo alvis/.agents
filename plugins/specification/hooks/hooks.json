@@ -2,20 +2,55 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; if jq -Rse 'try (fromjson | if type == \"object\" then (.source == \"resume\" or .source == \"compact\") else false end) catch false' >/dev/null; then exit 0; fi; sed \"s|{{PLUGIN_DIR}}|${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}|g\" \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}/hooks/ALLAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:.}}'"
+            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; plugin_root=\"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\"; plugin_resolver=\"$plugin_root/scripts/plugin-root\"; [ -x \"$plugin_resolver\" ] || { echo \"installed plugin resolver unavailable\" >&2; exit 1; }; essential_root=\"$(\"$plugin_resolver\" essential)\" || { echo \"essential plugin unavailable\" >&2; exit 1; }; domain_runtime=\"$essential_root/scripts/domain-context.ts\"; [ -f \"$domain_runtime\" ] || { echo \"essential domain context runtime unavailable\" >&2; exit 1; }; bun \"$domain_runtime\" \"$plugin_root\" \"SessionStart\" \"ALLAGENT\""
           }
         ]
       }
     ],
     "SubagentStart": [
       {
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; sed \"s|{{PLUGIN_DIR}}|${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}|g\" \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}/hooks/ALLAGENT.md\" | jq -Rs '{hookSpecificOutput:{hookEventName:\"SubagentStart\",additionalContext:.}}'"
+            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; plugin_root=\"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\"; plugin_resolver=\"$plugin_root/scripts/plugin-root\"; [ -x \"$plugin_resolver\" ] || { echo \"installed plugin resolver unavailable\" >&2; exit 1; }; essential_root=\"$(\"$plugin_resolver\" essential)\" || { echo \"essential plugin unavailable\" >&2; exit 1; }; domain_runtime=\"$essential_root/scripts/domain-context.ts\"; [ -f \"$domain_runtime\" ] || { echo \"essential domain context runtime unavailable\" >&2; exit 1; }; bun \"$domain_runtime\" \"$plugin_root\" \"SubagentStart\" \"ALLAGENT\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; plugin_root=\"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\"; plugin_resolver=\"$plugin_root/scripts/plugin-root\"; [ -x \"$plugin_resolver\" ] || { echo \"installed plugin resolver unavailable\" >&2; exit 1; }; essential_root=\"$(\"$plugin_resolver\" essential)\" || { echo \"essential plugin unavailable\" >&2; exit 1; }; domain_runtime=\"$essential_root/scripts/domain-context.ts\"; [ -f \"$domain_runtime\" ] || { echo \"essential domain context runtime unavailable\" >&2; exit 1; }; bun \"$domain_runtime\" \"$plugin_root\" \"UserPromptSubmit\" \"ALLAGENT\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; plugin_root=\"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\"; plugin_resolver=\"$plugin_root/scripts/plugin-root\"; [ -x \"$plugin_resolver\" ] || { echo \"installed plugin resolver unavailable\" >&2; exit 1; }; essential_root=\"$(\"$plugin_resolver\" essential)\" || { echo \"essential plugin unavailable\" >&2; exit 1; }; domain_runtime=\"$essential_root/scripts/domain-context.ts\"; [ -f \"$domain_runtime\" ] || { echo \"essential domain context runtime unavailable\" >&2; exit 1; }; bun \"$domain_runtime\" \"$plugin_root\" \"PreToolUse\" \"ALLAGENT\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\" ] || { echo \"plugin root unset\" >&2; exit 1; }; plugin_root=\"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\"; plugin_resolver=\"$plugin_root/scripts/plugin-root\"; [ -x \"$plugin_resolver\" ] || { echo \"installed plugin resolver unavailable\" >&2; exit 1; }; essential_root=\"$(\"$plugin_resolver\" essential)\" || { echo \"essential plugin unavailable\" >&2; exit 1; }; domain_runtime=\"$essential_root/scripts/domain-context.ts\"; [ -f \"$domain_runtime\" ] || { echo \"essential domain context runtime unavailable\" >&2; exit 1; }; bun \"$domain_runtime\" \"$plugin_root\" \"PostToolUse\" \"ALLAGENT\""
           }
         ]
       }

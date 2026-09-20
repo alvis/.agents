@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readFileSync,
   realpathSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
@@ -13,6 +14,7 @@ import { promisify } from "node:util";
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { deleteDomainReceipt, resolveDomainContext, writeDomainReceipt } from "../plugins/essential/scripts/domain-context.ts";
 import {
   createTemporaryDirectory,
   removeTemporaryDirectory,
@@ -481,7 +483,6 @@ describe("opencode adapter manifest validation", () => {
     );
     const rootContext = rootOutput.system.join("\n");
     expect(rootContext).toContain("OpenCode host limitation: Stop hook is advisory");
-    expect(rootContext).toContain("tech-lead");
 
     const childHooks = await AlvisMarketplace({
       client: {
@@ -543,6 +544,132 @@ describe("opencode adapter manifest validation", () => {
 
       expect(output.system.join("\n")).toContain(marker.trim());
     } finally {
+      writeFileSync(contextPath, originalContext);
+      writeFileSync(manifestPath, originalManifest);
+    }
+  });
+
+  it("should retain active domain context when receipt storage is unavailable", async () => {
+    const projection = join(realpathSync(sandbox.project), ".opencode");
+    const manifestPath = join(projection, "alvis/manifest.json");
+    const resource = "alvis/plugins/coding/hooks/ALLAGENT.md";
+    const contextPath = join(projection, resource);
+    const originalManifest = readFileSync(manifestPath, "utf8");
+    const originalContext = readFileSync(contextPath, "utf8");
+    const receiptTemp = join(sandbox.root, "unavailable-receipts");
+    mkdirSync(receiptTemp);
+    const blockedDirectory = join(receiptTemp, `alvis-domain-context-${process.getuid?.() ?? "user"}`);
+    writeFileSync(blockedDirectory, "blocks receipt directory creation");
+    const marker = "fixture-storage-coding\n";
+    const manifest = JSON.parse(originalManifest) as { file_digests: Record<string, string> };
+    manifest.file_digests[resource] = createHash("sha256").update(marker).digest("hex");
+    try {
+      vi.stubEnv("TMPDIR", receiptTemp);
+      writeFileSync(contextPath, marker);
+      writeFileSync(manifestPath, JSON.stringify(manifest));
+      const { AlvisMarketplace } = await loadAdapter();
+      const createHooks = () => AlvisMarketplace({
+        client: { session: { get: async () => ({ data: { id: "storage-root" } }) } },
+        directory: sandbox.project,
+      });
+      const hooks = await createHooks();
+      const activate = async (sessionID: string) => {
+        const message = { message: { id: "msg_storage" }, parts: [{ id: "prt_storage", sessionID, messageID: "msg_storage", type: "text", text: "/coding:fixture" }] };
+        await hooks["chat.message"]({ sessionID }, message);
+        expect(message.parts).toHaveLength(1);
+        expect(message.parts[0].text).toBe("/coding:fixture");
+      };
+      const occurrences = async (target: AdapterHooks, sessionID: string) => {
+        const output = { system: [] as string[] };
+        await target["experimental.chat.system.transform"]({ sessionID }, output);
+        return output.system.join("\n").split(marker.trim()).length - 1;
+      };
+      await activate("storage-root");
+      expect(await occurrences(hooks, "storage-root")).toBe(1);
+      expect(await occurrences(hooks, "storage-root")).toBe(1);
+      expect(await occurrences(hooks, "other-storage-root")).toBe(0);
+      await hooks.event({ event: { type: "session.deleted", properties: { info: { id: "storage-root" } } } });
+      expect(await occurrences(hooks, "storage-root")).toBe(0);
+      await activate("storage-root");
+      expect(await occurrences(hooks, "storage-root")).toBe(1);
+      await hooks.dispose();
+      expect(await occurrences(hooks, "storage-root")).toBe(0);
+      await activate("storage-root");
+      unlinkSync(blockedDirectory);
+      expect(await occurrences(hooks, "storage-root")).toBe(1);
+      const recreated = await createHooks();
+      expect(await occurrences(recreated, "storage-root")).toBe(1);
+      await recreated.event({ event: { type: "session.deleted", properties: { info: { id: "storage-root" } } } });
+      expect(await occurrences(recreated, "storage-root")).toBe(0);
+    } finally {
+      writeFileSync(contextPath, originalContext);
+      writeFileSync(manifestPath, originalManifest);
+    }
+  });
+
+  it("should reconstruct active domain context on every model call without repeating prompt delivery", async () => {
+    const projection = join(realpathSync(sandbox.project), ".opencode");
+    const manifestPath = join(projection, "alvis/manifest.json");
+    const resource = "alvis/plugins/coding/hooks/ALLAGENT.md";
+    const contextPath = join(projection, resource);
+    const originalManifest = readFileSync(manifestPath, "utf8");
+    const originalContext = readFileSync(contextPath, "utf8");
+    const manifest = JSON.parse(originalManifest) as { file_digests: Record<string, string> };
+    const marker = "fixture-coding-active\n";
+    manifest.file_digests[resource] = createHash("sha256").update(marker).digest("hex");
+    try {
+      writeFileSync(contextPath, marker);
+      writeFileSync(manifestPath, JSON.stringify(manifest));
+      const { AlvisMarketplace } = await loadAdapter();
+      const hooks = await AlvisMarketplace({
+        client: { session: { get: async () => ({ data: { id: "domain-root" } }) } },
+        directory: sandbox.project,
+      });
+      const unrelated = { system: [] as string[] };
+      await hooks["experimental.chat.system.transform"]({ sessionID: "domain-root" }, unrelated);
+      expect(unrelated.system.join("\n")).not.toContain(marker.trim());
+
+      const message = { message: { id: "msg_domain" }, parts: [{ id: "prt_domain", sessionID: "domain-root", messageID: "msg_domain", type: "text", text: "/coding:fixture" }] };
+      await hooks["chat.message"]({ sessionID: "domain-root" }, message);
+      expect(message.parts.filter((part) => part.text.includes(marker.trim()))).toEqual([]);
+      for (const system of [[], []] as string[][]) {
+        await hooks["experimental.chat.system.transform"]({ sessionID: "domain-root" }, { system });
+        const modelContext = [...message.parts.map((part) => part.text), ...system].join("\n");
+        expect(modelContext.split(marker.trim())).toHaveLength(2);
+      }
+      const repeated = { message: { id: "msg_repeat" }, parts: [{ id: "prt_repeat", sessionID: "domain-root", messageID: "msg_repeat", type: "text", text: "/coding:fixture" }] };
+      await hooks["chat.message"]({ sessionID: "domain-root" }, repeated);
+      expect(repeated.parts.filter((part) => part.text.includes(marker.trim()))).toEqual([]);
+      const identity = ["opencode", "domain-root", projection, sandbox.project, "root", createHash("sha256").update(JSON.stringify(manifest.file_digests)).digest("hex")];
+      const wrongScope = resolveDomainContext({ plugins: [{ name: "coding", path: join(projection, "alvis/plugins/coding") }], cwd: sandbox.root, audience: "main", evidence: { prompt: "/coding:fixture" } }).receipt;
+      for (const receipt of ["not-json", wrongScope]) {
+        writeDomainReceipt(identity, receipt);
+        const recovered = { system: [] as string[] };
+        await hooks["experimental.chat.system.transform"]({ sessionID: "domain-root" }, recovered);
+        expect(recovered.system.join("\n")).not.toContain(marker.trim());
+        const reactivation = { message: { id: "msg_reactivate" }, parts: [{ id: "prt_reactivate", sessionID: "domain-root", messageID: "msg_reactivate", type: "text", text: "/coding:fixture" }] };
+        await hooks["chat.message"]({ sessionID: "domain-root" }, reactivation);
+      }
+      const recreated = await AlvisMarketplace({
+        client: { session: { get: async () => ({ data: { id: "domain-root" } }) } },
+        directory: sandbox.project,
+      });
+      const restored = { system: [] as string[] };
+      await recreated["experimental.chat.system.transform"]({ sessionID: "domain-root" }, restored);
+      expect(restored.system.join("\n")).toContain(marker.trim());
+      const fresh = { system: [] as string[] };
+      await recreated["experimental.chat.system.transform"]({ sessionID: "fresh-domain-root" }, fresh);
+      expect(fresh.system.join("\n")).not.toContain(marker.trim());
+      await recreated.event({ event: { type: "session.deleted", properties: { info: { id: "domain-root" } } } });
+      const deleted = { system: [] as string[] };
+      await recreated["experimental.chat.system.transform"]({ sessionID: "domain-root" }, deleted);
+      expect(deleted.system.join("\n")).not.toContain(marker.trim());
+      const operation = { callID: "domain-first-operation", sessionID: "operation-root", tool: "bash" };
+      const output = { args: { command: "git diff" } };
+      await expect(hooks["tool.execute.before"](operation, output)).rejects.toThrow(marker.trim());
+      await expect(hooks["tool.execute.before"]({ ...operation, callID: "domain-operation-retry" }, output)).resolves.toBeUndefined();
+    } finally {
+      for (const sessionID of ["domain-root", "operation-root"]) deleteDomainReceipt(["opencode", sessionID, projection, sandbox.project, "root", createHash("sha256").update(JSON.stringify(manifest.file_digests)).digest("hex")]);
       writeFileSync(contextPath, originalContext);
       writeFileSync(manifestPath, originalManifest);
     }

@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?web:",
+    "\\b(UI|UX|CSS|website|web page|landing page|frontend|Next\\.js|NextJS|Storybook|visual assets?|screen design)\\b"
+  ],
+  "tool_patterns": [
+    "\\.(?:css|scss|html|tsx|jsx)(?:[\\s\"':]|$)",
+    "\\b(?:next|storybook|web):"
+  ],
+  "agent_patterns": [
+    "frontend|design-lead|aesthetic-evaluator"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?coding:",
+    "\\b(code|coding|implement|debug|refactor|lint|typecheck|unit tests?|pull requests?|commit|repository|software|API|function|bug)\\b"
+  ],
+  "tool_patterns": [
+    "\\.(?:[cm]?[jt]sx?|py|rs|go|java|sh)(?:[\\s\"':]|$)",
+    "\\b(?:git|jj|gh)\\s+(?:commit|push|pr|diff)\\b"
+  ],
+  "agent_patterns": [
+    "engineer|implementer|tech-lead|test-runner|testing-evangelist|code-quality-critic|devops"
+  ]
+}

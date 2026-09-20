@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?governance:",
+    "\\b(agents?|skills?|standards?|eval harness|quality gate|collaboration patterns?)\\b"
+  ],
+  "tool_patterns": [
+    "(?:/|\\b)(?:agents|skills|standards)/",
+    "\\b(?:AGENTS|SKILL)\\.md\\b"
+  ],
+  "agent_patterns": [
+    "workflow-optimizer"
+  ]
+}

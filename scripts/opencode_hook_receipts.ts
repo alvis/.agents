@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  DOMAIN_RUNTIME_BUNDLE_RESOURCE,
+  DOMAIN_RUNTIME_RESOURCE,
+  nativeDomainPayloadCommand,
   nativePayloadCommand,
   PLUGIN_ROOT_ANCHOR,
   PLUGIN_ROOT_GUARD,
@@ -26,6 +29,7 @@ export interface HookReceipt {
 export interface ResolveHookReceiptsParams {
   readonly contract: JsonObject;
   readonly pluginFiles: readonly string[];
+  readonly pluginFilesByName?: Readonly<Record<string, readonly string[]>>;
   readonly pluginName: string;
   readonly pluginRoot: string;
 }
@@ -252,13 +256,14 @@ function receiptFromGlobalRegistration(
       `payload policy ${payloadName}`,
     );
     if (payloadPolicy[registration.event] === undefined) continue;
+    const isDomain = registration.command === nativeDomainPayloadCommand(registration.event, payloadName);
     if (
-      registration.command !==
+      !isDomain && registration.command !==
       nativePayloadCommand(registration.event, payloadName)
     ) {
       continue;
     }
-    if (registration.matcher !== undefined) {
+    if (registration.matcher !== undefined && !(isDomain && registration.matcher === "*")) {
       throw new Error(`unsupported OpenCode payload matcher: ${registration.matcher}`);
     }
     const audiences = stringArray(
@@ -267,9 +272,12 @@ function receiptFromGlobalRegistration(
     );
     return {
       audiences,
-      enforcement_mode: "context",
+      enforcement_mode: isDomain ? "domain" : "context",
       managed_resource: `${bundlePath}/hooks/${payloadName}.md`,
-      requirements: {},
+      requirements: isDomain ? {
+        supporting_resource: `${bundlePath}/hooks/context.json`,
+        runtime_resource: DOMAIN_RUNTIME_BUNDLE_RESOURCE,
+      } : {},
       source_event: registration.event,
       source_order: 0,
       source_plugin: pluginName,
@@ -377,6 +385,7 @@ function receiptFromSkillRegistration(
 
 function validateReceiptResources(
   pluginFiles: ReadonlySet<string>,
+  pluginFilesByName: Readonly<Record<string, readonly string[]>> | undefined,
   pluginName: string,
   receipts: readonly HookReceipt[],
 ): void {
@@ -397,6 +406,16 @@ function validateReceiptResources(
     ) {
       throw new Error(`hook resource is not projected: ${supportingResource}`);
     }
+    const runtimeResource = receipt.requirements.runtime_resource;
+    if (runtimeResource !== undefined) {
+      const projected = runtimeResource === DOMAIN_RUNTIME_BUNDLE_RESOURCE
+        ? pluginFilesByName?.essential?.includes(DOMAIN_RUNTIME_RESOURCE)
+        : runtimeResource.startsWith(bundlePrefix)
+          && pluginFiles.has(runtimeResource.slice(bundlePrefix.length));
+      if (!projected) {
+        throw new Error(`hook resource is not projected: ${runtimeResource}`);
+      }
+    }
   }
 }
 
@@ -404,7 +423,7 @@ function validateReceiptResources(
 export function resolveHookReceipts(
   params: ResolveHookReceiptsParams,
 ): readonly HookReceipt[] {
-  const { contract, pluginFiles, pluginName, pluginRoot } = params;
+  const { contract, pluginFiles, pluginFilesByName, pluginName, pluginRoot } = params;
   const receipts: HookReceipt[] = [];
   if (pluginFiles.includes("hooks/hooks.json")) {
     const registrations = parseGlobalRegistrations(
@@ -430,7 +449,12 @@ export function resolveHookReceipts(
       ),
     );
   }
-  validateReceiptResources(new Set(pluginFiles), pluginName, receipts);
+  validateReceiptResources(
+    new Set(pluginFiles),
+    pluginFilesByName,
+    pluginName,
+    receipts,
+  );
   return receipts.map((receipt, sourceOrder) => ({
     ...receipt,
     source_order: sourceOrder,
