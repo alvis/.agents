@@ -15,6 +15,7 @@ Before writing code, apply the lean-work ladder, minimum-change rules, and non-n
 
 - Prefer native tools and existing commands for bounded edits and checks. Add a script only when computation, repetition, or error prevention justifies it.
 - Prefer a prepared project script to invoking its tool directly. Use a direct tool command only when no project script serves the operation.
+- Apply [command output](output.md) before running broad search, listing, diff, log, JSON, transcript, or other repository-scaled commands.
 - Run `lsp_get_diagnostics` or `ide__getDiagnostics` before and after source changes; a just-completed `get_project_overview` satisfies the initial diagnostic.
 - Before using an external library, consult Context7 for the supported signature and search real GitHub usage.
 - Explore runtime behavior through a test case, not an ad hoc `node -e` or `npx ts-node -e` probe. Tests are repeatable living documentation.

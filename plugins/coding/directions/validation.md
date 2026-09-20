@@ -50,4 +50,6 @@ Type diagnostics and focused tests remain separate gates that lint cannot replac
 
 Run every gate from the changed project's root. Prefer its configured script. If neither IDE diagnostics nor a configured script exists, use the language-standard fallback: `tsc --noEmit` plus the project test script, `ty` and `pytest`, or `cargo clippy` and `cargo nextest run`. Never run `npm` in a project without `package.json`.
 
+Apply [command output](output.md) to every executed gate. Prefer a configured failure-only or summary mode, retain the complete report before any excerpt, and report its path when output was truncated.
+
 Proceed only when delivery verification, lint, types, affected-consumer builds, and applicable focused tests are covered by current passing execution or reusable evidence. Report executed and reused checks separately, with original receipt references and any remaining blocker.

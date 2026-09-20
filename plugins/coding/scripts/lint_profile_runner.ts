@@ -10,6 +10,10 @@ import {
   sep,
 } from "node:path";
 
+import { runBoundedCli } from "./cli-report.ts";
+
+import type { OutputSinks } from "./analyze-typescript/contracts.ts";
+
 interface ProfileScanner {
   readonly path: string;
   readonly needs_coding_scanlib?: boolean;
@@ -157,6 +161,7 @@ function scannerResult(
     const stderr = result.stderr.toString();
     const exitCode = result.exitCode;
     const run: ScannerRun = { label, args, exit_code: exitCode };
+    if (stdout !== "") run.stdout = stdout;
     const lines = stdout.split(/\r?\n/).filter(Boolean);
     if (lines.length > 0) {
       try {
@@ -167,9 +172,7 @@ function scannerResult(
           !Array.isArray(emitted)
         )
           run.output = emitted as Record<string, unknown>;
-      } catch {
-        run.stdout = stdout;
-      }
+      } catch { /* non-JSON scanner output remains available verbatim */ }
     }
     if (stderr !== "") run.stderr = stderr;
     return [run, exitCode];
@@ -186,8 +189,8 @@ function scannerResult(
   }
 }
 
-function failure(message: string): number {
-  console.log(
+function failure(message: string, stdout: (text: string) => void): number {
+  stdout(
     JSON.stringify({
       violations_found_total: 0,
       status: "failure",
@@ -196,7 +199,7 @@ function failure(message: string): number {
       standards: [],
       scanner_runs: [],
       error: message,
-    }),
+    }) + "\n",
   );
   return 2;
 }
@@ -331,21 +334,24 @@ function parseArgs(argv: readonly string[]): ParsedArguments {
  * report.
  *
  * @param argv - command-line arguments; defaults to `process.argv.slice(2)`
+ * @param sinks - optional complete-output destinations for embedding callers
  * @returns the process exit code
  */
-export function main(argv: readonly string[] = process.argv.slice(2)): number {
+export function main(argv: readonly string[] = process.argv.slice(2), sinks: OutputSinks = {}): number {
+  const stdout = sinks.stdout ?? ((text: string) => process.stdout.write(text));
+  const stderr = sinks.stderr ?? ((text: string) => process.stderr.write(text));
   const parsed = parseArgs(argv);
   if (parsed.kind === "help") {
-    process.stdout.write(help);
+    stdout(help);
     return 0;
   }
   if (parsed.kind === "error") {
-    process.stderr.write(`${usage}\n${program}: error: ${parsed.message}\n`);
+    stderr(`${usage}\n${program}: error: ${parsed.message}\n`);
     return 2;
   }
   const args = parsed.value;
   if (args.profile !== undefined && !isAbsolute(args.profile))
-    return failure("--profile must be an absolute path");
+    return failure("--profile must be an absolute path", stdout);
   const profilePath =
     args.profile === undefined ? undefined : resolve(args.profile);
   let profile: Profile = {};
@@ -353,11 +359,11 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     try {
       profile = JSON.parse(readFileSync(profilePath, "utf8")) as Profile;
     } catch (error) {
-      return failure(`unable to read profile: ${(error as Error).message}`);
+      return failure(`unable to read profile: ${(error as Error).message}`, stdout);
     }
   }
   const validation = validateProfile(profilePath, profile);
-  if (validation !== undefined) return failure(validation);
+  if (validation !== undefined) return failure(validation, stdout);
   const files = eligibleFiles(args.files, profile);
   const standards =
     profilePath === undefined
@@ -381,7 +387,7 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     scanner_runs: [],
   };
   if (files.length === 0) {
-    console.log(JSON.stringify(report));
+    stdout(JSON.stringify(report) + "\n");
     return 0;
   }
   const common = [
@@ -411,12 +417,12 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
   report.scanner_runs.push(run);
   if (exitCode !== 0) {
     report.status = "failure";
-    console.log(JSON.stringify(report));
+    stdout(JSON.stringify(report) + "\n");
     return exitCode;
   }
   for (const scanner of profile.scanners ?? []) {
     if (profilePath === undefined)
-      return failure("profile scanner requires --profile");
+      return failure("profile scanner requires --profile", stdout);
     const scannerPath = resolve(dirname(profilePath), scanner.path);
     const scannerArgs = scanner.needs_coding_scanlib
       ? ["--scanlib", resolve(args.codingRoot, "scripts/scanlib"), ...common]
@@ -435,12 +441,12 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     report.scanner_runs.push(run);
     if (exitCode !== 0) {
       report.status = "failure";
-      console.log(JSON.stringify(report));
+      stdout(JSON.stringify(report) + "\n");
       return exitCode;
     }
   }
-  console.log(JSON.stringify(report));
+  stdout(JSON.stringify(report) + "\n");
   return 0;
 }
 
-if (import.meta.main) process.exit(main());
+if (import.meta.main) process.exitCode = await runBoundedCli(process.argv.slice(2), main);

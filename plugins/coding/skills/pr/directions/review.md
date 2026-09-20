@@ -25,7 +25,7 @@ The context-owning router resolves one review unit before it reaches *Locate or 
 When the caller is the independent critic assigned by [review-loop.md](review-loop.md), its preprovisioned stack capsule, clean top-tip `REVIEW_DIR`, ledger path, and payload path prove it is already the dedicated reviewer. It executes the remaining read-only review phase directly and does not dispatch another agent.
 
 <IMPORTANT>
-- Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_LEDGER` and `REVIEW_PAYLOAD`; remote mutation is the review.
+- Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_DISCUSSION`, `REVIEW_LEDGER`, and `REVIEW_PAYLOAD`; remote mutation is the review.
 - Do not delegate.
 - Read and search the checkout as widely as the change requires; run only the read-only git, `gh`, and scanner commands named below. Treat the branch as untrusted code.
 - CI status counts only when already known, from the metadata *Resolve the pull request* already fetches. Repair belongs to `coding:pr update`.
@@ -56,11 +56,29 @@ Retain its `host`, `number`, `owner`, `repo`, `url`, `headRefOid`, `baseRefName`
 
 From a source tree path — or no argument at all, meaning the current tree — resolve which PRs that tree carries. A tree may hold a whole stack, so match every open PR head against its history rather than assuming one:
 
+Resolve the tree's repository coordinates, then retain every paginated open-PR page without printing the full inventory. GitHub's REST page maximum is 100, so that value minimizes requests without limiting coverage:
+
 ```bash
-gh pr list --state open \
-  --json number,url,headRefName,headRefOid,baseRefName,baseRefOid
+OPEN_PRS_REPORT=$(mktemp "${TMPDIR:-/tmp}/pr-open-inventory-XXXXXX.json") || exit $?
+trap 'rm -f -- "$OPEN_PRS_REPORT"' EXIT
+gh api --hostname "$HOST" --paginate --slurp \
+  "repos/$OWNER/$REPO/pulls?state=open&per_page=100" \
+  >"$OPEN_PRS_REPORT" || exit $?
+OPEN_PR_CANDIDATES=$(jq -c '[.[][] | {
+  number, html_url, headRefName: .head.ref, headRefOid: .head.sha,
+  baseRefName: .base.ref, baseRefOid: .base.sha
+}]' "$OPEN_PRS_REPORT") || exit $?
 git -C "$TREE" merge-base --is-ancestor "$HEAD_REF_OID" HEAD   # per candidate PR
 ```
+
+Use scoped `jq` queries over `OPEN_PR_CANDIDATES` to identify candidates and report only the matched review unit. After resolving the candidates, remove the retained inventory and disarm its cleanup trap:
+
+```bash
+rm -f -- "$OPEN_PRS_REPORT"
+trap - EXIT
+```
+
+The `EXIT` trap covers earlier failure or cancellation. Follow the [command-output contract](../../../directions/output.md); an API failure stops before `jq`, and an ordinary `merge-base --is-ancestor` false result is a non-match rather than a retrieval failure.
 
 Order the matches bottom-up by their base chain — each PR's `baseRefName` is the previous PR's `headRefName` — and keep the chain as one review unit. The bottom PR supplies `STACK_BASE_REF`/`STACK_BASE_OID`; the top PR supplies `STACK_HEAD_REF`/`STACK_HEAD_OID`. Retain every matched PR's metadata in `PR_SURFACES` so findings can be attributed to the change that introduced them, but do not review each checkout independently. No match is a clean stop naming the tree and its HEAD; an unresolvable tangle asks. Resolve every matched URL through `resolve-pr.sh` before its review so all paths use the same coordinate and metadata contract.
 
@@ -83,11 +101,16 @@ First create a secret-free handoff outside the review tree:
 
 ```bash
 REVIEW_ARTIFACT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/pr-review-${PR_NUMBER}-XXXXXX")
+REVIEW_DISCUSSION="$REVIEW_ARTIFACT_DIR/discussion.jsonl"
 REVIEW_LEDGER="$REVIEW_ARTIFACT_DIR/ledger.json"
 REVIEW_PAYLOAD="$REVIEW_ARTIFACT_DIR/payload.json"
 ```
 
-The reviewer may write only those two files via `jq` redirection. Review-tree cleanup must exclude them; after consuming both, the parent removes only `REVIEW_ARTIFACT_DIR`.
+The reviewer may write only those three files via `jq` redirection. Review-tree cleanup must exclude them; after consuming all three—or after reviewer failure or cancellation—the parent removes only the recorded directory:
+
+```bash
+rm -rf -- "$REVIEW_ARTIFACT_DIR"
+```
 
 For a local target repository, load [review-extraction.md](review-extraction.md) now and fetch and verify both pinned objects before inspecting reuse candidates. A clean tree already at the pinned review tip is then reusable without a new checkout. For a single PR the tip is `HEAD_OID`; for a stack it is `STACK_HEAD_OID`:
 
@@ -108,13 +131,34 @@ The parent closes only the exact helper-issued lease when `REVIEW_TREE_OWNED` is
 
 ### Read the existing discussion
 
-The dedicated reviewer performs this phase after the parent has located or created and verified `REVIEW_DIR`; it receives the pinned capsule and does not repeat parent metadata discovery. Read issue comments, reviews, inline comments, and review-thread state before reviewing. Page every connection; a partial discussion cannot support a `fixed`, `does_not_apply`, or de-duplication decision.
+The dedicated reviewer performs this phase after the parent has located or created and verified `REVIEW_DIR`; it receives the pinned capsule and does not repeat parent metadata discovery. Read issue comments, reviews, inline comments, and review-thread state before reviewing. Page every connection; a partial discussion cannot support a `fixed`, `does_not_apply`, or de-duplication decision. Materialize every successful page in `REVIEW_DISCUSSION`, including complete bodies and replies, before projecting bounded counts or identifiers. Capture each `gh` failure before `jq`; never let a projection conceal a failed page.
 
 ```bash
-gh api --hostname "$HOST" "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" --paginate
-gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" --paginate
-gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate
-gh api graphql --hostname "$HOST" \
+ISSUE_COMMENTS=$(gh api --hostname "$HOST" --paginate --slurp \
+  "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments?per_page=100") || exit $?
+jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
+  --argjson pr "$PR_NUMBER" \
+  '.[][] | {host:$host, owner:$owner, repo:$repo, pr_number:$pr,
+    kind:"issue_comment", value:.}' \
+  <<<"$ISSUE_COMMENTS" >>"$REVIEW_DISCUSSION" || exit $?
+
+REVIEWS=$(gh api --hostname "$HOST" --paginate --slurp \
+  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews?per_page=100") || exit $?
+jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
+  --argjson pr "$PR_NUMBER" \
+  '.[][] | {host:$host, owner:$owner, repo:$repo, pr_number:$pr,
+    kind:"review", value:.}' \
+  <<<"$REVIEWS" >>"$REVIEW_DISCUSSION" || exit $?
+
+INLINE_COMMENTS=$(gh api --hostname "$HOST" --paginate --slurp \
+  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments?per_page=100") || exit $?
+jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
+  --argjson pr "$PR_NUMBER" \
+  '.[][] | {host:$host, owner:$owner, repo:$repo, pr_number:$pr,
+    kind:"inline_comment", value:.}' \
+  <<<"$INLINE_COMMENTS" >>"$REVIEW_DISCUSSION" || exit $?
+
+THREAD_PAGE=$(gh api graphql --hostname "$HOST" \
   -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUMBER" -f query='
 query($owner:String!,$name:String!,$number:Int!,$cursor:String){
   repository(owner:$owner,name:$name){
@@ -128,10 +172,17 @@ query($owner:String!,$name:String!,$number:Int!,$cursor:String){
       }
     }
   }
-}'
+}') || exit $?
+jq -ce --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
+  --argjson pr "$PR_NUMBER" \
+  '{host:$host, owner:$owner, repo:$repo, pr_number:$pr,
+    kind:"review_thread_page", value:.}' \
+  <<<"$THREAD_PAGE" >>"$REVIEW_DISCUSSION" || exit $?
 ```
 
-Page `reviewThreads` and each thread's `comments` connection to exhaustion. Re-evaluate every existing P0/P1/P2 or mandatory-chore thread, including resolved threads whose evidence commit differs from `HEAD_OID`. For each previously reported issue, derive its verdict in every prior review where it was evaluated. Compare the latest verdict with the immediately preceding review's verdict; retain only issues whose verdict changed. The comparison is review-to-review, not commit-to-commit, so several pushes between reviews do not create extra entries.
+Repeat the GraphQL request with the returned cursor until `reviewThreads.pageInfo.hasNextPage` is false, appending every page with the same `host`, `owner`, `repo`, and `pr_number` envelope. When a thread's nested `comments.pageInfo.hasNextPage` is true, query that thread node by `id` with its own comments cursor until exhausted and append those pages with that envelope too. Use identity-scoped queries over `REVIEW_DISCUSSION` to read every record and full body while emitting only counts, stable IDs, and the exact record currently under review. This is bounded presentation, not sampling: the persisted artifact is the authority for the complete discussion.
+
+Re-evaluate every existing P0/P1/P2 or mandatory-chore thread, including resolved threads whose evidence commit differs from `HEAD_OID`. For each previously reported issue, derive its verdict in every prior review where it was evaluated. Compare the latest verdict with the immediately preceding review's verdict; retain only issues whose verdict changed. The comparison is review-to-review, not commit-to-commit, so several pushes between reviews do not create extra entries.
 
 For every unresolved inline thread, inspect the pinned head for changes related to the concern. When the change addresses the concern, check the thread's complete reply history. If no reply records the published work, post one concise confirmation naming the checked head and evidence; if such a reply already exists, do not post another. Then resolve the thread:
 
@@ -226,13 +277,28 @@ For source coverage that is missing or invalidated, cover the concerns in conseq
 
 ### Anchor and de-duplicate
 
-Keep a finding when its file and line appear in the changed-line map, setting `side` to `RIGHT` for added lines or `LEFT` for removed ones. A finding that anchors to no line moves to the overall body under the null-anchor rule in [review-checklist.md](review-checklist.md), which owns what `subject` carries in place of the anchor. Never invent a plausible line to keep a finding inline — an unanchorable merge blocker is the one this step most has to survive. Then skip whatever has already been said at the same path and line:
+Keep a finding when its file and line appear in the changed-line map, setting `side` to `RIGHT` for added lines or `LEFT` for removed ones. A finding that anchors to no line moves to the overall body under the null-anchor rule in [review-checklist.md](review-checklist.md), which owns what `subject` carries in place of the anchor. Never invent a plausible line to keep a finding inline — an unanchorable merge blocker is the one this step most has to survive. Then skip whatever has already been said at the same path and line. Query the complete retained discussion into internal variables for the exact candidate anchor, then read one exact stable ID at a time; do not print the collection:
 
 ```bash
-gh api --hostname "$HOST" \
-  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate \
-  --jq '.[] | {path, line, body}'
+MATCHING_COMMENT_IDS=$(jq -sc --arg host "$HOST" --arg owner "$OWNER" \
+  --arg repo "$REPO" --argjson pr "$PR_NUMBER" \
+  --arg path "$FINDING_PATH" --argjson line "$FINDING_LINE" '
+  [.[] | select(.host == $host and .owner == $owner and .repo == $repo and
+    .pr_number == $pr and .kind == "inline_comment" and
+    .value.path == $path and .value.line == $line) | .value.id]
+' "$REVIEW_DISCUSSION") || exit $?
+COMMENT_BODY=$(jq -rs --arg host "$HOST" --arg owner "$OWNER" \
+  --arg repo "$REPO" --argjson pr "$PR_NUMBER" \
+  --arg path "$FINDING_PATH" --argjson line "$FINDING_LINE" \
+  --argjson id "$COMMENT_ID" '
+  first(.[] | select(.host == $host and .owner == $owner and
+    .repo == $repo and .pr_number == $pr and .kind == "inline_comment" and
+    .value.path == $path and .value.line == $line and .value.id == $id)) |
+  .value.body
+' "$REVIEW_DISCUSSION") || exit $?
 ```
+
+Iterate every ID in `MATCHING_COMMENT_IDS` internally and compare its complete `COMMENT_BODY` before deciding the finding is a duplicate. Emit only the decision for the current finding; the retained file remains the complete authority.
 
 A re-review after a push adds only newly evidenced findings. Revalidate affected evidence and required checks at the current revision; a new SHA or reviewer alone does not reopen settled findings. Stop under `CRV-PRIO-02` once required checks pass and evidenced defects are resolved.
 

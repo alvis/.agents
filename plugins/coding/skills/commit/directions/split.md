@@ -15,8 +15,10 @@ The skill detects that `@` contains changes spanning more than one logical conce
 ```bash
 jj diff --name-only
 jj diff --stat
-jj diff               # full hunks when needed for clustering decisions
+jj diff -- <candidate-path>...  # full hunks for one proposed cluster
 ```
+
+Start from the name and stat summaries, propose domain-coherent candidate clusters, then read full hunks only for the paths in one candidate at a time. Repeat the scoped command for every candidate; do not print the repository-wide patch. The name/stat pair remains the complete inventory, and the scoped rerun is the full-output retrieval method for each cluster.
 
 ### 2. Cluster by DOMAIN, not path prefix
 
