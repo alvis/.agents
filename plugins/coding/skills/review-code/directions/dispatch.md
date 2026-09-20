@@ -4,7 +4,7 @@
 
 Resolve coverage through [specifier-resolution.md](directions/specifier-resolution.md) before choosing reviewers. Preserve explicit `--area`, file-based defaults, and caller-required areas. Never narrow coverage to reduce starts. The seven areas below are report responsibilities, not seven agent assignments.
 
-`coding:directions/WORKFLOW.md` owns implementation tiers and when independent review is required. Once this review is required or explicitly requested, the main-agent caller selects staffing by the reviewed change's semantic risk:
+`coding:directions/WORKFLOW.md` owns implementation tiers; `coding:directions/validation.md` owns when independent review is required. Once this review is required or explicitly requested, the main-agent caller selects staffing by the reviewed change's semantic risk:
 
 | Reviewed change | Staffing |
 |---|---|

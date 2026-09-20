@@ -1,6 +1,6 @@
 # Review ownership and evidence
 
-Read this when a lifecycle parent assigns implementation, hands an integrated change to review, or supplies review evidence to publication. `WORKFLOW.md` owns risk and timing; `review.md` owns findings and closure. This contract changes who buys independent scrutiny, not the required coverage or checks.
+Read this when a lifecycle parent assigns implementation, hands an integrated change to review, or supplies review evidence to publication. `WORKFLOW.md` owns risk, `validation.md` owns review timing, and `review.md` owns findings and closure. This contract changes who buys independent scrutiny, not the required coverage or checks.
 
 ## One delivery owner
 

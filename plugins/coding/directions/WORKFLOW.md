@@ -1,95 +1,42 @@
 # Coding workflow
 
-Read this before writing, modifying, reviewing, committing, pushing, or opening and updating a pull request; follow your task's phase top to bottom.
+Read this before writing, modifying, reviewing, saving, uploading, or publishing code. Classify semantic risk, select one operation, then read only its linked direction and owning skill.
 
-## Before Coding
+## Select topology
 
-### Decide who does the work
-
-<IMPORTANT>
-Use the smallest topology that preserves correctness: handle one bounded, low-risk change directly, or delegate it once to the best implementing specialist. Never wrap one executable slice in a coordinator layer.
-
-Classify by semantic risk; file count informs the tier but never decides it — a one-line authentication change is Tier 3, a twenty-file rename can be Tier 0.
+Use the smallest topology that preserves correctness: handle one bounded, low-risk change directly, or delegate it once to the best implementing specialist. Never wrap one executable slice in a coordinator layer. File count informs the tier but never decides it.
 
 | Tier | Typical change | Agent topology | Validation |
 | --- | --- | --- | --- |
 | 0 | Rename, documentation, formatting, narrow configuration | One agent | Focused mechanical checks |
 | 1 | Bounded behavior change or one coherent component | One implementing agent | Tests, types, lint, self-review |
 | 2 | Public API or consequential multi-file change | Implementer and independent reviewer | Full affected gates |
-| 3 | Architecture, migration, security, persistent-data, release-topology, or cross-domain change | Tech Lead, specialists, and reviewer | Current governed lifecycle |
+| 3 | Architecture, migration, security, persistent data, release topology, or cross-domain change | Tech Lead, specialists, and reviewer | Current governed lifecycle |
 
-Use `tech-lead` for multiple dependent milestones, multiple implementers, or any Tier 3 work; a public-API change is Tier 2 unless a Tier 3 condition also applies. The table sets implementation topology only: consequential work and every publication-bound change require independent review even when one agent implemented it, and that owner still runs its focused mechanical checks.
-</IMPORTANT>
+Use `tech-lead` for multiple dependent milestones, multiple implementers, or Tier 3 work. A public-API change is Tier 2 unless a Tier 3 condition also applies. Consequential work and every publication-bound change require independent review even when one agent implements them; that owner still runs focused mechanical checks.
 
-Before delegating, read `essential:directions/delegate.md`; before orchestrating or reviewing across a team, read `essential:directions/orchestration.md`. Route with `coding:references/ROUTING.md`. Hand the delegate full paths to every relevant skill, direction, template, and standard — a subagent starts blind.
+Before delegating, read `essential:directions/delegate.md`; before orchestrating or reviewing across a team, read `essential:directions/orchestration.md`. Select specialists through `coding:references/ROUTING.md` and give them full paths to every required skill, direction, template, and standard.
 
-### Decide where the work will live
+## Select the operation
 
-- **Small change** — unless the user named a location, work in place.
-- **Substantial change** (worth a stacked PR) — follow `essential:directions/establish-work-stream.md`, which reuses a suitable open stream before creating an ID and settles the tree shape; work-ID, state-path, and branch-shape rules live in `essential:references/naming.md`.
+Skills own actions; never delegate work “to” a skill or pass a skill name as an agent type.
 
-### Version control and `jj`
+| Operation | Direction | Owner |
+| --- | --- | --- |
+| Implement new behavior | [Implementation](implementation.md) | `coding:write-code` or `coding:draft-code` |
+| Set up a project | [Implementation](implementation.md) | `coding:setup-project` |
+| Complete a production stub | [Implementation](implementation.md) | `coding:complete-code` |
+| Diagnose or fix a failure | [Diagnosis and fix](diagnosis.md) | `coding:fix` |
+| Refactor green code | [Implementation](implementation.md) | `coding:refactor` |
+| Modernize supported syntax or APIs | [Implementation](implementation.md) | `coding:modernize` |
+| Document source-backed behavior | [Implementation](implementation.md) | `coding:document` |
+| Author tests or improve coverage | [Implementation](implementation.md) | `coding:complete-test` |
+| Lint source | [Implementation](implementation.md) | `coding:lint` |
+| Review code | [Review](review.md) | `coding:review-code` |
+| Save or reshape local history | [History](history.md) | `coding:commit` or `coding:finalize-commits` |
+| Work with a pull request or stack | [Publication](publication.md) | `coding:pr author\|create\|update\|review\|merge` |
+| Create, update, find, or triage an issue | Selected skill | `coding:issue create\|update\|lookup\|triage` |
+| Find unused code | Selected skill | `coding:find-unused` |
+| Pause or resume coding work | Selected skill | `essential:handover` or `essential:takeover` |
 
-- `coding:commit` owns every local history mutation: new changes, descriptions, splits, edits, squashes, rebases, abandons, bookmark movement.
-- `coding:pr create|update|merge` owns remote publication, PR bases, and CI.
-- Other skills may inspect `jj` state but must hand mutations to those owners.
-- Use `jj` when installed and functionally colocated; plain Git remains supported otherwise. Never approximate a missing command with a mixed Git/`jj` sequence.
-- At an actual `jj` operation, read the shared setup and safety sections of [the `jj` guide](jj.md), then only the selected situation's recipe. Reuse those instructions for later operations in the same task; recheck repository state when the operation requires it.
-
-### If you're writing it yourself
-
-**Understand what you're changing first.** Run once, by whichever is available: `get_project_overview`, `ide__getDiagnostics`, or the project's build/type-check command (`npm run build` or `npx tsc --noEmit`, `ty`, `cargo check`).
-
-**Match each action to its skill.** Invoke skills through the harness's skill mechanism; a skill is not an agent, so never delegate work "to" one or pass its name as an agent type. Each skill owns its directions, templates, standards.
-
-| Action | Skill to invoke |
-|--------|-----------------|
-| Writing new code | `/coding:write-code` or `/coding:draft-code` |
-| Setting up project | `/coding:setup-project` |
-| Completing TODOs | `/coding:complete-code` |
-| Fixing issues | `/coding:fix` |
-| Reviewing code | `/coding:review-code` |
-| Linting code | `/coding:lint` |
-| Refactoring | `/coding:refactor` |
-| Committing | `/coding:commit` |
-| Finalizing un-pushed commits (per-commit QA) | `/coding:finalize-commits` |
-| Creating tests | `/coding:complete-test` |
-| Documenting code | `/coding:document` |
-| Creating, updating, finding, or triaging GitHub issues | `/coding:issue <create\|update\|lookup\|triage>` |
-| Authoring, creating, updating, reviewing, merging PRs | `/coding:pr <author\|create\|update\|review\|merge>` |
-| Pausing work | `/essential:handover` |
-| Resuming work | `/essential:takeover` |
-| Finding dead code | `/coding:find-unused` |
-| Modernizing syntax | `/coding:modernize` |
-
-Select applicable standards from `coding:standards/INDEX.md`; apply them under `essential:directions/standards.md`. Reuse an already-read protocol; revisit selection when the artifact or action changes.
-
-## While Coding
-
-Before writing code, apply the lean-work ladder, minimum-change rules, and non-negotiable exceptions in `essential:references/working-attitude.md`.
-
-- Use native read/edit tools and existing commands for bounded file changes and checks. Write a custom script only when computation, repetition, or error prevention justifies it.
-- **Prepared scripts** — **[IMPORTANT]** every agent and subagent MUST prefer scripts declared in the project config (e.g. `package.json`) to running tools directly (`npm run lint -- <path>`, not `npx eslint <path>`); invoke a tool directly only when no project script serves that purpose.
-- **Diagnostics per change** — you MUST run `lsp_get_diagnostics` or `ide__getDiagnostics` before and after code changes (skip only if `get_project_overview` has just run).
-- **Check documentation** — before using an external library, consult **context7** for the correct import or call signature and **grep** for real-world GitHub usage.
-- **Runtime exploration** — to learn runtime behaviour, write a test file or case rather than ad-hoc `node -e`/`npx ts-node -e`; tests are version-controlled, repeatable, and living documentation.
-
-## After Coding
-
-Completed code goes through a **fix loop** before it is saved; any failing required gate returns to implementation, and gate depth follows its tier above.
-
-```
-edit code → verify delivery → (fail ⇒ back to code) → affected gates → (fail ⇒ back to code) → commit
-```
-
-**[IMPORTANT]** Before the loop, after modifying public types, interfaces, signatures, schemas, exports, functions, or classes, run each affected consumer project's own build in its own root (`npm run build`, `cargo build`, …). Cross-project breakage is invisible from the changed project alone; lint and type stages cover the rest. Never substitute a declaration-shape test.
-
-**1. Verify delivery.** For a parent-owned delivery, apply [review ownership and evidence](review-evidence.md): children return self-checks, focused validation, and risks; the named parent owns one independent review after integration and documentation, before publication. Internal slice commits do not introduce extra independent passes. Without that explicit ownership contract, use the timing below. Confirm every requirement shipped: walk an executed plan task by task against code, tests, and docs; otherwise verify the stated requirements. Fix anything unmet, then restart the loop here. At Tier 0–1 the implementing owner verifies. When publication is the only review trigger for a bounded, non-consequential change, self-review before commit and let `coding:pr` supply the independent pass when no current independent evidence exists; do not add a separate local reviewer. Consequential changes, Tier 2–3, and explicit local review requests require independent pre-commit review through `coding:review-code`, which owns coverage and risk-based review staffing. Reuse applicable independent evidence across lifecycle and PR gates under `review-evidence.md`; publication still verifies the actual head/base, discussion, authorization, and CI. Coordination follows the implementation topology above; report categories never justify a coordinator.
-
-**2. Mechanical gates.** For Tier 1–3 source changes, invoke `coding:lint` on touched source, which owns its own file scope; Tier 0 runs only the focused checks its artifact needs. The implementing owner invokes lint for a bounded slice, delegating only when scope or output warrants isolation. On any violation, fix it, then re-run verification and lint.
-
-Type diagnostics and focused tests are separate gates lint never stands in for: type diagnostics for changed code, focused runtime tests through supported public entrypoints for changed runtime behavior, and focused compile-time tests for changed compiler-observable behavior permitted by `TST-CORE-10`. Run each gate under the changed project's root, resolving its commands first: `lsp_get_diagnostics`/`ide__getDiagnostics` covers types in any language, otherwise its configured script wins per **Prepared scripts**; only when neither exists, fall back to what its language standard mandates — `tsc --noEmit` plus the project's test script, `ty` and `pytest`, `cargo clippy` and `cargo nextest run`. Never run `npm` in a project without a `package.json`. Proceed only once verification, lint, types, affected-consumer builds, and the applicable focused tests are clean.
-
-**3. Commit.** **If the user did not explicitly request a commit, ask whether to commit the work** (via `coding:commit`). **If HEAD is not the local main branch, or the work is in a `jj` workspace or linked Git worktree, use the graphical or structured user-input tool to ask whether to open a PR or move the work onto local main** — the `jj` guide owns that distinction.
-
-**4. Pull requests.** Creating or updating a pull request MUST go through `coding:pr create` or `coding:pr update`, never a hand-rolled `git`/`gh` sequence, even for a small one-off PR.
+Select applicable standards from `coding:standards/INDEX.md` and apply them under `essential:directions/standards.md`. The selected direction may narrow timing or add required evidence; it never replaces the owning skill.
