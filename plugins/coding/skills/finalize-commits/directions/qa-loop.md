@@ -8,7 +8,7 @@ Every edit must dissolve cleanly: a lint/test fix folds into the commit so it re
 
 ## Isolation model
 
-- **jj**: `jj edit <rev>` — the working copy becomes that commit; validated edits are staged there. The original `@` change-id was captured at start (SKILL.md Step 1) and is restored at end. Every rule below still binds on this path: one atomic dispatch per commit, the gate run whole, the lock fold mandatory, wrappers bypassed, exit codes captured directly. Generated artifacts (install output, build output) must be ignored so jj's automatic snapshot never sweeps them into the commit — a fold takes tracked edits only.
+- **jj**: `jj edit <rev>` — the working copy becomes that commit; validated edits are staged there. The original `@` change-id was captured at start (SKILL.md Step 1) and is restored at end. Every rule below still binds on this path: one atomic dispatch per commit, complete per-leg gate evidence, the lock fold mandatory, wrappers bypassed, exit codes captured directly. Generated artifacts (install output, build output) must be ignored so jj's automatic snapshot never sweeps them into the commit — a fold takes tracked edits only.
 - **git**: replay each commit onto a rebuild lineage and QA it in a fresh throwaway worktree (Steps 1–2). A `git rebase` walk with `edit`/`break` stops is BANNED: every commit then shares one working tree, untracked generated files (install artifacts, build output) accumulate between commits and pollute later gates, and the only counter-move — `git clean` — is destructive and frequently sandbox-blocked. A worktree created fresh per commit contains tracked files only: isolation by construction, nothing to clean.
 
 ### git path — working-copy capture (step 0)
@@ -31,7 +31,7 @@ git commit --no-verify -C "$target"     # signed per repo config; reuses message
 
 Conflict handling — exactly one kind auto-resolves:
 
-1. **Lockfile-only conflict** (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`): take the incoming side (`git checkout --theirs <lockfile>`), then run the project install so the lockfile is regenerated against the tree's actual manifests, stage it, and complete the commit. No user prompt. Note that a regeneration happened — it obligates an install + lock fold even on a marker skip (Step 3).
+1. **Lockfile-only conflict** (`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`): take the incoming side (`git checkout --theirs <lockfile>`), then run the project install so the lockfile is regenerated against the tree's actual manifests, stage it, and complete the commit. No user prompt. Record the regeneration: install + lock fold remain mandatory, and Step 3 must invalidate affected dependency-sensitive evidence.
 2. **Any other conflict**: do NOT attempt a best-effort merge. Destroy the worktree and raise `pending_decision { kind: semantic_conflict }` so the coordinator decides before anything is committed.
 
 - **jj**: no replay is needed — `jj edit <rev>` positions the working copy directly, and conflicts surface as jj conflict markers. The same rule applies: a lockfile conflict regenerates-and-resolves silently; anything else raises `pending_decision { kind: semantic_conflict }`.
@@ -40,17 +40,20 @@ Conflict handling — exactly one kind auto-resolves:
 
 The worktree created in Step 1 now sits at the replayed result and holds tracked files only — that is the entire isolation mechanism. All QA for this commit runs inside it; nothing from any other commit's gate can be present, and nothing this gate generates can leak forward, because the worktree is destroyed in Step 7. Never run the gate on a tree another commit has touched, and never reach for `git clean` to scrub one. (jj: the working copy on `<rev>` plays this role; keep generated artifacts ignored so the boundary holds.)
 
-## Step 3 — Marker skip
+## Step 3 — Evidence assessment
 
-Compute the commit's lock-excluded patch id (`../references/markers.md`). If a green marker with a matching patch id exists, report `skipped_by_marker: true`, `status: green`, and skip the lint and test legs. One obligation survives the skip: if Step 1 regenerated the lockfile (an upstream fold cascaded into this commit), run the project install and fold the lock (Step 5) before advancing — the marker certifies the commit's content, not a stale lock. Then jump to Step 7.
+Use the commit's lock-excluded patch ID to locate candidate receipts ([markers.md](../references/markers.md)), then assess each deterministic leg under [evidence reuse](../../../directions/validation.md#reuse-deterministic-check-evidence). A matching patch ID alone never establishes validity. Record each leg as execute or eligible reuse, preserving the original execution evidence. Missing or unknown bindings require execution. Continue through every remaining step; no marker bypasses install/lock handling, build coverage, folds, or message checks.
 
-## Step 4 — QA gate (install + lint + test/coverage, together)
+## Step 4 — QA gate (install + lint + test/coverage + build)
 
-One indivisible gate, run whole inside the worktree. A commit that skips any leg is NOT green, and the gate is never split across phases or batched across commits. Always prefer project scripts over raw tools (per coding hooks/ALLAGENT.md); run in order, stop at first hard failure:
+One atomic gate assessment inside the worktree: every required leg needs either a current pass or eligible original evidence. Never split it across dispatches or batch legs across commits. Always prefer project scripts over raw tools (per coding hooks/ALLAGENT.md); process in order and stop at the first hard failure:
 
 1. **install** — project install (e.g. `npm ci` / `pnpm install`). Failure → `pending_decision { kind: test_fail, detail: install }` (rare; usually environmental).
-2. **lint `--fix`** — run the project lint with autofix. Lint and lockfile fixes are validated in the worktree without a user prompt.
-3. **test / coverage** — run the project test script; the coverage gate is the test script's exit 0. A failure is NOT auto-fixed: raise `pending_decision { kind: test_fail | coverage_fail }`.
+2. **lint `--fix`** — run the project lint with autofix unless its exact leg qualifies for reuse. Lint and lockfile fixes are validated in the worktree without a user prompt.
+3. **test / coverage** — execute or reuse the exact project test leg; the coverage gate is the test script's exit 0. A failure is NOT auto-fixed: raise `pending_decision { kind: test_fail | coverage_fail }`.
+4. **build** — execute or reuse the project's required build leg. Failure → `pending_decision { kind: test_fail, detail: build }`.
+
+Install and required lock verification always execute. After any install, autofix, or repair changes files or dependencies, reassess affected receipts before processing later legs and before marking green. A lock-excluded lookup key does not preserve dependency-sensitive results across lock changes. A fresh worktree missing outputs needed by later legs must recreate them; an old pass is not an artifact substitute.
 
 Code fixes are made through `coding:fix` (never hand-edited here) so they meet project standards.
 
@@ -61,7 +64,7 @@ Two execution rules, both born from real false-green incidents:
 
 ## Step 5 — Fold, immediately
 
-Everything the gate changed amends into THIS commit before anything else happens — the fold is part of the same atomic operation, never a later cleanup pass. Validate the corrected tree in the worktree (the gate legs re-pass), then request the fold from `coding:commit`, naming the owning commit. The operation it applies:
+Everything the gate changed amends into THIS commit before anything else happens — the fold is part of the same atomic operation, never a later cleanup pass. Validate the corrected tree in the worktree: rerun failed, missing, or invalidated legs and retain only eligible passes. Then request the fold from `coding:commit`, naming the owning commit. The operation it applies:
 
 - **git** (against the replayed commit):
 
@@ -84,9 +87,9 @@ The lockfile this commit's OWN install regenerated is a MANDATORY part of the fo
 
 ## Step 7 — Mark, checkpoint, advance
 
-Once install + lint + test/coverage pass, the fold is in, and the message conforms with no outstanding decision:
+Once install, lint, test/coverage, and build have complete valid evidence, the fold is in, and the message conforms with no outstanding decision:
 
-1. Write the lock-excluded patch-id marker (`../references/markers.md`); report `status: green`, `marked: true`.
+1. Write the marker's lookup key and per-command evidence pointers (`../references/markers.md`); report `status: green`, `marked: true`. Record carried-forward passes as reused original evidence, not fresh executions.
 2. Checkpoint the result via `coding:commit`: `git update-ref refs/finalize/<run>/pos-<N> <foldedSha>` — an abort at any later position resumes from the last such ref. (jj: the op log is the checkpoint; record the change-id in the report.)
 3. Destroy the worktree: leave the directory, then `git worktree remove --force "$dir"`.
 4. Report the folded sha as `newSha` so the walk chains `cur = newSha` into the next iteration (`orchestration.md`).
@@ -103,4 +106,4 @@ The jj path needs no equivalent teardown here — its original `@` change-id is 
 
 ## Reporting
 
-Return the per-commit report — `revision`, `status`, `skipped_by_marker`, the per-leg `qa` results, `lock_folded`, `gate_bypassed_wrappers`, `message_action`, `marked` — plus `newSha` for the chain. Preserve these keys even when their value is false, empty, or `none`. If any `pending_decision` was raised, set `status: pending_decision` and populate the `pending_decision` block; the coordinator resolves and resumes (see `orchestration.md`).
+Return the per-commit report — `revision`, `status`, `skipped_by_marker: false`, the per-leg `qa` results with executed/reused disposition and original evidence pointers, `lock_folded`, `gate_bypassed_wrappers`, `message_action`, `marked` — plus `newSha` for the chain. Preserve these keys even when their value is false, empty, or `none`. If any `pending_decision` was raised, set `status: pending_decision` and populate the `pending_decision` block; the coordinator resolves and resumes (see `orchestration.md`).
