@@ -54,7 +54,7 @@ Retain the original independent reviewer for ordinary follow-ups. Independence i
 
 Invalidate only evidence that depends on changed code, base relationships, specification content, semantic task definitions, scope, or standards. Include relevant read dependencies and regressions, not merely edited lines. Retain unaffected area reports and findings; a successful partial recheck combines with valid baseline coverage to cover the full resolved scope. Record the new verification's own inputs and the carried-forward reports it validates. Never overwrite original execution identities or present stale, missing, or uncovered evidence as current.
 
-Applicable mechanical checks follow the same input-bound rule: reuse only exact-input receipts; run missing/affected checks and the mandatory candidate scan for the affected project groups. A discussion-only disposition check does not rescan unchanged source. Existing finding identities, dispositions, blocker thresholds, partial-report retry rules, and closure requirements remain unchanged. Settled findings reopen only on cited new invalidating evidence.
+Applicable mechanical checks follow [deterministic-check evidence](validation.md#reuse-deterministic-check-evidence), which owns command, input, configuration and environment bindings. Cover missing/affected checks and the mandatory candidate scan for affected project groups with current execution or valid exact-input evidence. A discussion-only disposition check does not rescan unchanged source. Existing finding identities, dispositions, blocker thresholds, partial-report retry rules, and closure requirements remain unchanged. Settled findings reopen only on cited new invalidating evidence.
 
 ## Consume evidence at publication
 

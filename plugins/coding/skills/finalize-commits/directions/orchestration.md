@@ -30,7 +30,7 @@ When the run includes order changes or hunk folds — Step 2's recommendation, a
 2. A step returning `status: green` chains `cur = newSha` and advances the walk.
 3. A step returning `status: pending_decision` **stops** the execution and surfaces the `pending_decision` block to the coordinator.
 4. The coordinator resolves it:
-   - `test_fail` / `coverage_fail` → use the graphical or structured user-input tool (fix now via `coding:fix` / accept / abort); on fix, re-run that commit's full atomic operation.
+   - `test_fail` / `coverage_fail` → use the graphical or structured user-input tool (fix now via `coding:fix` / accept / abort); on fix, resume that commit's atomic assessment, rerunning failed, missing, or invalidated legs under [evidence reuse](../../../directions/validation.md#reuse-deterministic-check-evidence). Accepting a known failure records a blocker; it cannot make the commit green.
    - `semantic_conflict` → use the graphical or structured user-input tool to decide the resolution (nothing was auto-merged).
    - `meaning_reword` → use the graphical or structured user-input tool to confirm the type/scope change; on confirm, request the reword from `coding:commit`.
 5. The coordinator resumes from the stopped step through the capability's run-resumption identifier; the checkpoint ref for the last green position supplies `cur`.
@@ -47,7 +47,7 @@ for rev in targets (oldest-first):
     while report.status == 'pending_decision':
         decision = get_structured_user_input(report.pending_decision)
         apply(decision)            # coding:fix for code; confirmed rewords via coding:commit
-        report = dispatch(intelligence='mechanical', task=qa-loop.md for rev onto cur)   # re-run the full atomic op
+        report = dispatch(intelligence='mechanical', task=qa-loop.md for rev onto cur)   # reassess evidence; rerun affected legs
     assert report.status == 'green'
     cur = report.newSha
 ```

@@ -45,7 +45,7 @@ Select standards for the artifact being corrected. Test corrections use `testing
    In steps 3-4, modify only test files, mock files, fixtures, and test support files — never the source code under test.
    </IMPORTANT>
 
-5. **Validate.** Run the full test suite, linter, and type checker across the affected scope. When a check fails, fix the cause and re-run that check; repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping. For each failure that occurred, record its root cause, the systemic cause that allowed it, the assumption that proved wrong, and how to prevent that class of error. Return attempt outcome, evidence, and a requested task-status delta to the main agent; do not edit task state directly. Re-read `state.md` and require the plan definition to remain unchanged before requesting `done`.
+5. **Validate.** Cover the full test suite, linter, and type checker across the affected scope under [deterministic-check evidence](../../directions/validation.md#reuse-deterministic-check-evidence). Execute missing, failed or invalidated checks; retain bound unchanged passes. After a correction, reassess dependent checks rather than restarting all successful work. Continue until every required check has current passing evidence or a concrete blocker remains, then report the blocker instead of looping. For each failure, record its root cause, the systemic cause that allowed it, the assumption that proved wrong, and prevention. Return attempt outcome, executed/reused evidence, and a requested task-status delta to the main agent; do not edit task state directly. Re-read `state.md` and require the plan definition to remain unchanged before requesting `done`.
 
 ## Verification
 
