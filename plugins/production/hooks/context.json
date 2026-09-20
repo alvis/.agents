@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?production:",
+    "\\b(?:register|approve|review|record)\\b[^.!?\\n]*\\b(?:assets?|renders?|render feedback)\\b",
+    "\\bproduction assets?\\b"
+  ],
+  "tool_patterns": [
+    "\\bproduction:"
+  ],
+  "agent_patterns": [
+    "production"
+  ]
+}

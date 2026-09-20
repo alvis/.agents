@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?react:",
+    "\\b(react|jsx|tsx|react native|react hooks?|react components?)\\b"
+  ],
+  "tool_patterns": [
+    "\\.(?:jsx|tsx)(?:[\\s\"':]|$)",
+    "\\breact:"
+  ],
+  "agent_patterns": [
+    "frontend-implementer|mobile-implementer"
+  ]
+}

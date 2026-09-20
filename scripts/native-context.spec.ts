@@ -140,10 +140,10 @@ describe("native lifecycle context without installed specialists", () => {
   );
 
   it.each(["startup", "clear", "resume", "compact"])(
-    "should route shared web context on %s",
+    "should route shared Essential context on %s",
     (source) => {
       assertDelivery({
-        plugin: "web",
+        plugin: "essential",
         event: "SessionStart",
         audience: "ALLAGENT",
         input: JSON.stringify({ source }),
@@ -173,7 +173,7 @@ describe("native lifecycle context without installed specialists", () => {
     "should reject missing plugin roots on %s",
     (source) => {
       for (const command of payloadCommands(
-        "web",
+        "essential",
         "SessionStart",
         "ALLAGENT",
       )) {

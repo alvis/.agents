@@ -1056,6 +1056,7 @@ function buildProjection(
           resolveHookReceipts({
             contract: projectionContract(),
             pluginFiles: pluginFilesByName[pluginName]!,
+            pluginFilesByName,
             pluginName,
             pluginRoot: pluginsByName[pluginName]!,
           }),

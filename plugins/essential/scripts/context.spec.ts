@@ -29,6 +29,87 @@ interface CommandResult {
 const script = resolve(import.meta.dirname, "context.ts");
 
 describe("cmd:Grok startup context", () => {
+  it("should carry domain receipts across explicit loader calls without inventing session identity", () => {
+    const sandbox = createSandbox();
+    try {
+      const plugin = writePlugin(sandbox, "alpha", {
+        ALLAGENT: "alpha-all\n",
+        MAINAGENT: "alpha-main\n",
+        SUBAGENT: "alpha-child\n",
+      });
+      const beta = writePlugin(sandbox, "beta", { ALLAGENT: "beta-all\n" });
+      for (const entry of [plugin, beta])
+        writeFileSync(
+          join(entry.path, "hooks/context.json"),
+          JSON.stringify({
+            request_patterns: [`/${entry.name}:`],
+            tool_patterns: [],
+            agent_patterns: [],
+          }),
+        );
+      writeFileSync(
+        sandbox.inspection,
+        JSON.stringify({ plugins: [plugin, beta] }),
+      );
+      const args = ["--audience", "main", "--prompt", "/alpha:build"];
+
+      const first = runContext(sandbox, args);
+      expect(first.status, first.stderr).toBe(0);
+      const delivered = JSON.parse(first.stdout) as {
+        context: string;
+        receipt: string;
+      };
+      expect(delivered.context).toContain("alpha-main");
+      expect(delivered.context).not.toContain("beta-all");
+      const repeated = runContext(sandbox, [
+        ...args,
+        "--receipt",
+        delivered.receipt,
+      ]);
+      expect({ status: repeated.status, stdout: repeated.stdout }).toEqual({
+        status: 0,
+        stdout: "",
+      });
+      const missing = runContext(sandbox, args);
+      expect(JSON.parse(missing.stdout).context).toBe(delivered.context);
+      const malformed = runContext(sandbox, [
+        ...args,
+        "--receipt",
+        "{malformed",
+      ]);
+      expect(JSON.parse(malformed.stdout).context).toBe(delivered.context);
+      const later = runContext(sandbox, [
+        "--audience",
+        "main",
+        "--prompt",
+        "/beta:build",
+        "--receipt",
+        delivered.receipt,
+      ]);
+      expect(JSON.parse(later.stdout).context).toContain("beta-all");
+      expect(JSON.parse(later.stdout).context).not.toContain("alpha-all");
+      writeFileSync(join(plugin.path, "hooks/ALLAGENT.md"), "changed-alpha\n");
+      const changed = runContext(sandbox, [
+        ...args,
+        "--receipt",
+        delivered.receipt,
+      ]);
+      expect(JSON.parse(changed.stdout).context).toContain("changed-alpha");
+      const child = runContext(sandbox, [
+        "--audience",
+        "subagent",
+        "--prompt",
+        "/alpha:build",
+        "--receipt",
+        delivered.receipt,
+      ]);
+      expect(JSON.parse(child.stdout).context).toContain("alpha-child");
+      expect(JSON.parse(child.stdout).context).not.toContain("alpha-main");
+    } finally {
+      rmSync(sandbox.root, { recursive: true, force: true });
+    }
+  });
+
   it.each(["main", "subagent"] as const)("should load enabled %s payloads with Essential first and per-plugin path substitution", (audience) => {
     const sandbox = createSandbox();
     try {
@@ -82,7 +163,7 @@ describe("cmd:Grok startup context", () => {
       writeFileSync(sandbox.inspection, JSON.stringify({ plugins: [empty] }));
       const withoutPayloads = runContext(sandbox, ["--audience", "subagent"]);
       expect(withoutPayloads.status, withoutPayloads.stderr).toBe(0);
-      expect(withoutPayloads.stdout.trim()).toBe("");
+      expect(JSON.parse(withoutPayloads.stdout).context).toBe("");
     } finally {
       rmSync(sandbox.root, { recursive: true, force: true });
     }
@@ -193,7 +274,7 @@ describe("cmd:Grok startup context", () => {
       writeFileSync(sandbox.inspection, JSON.stringify({ plugins: [{ ...plugin, enabled: false }] }));
       const disabled = runContext(sandbox, ["--audience", "main"]);
       expect(disabled.status, disabled.stderr).toBe(0);
-      expect(disabled.stdout.trim()).toBe("");
+      expect(JSON.parse(disabled.stdout).context).toBe("");
     } finally {
       rmSync(sandbox.root, { recursive: true, force: true });
     }

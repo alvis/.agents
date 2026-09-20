@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?specification:",
+    "\\b(specification|architecture|requirements|documentation|implementation plan|alignment review|Notion)\\b"
+  ],
+  "tool_patterns": [
+    "\\b(?:notion|specification)[_:]",
+    "\\b(?:README|requirements|architecture)\\.md\\b"
+  ],
+  "agent_patterns": [
+    "specification-expert|data-architect"
+  ]
+}

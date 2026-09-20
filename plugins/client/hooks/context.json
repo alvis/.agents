@@ -1,0 +1,13 @@
+{
+  "request_patterns": [
+    "(?:^|\\s)/?client:",
+    "\\bclient[- ]facing\\b[^.!?\\n]*\\b(?:screen|design|contract)\\b",
+    "\\bscreen[- ]design contract\\b"
+  ],
+  "tool_patterns": [
+    "\\bclient:"
+  ],
+  "agent_patterns": [
+    "client"
+  ]
+}

@@ -3,7 +3,7 @@ import { spawn } from "node:child_process"
 import { lstat, readFile, realpath } from "node:fs/promises"
 import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { homedir } from "node:os"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 const adapterDirectory = dirname(fileURLToPath(import.meta.url))
 const configRoot = resolve(adapterDirectory, "..")
@@ -57,7 +57,7 @@ function validateHookReceipt(receipt, plugin, manifest) {
     audiences.length === 0 ||
     audiences.some((audience) => !["root", "child"].includes(audience)) ||
     new Set(audiences).size !== audiences.length ||
-    !["advisory", "after", "before", "context", "prompt", "unavailable"].includes(
+    !["advisory", "after", "before", "context", "domain", "prompt", "unavailable"].includes(
       receipt?.enforcement_mode,
     ) ||
     typeof receipt?.managed_resource !== "string" ||
@@ -87,6 +87,11 @@ function validateHookReceipt(receipt, plugin, manifest) {
       !supportingResource.startsWith(`${plugin.bundle_path}/`) ||
       !Object.hasOwn(manifest.file_digests, supportingResource))
   ) {
+    throw new Error("invalid Alvis OpenCode hook receipt")
+  }
+  const runtimeResource = requirements.runtime_resource
+  if (runtimeResource !== undefined && (!Object.hasOwn(manifest.file_digests, runtimeResource)
+    || (receipt.enforcement_mode !== "domain" && !runtimeResource.startsWith(`${plugin.bundle_path}/`)))) {
     throw new Error("invalid Alvis OpenCode hook receipt")
   }
 }
@@ -548,8 +553,55 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
   const hookBindings = manifest.plugins.flatMap((plugin) =>
     plugin.hooks.map((receipt) => ({ plugin, receipt })),
   )
+  const domainRuntimeResources = new Set(hookBindings
+    .filter(({ receipt }) => receipt.enforcement_mode === "domain")
+    .map(({ receipt }) => receipt.requirements.runtime_resource))
+  if (domainRuntimeResources.size > 1 || domainRuntimeResources.has(undefined)) {
+    throw new Error("invalid Alvis OpenCode domain runtime receipt")
+  }
+  const domainRuntimeResource = domainRuntimeResources.values().next().value
   const pendingAdvice = new Map()
   const pendingPlans = new Map()
+  const transientDomainReceipts = new Map()
+  const projectionIdentity = createHash("sha256").update(JSON.stringify(manifest.file_digests)).digest("hex")
+  const domainIdentity = (sessionID, audience) => ["opencode", sessionID, configRoot, directory, audience, projectionIdentity]
+  const domainRuntime = async () => {
+    if (domainRuntimeResource === undefined) throw new Error("Alvis domain runtime is unavailable")
+    const runtime = await readManagedFile(configRoot, manifest, domainRuntimeResource)
+    return import(pathToFileURL(runtime.path).href)
+  }
+
+  const domainContext = async (sessionID, evidence, reconstruct = false) => {
+    const plugins = manifest.plugins.filter((plugin) => plugin.hooks.some((receipt) => receipt.enforcement_mode === "domain"))
+    if (plugins.length === 0) return ""
+    let audience
+    try { audience = await resolveSessionAudience(client, sessionID) }
+    catch { return "" }
+    for (const plugin of plugins) {
+      const resources = new Set(plugin.hooks.filter((receipt) => receipt.enforcement_mode === "domain")
+        .flatMap((receipt) => [receipt.managed_resource, receipt.requirements.supporting_resource, receipt.requirements.runtime_resource].filter((resource) => resource !== undefined)))
+      for (const resource of resources) await readManagedFile(configRoot, manifest, resource)
+    }
+    const { resolveDomainContext, readDomainReceipt, writeDomainReceipt } = await domainRuntime()
+    const identity = domainIdentity(sessionID, audience)
+    const receiptKey = JSON.stringify(identity)
+    const transientReceipt = transientDomainReceipts.get(receiptKey)
+    const params = {
+      plugins: plugins.map((plugin) => ({ name: plugin.name, path: join(configRoot, plugin.bundle_path) })),
+      audience: audience === "root" ? "main" : "subagent", cwd: directory, evidence,
+      receipt: transientReceipt ?? readDomainReceipt(identity),
+    }
+    const result = resolveDomainContext({ ...params, reconstruct })
+    if (!reconstruct) {
+      if (writeDomainReceipt(identity, result.receipt)) transientDomainReceipts.delete(receiptKey)
+      else transientDomainReceipts.set(receiptKey, result.receipt)
+      return result.context
+    }
+    // recover already acknowledged state; reconstructed content does not advance delivery hashes
+    if (transientReceipt && writeDomainReceipt(identity, transientReceipt)) transientDomainReceipts.delete(receiptKey)
+    // system transforms reconstruct active context; they never acknowledge incremental delivery
+    return result.context
+  }
 
   const adviceKey = (sessionID, callID) => `${sessionID}\0${callID}`
   const clearSessionAdvice = (sessionID) => {
@@ -599,6 +651,7 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
     dispose: async () => {
       pendingAdvice.clear()
       pendingPlans.clear()
+      transientDomainReceipts.clear()
     },
     event: async ({ event }) => {
       if (event.type === "session.idle") {
@@ -606,6 +659,14 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
       }
       if (event.type === "session.deleted") {
         clearSessionAdvice(event.properties.info.id)
+        if (manifest.plugins.some((plugin) => plugin.hooks.some((receipt) => receipt.enforcement_mode === "domain"))) {
+          const { deleteDomainReceipt } = await domainRuntime()
+          for (const audience of ["root", "child"]) {
+            const identity = domainIdentity(event.properties.info.id, audience)
+            transientDomainReceipts.delete(JSON.stringify(identity))
+            deleteDomainReceipt(identity)
+          }
+        }
       }
     },
     config: async (config) =>
@@ -623,6 +684,7 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
         )
         .map((part) => part.text)
         .join("\n")
+      await domainContext(input.sessionID, { prompt })
       for (const { plugin, receipt } of hookBindings.filter(
         ({ receipt }) => receipt.enforcement_mode === "prompt",
       )) {
@@ -663,6 +725,8 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
         directory,
       )
       output.system.push(context)
+      const activeContext = await domainContext(input.sessionID, {}, true)
+      if (activeContext) output.system.push(activeContext)
     },
     "tool.execute.before": async (input, output) => {
       const advice = []
@@ -690,6 +754,8 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
         const parsed = parseHookOutput(result, input.tool)
         if (parsed.advice) advice.push(parsed.advice)
       }
+      const activatedContext = await domainContext(input.sessionID, { tool_name: input.tool, tool_input: output.args })
+      if (activatedContext) throw new Error(`${activatedContext}\n\nRead and follow this domain context before retrying the operation.`)
       if (advice.length > 0) {
         pendingAdvice.set(adviceKey(input.sessionID, input.callID), advice)
       }

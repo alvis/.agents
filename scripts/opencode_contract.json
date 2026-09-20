@@ -12,10 +12,15 @@
     "payloads": {
       "ALLAGENT": {
         "SessionStart": ["root"],
-        "SubagentStart": ["child"]
+        "SubagentStart": ["child"],
+        "UserPromptSubmit": ["root", "child"],
+        "PreToolUse": ["root", "child"],
+        "PostToolUse": ["root", "child"]
       },
       "MAINAGENT": {
-        "SessionStart": ["root"]
+        "SessionStart": ["root"],
+        "UserPromptSubmit": ["root"],
+        "PreToolUse": ["root"]
       },
       "SUBAGENT": {
         "SubagentStart": ["child"]
