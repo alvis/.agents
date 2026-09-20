@@ -65,7 +65,13 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const SCHEMA = "state-checkpoint/v1";
 
 function main(): void {
+  const args = process.argv.slice(2);
+  if (args.includes("-h") || args.includes("--help")) {
+    console.error(usage());
+    return;
+  }
   const { positionals, values } = parseArgs({
+    args,
     allowPositionals: true,
     options: {
       "work-dir": { type: "string" },
@@ -83,9 +89,7 @@ function main(): void {
   });
   const action = positionals[0];
   if (positionals.length !== 1 || !isAction(action)) {
-    throw new Error(
-      "usage: state-checkpoint.ts track|dirty|complete|turn|stop (see directions/checkpoint.md)",
-    );
+    throw new Error(usage());
   }
   if (
     values.generation !== undefined &&
@@ -109,6 +113,18 @@ function main(): void {
   };
   if (action === "stop" || action === "turn") runHookAction(action, options);
   else console.log(JSON.stringify(runOwnerAction(action, options)));
+}
+
+function usage(): string {
+  return `usage: state-checkpoint.ts <action> [options]
+
+owner actions:
+  track | dirty | complete
+
+internal actions:
+  record-write | turn | stop
+
+See directions/checkpoint.md for action-specific arguments.`;
 }
 
 function runOwnerAction(action: Action, options: CheckpointParams): object {

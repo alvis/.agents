@@ -1,9 +1,11 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   realpathSync,
   unlinkSync,
   writeFileSync,
@@ -176,6 +178,54 @@ class CheckpointHarness {
 }
 
 describe("cmd:state-checkpoint", () => {
+  for (const flag of ["-h", "--help"]) {
+    for (const action of ["", "stop"]) {
+      it(`should handle ${flag} after '${action}' without stdin or state changes`, async (context) => {
+        const root = realpathSync(
+          await createTemporaryDirectory("checkpoint-help-"),
+        );
+        context.onTestFinished(() => removeTemporaryDirectory(root));
+        const work = join(root, ".state/works/demo");
+        mkdirSync(work, { recursive: true });
+        writeFileSync(join(work, "lease.json"), "{}");
+        writeFileSync(join(work, "state.md"), "original state\n");
+        const before = snapshotHelpDirectory(root);
+        const child = spawn(
+          join(plugin, "scripts/state-checkpoint.ts"),
+          [
+            ...(action ? [action] : []),
+            flag,
+            "--work-dir",
+            work,
+          ],
+          {
+            cwd: root,
+            env: { ...process.env, TMPDIR: root },
+            stdio: "pipe",
+            timeout: 2000,
+            killSignal: "SIGKILL",
+          },
+        );
+        const stdout: Buffer[] = [];
+        const stderr: Buffer[] = [];
+        child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
+        child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+        child.once("exit", () => child.stdin.destroy());
+        const result = await new Promise((resolveResult, reject) => {
+          child.once("error", reject);
+          child.once("close", (status, signal) => {
+            resolveResult({ status, signal });
+          });
+        });
+
+        expect(result).toEqual({ status: 0, signal: null });
+        expect(Buffer.concat(stdout).length).toBe(0);
+        expect(Buffer.concat(stderr).length).toBeGreaterThan(0);
+        expect(snapshotHelpDirectory(root)).toEqual(before);
+      });
+    }
+  }
+
   for (const variable of HARNESS_ROOT_VARIABLES) {
     it(`should request one repair per turn under isolated ${variable} roots containing spaces`, async (context) => {
       const temporary = await createTemporaryDirectory("installed plugin-");
@@ -449,4 +499,19 @@ async function createHarness(
   );
   context.onTestFinished(() => removeTemporaryDirectory(root));
   return new CheckpointHarness({ root, installed });
+}
+
+function snapshotHelpDirectory(root: string): unknown[] {
+  return readdirSync(root, { recursive: true })
+    .sort()
+    .map((name) => {
+      const path = join(root, name);
+      const stat = lstatSync(path);
+      return [
+        name,
+        stat.mode,
+        stat.mtimeMs,
+        stat.isFile() ? readFileSync(path) : null,
+      ];
+    });
 }

@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -9,8 +9,8 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -84,6 +84,64 @@ class StateWriteHarness {
 }
 
 describe("lease-guarded state writing", () => {
+  it.each(["-h", "--help"])(
+    "should emit %s only on stderr without stdin or state changes",
+    async (flag) => {
+      const harness = new StateWriteHarness();
+      const token = harness.acquire();
+      writeFileSync(
+        resolve(harness.workDirectory, "state.md"),
+        "original state\n",
+      );
+      const statePath = resolve(harness.workDirectory, "state.md");
+      const before = {
+        entries: readdirSync(harness.root, { recursive: true }).sort(),
+        lease: readFileSync(harness.leasePath),
+        state: readFileSync(statePath),
+      };
+      const child = spawn(
+        "/bin/bash",
+        [
+          stateWrite,
+          "--work-dir",
+          harness.workDirectory,
+          "--token",
+          token,
+          "--target",
+          "state.md",
+          flag,
+        ],
+        {
+          cwd: harness.root,
+          env: { ...process.env, TMPDIR: harness.root },
+          stdio: "pipe",
+          timeout: 2000,
+          killSignal: "SIGKILL",
+        },
+      );
+      const stdout: Buffer[] = [];
+      const stderr: Buffer[] = [];
+      child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
+      child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+      child.once("exit", () => child.stdin.destroy());
+      const result = await new Promise((resolveResult, reject) => {
+        child.once("error", reject);
+        child.once("close", (status, signal) => {
+          resolveResult({ status, signal });
+        });
+      });
+
+      expect(result).toEqual({ status: 0, signal: null });
+      expect(Buffer.concat(stdout).length).toBe(0);
+      expect(Buffer.concat(stderr).length).toBeGreaterThan(0);
+      expect({
+        entries: readdirSync(harness.root, { recursive: true }).sort(),
+        lease: readFileSync(harness.leasePath),
+        state: readFileSync(statePath),
+      }).toEqual(before);
+    },
+  );
+
   it("atomically writes content and heartbeats the lease", () => {
     const harness = new StateWriteHarness();
     const token = harness.acquire();
