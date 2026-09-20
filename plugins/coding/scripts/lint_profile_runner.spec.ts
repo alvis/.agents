@@ -2,11 +2,12 @@ import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, resolve } from "node:path";
+import { delimiter, dirname, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -29,10 +30,15 @@ function runBun(
     env: options.env,
     encoding: "utf8",
   });
+  const summary = JSON.parse(result.stdout);
+  expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(4096);
+  expect(summary.exit_code).toBe(result.status);
+  const report = JSON.parse(readFileSync(summary.full_output, "utf8"));
+  rmSync(dirname(summary.full_output), { recursive: true, force: true });
   return {
     exitCode: result.status ?? 1,
-    stdout: result.stdout,
-    stderr: result.stderr,
+    stdout: report.stdout,
+    stderr: report.stderr,
   };
 }
 afterEach(() => {
@@ -89,6 +95,40 @@ function writeProfile(root: string, value: Record<string, unknown>): string {
 }
 
 describe("command-line argument handling", () => {
+  it.each([0, 7])(
+    "should preserve oversized scanner prelude and both streams with exit %s",
+    (exitCode) => {
+      const root = temporaryRoot();
+      const scanner = resolve(root, "scanner.ts");
+      const source = resolve(root, "input.ts");
+      const prelude = "fixture-prelude:" + "😀".repeat(5000) + "\n";
+      const parsed = { diagnostics: [{ value: "中".repeat(5000) }] };
+      const stderr = "fixture-stderr:" + "é".repeat(5000);
+      writeFileSync(source, "export const value = 1;");
+      writeFileSync(
+        scanner,
+        `process.stdout.write(${JSON.stringify(prelude)}); console.log(${JSON.stringify(JSON.stringify(parsed))}); process.stderr.write(${JSON.stringify(stderr)}); process.exit(${exitCode});`,
+      );
+      const result = runBun([
+        process.execPath,
+        "run",
+        runner,
+        "--coding-root",
+        root,
+        "--generic-scanner",
+        scanner,
+        source,
+      ]);
+      const report = JSON.parse(result.stdout);
+      expect(result.exitCode).toBe(exitCode);
+      expect(report.scanner_runs[0]).toMatchObject({
+        exit_code: exitCode,
+        stdout: prelude + JSON.stringify(parsed) + "\n",
+        stderr,
+        output: parsed,
+      });
+    },
+  );
   it.each([
     [[], "the following arguments are required: files"],
     [["--unknown", "src/App.tsx"], "unrecognized arguments: --unknown"],
@@ -121,7 +161,7 @@ describe("command-line argument handling", () => {
     const result = runBun([process.execPath, "run", runner, "--help"]);
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe("");
-    expect(result.stdout).toBe(
+    expect(result.stdout).toContain(
       "usage: lint_profile_runner.ts [-h] [--profile PROFILE]\n                              [--coding-root CODING_ROOT]\n                              [--generic-scanner GENERIC_SCANNER]\n                              [--test-root TEST_ROOT]\n                              [--test-pattern TEST_PATTERN]\n                              files [files ...]\n\npositional arguments:\n  files\n\noptions:\n  -h, --help            show this help message and exit\n  --profile PROFILE\n  --coding-root CODING_ROOT\n  --generic-scanner GENERIC_SCANNER\n  --test-root TEST_ROOT\n  --test-pattern TEST_PATTERN\n",
     );
   });
@@ -154,9 +194,7 @@ describe("profile-driven scanner execution", () => {
         {
           label: "generic",
           exitCode: 0,
-          stdout: expect.stringContaining(
-            "let: 1 matches in 1 files",
-          ),
+          stdout: expect.stringContaining("let: 1 matches in 1 files"),
         },
       ],
     });

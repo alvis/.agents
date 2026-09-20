@@ -6,4 +6,6 @@ Read this before authoring, creating, updating, reviewing, or merging a pull req
 
 The selected `coding:pr` action owns publication review and closure. Reuse applicable independent evidence under [review ownership and evidence](review-evidence.md), but always verify the actual head and base, all discussions and dispositions, required authorization, local exact-revision parity, and hosted CI. No current independent evidence means no approval.
 
+Apply [command output](output.md) to remote inventories, discussion, diffs, logs, checks, and JSON. Page complete remote collections into a retained artifact, then emit only the fields and failure evidence needed for the selected decision.
+
 For `jj` publication mechanics, read only the shared setup and safety sections plus the selected publication recipe in the [Jujutsu guide](jj.md). Push all and only the bookmarks selected by `coding:pr`, then verify each remote head and pull-request base.

@@ -21,6 +21,49 @@ const analyzer = resolve(import.meta.dirname, "analyze-typescript.ts");
 const processTimeoutMs = 30_000;
 
 describe("cmd:analyze-typescript", () => {
+  it.each([false, true])(
+    "should bound the CLI while retaining an oversized report, failure=%s",
+    (failure) => {
+      const files = Object.fromEntries(
+        Array.from({ length: 100 }, (_, index) => [
+          `selected-${index}-${"x".repeat(50)}.ts`,
+          `export const value${index} = ${index};`,
+        ]),
+      );
+      const fixture = createFixture(files);
+      try {
+        const selected = failure
+          ? ["missing-" + "中".repeat(3000) + ".ts"]
+          : Object.keys(files);
+        const result = spawnSync(
+          "bun",
+          [analyzer, "--repository-root", fixture, "--", ...selected],
+          { cwd: fixture, encoding: "utf8", timeout: processTimeoutMs },
+        );
+        const summary = JSON.parse(result.stdout);
+        expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(4096);
+        expect(summary.exit_code).toBe(result.status);
+        expect(summary.original_exit_code).toBe(result.status);
+        expect(summary.truncated).toBe(true);
+        expect(result.stderr).toBe("");
+        const report = readCliReport(result.stdout);
+        expect(
+          Buffer.byteLength(report.stdout + report.stderr),
+        ).toBeGreaterThan(4096);
+        if (failure) {
+          expect(result.status).not.toBe(0);
+          expect(report.stderr + report.stdout).toContain(selected[0]);
+        } else {
+          expect(result.status).toBe(0);
+          expect(
+            JSON.parse(report.stdout).packages[0].selected_files,
+          ).toHaveLength(100);
+        }
+      } finally {
+        rmSync(fixture, { recursive: true, force: true });
+      }
+    },
+  );
   it("should keep callback settlement through captured executable bodies advisory", () => {
     const fixture = createFixture({
       "selected.ts": `/** @throws {RangeError} when rejected */
@@ -1663,7 +1706,7 @@ console.log(JSON.stringify(discoverPackages({ files: [] }, {})));`,
       );
 
       expect(result.status, result.stderr).toBe(1);
-      expect(JSON.parse(result.stdout)).toEqual(
+      expect(JSON.parse(readCliReport(result.stdout).stdout)).toEqual(
         expect.objectContaining({
           status: "failure",
           diagnostics: [
@@ -1697,7 +1740,7 @@ console.log(JSON.stringify(discoverPackages({ files: [] }, {})));`,
       );
 
       expect(result.status, result.stderr).toBe(1);
-      expect(JSON.parse(result.stdout)).toEqual(
+      expect(JSON.parse(readCliReport(result.stdout).stdout)).toEqual(
         expect.objectContaining({
           status: "failure",
           diagnostics: [
@@ -1925,10 +1968,13 @@ with (container) {
       });
 
       expect({
-        help: { status: help.status, output: help.stdout },
+        help: {
+          status: help.status,
+          output: readCliReport(help.stdout).stdout,
+        },
         defaultRoot: {
           status: defaultRoot.status,
-          report: JSON.parse(defaultRoot.stdout),
+          report: JSON.parse(readCliReport(defaultRoot.stdout).stdout),
         },
         missingRoot,
         errors,
@@ -3396,9 +3442,18 @@ function runAnalyzer(
       maxBuffer: 8 * 1024 * 1024,
     },
   );
+  const report = readCliReport(result.stdout);
   return {
     exitCode: result.status ?? 1,
-    stdout: result.stdout,
-    stderr: result.stderr || (result.status === 0 ? "" : result.stdout),
+    stdout: report.stdout,
+    stderr: report.stderr || (result.status === 0 ? "" : report.stdout),
   };
+}
+
+function readCliReport(output: string): { stdout: string; stderr: string } {
+  const summary = JSON.parse(output);
+  expect(Buffer.byteLength(output)).toBeLessThanOrEqual(4096);
+  const report = JSON.parse(readFileSync(summary.full_output, "utf8"));
+  rmSync(dirname(summary.full_output), { recursive: true, force: true });
+  return report;
 }

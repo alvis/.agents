@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 
 import { discoverPackages } from "./analyze-typescript/discovery.ts";
+import { runBoundedCli } from "./cli-report.ts";
 import { validateProfile } from "./lint_profile_runner.ts";
 
 import type {
@@ -196,4 +197,4 @@ function failure(message: string): AnalysisReport {
   };
 }
 
-if (import.meta.main) process.exitCode = await run(process.argv.slice(2));
+if (import.meta.main) process.exitCode = await runBoundedCli(process.argv.slice(2), run);

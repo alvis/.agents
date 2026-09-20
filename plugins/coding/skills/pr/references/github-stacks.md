@@ -38,6 +38,23 @@ Agents must select non-interactive forms:
 | add layer | `gh stack add <branch>` | bare `add` |
 | merge | `gh stack merge <target> --yes --merge-method <method>` | interactive merge |
 
+Before the first report-producing command, create one action-owned directory and arm cleanup for success, failure, or cancellation:
+
+```bash
+STACK_REPORT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/gh-stack-reports-XXXXXX") || exit $?
+trap 'rm -rf -- "$STACK_REPORT_DIR"' EXIT
+```
+
+For an action that needs local tracking, capture the inspection there before projecting fields; do not print the full JSON into the conversation:
+
+```bash
+STACK_VIEW_REPORT=$(mktemp "$STACK_REPORT_DIR/view-XXXXXX.json") || exit $?
+gh stack view --json >"$STACK_VIEW_REPORT" || exit $?
+STACK_VIEW_JSON=$(jq -c '.' "$STACK_VIEW_REPORT") || exit $?
+```
+
+Use scoped `jq` queries over `STACK_VIEW_JSON` for the decision at hand and retain `STACK_VIEW_REPORT` for complete local-stack verification. Follow the [command-output contract](../../../directions/output.md): capture the `gh` failure before any projection, preserve actionable stderr, and retrieve the full local view from the artifact or by rerunning the exact command rather than adding a lossy `head` pipeline.
+
 `modify` is an interactive TUI and has no non-interactive restructure form. An agent may use only `modify --continue` or `modify --abort` for an existing session; otherwise ask the user to operate the TUI or use the explicit unstack-and-reinitialize path below.
 
 Set `--remote <name>` on `link`, `push`, `submit`, `sync`, and `rebase` when the repository has multiple remotes.
@@ -60,10 +77,11 @@ For `/coding:pr stack list`, unconditionally inventory the current repository th
 
 ```bash
 REPOSITORY=$(gh repo view --json nameWithOwner --jq '.nameWithOwner') || exit $?
-STACKS_JSON=$(gh api --paginate --slurp \
+STACKS_REPORT=$(mktemp "$STACK_REPORT_DIR/inventory-XXXXXX.json") || exit $?
+gh api --paginate --slurp \
   -H 'Accept: application/vnd.github+json' \
-  "repos/$REPOSITORY/stacks?per_page=100") || exit $?
-jq '[.[][] | {
+  "repos/$REPOSITORY/stacks?per_page=100" >"$STACKS_REPORT" || exit $?
+STACK_INDEX=$(jq -c '[.[][] | {
   number,
   url,
   base: .base.ref,
@@ -76,10 +94,22 @@ jq '[.[][] | {
     head: .head.ref,
     headSha: .head.sha
   }]
-}] | sort_by(.number) | reverse' <<<"$STACKS_JSON" || exit $?
+}] | sort_by(.number) | reverse' "$STACKS_REPORT") || exit $?
+
+# One conversational page follows the existing approximately ten-resource
+# structured-report batch; change STACK_OFFSET to retrieve the next page.
+STACK_PAGE_SIZE=10
+STACK_OFFSET=${STACK_OFFSET:-0}
+jq -c --argjson offset "$STACK_OFFSET" --argjson size "$STACK_PAGE_SIZE" '
+  {total:length, offset:$offset, page_size:$size,
+   stacks: .[$offset:($offset + $size)] | map({
+     number, url, base, open,
+     pullRequestCount:(.pullRequests | length),
+     activePullRequestCount:([.pullRequests[] | select(.state == "OPEN")] | length)
+   })}' <<<"$STACK_INDEX" || exit $?
 ```
 
-An empty array is success. A nonzero API status is failure; preserve stderr and stop.
+The page size follows the existing structured-report batch of about ten resources in `governance:standards/delegation/meta.md`; it bounds presentation, not retrieval. Continue offsets until the requested inventory is covered, and use a stack-number-scoped `jq` query over `STACK_INDEX` when member detail is needed. `STACKS_REPORT` and `STACK_INDEX` retain the full paginated authority; the action owner removes the report on success, failure, or cancellation. An empty array is success. A nonzero API status is failure; preserve stderr and stop.
 
 That inventory is the only stack metadata this skill needs, and it needs no terminal. Every stack reports its number, destination, and open flag; every member reports its PR number, state, draft flag, head branch, and head SHA — enough to name a stack, pick a member, and see what is still open without a second call. Select the open stacks for a landing decision; an empty selection means the repository holds no open stack, which is an answer, not a lookup failure.
 
@@ -131,7 +161,9 @@ For a locally tracked stack, publish with:
 
 ```bash
 gh stack submit --auto --remote "$REMOTE" || exit $?
-gh stack view --json || exit $?
+STACK_VIEW_REPORT=$(mktemp "$STACK_REPORT_DIR/view-XXXXXX.json") || exit $?
+gh stack view --json >"$STACK_VIEW_REPORT" || exit $?
+STACK_VIEW_JSON=$(jq -c '.' "$STACK_VIEW_REPORT") || exit $?
 ```
 
 `submit --auto` skips the editor and creates new PRs as drafts. Add `--open` only when ready-for-review state was requested. Submission pushes branches, creates or updates PRs and their bases, and creates or updates GitHub grouping. It is non-atomic: a later branch push or PR update can fail after earlier branches or PRs changed. Preserve the pre-operation remote head and PR map, then verify every branch, PR base, draft state, and grouping so partial effects are reported exactly.
@@ -152,7 +184,9 @@ gh stack up "$LAYERS_ABOVE_BOTTOM" || exit $?
 # Invoke /coding:commit for the owning layer before continuing.
 gh stack rebase --upstack --remote "$REMOTE" || exit $?
 gh stack push --remote "$REMOTE" || exit $?
-gh stack view --json || exit $?
+STACK_VIEW_REPORT=$(mktemp "$STACK_REPORT_DIR/view-XXXXXX.json") || exit $?
+gh stack view --json >"$STACK_VIEW_REPORT" || exit $?
+STACK_VIEW_JSON=$(jq -c '.' "$STACK_VIEW_REPORT") || exit $?
 ```
 
 Bind `LAYERS_ABOVE_BOTTOM` from the recorded bottom-to-top layer map, and omit the `up` call when the owning layer is the bottom itself. Use `rebase --downstack` for trunk through the current layer, `--no-trunk` for inter-layer alignment only, and `--continue` or `--abort` after conflicts.
@@ -161,7 +195,9 @@ For full remote reconciliation use:
 
 ```bash
 gh stack sync --remote "$REMOTE" || exit $?
-gh stack view --json || exit $?
+STACK_VIEW_REPORT=$(mktemp "$STACK_REPORT_DIR/view-XXXXXX.json") || exit $?
+gh stack view --json >"$STACK_VIEW_REPORT" || exit $?
+STACK_VIEW_JSON=$(jq -c '.' "$STACK_VIEW_REPORT") || exit $?
 ```
 
 `sync` fetches, reconciles remote membership, updates trunk, cascade-rebases, pushes all active branches atomically, refreshes PR state, and links two or more open PRs. It never creates PRs. Add `--prune` only with explicit approval to delete local merged branches. It may exit zero after a divergence abort or a push warning; verify the branch graph, remote head, PR state, and grouping rather than accepting exit zero as success.
@@ -182,7 +218,7 @@ Stop and verify the intended remote unstack through the paginated Stacks REST pr
 
 For a human-operated restructure, `gh stack modify` can drop, fold, insert, reorder, and rename layers; afterward the agent runs `gh stack submit --auto [--remote <name>]` to publish the new shape. Agents do not drive this TUI.
 
-For a deterministic regroup, record `gh stack view --json`, then remove only the grouping with an explicit target:
+For a deterministic regroup, capture `STACK_VIEW_JSON` with the inspection form above, then remove only the grouping with an explicit target:
 
 ```bash
 gh stack unstack "$STACK_NUMBER" || exit $?
@@ -193,7 +229,9 @@ Stop and verify the intended remote unstack through the paginated Stacks REST pr
 ```bash
 gh stack init --base "$DESTINATION" "$BOTTOM" "$NEXT" "$TOP" || exit $?
 gh stack submit --auto --remote "$REMOTE" || exit $?
-gh stack view --json || exit $?
+STACK_VIEW_REPORT=$(mktemp "$STACK_REPORT_DIR/view-XXXXXX.json") || exit $?
+gh stack view --json >"$STACK_VIEW_REPORT" || exit $?
+STACK_VIEW_JSON=$(jq -c '.' "$STACK_VIEW_REPORT") || exit $?
 ```
 
 `gh stack unstack <stack-number>` deletes neither PRs nor branches. A partial remote unstack leaves merged, merging, or queued PRs—including PRs with auto-merge enabled—in the remote stack and leaves local tracking unchanged. `--local` removes only local tracking and preserves GitHub grouping. Verify both scopes after the call: use the paginated Stacks REST projection and `gh pr view` for every member, and use `view --json` for local tracking. After `unstack --local`, verify that the former branch reports no local stack while the REST projection still contains the remote grouping. Never delete or close a PR merely to change stack membership.
@@ -221,3 +259,10 @@ After every locally tracked mutation, use `gh stack view --json` to confirm save
 - `push` and `submit` are non-atomic: they may update earlier branches before a later lease fails. Preserve the pre-operation remote head map, report partial progress, and retry only after resolving the rejected branch.
 - Resolve a rebase conflict, stage files, and run `rebase --continue`, or run `rebase --abort`; never leave a partial rebase as success.
 - Repository support, authentication, API, ambiguity, lock, and invalid-input errors are command failures. Preserve their stderr and stop.
+
+After final verification, remove all retained action reports and disarm the trap:
+
+```bash
+rm -rf -- "$STACK_REPORT_DIR"
+trap - EXIT
+```
