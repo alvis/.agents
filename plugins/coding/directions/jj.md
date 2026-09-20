@@ -1,6 +1,6 @@
 # Jujutsu guide
 
-This is the coding plugin's canonical source for how to run Jujutsu (`jj`). `coding:directions/WORKFLOW.md` owns when to use `jj` and mutation ownership — `coding:commit` for local history, `coding:pr` for publication. Route-specific references retain exact transactions, non-`jj` gates, and handoffs where their owning skill needs them.
+This is the coding plugin's canonical source for how to run Jujutsu (`jj`). [History](history.md) owns when to use `jj` and local mutation ownership; [publication](publication.md) owns remote publication. Route-specific references retain exact transactions, non-`jj` gates, and handoffs where their owning skill needs them.
 
 Read through the situation guide for shared setup and safety, then read only the recipe selected there. Reuse the guide within the task; its state checks still run at each operation that requires them.
 
