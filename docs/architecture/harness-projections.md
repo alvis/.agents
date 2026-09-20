@@ -8,15 +8,35 @@ Grok Build is a native target with compatibility adapters for individual feature
 
 OpenCode support targets stable V1 only. Its documented extension layout differs from this marketplace, so `scripts/install_opencode.ts` produces a managed directory projection and installs `scripts/opencode_adapter.js` as a local plugin. OpenCode V2 and `opencode2` are outside this contract.
 
+Current feature status belongs to the manually maintained [`COMPATIBILITY.md`](../../COMPATIBILITY.md). Adapted, experimental, external, and unavailable behavior must not be flattened into a native-support claim.
+
+## Native payload injection
+
+`ALLAGENT.md`, `MAINAGENT.md`, and `SUBAGENT.md` are shipped product rather than developer documentation. Each context-owning plugin registers payload commands in `plugins/<p>/hooks/hooks.json`; static commands derive from the single `nativePayloadCommand` builder in [`scripts/harness_contract.ts`](../../scripts/harness_contract.ts).
+
+Claude Code sets `CLAUDE_PLUGIN_ROOT`, Codex sets `PLUGIN_ROOT`, and Grok Build sets `GROK_PLUGIN_ROOT`. Codex and Grok also set a Claude compatibility alias, but the native variable takes precedence. Every command path, including substitution paths, uses that ordered anchor and quotes it because a root may contain spaces. Preserve the order in `resolve_harness`: the variables identify the harness as well as its path. A Claude alias can resolve the right directory while misidentifying Codex, causing a Codex-only Stop validator to exit without feedback.
+
+Test native identity and feedback with native and compatibility variables set together. A path-only test misses identity failures; a test that inherits another harness's variables proves the wrong path. An unresolved root exits nonzero instead of letting a successful `sed | jq` pipeline emit nothing. Do not extend the native chain for a compatibility consumer. A future native harness may extend it only from that harness's documentation and in every command in the same change; a partial update fails silently. See [Native harness resolution](../../ARCHITECTURE.md#native-harness-resolution).
+
+- `ALLAGENT.md` serves `SessionStart` and `SubagentStart` and contains only its plugin's routing. It never becomes a central roster.
+- `MAINAGENT.md` serves `SessionStart` and contains the owner's main-session decision gate: Coding selects topology by semantic risk and Web binds design initiatives to `design-lead`.
+- `SUBAGENT.md` is Essential-only and serves `SubagentStart`.
+
+Payload paths use `{{PLUGIN_DIR}}`; native hooks substitute the current plugin root. OpenCode sets none of the native root variables: its adapter reads the projected bundle and substitutes paths directly. Payloads and their unconditional instructional reads are byte-budgeted, so they link to details at the decision point instead of embedding them.
+
+Root [`AGENTS.md`](../../AGENTS.md) uses ordinary repository memory discovery. It is not shipped, hook-injected, or included in payload byte budgets.
+
 ## Native installation and Grok context
 
 `essential:install` and `essential:uninstall` share installation ownership and transaction mechanics under Essential's `scripts/`. A destination-local receipt records installed files and their content hashes; uninstall removes only matching owned content and retains edited files and needed support. Conflicting unowned files are preserved. Installation stages changes, publishes the receipt last, and rolls back failed operations.
 
-Grok alone adds a managed instruction in its user `AGENTS.md` to read the packaged `directions/GROK.md`. The bootstrap invokes its adjacent plugin's `scripts/context.ts` with an explicit main or subagent audience. This loader shares the `grok inspect --json` reader in `scripts/grok.ts` with agent installation, selects every enabled plugin, and reads the applicable payloads before emitting any context. Discovery or read failures return an error; absent optional payloads are skipped. Installer marketplace trust filtering remains separate from context loading.
+Grok alone adds a managed instruction in its user `AGENTS.md` to read the packaged [Grok bootstrap](../../plugins/essential/directions/GROK.md). The bootstrap invokes its adjacent plugin's [`context.ts`](../../plugins/essential/scripts/context.ts) with an explicit main or subagent audience. This loader shares the `grok inspect --json` reader in [`grok.ts`](../../plugins/essential/scripts/grok.ts) with agent installation, selects every enabled plugin, and reads the applicable payloads before emitting any context. Discovery or read failures return an error; absent optional payloads are skipped. Installer marketplace trust filtering remains separate from context loading.
 
 Canonical instructions remain in the payloads, and their `{{PLUGIN_DIR}}` references resolve against their reported plugin roots. The loader's own path stays anchored to the `GROK.md` that was read, even when discovery reports another Essential installation. Conditional workflows remain lazy. The model must read the bootstrap and loader output; this does not imply automatic `@` expansion or consumption of passive SessionStart output. Reinstallation refreshes moved bootstrap references; uninstall preserves surrounding user rules.
 
 Claude and Codex retain native context hooks. OpenCode V1 retains its receipt-bound system transform. None of these context routes depends on installed specialist agents or another harness's setup. Native installer receipts do not grant removal authority over OpenCode's projection.
+
+Grok keeps native payload registrations, but its `SessionStart` and `SubagentStart` handlers ignore stdout. The managed bootstrap is therefore its instruction route, and model compliance remains experimental. PreToolUse validators still run natively: Grok emits top-level `{"decision","reason"}` for allow or deny, while Claude and Codex express an allow through a PreToolUse context envelope, including empty `additionalContext` when there is no reason, and leave the decision to their permission systems. Grok ignores Stop stdout, so the pending-checkpoint `.state` recovery block remains advisory there. `essential:uninstall` removes the owned attachment and unmodified installed agents.
 
 Native static `SessionStart` payload commands derive from [`nativePayloadCommand`](../../scripts/harness_contract.ts). `startup` and `clear` load the applicable `ALLAGENT.md` and `MAINAGENT.md` payloads; `resume` and `compact` suppress those unchanged static payloads while Essential's session script may still emit dynamic lifecycle and runtime metadata. Missing, malformed, or unknown source input takes the startup path so required context is not silently removed. Resume does not compare payload content or discover changes; a deliberate `clear` reloads the current bytes. `SubagentStart` remains independent of this lifecycle gate.
 
@@ -80,8 +100,7 @@ Agent names remain canonical because routing payloads refer to them. A duplicate
 
 ## Runtime adapter
 
-OpenCode V1 loads `plugins/alvis-marketplace.js` without extra npm dependencies. <!-- doc-path-gate: ignore -->
-The adapter validates the manifest's resolved hook receipts, then:
+OpenCode V1 loads `plugins/alvis-marketplace.js` without extra npm dependencies. <!-- doc-path-gate: ignore --> The adapter validates the manifest's resolved hook receipts, then:
 
 - adds absent MCP definitions to the merged configuration, mapping Claude HTTP servers to OpenCode remote servers and command definitions to local arrays;
 - preserves an existing user or project MCP entry with the same name and logs a warning;
