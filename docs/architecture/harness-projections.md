@@ -18,6 +18,14 @@ Canonical instructions remain in the payloads, and their `{{PLUGIN_DIR}}` refere
 
 Claude and Codex retain native context hooks. OpenCode V1 retains its receipt-bound system transform. None of these context routes depends on installed specialist agents or another harness's setup. Native installer receipts do not grant removal authority over OpenCode's projection.
 
+Native static `SessionStart` payload commands derive from [`nativePayloadCommand`](../../scripts/harness_contract.ts). `startup` and `clear` load the applicable `ALLAGENT.md` and `MAINAGENT.md` payloads; `resume` and `compact` suppress those unchanged static payloads while Essential's session script may still emit dynamic lifecycle and runtime metadata. Missing, malformed, or unknown source input takes the startup path so required context is not silently removed. Resume does not compare payload content or discover changes; a deliberate `clear` reloads the current bytes. `SubagentStart` remains independent of this lifecycle gate.
+
+## Installed dependency resolution
+
+Native hooks execute only plugin-local scripts or scripts in declared dependencies. Each plugin carries a generated `scripts/plugin-root` projection from the canonical root `scripts/plugin-root`; [ADR-1](decisions/harness/adr-1-installed-plugin-resolution.md) owns why this resolver is the single permitted duplicated executable.
+
+The resolver takes one plugin name and returns that plugin's canonical installed root. Claude Code uses its installed-plugin registry, Codex uses the invoking marketplace cache with ambiguity rejection, and Grok Build uses the source-shaped marketplace plugin set. Every candidate is verified against its harness manifest, and an absent or ambiguous dependency exits 1 with empty stdout.
+
 ## Native plan validation
 
 Claude Code supplies plan prose to Essential's plan-transition `PreToolUse` validator. T3-hosted Codex Plan Mode instead emits a plan response without that tool call. Essential's Codex-only Stop adapter reads the newest assistant response for the current `turn_id` from `transcript_path`, requires one complete `<proposed_plan>` block, and delegates its body to the same heading validator. The first failure blocks for one corrective continuation; a second failure stops visibly. Because Stop follows response emission, it cannot retract a malformed plan already rendered by T3.
