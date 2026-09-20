@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { PLUGIN_ROOT_ANCHOR, PLUGIN_ROOT_GUARD } from "./harness_contract.ts";
+import {
+  nativePayloadCommand,
+  PLUGIN_ROOT_ANCHOR,
+  PLUGIN_ROOT_GUARD,
+} from "./harness_contract.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -192,13 +196,6 @@ function parseSkillRegistrations(
   }
   if (awaitsCommand) throw new Error(`incomplete skill hook in ${path}`);
   return registrations;
-}
-
-function nativePayloadCommand(
-  event: string,
-  payloadName: string,
-): string {
-  return `${PLUGIN_ROOT_GUARD}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
 }
 
 function nativeScriptCommand(scriptName: string, policy: JsonObject): string {

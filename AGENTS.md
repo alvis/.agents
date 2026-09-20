@@ -2,6 +2,8 @@
 
 Keep every line load-bearing. If deleting a word would not change what someone does, delete it — that governs this file and everything shipped from this tree.
 
+Do not hard-wrap prose: every paragraph occupies one source line. Within a plugin, relative file references stay inside that plugin; name a cross-plugin file as `<plugin>:<path-within-plugin>` instead of escaping through `../` or spelling a repository-relative `plugins/<plugin>/...` path.
+
 ## What this repository is
 
 This is the **source** of one plugin marketplace for Claude Code, Codex, and Grok Build: the plugins under `plugins/` are projected into all three harnesses' manifest formats. OpenCode V1 consumes a best-effort generated projection from `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported. Qualify non-native support against `COMPATIBILITY.md`; never flatten adapter, experimental, external, or unavailable behavior into a blanket support claim.
@@ -12,7 +14,7 @@ This remains a greenfield project: breaking changes are accepted and expected. N
 Edit plugin sources here. Never edit `~/.claude/plugins/` — that is a downstream cache that lags this tree and will mislead you. Refresh it with `claude plugin update`.
 </IMPORTANT>
 
-Runtime prerequisites: Bash, `jq`, Git, Bun, and Python 3 — the preserved extensionless `state-doctor` script runs under its `python3` shebang, and the `plugins/governance` authoring instructions still invoke `uv`-pinned Python — plus `jj` 0.44+ for workspace regression tests and publication, and `gh` for publishing.
+Runtime prerequisites: Bash, `jq`, Git, Bun, and Python 3 — the preserved extensionless `state-doctor` script runs under its `python3` shebang, and Governance authoring instructions still invoke `uv`-pinned Python — plus `jj` 0.44+ for workspace regression tests and publication, and `gh` for publishing.
 
 ## Where things live
 
@@ -31,27 +33,27 @@ Runtime prerequisites: Bash, `jq`, Git, Bun, and Python 3 — the preserved exte
 | Injected payload | `plugins/<p>/hooks/{ALLAGENT,MAINAGENT,SUBAGENT}.md` |
 | Routing table | `plugins/<p>/references/ROUTING.md` |
 | Workflow entry point | `plugins/<p>/directions/WORKFLOW.md` |
-| Shared executables | `plugins/essential/scripts/` |
+| Shared executables | `essential:scripts/` |
 
 There are **no source `commands/` directories**. Agents ship from `agents/` as templates (`base.md` body + split JSON files under `frontmatter/`) that `/essential:install` installs as Claude Markdown, Codex TOML, or Grok Markdown. Every plugin depends on `essential`; `web` and `react` also depend on `coding`.
 
 ## The injection contract
 
-A plugin's `ALLAGENT.md`, `MAINAGENT.md`, and `SUBAGENT.md` hook payloads are **shipped product**, not developer docs. Each context-owning plugin's `plugins/<p>/hooks/hooks.json` registers hooks that pipe the file through `sed` and `jq` into the user's session context:
+A plugin's `ALLAGENT.md`, `MAINAGENT.md`, and `SUBAGENT.md` hook payloads are **shipped product**, not developer docs. Each context-owning plugin's `plugins/<p>/hooks/hooks.json` registers static payload commands derived from the single builder in `scripts/harness_contract.ts`:
 
-```bash
-sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}|g" \
-  "${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}/hooks/ALLAGENT.md" \
-  | jq -Rs '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:.}}'
+```ts
+nativePayloadCommand("SessionStart", "ALLAGENT")
 ```
 
-Claude Code sets `CLAUDE_PLUGIN_ROOT`, Codex sets `PLUGIN_ROOT`, and Grok Build sets `GROK_PLUGIN_ROOT`. Codex and Grok also set a Claude compatibility alias; their native variables take precedence, so every path in every hook command — the `sed` replacement included — carries that exact anchor, quoted; this example is derived from its single home, `scripts/harness_contract.ts`. Preserve its precedence in `resolve_harness` too: these variables select harness identity as well as a path. A Claude compatibility alias can point to the correct directory while identifying Codex as Claude, making its Codex-only Stop validator exit 0 without feedback. Test identity and feedback with native and compatibility variables set together; path resolution alone cannot detect this failure. See [Native harness resolution](ARCHITECTURE.md#native-harness-resolution). Anchoring on one variable alone makes the hook resolve nothing under another harness, and a `sed | jq` pipeline still exits 0 while emitting nothing. Quoting is equally load-bearing: the anchor expands to a path the user chose, so an unquoted expansion word-splits on a space and runs its first segment. OpenCode does not set any of these root variables: its adapter reads payload sources from the projected bundle and substitutes `{{PLUGIN_DIR}}` directly. Do not extend the native chain for a compatibility consumer. A future native harness may extend it only from that harness's own documentation and in every command in the same change; a partially updated chain fails silently.
+Claude Code sets `CLAUDE_PLUGIN_ROOT`, Codex sets `PLUGIN_ROOT`, and Grok Build sets `GROK_PLUGIN_ROOT`. Codex and Grok also set a Claude compatibility alias; their native variables take precedence, so every path in every hook command — the `sed` replacement included — carries that exact anchor, quoted. Preserve the builder's precedence in `resolve_harness` too: these variables select harness identity as well as a path. A Claude compatibility alias can point to the correct directory while identifying Codex as Claude, making its Codex-only Stop validator exit 0 without feedback. Test identity and feedback with native and compatibility variables set together; path resolution alone cannot detect this failure. See [Native harness resolution](ARCHITECTURE.md#native-harness-resolution). Anchoring on one variable alone makes the hook resolve nothing under another harness, and a `sed | jq` pipeline still exits 0 while emitting nothing. Quoting is equally load-bearing: the anchor expands to a path the user chose, so an unquoted expansion word-splits on a space and runs its first segment. OpenCode does not set any of these root variables: its adapter reads payload sources from the projected bundle and substitutes `{{PLUGIN_DIR}}` directly. Do not extend the native chain for a compatibility consumer. A future native harness may extend it only from that harness's own documentation and in every command in the same change; a partially updated chain fails silently.
 
 - `ALLAGENT.md` — injected at `SessionStart` **and** `SubagentStart`; carries that plugin's own routing only. Do not rebuild a central roster table in it.
 - `MAINAGENT.md` — `SessionStart` only; carries the owner's main-session decision gate (`coding` selects topology by semantic risk; `web` binds design initiatives to `design-lead`).
 - `SUBAGENT.md` — `essential` only, `SubagentStart`.
 
-Under Grok Build these payloads stay registered, but its `SessionStart` and `SubagentStart` handlers ignore stdout. `essential:install` attaches the packaged `plugins/essential/directions/GROK.md` bootstrap through Grok's user `AGENTS.md`; it directs Grok to load enabled plugins' payloads through `plugins/essential/scripts/context.ts` with the same audience boundaries. Model compliance remains experimental; see `COMPATIBILITY.md`. `essential:uninstall` removes the owned attachment and unmodified installed agents. The PreToolUse validators still fire natively, emitting grok's top-level `{"decision","reason"}` envelope for either outcome, which makes Grok the one harness that states an allow: Claude Code and Codex express an allow as a `PreToolUse` context envelope, including an empty `additionalContext` when the reason is empty, and their permission system decides. An unresolved plugin root exits non-zero on both paths. Grok also ignores `Stop` stdout, so the pending-checkpoint `.state` recovery hook's block envelope remains advisory there.
+Under Grok Build these payloads stay registered, but its `SessionStart` and `SubagentStart` handlers ignore stdout. `essential:install` attaches the packaged `essential:directions/GROK.md` bootstrap through Grok's user `AGENTS.md`; it directs Grok to load enabled plugins' payloads through `essential:scripts/context.ts` with the same audience boundaries. Model compliance remains experimental; see `COMPATIBILITY.md`. `essential:uninstall` removes the owned attachment and unmodified installed agents. The PreToolUse validators still fire natively, emitting grok's top-level `{"decision","reason"}` envelope for either outcome, which makes Grok the one harness that states an allow: Claude Code and Codex express an allow as a `PreToolUse` context envelope, including an empty `additionalContext` when the reason is empty, and their permission system decides. An unresolved plugin root exits non-zero on both paths. Grok also ignores `Stop` stdout, so the pending-checkpoint `.state` recovery hook's block envelope remains advisory there.
+
+A plugin may load or execute scripts only inside itself or a declared dependency. Resolve a dependency with the invoking plugin's `scripts/plugin-root <plugin>` projection; never infer sibling or cache layouts in a hook. [`ADR-1`](docs/architecture/decisions/harness/adr-1-installed-plugin-resolution.md) owns the accepted resolver design and its single duplication exception.
 
 Use `{{PLUGIN_DIR}}` for in-payload paths; the hook substitutes it. Because these files are re-read on every session, they are byte-budgeted (see below) — put detail in the content directory that owns it and link to it at the decision point.
 
@@ -73,7 +75,7 @@ Every file a plugin ships sits in exactly one of seven directories, chosen by wh
 
 `references/` is the residue, not the default: it holds lookup tables and background prose. A file there that tells someone what to do, shows a deliverable, or states a rule is misfiled.
 
-Placement follows use, not authorship. A directory lives **under the skill** when one skill uses it and the association is strong (`plugins/coding/skills/pr/templates/`). It lives **under the plugin** as soon as a second skill uses it, or plausibly could (`plugins/essential/references/`, `plugins/coding/standards/`). Promoting a file to plugin level is what makes it citable from elsewhere; a cross-skill link into another skill's private tree is the signal that the file was placed too deep.
+Placement follows use, not authorship. A directory lives **under the skill** when one skill uses it and the association is strong (`coding:skills/pr/templates/`). It lives **under the plugin** as soon as a second skill uses it, or plausibly could (`essential:references/`, `coding:standards/`). Promoting a file to plugin level is what makes it citable from elsewhere; a cross-skill link into another skill's private tree is the signal that the file was placed too deep.
 
 Name files in one word where the plugin or skill already supplies the rest of the context: a `directions/` entry is `jj.md`, not `manage-jj.md`, unless a sibling forces the qualifier. Uppercase names are reserved for shipped entry points that a hook or a router names by convention — `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`, and the `INDEX.md` that each `plugins/<p>/directions/WORKFLOW.md` and `essential:directions/standards.md` name, which sits at the root it indexes.
 
@@ -85,7 +87,7 @@ Not everything has to move. Reclassify a file only when it clearly belongs somew
 
 This repository does not use runtime feature flags. Coding's reusable feature-flag standards and PR tooling apply to target projects with implemented flag support; do not add switches to this marketplace to satisfy those standards.
 
-These plugins are built to one model of how knowledge ages: `plugins/essential/references/truth.md`. Read it before changing how a skill records, reads, or retires anything. The invariants below are what it forbids while you edit these sources, and each is the rule a locally sensible change breaks first.
+These plugins are built to one model of how knowledge ages: `essential:references/truth.md`. Read it before changing how a skill records, reads, or retires anything. The invariants below are what it forbids while you edit these sources, and each is the rule a locally sensible change breaks first.
 
 - **Harnesses are independently configured.** Claude Code, Codex, Grok Build, and OpenCode V1 must use their own installation and capabilities. Never make instruction loading or operation under one harness depend on another harness's files, agents, CLI, or setup. Check optional capabilities when the operation needs them; missing specialists never suppress unrelated instructions. Preserve OpenCode's adapter boundary and disclose unsupported behavior in `COMPATIBILITY.md`.
 - **Every native harness, or none.** Claude Code, Codex, and Grok Build are one target, not a primary plus a port. Anything in their native contract — hook command, script, agent or skill projection, installed path, config format, tool name — works under all of them or is not done. Reading one harness's value resolves to nothing under the others and almost always fails silent rather than loud, so resolve every harness-specific value through one ordered chain that a new harness extends by one segment, keep that chain in exactly one place, terminate it so an unrecognized harness exits non-zero instead of injecting nothing, and prove each harness in isolation: a test that leaves the other harnesses' variables inherited resolves through the wrong one and proves nothing. A feature only one harness has — Claude Code output styles and statusline today — is scoped to it in the open, saying which harness and why; what this forbids is the unmarked single-harness path in something meant for all of them. Compatibility consumers instead generate from native sources, disclose every gap in `COMPATIBILITY.md`, and reject source shapes an adapter cannot preserve rather than silently dropping them.
@@ -102,33 +104,33 @@ A named validator is the required check. Hook byte budgets have no test gate; ve
 
 | Limit | Validator or review |
 |---|---|
-| `SKILL.md` body < 500 lines | `plugins/governance/skills/write-skill/scripts/quick_validate.ts` |
+| `SKILL.md` body < 500 lines | `governance:skills/write-skill/scripts/quick_validate.ts` |
 | Skill `description` 25–60 words (warning) | same |
 | No placeholder text (`[TODO]`, `[Description]`, …) and no unresolved local links | same |
-| Agent metadata `description` ≤ 1024 chars | `plugins/essential/skills/install/scripts/stitch_agent.ts` |
+| Agent metadata `description` ≤ 1024 chars | `essential:skills/install/scripts/stitch_agent.ts` |
 | Agent metadata `name` matches `^[a-z0-9]+(?:-[a-z0-9]+)*$` and equals its directory name | same |
-| Agent metadata `intelligence` exists in `plugins/essential/skills/install/references/intelligence-levels.json`; harness model/effort fields are derived | same |
+| Agent metadata `intelligence` exists in `essential:skills/install/references/intelligence-levels.json`; harness model/effort fields are derived | same |
 | Agent harness overlays **omit `tools`** (agents inherit runtime capabilities) | same |
 | Codex overlay values are scalar TOML fields; nickname candidates derive from metadata; stitched Codex and Grok bodies make no promise from Claude-only isolation | same |
 | `memory` is `"project"`; body has exactly one `## Memory` section | same |
 | Every injected payload ≤ 2,000 bytes, per plugin | Author review |
 | Every plugin's unconditional hook read chain ≤ 40,960 bytes | Author review |
-| Every writer keeps eligible `.state/` work Markdown within `plugins/essential/references/output-manifest.md` | Author review; optional diagnostic: `plugins/essential/scripts/check-markdown-size` |
-| Subagent-dispatch/direct-message body ≤ 4,096 characters | `plugins/essential/directions/delegate.md` |
-| Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `plugins/governance/standards/delegation/` |
+| Every writer keeps eligible `.state/` work Markdown within `essential:references/output-manifest.md` | Author review; optional diagnostic: `essential:scripts/check-markdown-size` |
+| Subagent-dispatch/direct-message body ≤ 4,096 characters | `essential:directions/delegate.md` |
+| Batch ≤ ~10 resources per subagent; structured reports < 1000 tokens; ~2 retries per batch | `governance:standards/delegation/` |
 
 An agent metadata `description` must also end with the exact sentence `Preferably named <A>, <B>, or <C> when the main agent spawns this role.` — three distinct capitalized names.
 
 ## Authoring rules
 
 <IMPORTANT>
-Selecting and applying a standard has one home: `plugins/essential/directions/standards.md`. Follow it there rather than any restatement of its read order. The rules below are the sources, not summaries.
+Selecting and applying a standard has one home: `essential:directions/standards.md`. Follow it there rather than any restatement of its read order. The rules below are the sources, not summaries.
 </IMPORTANT>
 
-- `plugins/governance/standards/authoring/meta.md` — one coherent document (supersede prose, never append addenda); concision must preserve the executable contract; the Content Boundary Convention (`<IMPORTANT>` for hard guardrails, `<report>` for output contracts, every tag closed); headings are useful defaults, not a contract.
-- `plugins/governance/references/context-catalog.md` — the standards an agent may cite. Name a standard by its canonical path; never invent one.
-- `plugins/governance/standards/delegation/meta.md` — batching, reports, and the message ceiling for skills that dispatch subagents.
-- `plugins/governance/skills/{write-skill,create-agent,create-standard}/templates/` — seed templates for their authored artifacts. Delete every author-guide comment before shipping.
+- `governance:standards/authoring/meta.md` — one coherent document (supersede prose, never append addenda); concision must preserve the executable contract; the Content Boundary Convention (`<IMPORTANT>` for hard guardrails, `<report>` for output contracts, every tag closed); headings are useful defaults, not a contract.
+- `governance:references/context-catalog.md` — the standards an agent may cite. Name a standard by its canonical path; never invent one.
+- `governance:standards/delegation/meta.md` — batching, reports, and the message ceiling for skills that dispatch subagents.
+- `governance:skills/{write-skill,create-agent,create-standard}/templates/` — seed templates for their authored artifacts. Delete every author-guide comment before shipping.
 
 Give every threshold its reason; the repo bans magic numbers. Skill and standard directory names are kebab-case and match their `name`. Agent names are role-only lowercase kebab, never personalized.
 
@@ -152,6 +154,6 @@ Further suites live in `plugins/<p>/tests/` and beside their scripts.
 
 ## Git and pull requests
 
-Conventional Commits, validated before any history mutation against `plugins/coding/standards/commit/`, which owns the subject regex and the closed type allowlist; read `write.md` there at the moment a message is authored rather than restating its regex anywhere. No aliases, no emoji prefix. Scope here is a plugin or `plugin/skill` (`feat(essential):`, `docs(coding/pr):`), omitted for global changes. Branches are `type/kebab-summary`, or `type/<work-id>` and `type/<work-id>/NN-<slice>` for a branch belonging to a work stream. Work lands through pull requests whose titles are themselves conventional commits.
+Conventional Commits, validated before any history mutation against `coding:standards/commit/`, which owns the subject regex and the closed type allowlist; read `write.md` there at the moment a message is authored rather than restating its regex anywhere. No aliases, no emoji prefix. Scope here is a plugin or `plugin/skill` (`feat(essential):`, `docs(coding/pr):`), omitted for global changes. Branches are `type/kebab-summary`, or `type/<work-id>` and `type/<work-id>/NN-<slice>` for a branch belonging to a work stream. Work lands through pull requests whose titles are themselves conventional commits.
 
 Tooling is jj-first and git-compatible: `coding:commit` is the sole owner of history mutation; `coding:pr create|update` owns publication and CI; `coding:pr merge` merges stacks bottom-up. Route publication through those skills rather than hand-rolled `git commit` + `gh pr create`.

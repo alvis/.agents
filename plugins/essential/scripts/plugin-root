@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ $# -eq 1 && "$1" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || exit 1
+
+plugin_name=$1
+
+if [[ -n "${PLUGIN_ROOT:-}" ]]; then
+  harness=codex
+  current_root=$PLUGIN_ROOT
+elif [[ -n "${GROK_PLUGIN_ROOT:-}" ]]; then
+  harness=grok
+  current_root=$GROK_PLUGIN_ROOT
+elif [[ -n "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+  harness=claude
+  current_root=$CLAUDE_PLUGIN_ROOT
+else
+  exit 1
+fi
+
+current_root_input=$current_root
+current_root=$(cd "$current_root" 2>/dev/null && pwd -P) || exit 1
+
+is_plugin_root() {
+  local candidate=$1
+  local manifest
+  [[ -d "$candidate" ]] || return 1
+  candidate=$(cd "$candidate" 2>/dev/null && pwd -P) || return 1
+  for manifest in ".${harness}-plugin/plugin.json" .claude-plugin/plugin.json; do
+    [[ -f "$candidate/$manifest" ]] || continue
+    jq -e --arg name "$plugin_name" '.name == $name' "$candidate/$manifest" >/dev/null 2>&1 && return 0
+  done
+  return 1
+}
+
+emit_plugin_root() {
+  local candidate=$1
+  is_plugin_root "$candidate" || return 1
+  (cd "$candidate" && pwd -P)
+}
+
+plugins_parent=$(dirname "$current_root")
+if [[ $(basename "$plugins_parent") == plugins ]] && emit_plugin_root "$plugins_parent/$plugin_name"; then
+  exit 0
+fi
+
+if [[ "$harness" == claude ]]; then
+  claude_home=${CLAUDE_CONFIG_DIR:-${HOME:+$HOME/.claude}}
+  [[ -n "$claude_home" ]] || exit 1
+  registry="$claude_home/plugins/installed_plugins.json"
+  [[ -f "$registry" ]] || exit 1
+  marketplace=$(jq -er --arg root "$current_root" --arg input "$current_root_input" '
+    [.plugins | to_entries[] | select(any(.value[]?; .installPath == $root or .installPath == $input)) | (.key | split("@") | .[1])] | unique | if length == 1 then .[0] else empty end
+  ' "$registry" 2>/dev/null) || exit 1
+  candidates=$(jq -er --arg key "$plugin_name@$marketplace" '
+    [.plugins[$key][]?.installPath | select(type == "string")] | unique[]
+  ' "$registry" 2>/dev/null) || exit 1
+  resolved=
+  while IFS= read -r candidate; do
+    [[ "$candidate" != *$'\n'* ]] || exit 1
+    if is_plugin_root "$candidate"; then
+      canonical=$(cd "$candidate" && pwd -P)
+      [[ -z "$resolved" || "$resolved" == "$canonical" ]] || exit 1
+      resolved=$canonical
+    fi
+  done <<< "$candidates"
+  [[ -n "$resolved" ]] || exit 1
+  printf '%s\n' "$resolved"
+  exit 0
+fi
+
+version=$(basename "$current_root")
+marketplace_root=$(dirname "$(dirname "$current_root")")
+cache_root=$(dirname "$marketplace_root")
+[[ $(basename "$cache_root") == cache ]] || exit 1
+target_root="$marketplace_root/$plugin_name"
+if emit_plugin_root "$target_root/$version"; then
+  exit 0
+fi
+
+resolved=
+for candidate in "$target_root"/*; do
+  [[ -d "$candidate" ]] || continue
+  if is_plugin_root "$candidate"; then
+    canonical=$(cd "$candidate" && pwd -P)
+    [[ -z "$resolved" || "$resolved" == "$canonical" ]] || exit 1
+    resolved=$canonical
+  fi
+done
+[[ -n "$resolved" ]] || exit 1
+printf '%s\n' "$resolved"

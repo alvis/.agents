@@ -3,7 +3,11 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { PLUGIN_ROOT_ANCHOR, PLUGIN_ROOT_GUARD } from "./harness_contract.ts";
+import {
+  nativePayloadCommand,
+  PLUGIN_ROOT_ANCHOR,
+  PLUGIN_ROOT_GUARD,
+} from "./harness_contract.ts";
 import { resolveHookReceipts } from "./opencode_hook_receipts.ts";
 import {
   createTemporaryDirectory,
@@ -17,23 +21,12 @@ const contract = JSON.parse(
   readFileSync(resolve(import.meta.dirname, "opencode_contract.json"), "utf8"),
 ) as JsonObject;
 
-function globalHooks(
-  command: string,
-  event: string,
-  matcher?: string,
-): string {
+function globalHooks(command: string, event: string, matcher?: string): string {
   const registration: Record<string, unknown> = {
     hooks: [{ command, type: "command" }],
   };
   if (matcher !== undefined) registration.matcher = matcher;
   return `${JSON.stringify({ hooks: { [event]: [registration] } })}\n`;
-}
-
-function payloadCommand(
-  event: string,
-  payloadName: string,
-): string {
-  return `${PLUGIN_ROOT_GUARD}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/${payloadName}.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"${event}",additionalContext:.}}'`;
 }
 
 describe("OpenCode hook receipt command validation", () => {
@@ -43,7 +36,10 @@ describe("OpenCode hook receipt command validation", () => {
       await writeFixture(
         pluginRoot,
         "hooks/hooks.json",
-        globalHooks(payloadCommand("SessionStart", "MAINAGENT"), "SessionStart"),
+        globalHooks(
+          nativePayloadCommand("SessionStart", "MAINAGENT"),
+          "SessionStart",
+        ),
       );
       await writeFixture(pluginRoot, "hooks/MAINAGENT.md", "payload\n");
 
@@ -64,13 +60,15 @@ describe("OpenCode hook receipt command validation", () => {
   it.each(["essential", "web"])(
     "should project %s's MAINAGENT payload without any installed agent",
     async (pluginName) => {
-      const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
+      const pluginRoot = await createTemporaryDirectory(
+        "opencode-hook-receipt-",
+      );
       try {
         await writeFixture(
           pluginRoot,
           "hooks/hooks.json",
           globalHooks(
-            payloadCommand("SessionStart", "MAINAGENT"),
+            nativePayloadCommand("SessionStart", "MAINAGENT"),
             "SessionStart",
           ),
         );
@@ -94,7 +92,7 @@ describe("OpenCode hook receipt command validation", () => {
   it("should reject a recognized payload command with a prefix mutation", async () => {
     const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
     try {
-      const command = `${PLUGIN_ROOT_GUARD}sed "s|{{PLUGIN_DIR}}|${PLUGIN_ROOT_ANCHOR}|g" "${PLUGIN_ROOT_ANCHOR}/hooks/ALLAGENT.md" | jq -Rs '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:.}}'`;
+      const command = nativePayloadCommand("SessionStart", "ALLAGENT");
       await writeFixture(
         pluginRoot,
         "hooks/hooks.json",
@@ -128,7 +126,11 @@ describe("OpenCode hook receipt command validation", () => {
           "AskUserQuestion|request_user_input|ask_user_question",
         ),
       );
-      await writeFixture(pluginRoot, "hooks/scripts/validate-question", "#!/bin/sh\n");
+      await writeFixture(
+        pluginRoot,
+        "hooks/scripts/validate-question",
+        "#!/bin/sh\n",
+      );
       await writeFixture(pluginRoot, "hooks/scripts/context.sh", "#!/bin/sh\n");
 
       expect(() =>
