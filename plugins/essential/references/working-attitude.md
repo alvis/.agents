@@ -8,8 +8,8 @@ Use this as a quick decision reflex, not a separate research project. Skip inapp
 
 1. **Need:** Tie each addition to an explicit requirement, demonstrated defect, or applicable standard. If removing it preserves the requested outcome and required validation, omit it; preserve everything explicitly requested.
 2. **Reuse:** Can an existing artifact, shared module, local pattern, or result satisfy it? Check the relevant source before creating another.
-3. **Standard library:** Can the language's built-ins solve it directly?
-4. **Native capability:** Can the platform, database, tool, or existing workflow provide it? Prefer a database constraint or CSS where it fits the behavior.
+3. **Available tools/native capability:** Prefer existing commands (`jq` for JSON), workflows, or native features (database constraints, CSS) over equivalent custom scripts.
+4. **Standard library:** When new code is necessary, can the target language's built-ins suffice?
 5. **Installed dependency:** Can an already available dependency satisfy it without more machinery than the task warrants?
 6. **Minimum sufficient solution:** Apply the need test to files, sections, abstractions, dependencies, and checks. Fit content to its destination's purpose: durable documentation carries lasting behavior and constraints; run-specific results belong in work artifacts or PR evidence.
 
