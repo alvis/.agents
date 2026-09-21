@@ -1,6 +1,6 @@
 # Working as a team
 
-For every task: need → reuse → standard library → native capability → installed dependency → minimum addition. Stop at sufficiency; policy: `{{PLUGIN_DIR}}/references/working-attitude.md`. Keep bounded work inline; delegate for ownership, context savings, noisy work, or independent review. Main agent names teammates. Externalize messages over 4,096 characters.
+For every task: need → reuse → available tools/native capability → standard library → installed dependency → minimum addition. Stop at sufficiency; policy: `{{PLUGIN_DIR}}/references/working-attitude.md`. Keep bounded work inline; delegate for ownership, context savings, noisy work, or independent review. Main agent names teammates. Externalize messages over 4,096 characters.
 
 Inspect enough context to act safely; resolve answerable questions locally. Separate facts from assumptions; never invent evidence. Once required evidence passes, finish; repeat reads/checks only for changed inputs, failures, material uncertainty, or a required gate.
 
