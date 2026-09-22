@@ -30,25 +30,30 @@ const validTags = [
 const teammate = "raj-tech-lead-fix-auth";
 const compliantPlan = `# Enforce the documented formats
 
-## Goal
+## 🎯 Goal
 
-One verifiable outcome and the bar that proves it.
+Incomplete plan submissions receive actionable feedback before execution.
 
-## Requirements
+## 🧭 Context
 
-- An observable condition the outcome must satisfy.
+- **Current Scenario** — Incomplete plans can pass without feedback. Without validation, users must find missing sections themselves.
+- **Current state** — nothing implemented yet.
 
-## Boundary
+## 📋 Requirements
+
+- Missing sections produce actionable feedback.
+
+### Expected Delivery
+
+- A plan-heading validator invoked by the native hooks.
+
+## 🚧 Boundary
 
 Inside: the three hook scripts. Outside: content heuristics.
 
-## Direction
+## 🛠️ Direction
 
 Write each check as a bash script, then swap the command entries.
-
-## Context
-
-- **Current state** — nothing implemented yet.
 `;
 const compliantPrompt = `checkout-refunds
 
@@ -436,7 +441,7 @@ describe("plan validator", () => {
   it("should name only a missing Context heading", () =>
     expect(
       denialReason(
-        runHook(plans, { plan: compliantPlan.split("## Context")[0] }),
+        runHook(plans, { plan: compliantPlan.replace("## 🧭 Context", "") }),
       ),
     ).toContain("missing headings: Context."));
   it("should name all four missing default-plan headings", () =>
@@ -455,6 +460,20 @@ describe("plan validator", () => {
         plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## direction\nd\n### context\ne\n",
       }),
     ));
+  it("should recognize compound emoji prefixes at different heading depths", () =>
+    expectAllowed(
+      runHook(plans, {
+        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n### 🛠️ direction\ne\n",
+      }),
+    ));
+  it("should not treat prefixed words or longer names as required headings", () =>
+    expect(
+      denialReason(
+        runHook(plans, {
+          plan: compliantPlan.replace("## 🎯 Goal", "## Project Goal\n## 🎯 Goalkeeper"),
+        }),
+      ),
+    ).toContain("missing headings: Goal."));
   it("should not require headings in a Codex step list", () =>
     expectAllowed(
       runHook(plans, { plan: [{ step: "audit", status: "pending" }] }),

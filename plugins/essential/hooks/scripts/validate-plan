@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # PreToolUse gate for ExitPlanMode: enforces the required headings documented in
-# directions/plan.md. Presence only — order and content are not
-# judged. Compatible with bash 3.2+
+# directions/plan.md. Presence only — decorative prefixes, order, and content
+# are not judged. Compatible with bash 3.2+
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -67,7 +67,7 @@ fi
 
 missing=""
 for heading in Goal Requirements Boundary Direction Context; do
-  if ! printf '%s\n' "$plan" | grep -Eqi "^#{1,6}[[:space:]]*${heading}\\b"; then
+  if ! printf '%s\n' "$plan" | grep -Eqi "^#{1,6}[[:space:]]*([^[:alnum:][:space:]#]+[[:space:]]+)?${heading}\\b"; then
     if [[ -n "$missing" ]]; then
       missing="${missing}, ${heading}"
     else

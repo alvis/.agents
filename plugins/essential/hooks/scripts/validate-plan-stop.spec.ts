@@ -19,25 +19,30 @@ const turnId = "turn-current";
 const validPlan = `<proposed_plan>
 # T3 plan validation
 
-## Goal
+## 🎯 Goal
 
-Validate one plan.
+Incomplete plans receive corrective feedback in T3.
 
-## Requirements
+## 🧭 Context
+
+- **Current Scenario** — T3 emits plans without calling the plan tool. Without the Stop check, incomplete plans receive no validation feedback.
+
+## 📋 Requirements
 
 - Return corrective feedback.
 
-## Boundary
+### Expected Delivery
+
+- A Stop adapter that validates the current plan response.
+
+## 🚧 Boundary
 
 Only the Essential hooks change.
 
-## Direction
+## 🛠️ Direction
 
 Validate the current turn at Stop.
 
-## Context
-
-The plan tool is not called.
 </proposed_plan>`;
 
 function createAssistantMessage(
