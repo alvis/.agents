@@ -15,7 +15,7 @@ This standard enforces requirements beyond common logging practices:
 
 | Standard Practice                     | Our Stricter Requirement                   |
 |---------------------------------------|--------------------------------------------|
-| Generic `Error` commonly used         | **Use specific error classes by scenario** |
+| Generic or one-off custom errors commonly used | **Honor selected language and established project error contracts, then reuse a matching built-in, codebase, or installed core/error-library type with its supported discriminator and any required cause; do not add a dependency merely for reuse; durably record any approved fallback** |
 | Console logging tolerated in app code | **Transactional logger only**              |
 | Flexible log message style            | **Canonical message format is required**   |
 | Broad context logging by default      | **Strict sensitive-data exclusion**        |
