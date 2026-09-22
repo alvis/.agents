@@ -1,0 +1,15 @@
+/* shared starting values; tune selected recipes to their interaction */
+@theme static {
+  --ease-motion-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-motion-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-motion-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+@layer base {
+  :root {
+    /* fast feedback, ordinary state changes, and larger spatial transitions */
+    --motion-duration-fast: 150ms;
+    --motion-duration-normal: 250ms;
+    --motion-duration-slow: 400ms;
+  }
+}

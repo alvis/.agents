@@ -72,7 +72,7 @@ Every tile must contain ALL of:
 - [ ] Palette strip — 5–7 role-labeled swatches (primary, accent, surface, fg, border…), light row AND dark row
 - [ ] Type specimen — display + body faces set in REAL project words
 - [ ] Mini hero mock (~480px tall) built from real project content in this direction's layout rhythm
-- [ ] CSS-only motion demo of the signature micro-interaction — `:hover`/`:active` transitions plus ONE `@keyframes` entrance
+- [ ] Motion evidence only when it serves a named state, hierarchy, continuity, feedback, or spatial purpose: demonstrate the CSS-only `:hover`/`:active` transition and, when hierarchy warrants it, ONE `@keyframes` entrance; otherwise label motion `None` and state why
 - [ ] Footer line naming the anchor exemplar (facelift mode) or reference products, plus the 2–3 concrete visual properties borrowed (from direction question 2)
 
 Candidates must differ on at least two of: palette strategy, display typeface, layout rhythm, motion language. A board of three near-identical tiles is a failed board.
@@ -141,8 +141,8 @@ Candidates must differ on at least two of: palette strategy, display typeface, l
     <section class="specimen"><!-- display + body faces in REAL project words --></section>
 
     <section class="hero-mock"><!-- ~480px mini hero from REAL content in this direction's
-      layout rhythm; signature micro-interaction as CSS-only :hover/:active transition
-      + ONE @keyframes entrance --></section>
+      layout rhythm; when motion serves a named purpose, show its CSS-only :hover/:active
+      transition and any justified entrance; otherwise label motion None with the reason --></section>
 
     <p class="exemplar">Anchor: {exemplar / reference products} · Signature: {2–3 concrete visual properties}</p>
   </article>
@@ -168,9 +168,9 @@ Every variant must contain ALL of:
 
 - [ ] Rank badge + "why this rank" (A3), numbered `1..N`
 - [ ] The area rendered at realistic content width (desktop, ~1280px frame) with REAL project content
-- [ ] **Explicit top AND bottom separator treatment** — how this variant meets its neighbors (chosen from the [Section Separator Vocabulary](../references/brief.md#section-separator-vocabulary)); label the treatment in small print at each boundary
+- [ ] **Explicit top AND bottom separator treatment** — how this variant meets its neighbors (chosen from the [Section Separator Vocabulary](references/brief.md#section-separator-vocabulary)); label the treatment in small print at each boundary
 - [ ] **Visible hover-state demos** — CSS-only `:hover`/`:active`/`:focus-visible` on every interactive element in the variant; where hover can't be conveyed statically, render the key element twice side by side (rest + hover state) with a small "hover" label so the SCREENSHOT still shows it
-- [ ] **Entrance-transition demo** — ONE `@keyframes` reveal showing this variant's scroll-entrance language (stagger, distance, easing)
+- [ ] **Entrance-transition evidence** — when an entrance serves a named hierarchy or spatial purpose, show ONE `@keyframes` reveal and label its stagger, distance, and easing; otherwise label the entrance `None` and state why
 - [ ] A one-line spec strip in small print: composition scheme · density · imagery treatment · separator pair · motion notes
 
 Variants must differ on at least two of: composition, density, imagery treatment, separator treatment, motion. Near-identical variants are a failed board regardless of `N`. Every variant demonstrates the World-Class Element Checklist items (SKILL.md `<world_class_elements>`) relevant to its area.
@@ -193,11 +193,11 @@ Then move to the next area. One image → one question → next area. Never pres
 
 After all content areas are picked, run ONE more board for the cross-cutting choices the per-area picks did not fully settle:
 
-- **Section-separator vocabulary** — the page-wide separator system: which treatments from the [Section Separator Vocabulary](../references/brief.md#section-separator-vocabulary) appear where, demonstrated as rendered boundary samples between the actual chosen sections
-- **Page-transition style** — route/page-level transition options (crossfade, shared-element morph, directional slide, wipe…), each demonstrated as a two-frame before/after strip with duration/easing labels
-- **Scroll-reveal language** — the page-wide entrance system (distance, stagger, blur, once-only), demonstrated per option on a real chosen section
+- **Section-separator vocabulary** — the page-wide separator system: which treatments from the [Section Separator Vocabulary](references/brief.md#section-separator-vocabulary) appear where, demonstrated as rendered boundary samples between the actual chosen sections
+- **Page-transition style** — include route/page-level transition options only when continuity serves a named navigation purpose, each demonstrated as a two-frame before/after strip with duration/easing labels; otherwise include an explicit `None` choice with the reason
+- **Scroll-reveal language** — include a page-wide entrance system only when reveal serves a named hierarchy or spatial purpose, demonstrated per option on a real chosen section; otherwise include an explicit `None` choice with the reason
 
-`N` combinations, ranked, using the same battery as C3. The winning combination becomes the active design child's “Motion, Transitions & Separators” specification.
+Rank `N` combinations of the applicable choices using the same battery as C3; do not invent motion to fill the board. The winning combination becomes the active design child's “Motion, Transitions & Separators” specification.
 
 ### C5. `--quick` Mode
 

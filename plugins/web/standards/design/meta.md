@@ -19,7 +19,7 @@ This standard enforces requirements beyond common design practices:
 | Navigation structure varies                | **Organized by user mental model; ≤7 top-level items; location indicated** |
 | Button labels like "OK" / "Submit" are fine | **Action-verb labels; layered help text; error = problem + cause + fix** |
 | Desktop-first is acceptable                | **Responsive at 320/768/1024/1440+; no horizontal scroll on mobile**     |
-| Mixed icon styles are tolerated            | **Single icon family; no emoji as UI icons; motion explains, not decorates** |
+| Mixed icon styles are tolerated            | **Single icon family; no emoji as UI icons; motion stays purposeful, accessible, and performance-checked** |
 | Brand is optional polish                   | **Brand personality required; no dark patterns; ethical defaults**        |
 
 ## Exception Policy
@@ -52,5 +52,5 @@ If exception note is missing, submission is rejected.
 - `DES-NAVI-*`: Navigation and IA — mental-model grouping, ≤7 top-level items, breadcrumbs, search/filter, current-location indication.
 - `DES-COPY-*`: Content and microcopy — action-verb labels, help text layering (L0–L3), error message clarity, no jargon, consistent terminology.
 - `DES-RESP-*`: Responsiveness — breakpoints at 320/768/1024/1440+, mobile touch targets, content reflow, no horizontal scroll.
-- `DES-ICON-*`: Imagery, icons, and motion — single icon set, no emoji as icons, labeled ambiguous icons, purposeful animation, layout stability.
+- `DES-ICON-*`: Imagery, icons, and motion — single icon set, no emoji as icons, labeled ambiguous icons, purposeful subordinate animation, reduced-motion behavior, layout stability, and performance checks.
 - `DES-BRND-*`: Branding and modern standards — brand personality expression, current design patterns, no dark patterns, ethical defaults, transparent data collection.

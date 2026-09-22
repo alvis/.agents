@@ -22,7 +22,7 @@ For multi-page or production UIs, complete the applicable sections below. For a 
 
 **Accent Philosophy**: {{ACCENT_PHILOSOPHY — e.g., "A single vibrant primary color is used sparingly for CTAs and active states. Accents support without competing. The palette stays calm — accents earn attention by being rare."}}
 
-**Visual Language**: {{VISUAL_LANGUAGE — e.g., "Rounded corners, generous whitespace, and subtle shadows. Motion is restrained and purposeful — elements ease in, never bounce."}}
+**Visual Language**: {{VISUAL_LANGUAGE — e.g., "Rounded corners, generous whitespace, and subtle shadows. Motion is restrained and purposeful; direct-manipulation feedback may use slight overshoot."}}
 
 ---
 
@@ -166,12 +166,13 @@ The type scale is documented as a table — no per-level size tokens (`--text-bo
 
 ### Motion, Transitions & Separators
 
-The World-Class Element Checklist spec for this project (values follow [Motion Specifics](../references/brief.md#motion-specifics); picks come from the connective-tissue board):
+The World-Class Element Checklist spec for this project (values follow [Motion Specifics](references/brief.md#motion-specifics); picks come from the connective-tissue board):
 
-- **Page transition**: {{STYLE — e.g., "View Transitions API crossfade + 8px upward drift, 240ms cubic-bezier(0.16, 1, 0.3, 1)"}}
-- **Scroll-reveal language**: {{TRIGGER, DISTANCE, STAGGER — e.g., "IntersectionObserver at 20% visibility; opacity 0→1 + translateY(16px)→0; 90ms stagger per chunk; once-only"}}
-- **Signature micro-interaction**: {{FROM_DIRECTION_QUESTION_5 — e.g., "CTA magnetic hover: 4px cursor-follow + scale(1.02)"}}
-- **Reduced motion**: {{BEHAVIOR — e.g., "reveals become instant opacity fades; page transition falls back to plain crossfade; parallax disabled"}}
+- **Page transition**: {{OPTIONAL PURPOSE_AND_STYLE — e.g., "Preserve route continuity with a View Transitions API crossfade + 8px upward drift, 240ms cubic-bezier(0.16, 1, 0.3, 1)" or "None; route context is already clear"}}
+- **Scroll-reveal language**: {{OPTIONAL PURPOSE_TRIGGER_DISTANCE_STAGGER — e.g., "Clarify section hierarchy with IntersectionObserver at 20% visibility; opacity 0→1 + translateY(16px)→0; 90ms stagger per semantic chunk; once-only" or "None"}}
+- **Signature micro-interaction**: {{OPTIONAL_PURPOSE_AND_EFFECT — e.g., "Confirm direct manipulation with a restrained 4px cursor-follow + scale(1.02)" or "None"}}
+- **Contained size transitions**: {{OPTIONAL_REGION_MECHANISM_AND_PROFILE_EVIDENCE — e.g., "Accordion grid-track reveal; focus order preserved; representative layout/paint trace passes" or "None"}}
+- **Reduced motion**: {{CSS_AND_JS_BEHAVIOR — e.g., "large translations, overshoot, parallax, and repeated motion become instant state changes or quiet dissolves; final state, focus, reading order, and feedback remain available"}}
 
 **Section separators** (every boundary deliberate; no two consecutive boundaries repeat):
 
@@ -240,7 +241,7 @@ Fully-round elements (avatars, pills, toggles) use the `9999px` literal — a sh
 
 ## 6. Depth & Elevation
 
-Shadows are mode-dependent — they go through the two-tier chain like colors. Dark-mode values use light-overlay stepping (semi-transparent white rings/washes), because drop shadows are nearly invisible on dark surfaces (see [Surfaces](../references/brief.md#surfaces)).
+Shadows are mode-dependent — they go through the two-tier chain like colors. Dark-mode values use light-overlay stepping (semi-transparent white rings/washes), because drop shadows are nearly invisible on dark surfaces (see [Surfaces](references/brief.md#surfaces)).
 
 | Tier-2 Token | Role | Tier-1 Light | Tier-1 Dark |
 |---|---|---|---|
