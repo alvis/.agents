@@ -8,7 +8,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 
 ## Quick Scan
 
-- DO NOT throw generic errors for domain failures [`ERR-HAND-01`]
+- DO NOT bypass the selected language's required failure representation, hierarchy, or the project's established error-handling contract; within those constraints, evaluate a built-in first, then reuse a codebase or installed core/error-library type with its supported code or reason and any required cause, before choosing a durably approved fallback; do not add a dependency merely to satisfy the reuse lookup [`ERR-HAND-01`]
 - DO NOT swallow errors silently, such as `catch { return }` without rethrow or typed failure [`ERR-HAND-02`]
 - DO NOT drop error context chains [`ERR-HAND-03`]
 - DO NOT use conditional branching on base `Error` in catch blocks instead of casting [`ERR-HAND-04`]
@@ -25,7 +25,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 
 | Rule ID | Violation | Bad Examples |
 |---|---|---|
-| `ERR-HAND-01` | Generic error used for domain failure | `throw new Error("not found")`; `throw new Error('User not found')` |
+| `ERR-HAND-01` | Selected failure or established project contract bypassed, compliant existing error bypassed, dependency added merely for reuse, supported discriminator or cause omitted, or fallback conflicts with selected rules or lacks durable user approval | bare `RangeError` bypassing project `ValidationError` middleware; bare `ValueError` for a Python domain failure; throw-only flow for an expected recoverable TypeScript failure; new error package added only for reuse; wrapped failure passed to a type with no supported cause; `throw new Error("not found")` where `ERR-HAND-02` requires a domain error or without a linked approval record |
 | `ERR-HAND-02` | Error is swallowed silently | `catch { return }` |
 | `ERR-HAND-03` | Error context chain is not preserved | `logger.error(error.message)` |
 | `ERR-HAND-04` | Conditional branching on base `Error` in catch instead of casting | `error instanceof Error ? error.message : String(error)` |
