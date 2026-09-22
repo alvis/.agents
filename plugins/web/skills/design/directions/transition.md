@@ -1,6 +1,6 @@
 # Transition design
 
-Use this workflow for an explicit `transition` input or a natural-language request to design, select, or refine motion for a web interaction. It narrows the parent design workflow to the requested component or state change; it does not require a page-wide redesign, change the approval gate, or transfer production editing from `frontend-implementer`.
+Design the requested component’s state change, capture its motion contract, and hand the approved behavior to `frontend-implementer`. Keep the parent skill’s approval and evaluation gates; expand into page design only when the request also changes the surrounding surface.
 
 ## Establish compatibility and intent
 
@@ -18,20 +18,21 @@ Use this workflow for an explicit `transition` input or a natural-language reque
 
 ## Choose and approve the behavior
 
-Read only the selected domain guide and the one or few recipe directions it routes to. Each recipe direction owns its mechanism, adaptation guidance, and acceptance checks; load its linked code example when implementation detail is needed. Treat an explicitly named recipe or pattern as the requested direction, then show its target-state preview and capture sign-off before production edits unless `--quick` applies. When the motion remains open, present materially different targeted variants whose timing, spatial model, or interruption behavior changes the interaction; do not create page-wide direction or area boards for transition-only scope.
+Read the selected domain guide, choose the required recipe, then load only that recipe’s task guide. Follow its implementation steps and preserve the constraints they identify before adapting its embedded code. Each guide contains the complete HTML, optional CSS, JavaScript, and acceptance checks for that task. Treat an explicitly named recipe or pattern as the requested direction, then show its target-state preview and capture sign-off before production edits unless `--quick` applies. When the motion remains open, present materially different targeted variants whose timing, spatial model, or interruption behavior changes the interaction; do not create page-wide direction or area boards for transition-only scope.
 
 `frontend-designer` owns the motion choice and its reproducible contract. Record the trigger, initial and final states, properties, starting duration and easing, interruption and replay behavior, reduced-motion result, focus behavior, responsive constraints, and selected recipe direction. `frontend-implementer` owns every production source edit. `aesthetic-evaluator` independently checks the integrated render against the approved transition and applicable Web design standards.
 
-## Consume the shared asset and code examples
+## Adapt the selected recipe
 
-After the version gate passes, read [motion.css](assets/transitions/motion.css). Have the implementer merge its shared CSS-first motion definitions once into an existing stylesheet processed after Tailwind's import; never make the consumer load the installed plugin at runtime. Reuse compatible project-owned motion tokens instead of duplicating them. Keep recipe-specific CSS and keyframes with the selected example.
+After the version gate passes, read [motion.css](assets/transitions/motion.css). Have the implementer merge its shared CSS-first motion definitions once into an existing stylesheet processed after Tailwind's import; never make the consumer load the installed plugin at runtime. Reuse compatible project-owned motion tokens instead of duplicating them. Merge recipe-specific CSS and keyframes from the selected task guide alongside those shared definitions.
 
-Files under `directions/transitions/<domain>/` own recipe instructions. Matching files under `examples/transitions/<domain>/` contain only the titled HTML, CSS, and JavaScript example, not a complete production component. Consume the selected example’s fences as follows:
+Treat the embedded code as a worked implementation of the guide’s steps. Map its state and lifecycle to the existing component before copying its markup:
 
 1. Adapt the single `html` section to the target's existing semantic component and keep every Tailwind class statically discoverable.
 2. Merge an optional `css` fence into the consumer's Tailwind input after the shared definitions, resolving names against existing tokens.
 3. Adapt an optional `js` fence's `mount(root)` behavior to the owning runtime. Invoke it only after the section exists, retain its returned cleanup function, and call cleanup before unmount, replacement, remount, or hot reload. Never mount the same root twice without cleanup.
-4. Preserve framework state ownership and existing accessible primitives. Carry over behavior, cancellation, measurement, and cleanup mechanics rather than replacing working application logic with example markup.
+4. Preserve framework state ownership and existing accessible primitives. Bind each animation to the actual state change; retain the recipe’s ordering of measurements, state updates, focus changes, and cancellation. Keep asynchronous completion from overwriting a newer state.
+5. Implement the recipe’s reduced-motion final state in both CSS and JavaScript, including preference changes during motion. Keep semantic content and focus usable throughout; hide decorative clones from assistive technology and remove closed content from interaction at the specified point.
 
 ## Verify and return
 

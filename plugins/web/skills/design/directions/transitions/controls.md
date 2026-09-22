@@ -1,34 +1,28 @@
 # Control transitions
 
-Use these recipes when motion clarifies a control's state, target, proximity, or direction. Load assets/transitions/motion.css before copying a recipe and compile its complete fences with Tailwind CSS 4.3 or newer.
+Follow [Transition design](directions/transition.md) for the Tailwind version gate, approval boundary, shared asset, and implementation ownership. Load [motion.css](assets/transitions/motion.css) once, then select only the recipe whose mechanism matches the control's state change.
 
-## Choose the mechanism
-
-| Need | Recipe | Mechanism |
+| State change | Recipe | Mechanism |
 | --- | --- | --- |
-| Replace one icon in a fixed slot | [Icon swap](directions/transitions/controls/icon-swap.md) | stacked SVGs cross scale, blur, and opacity |
-| Show proximity in a compact row | [Avatar group hover](directions/transitions/controls/avatar-group-hover.md) | distance-falloff lift with asymmetric return easing |
+| Replace one icon in a fixed slot | [Icon swap](directions/transitions/controls/icon-swap.md) | stacked decorative SVGs driven by one pressed state |
+| Show proximity in a compact row | [Avatar group hover](directions/transitions/controls/avatar-group-hover.md) | index-distance lift with asymmetric return easing |
 | Preserve selection position across labels | [Tabs sliding](directions/transitions/controls/tabs-sliding.md) | measured pill width and translation |
-| Give clearing text a visible empty-state handoff | [Input clear dissolve](directions/transitions/controls/input-clear-dissolve.md) | RAF text flight with measured word glows |
-| Make a visual destination feel spatial | [Card tilt](directions/transitions/controls/card-tilt.md) | flat pointer geometry drives 3D rotation and glare |
-| Reveal content of unknown height | [Accordion](directions/transitions/controls/accordion.md) | `0fr` to `1fr` grid track and chevron flip |
-| Celebrate a boolean favorite | [Like button](directions/transitions/controls/like-button.md) | fill, wrapper pop, and directional particles |
-| Reinforce an inline destination | [Learn more hover](directions/transitions/controls/learn-more-hover.md) | direction-aware shift and chevron-arm spread |
-| Sequence a checked state | [Checkbox check](directions/transitions/controls/checkbox-check.md) | native checkbox, box fill, and SVG stroke draw |
-| Add physical settlement to on/off state | [Toggle](directions/transitions/controls/toggle.md) | native switch with directional overshoot keyframes |
+| Hand clearing text to an empty state | [Input clear dissolve](directions/transitions/controls/input-clear-dissolve.md) | value snapshot, canvas measurement, and cancellable RAF |
+| Give a visual destination pointer depth | [Card tilt](directions/transitions/controls/card-tilt.md) | flat hit-area geometry driving a transformed child |
+| Reveal content of unknown height | [Accordion](directions/transitions/controls/accordion.md) | grid-track interpolation with explicit disclosure finalization |
+| Celebrate entry into a favorite state | [Like button](directions/transitions/controls/like-button.md) | pressed state, wrapper pop, and replayable radial particles |
+| Reinforce an inline destination | [Learn more hover](directions/transitions/controls/learn-more-hover.md) | direction-aware icon translation and arm rotation |
+| Sequence a checked state | [Checkbox check](directions/transitions/controls/checkbox-check.md) | native checkbox state driving fill and stroke draw |
+| Add settlement to on/off state | [Toggle](directions/transitions/controls/toggle.md) | native switch state plus directional overshoot keyframes |
 
-## Setup differences
+## Adapt the selected recipe
 
-Icon swap, avatar hover, tabs, input clear, card tilt, accordion, like, and toggle include a scoped `mount(root)` because state, measurement, drawing, or replay needs JavaScript. Preserve the returned cleanup and mount each inserted section once. Learn more and checkbox need no script because native interaction plus CSS owns their complete state.
+1. Copy every fence from the selected direction. Merge its optional CSS after the shared asset, keep Tailwind classes literal, and adapt the HTML to the consumer's existing semantic control without replacing its state owner.
+2. Preserve the recipe's division of responsibility: native elements own keyboard and focus behavior, application state owns durable selection or value, CSS maps that state to visuals, and JavaScript performs only the documented measurement, replay, or finalization work.
+3. Integrate `mount(root)` after the section exists and retain its cleanup. Mount once; abort listeners, disconnect observers, cancel frames and timers, remove transient classes and inline properties, and restore a meaningful static state before unmount or remount.
+4. Keep measurements on stationary geometry. Recompute resize-dependent values where directed, transform only visual children, and cancel stale work before every reversal or replay so an older callback cannot overwrite the latest state.
+5. Preserve every CSS `motion-reduce` branch and JavaScript media-query listener. A live change to reduced motion must stop active scripted motion and expose the same meaningful state without moving focus or changing reading order.
 
-Card tilt, like, and toggle include recipe-specific CSS-first utilities or keyframes; add that fence beside the shared motion asset. Input clear draws only dynamic gradient geometry inline. Keep every other visual rule in the supplied Tailwind classes, including explicit transition-property lists and reduced-motion variants.
+## Verify the adapted control
 
-Tabs and card tilt depend on live geometry. Measure the stationary tablist or flat hit target rather than a transforming child, and rerun tab measurement on resize. Input clear owns RAF and canvas measurement; do not replace its mirror with the input's disappearing value or omit frame cancellation.
-
-## Acceptance
-
-- Compile the chosen HTML and CSS fences under Tailwind 4.3 or newer; all class names must be statically discoverable and no recipe may use `transition` or `transition-all` as a generic property set.
-- Exercise initial, action, final, rapid reversal, and cleanup states. Resize measured controls and replay one-shot animations before accepting them.
-- Use the native link, button, checkbox, switch, and tab semantics supplied by the recipe. Keep names current, preserve focus visibility, and exercise the documented keyboard path.
-- Enable reduced motion before interaction and again during active RAF or pointer motion. The meaningful state must remain visible and JavaScript motion must stop immediately.
-- Confirm visual clones stay `aria-hidden`, closed accordion content becomes inert, and no hidden panel or decorative layer enters focus order.
+Compile the selected fences under the proven Tailwind version, inspect the rendered control, and exercise its initial, action, final, reverse, rapid-interruption, replay, and cleanup paths. Run its documented pointer and keyboard inputs, inspect focus visibility and accessible state, resize every measured control, change reduced motion before and during activity, and confirm the console stays clear. Do not accept hidden focusable content, decorative layers in the accessibility tree, generic transition-property sets, stale timers or frames, or a final state that depends on `transitionend`.

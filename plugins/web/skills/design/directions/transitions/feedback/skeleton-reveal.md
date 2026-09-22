@@ -1,9 +1,84 @@
 # Skeleton reveal
 
-[Code example](examples/transitions/feedback/skeleton-reveal.md)
+## Implement
 
-Use this pattern when loaded content replaces a shape-matched placeholder in the same grid area. The placeholder is decorative, the container exposes its busy state, and the real content becomes available only when revealed.
+1. Place the shape-matched skeleton and real content in the same grid area so the reveal does not change layout. Keep the skeleton decorative and make real content `inert`, `aria-hidden="true"`, and pointer-inaccessible while loading.
+2. Treat `data-state`, `aria-busy`, `inert`, and `aria-hidden` as one transaction. `reveal()` must clear the timer before exposing content; `replay()` must restore every loading attribute before scheduling another reveal.
+3. Import the [shared motion asset](assets/transitions/motion.css) once. Keep the skeleton pulse finite and retain the reduced-motion utilities that remove pulse and crossfade while preserving final content.
+4. Replace the prior timer on every replay so an older run cannot expose content during a newer loading state. The example's one-second delay only makes loading observable; production must reveal from real completion state. The demo can call `reveal()` immediately when reduced motion is active because its content already exists; in production, skip visual delay only after real data is ready. A motion preference must not complete the underlying load.
+5. Cleanup must cancel the timer, reveal usable content, and abort listeners.
 
-Import `assets/transitions/motion.css` once before using this recipe.
+## Verify
 
-Two finite pulse cycles make loading visible without creating an unbounded animation; the one-second replay delay exists only to make that state observable in the demo. Check initial loading and automatic reveal, replay repeatedly to confirm stale timers cannot win, and verify the link is inert while loading. Enable reduced motion during loading and confirm the meaningful content appears immediately; cleanup must cancel the reveal timer and listeners.
+Exercise initial loading, manual reveal, repeated replay, and the automatic final state. The link must be unavailable while loading and usable after reveal. Toggle reduced motion mid-load: the demo reveals immediately because its content is ready; production must stop motion while preserving busy, inert, and hidden state until real data is ready. Cleanup must leave no pending timer.
+
+## Complete example
+
+```html
+<section data-demo="skeleton-reveal" data-state="loading" aria-busy="true" class="group mx-auto flex min-h-72 max-w-lg flex-col justify-center gap-6 rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950">
+  <div class="grid rounded-2xl border border-neutral-200 p-5 shadow-sm [&>*]:[grid-area:1/1]">
+    <div data-skeleton aria-hidden="true" class="space-y-4 opacity-100 transition-[opacity,filter] duration-(--motion-duration-slow) ease-motion-enter group-data-[state=revealed]:pointer-events-none group-data-[state=revealed]:opacity-0 group-data-[state=revealed]:blur-[2px] motion-reduce:animate-none motion-reduce:transition-none">
+      <div class="size-12 animate-pulse rounded-full bg-neutral-200 [animation-duration:var(--motion-duration-slow)] [animation-iteration-count:2] group-data-[state=revealed]:animate-none motion-reduce:animate-none"></div>
+      <div class="space-y-2">
+        <div class="h-4 w-2/3 animate-pulse rounded bg-neutral-200 [animation-duration:var(--motion-duration-slow)] [animation-iteration-count:2] group-data-[state=revealed]:animate-none motion-reduce:animate-none"></div>
+        <div class="h-3 w-full animate-pulse rounded bg-neutral-100 [animation-duration:var(--motion-duration-slow)] [animation-iteration-count:2] group-data-[state=revealed]:animate-none motion-reduce:animate-none"></div>
+        <div class="h-3 w-5/6 animate-pulse rounded bg-neutral-100 [animation-duration:var(--motion-duration-slow)] [animation-iteration-count:2] group-data-[state=revealed]:animate-none motion-reduce:animate-none"></div>
+      </div>
+    </div>
+    <article data-content aria-hidden="true" inert class="pointer-events-none space-y-3 opacity-0 blur-[2px] transition-[opacity,filter] duration-(--motion-duration-slow) ease-motion-enter group-data-[state=revealed]:pointer-events-auto group-data-[state=revealed]:opacity-100 group-data-[state=revealed]:blur-none motion-reduce:transition-none">
+      <div class="grid size-12 place-items-center rounded-full bg-violet-100 font-semibold text-violet-800">AL</div>
+      <h2 class="text-lg font-semibold">Ada Lovelace</h2>
+      <p class="text-sm leading-6 text-neutral-600">Analytical engine notes are ready for review.</p>
+      <a href="#review-notes" class="inline-flex min-h-11 items-center rounded-full px-1 text-sm font-medium text-violet-700 underline decoration-violet-300 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700">Review notes</a>
+    </article>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <button type="button" data-reveal class="min-h-11 rounded-full bg-neutral-950 px-5 text-sm font-medium text-white transition-colors duration-(--motion-duration-fast) hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950">Reveal content</button>
+    <button type="button" data-replay class="min-h-11 rounded-full border border-neutral-300 bg-white px-5 text-sm font-medium transition-colors duration-(--motion-duration-fast) hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950">Replay loading</button>
+  </div>
+</section>
+```
+
+```js
+function mount(root) {
+  const controller = new AbortController();
+  const revealButton = root.querySelector("[data-reveal]");
+  const replayButton = root.querySelector("[data-replay]");
+  const content = root.querySelector("[data-content]");
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  let revealTimer = 0;
+
+  const reveal = () => {
+    clearTimeout(revealTimer);
+    root.dataset.state = "revealed";
+    root.setAttribute("aria-busy", "false");
+    content.removeAttribute("inert");
+    content.setAttribute("aria-hidden", "false");
+  };
+
+  const replay = () => {
+    clearTimeout(revealTimer);
+    root.dataset.state = "loading";
+    root.setAttribute("aria-busy", "true");
+    content.setAttribute("inert", "");
+    content.setAttribute("aria-hidden", "true");
+    if (motion.matches) {
+      reveal();
+      return;
+    }
+    revealTimer = setTimeout(reveal, 1000);
+  };
+
+  revealButton.addEventListener("click", reveal, { signal: controller.signal });
+  replayButton.addEventListener("click", replay, { signal: controller.signal });
+  motion.addEventListener("change", () => {
+    if (motion.matches) reveal();
+  }, { signal: controller.signal });
+  replay();
+
+  return () => {
+    reveal();
+    controller.abort();
+  };
+}
+```

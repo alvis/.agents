@@ -2,6 +2,7 @@
 
 import { createHash } from "node:crypto";
 import {
+  mkdtempSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -9,6 +10,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,7 +103,11 @@ class TransitionFixtureError extends Error {
 const REQUIRED_TAILWIND_VERSION = "4.3.3";
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const DESIGN_DIRECTORY = dirname(SCRIPT_DIRECTORY);
-const EXAMPLES_DIRECTORY = join(DESIGN_DIRECTORY, "examples", "transitions");
+const TRANSITION_DIRECTIONS_DIRECTORY = join(
+  DESIGN_DIRECTORY,
+  "directions",
+  "transitions",
+);
 const MOTION_CSS_PATH = join(
   DESIGN_DIRECTORY,
   "assets",
@@ -129,7 +135,7 @@ function main(arguments_ = Bun.argv.slice(2)): number {
     if (arguments_.length === 1 && arguments_[0] === "self-check") {
       runSelfCheck();
       process.stdout.write(
-        `${JSON.stringify({ cases: 4, status: "success" })}\n`,
+        `${JSON.stringify({ cases: 5, status: "success" })}\n`,
       );
       return 0;
     }
@@ -209,20 +215,24 @@ function verifyCompiler(consumerDirectory: string): CompilerReceipt {
   };
 }
 
-function readRecipes(): Recipe[] {
-  if (!statSync(EXAMPLES_DIRECTORY, { throwIfNoEntry: false })?.isDirectory()) {
+function readRecipes(
+  recipeDirectory = TRANSITION_DIRECTIONS_DIRECTORY,
+): Recipe[] {
+  if (!statSync(recipeDirectory, { throwIfNoEntry: false })?.isDirectory()) {
     throw new TransitionFixtureError(
-      `transition examples directory does not exist: ${EXAMPLES_DIRECTORY}`,
+      `transition recipe directory does not exist: ${recipeDirectory}`,
     );
   }
 
-  const sourcePaths = collectMarkdownPaths(EXAMPLES_DIRECTORY);
+  const sourcePaths = collectRecipeMarkdownPaths(recipeDirectory);
   if (sourcePaths.length === 0) {
     throw new TransitionFixtureError(
-      `transition examples directory contains no Markdown recipes: ${EXAMPLES_DIRECTORY}`,
+      `transition recipe directory contains no <domain>/<recipe>.md files: ${recipeDirectory}`,
     );
   }
-  const recipes = sourcePaths.map(readRecipe);
+  const recipes = sourcePaths.map((sourcePath) =>
+    readRecipe(sourcePath, recipeDirectory),
+  );
   const ids = new Set<string>();
   for (const recipe of recipes) {
     if (ids.has(recipe.id)) {
@@ -386,22 +396,31 @@ function readPackageVersion(path: string, packageName: string): string {
   return parsed.version;
 }
 
-function collectMarkdownPaths(directory: string): string[] {
+function collectRecipeMarkdownPaths(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
-    .flatMap((entry) => {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) return collectMarkdownPaths(path);
-      return entry.isFile() && extname(entry.name) === ".md" ? [path] : [];
+    .filter((domainEntry) => domainEntry.isDirectory())
+    .flatMap((domainEntry) => {
+      const domainDirectory = join(directory, domainEntry.name);
+      return readdirSync(domainDirectory, { withFileTypes: true })
+        .filter(
+          (recipeEntry) =>
+            recipeEntry.isFile() && extname(recipeEntry.name) === ".md",
+        )
+        .map((recipeEntry) => join(domainDirectory, recipeEntry.name));
     })
     .sort();
 }
 
-function readRecipe(sourcePath: string): Recipe {
+function readRecipe(sourcePath: string, recipeDirectory: string): Recipe {
   const source = readRequiredFile(sourcePath, "transition recipe");
-  return parseRecipeSource(source, sourcePath);
+  return parseRecipeSource(source, sourcePath, recipeDirectory);
 }
 
-function parseRecipeSource(source: string, sourcePath: string): Recipe {
+function parseRecipeSource(
+  source: string,
+  sourcePath: string,
+  recipeDirectory = TRANSITION_DIRECTIONS_DIRECTORY,
+): Recipe {
   const fences = parseCodeFences(source, sourcePath);
   const fencesByLanguage = new Map<FenceLanguage, CodeFence>();
   for (const fence of fences) {
@@ -428,13 +447,13 @@ function parseRecipeSource(source: string, sourcePath: string): Recipe {
   const javascript = fencesByLanguage.get("js")?.content ?? null;
   if (javascript !== null) validateJavascript(javascript, sourcePath);
 
-  const sourceSegments = relative(EXAMPLES_DIRECTORY, sourcePath).split(sep);
+  const sourceSegments = relative(recipeDirectory, sourcePath).split(sep);
   if (
     sourceSegments.length !== 2 ||
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(sourceSegments[0]!)
   ) {
     throw new TransitionFixtureError(
-      `${sourcePath} must be a kebab-case Markdown file directly inside one domain`,
+      `${sourcePath} must match ${recipeDirectory}/<kebab-case-domain>/<kebab-case-recipe>.md`,
     );
   }
   const domain = sourceSegments[0]!;
@@ -453,7 +472,39 @@ function parseRecipeSource(source: string, sourcePath: string): Recipe {
 function runSelfCheck(): void {
   const validHtml = '<section data-demo="example"></section>';
   const validJavascript = "function mount(root) { return () => {}; }";
-  const examplePath = join(EXAMPLES_DIRECTORY, "self-check", "example.md");
+  const examplePath = join(
+    DESIGN_DIRECTORY,
+    "directions",
+    "transitions",
+    "self-check",
+    "example.md",
+  );
+  const instructionalRecipe = `# Example\n\nUse this recipe to verify instructional prose around executable fences.\n\n\`\`\`html\n${validHtml}\n\`\`\`\n\n\`\`\`js\n${validJavascript}\n\`\`\`\n`;
+  const selfCheckDirectory = mkdtempSync(
+    join(tmpdir(), "transition-recipes-self-check-"),
+  );
+
+  try {
+    const domainDirectory = join(selfCheckDirectory, "self-check");
+    mkdirSync(domainDirectory);
+    writeFileSync(join(selfCheckDirectory, "validation.md"), "# Validation\n");
+    writeFileSync(join(selfCheckDirectory, "self-check.md"), "# Domain index\n");
+    writeFileSync(join(domainDirectory, "example.md"), instructionalRecipe);
+    const recipes = readRecipes(selfCheckDirectory);
+    if (
+      recipes.length !== 1 ||
+      recipes[0]?.id !== "example" ||
+      recipes[0].html !== `${validHtml}\n` ||
+      recipes[0].javascript !== `${validJavascript}\n`
+    ) {
+      throw new TransitionFixtureError(
+        "self-check did not discover the instructional domain recipe exclusively",
+      );
+    }
+  } finally {
+    rmSync(selfCheckDirectory, { force: true, recursive: true });
+  }
+
   const cases: readonly {
     readonly action: () => unknown;
     readonly name: string;
@@ -473,10 +524,10 @@ function runSelfCheck(): void {
     {
       action: () =>
         parseRecipeSource(
-          `\`\`\`js\n${validJavascript}\n\`\`\`\n`,
+          `# Missing markup\n\n\`\`\`js\n${validJavascript}\n\`\`\`\n`,
           examplePath,
         ),
-      name: "missing fence",
+      name: "instructional recipe missing its html fence",
     },
     {
       action: () =>

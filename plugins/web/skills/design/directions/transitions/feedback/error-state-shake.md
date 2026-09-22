@@ -1,9 +1,118 @@
 # Error state shake
 
-[Code example](examples/transitions/feedback/error-state-shake.md)
+## Implement
 
-Use this pattern to draw attention to a validation error after submission. Keep the message visible until the field is valid; the shake is a brief supplement, never the only error cue.
+1. Keep native field constraints and use `novalidate` only when JavaScript owns submission feedback. Connect the input to persistent guidance and error text with `aria-describedby`; use `aria-invalid` and the visible alert as the authoritative invalid state.
+2. Put the finite shake on a field wrapper so the input, border, and focus ring move together. The message and red border must remain after the shake because displacement is only an attention cue.
+3. In `showError()`, synchronize invalid attributes and visible text before replaying motion. Clear the prior timer, reset `data-shaking`, force a style flush, then set it true and schedule one reset from the computed shared duration.
+4. Import the [shared motion asset](assets/transitions/motion.css) once and add the recipe keyframes beside it. If reduced motion becomes active during a shake, cancel the timer and displacement without clearing the error.
+5. Focus the invalid input after submission, clear the error only when validity passes, and abort all listeners plus the pending reset during cleanup.
 
-Import `assets/transitions/motion.css` once before using this recipe.
+## Verify
 
-The four evenly spaced beats give two full-distance swings and a half-distance settling leg within the shared normal duration. Submit an empty or partial address several times, verify that the message persists while each shake replays cleanly, then type a valid address and confirm the error clears. Enable reduced motion during a shake and confirm the red border and message remain while displacement stops; cleanup must cancel the pending shake reset and every listener.
+Submit empty and partial addresses repeatedly, then enter a valid address. The alert, `aria-invalid`, border, focus, and status must agree after every step. Toggle reduced motion during a shake and confirm displacement stops while recovery guidance remains. Cleanup must leave no timer or responding listener.
+
+## Complete example
+
+```html
+<section data-demo="error-state-shake" class="flex min-h-72 items-center justify-center rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950">
+  <form data-form novalidate class="w-full max-w-sm space-y-5">
+    <div class="space-y-2">
+      <label for="feedback-email" class="block text-sm font-medium">Email address</label>
+      <div data-field data-invalid="false" data-shaking="false" class="rounded-xl border border-neutral-300 bg-white shadow-sm transition-[border-color,box-shadow] duration-(--motion-duration-fast) ease-motion-enter focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/10 data-[invalid=true]:border-red-600 data-[invalid=true]:ring-2 data-[invalid=true]:ring-red-600/10 data-[shaking=true]:[animation:feedback-error-shake_var(--motion-duration-normal)_var(--ease-motion-enter)_both] motion-reduce:animate-none motion-reduce:transform-none">
+        <input id="feedback-email" data-input required type="email" autocomplete="email" aria-invalid="false" aria-describedby="feedback-email-error feedback-email-status" placeholder="you@example.com" class="min-h-12 w-full rounded-xl bg-transparent px-4 text-base outline-none placeholder:text-neutral-400" />
+      </div>
+      <p id="feedback-email-error" data-error role="alert" aria-hidden="true" data-visible="false" class="h-auto text-sm text-red-700 transition-opacity duration-(--motion-duration-fast) data-[visible=false]:invisible data-[visible=false]:h-0 data-[visible=false]:opacity-0 motion-reduce:transition-none">Enter a complete email address, such as you@example.com.</p>
+      <p id="feedback-email-status" data-status role="status" aria-live="polite" class="text-sm text-neutral-600">Enter the address that should receive notifications.</p>
+    </div>
+    <button type="submit" class="min-h-11 w-full rounded-xl bg-neutral-950 px-4 text-sm font-medium text-white transition-[background-color,scale] duration-(--motion-duration-fast) ease-motion-enter hover:bg-neutral-800 active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none motion-reduce:active:scale-100">Validate email</button>
+  </form>
+</section>
+```
+
+```css
+@keyframes feedback-error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(0.5rem); }
+  50% { transform: translateX(-0.5rem); }
+  75% { transform: translateX(0.25rem); }
+}
+```
+
+```js
+function mount(root) {
+  const controller = new AbortController();
+  const form = root.querySelector("[data-form]");
+  const field = root.querySelector("[data-field]");
+  const input = root.querySelector("[data-input]");
+  const error = root.querySelector("[data-error]");
+  const status = root.querySelector("[data-status]");
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  let shakeTimer = 0;
+
+  const readShakeDuration = () => {
+    const value = getComputedStyle(root).getPropertyValue("--motion-duration-normal").trim();
+    const amount = Number.parseFloat(value);
+    if (!Number.isFinite(amount)) return 250;
+    if (value.endsWith("ms")) return amount;
+    if (value.endsWith("s")) return amount * 1000;
+    return 250;
+  };
+
+  const stopShake = () => {
+    clearTimeout(shakeTimer);
+    field.dataset.shaking = "false";
+  };
+
+  const clearError = () => {
+    stopShake();
+    field.dataset.invalid = "false";
+    input.setAttribute("aria-invalid", "false");
+    error.dataset.visible = "false";
+    error.setAttribute("aria-hidden", "true");
+  };
+
+  const showError = () => {
+    clearTimeout(shakeTimer);
+    field.dataset.invalid = "true";
+    input.setAttribute("aria-invalid", "true");
+    error.dataset.visible = "true";
+    error.setAttribute("aria-hidden", "false");
+    status.textContent = "";
+    field.dataset.shaking = "false";
+    if (motion.matches) return;
+    void field.offsetWidth;
+    field.dataset.shaking = "true";
+    shakeTimer = setTimeout(stopShake, readShakeDuration());
+  };
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!input.validity.valid) {
+      showError();
+      input.focus();
+      return;
+    }
+    clearError();
+    status.textContent = "Email address is ready to use.";
+  }, { signal: controller.signal });
+
+  input.addEventListener("input", () => {
+    if (!input.validity.valid) {
+      status.textContent = "";
+      return;
+    }
+    clearError();
+    status.textContent = "Email address is ready to use.";
+  }, { signal: controller.signal });
+
+  motion.addEventListener("change", () => {
+    if (motion.matches) stopShake();
+  }, { signal: controller.signal });
+
+  return () => {
+    stopShake();
+    controller.abort();
+  };
+}
+```

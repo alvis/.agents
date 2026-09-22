@@ -1,40 +1,33 @@
 # Text and value transitions
 
-Choose this domain when motion belongs to changing text or a numeric value rather than to its surrounding layout. Keep the semantic value stable and animate an `aria-hidden` visual clone when glyphs, words, reels, or duplicated transcripts would otherwise create fragmented announcements.
+Apply this domain when the text itself changes over time. Start with the [shared transition workflow](directions/transition.md): prove Tailwind compatibility, capture the initial and final states, and merge the [shared motion tokens](assets/transitions/motion.css) once after Tailwind's import.
 
-## Choose a recipe
+## Select one recipe
 
-| Need | Recipe | Mechanism |
+Choose the smallest mechanism that explains the state change, then open only its task guide.
+
+| Required behavior | Task guide | Preserve |
 | --- | --- | --- |
-| Give a short updated value a compact entrance | [Number pop-in](directions/transitions/text/number-pop-in.md) | Rebuilt glyphs enter independently with a short stagger |
-| Replace one compact label with another | [Text states swap](directions/transitions/text/text-states-swap.md) | Old text exits before the new state enters in the same footprint |
-| Keep an indeterminate status visibly active | [Shimmer text](directions/transitions/text/shimmer-text.md) | A pausable gradient crosses one readable label continuously |
-| Introduce a heading and supporting copy in sequence | [Texts reveal](directions/transitions/text/texts-reveal.md) | Semantic lines rise with a bounded stagger and dismiss as one fade |
-| Celebrate an integer change | [Spinning counter](directions/transitions/text/spinning-counter.md) | Independent clipped digit reels roll through intermediate cells |
-| Preview a continuing log or process | [Reasoning stream](directions/transitions/text/reasoning-stream.md) | A stepped transcript wraps through one visual clone with pause and restart |
-| Resolve a complete response word by word | [Streaming text](directions/transitions/text/streaming-text.md) | Word wrappers sharpen in sequence while whitespace preserves wrapping |
+| Introduce a short price, balance, or score | [Number pop-in](directions/transitions/text/number-pop-in.md) | One semantic value plus an `aria-hidden` glyph clone |
+| Replace a compact label in place | [Text states swap](directions/transitions/text/text-states-swap.md) | Latest-state cancellation across exit and entrance |
+| Show an indeterminate status continuously | [Shimmer text](directions/transitions/text/shimmer-text.md) | Readable base text, pause control, and solid reduced-motion state |
+| Stage a heading and supporting copy | [Texts reveal](directions/transitions/text/texts-reveal.md) | Semantic lines, bounded stagger, and native `hidden` dismissal |
+| Celebrate a short ASCII integer | [Spinning counter](directions/transitions/text/spinning-counter.md) | Measured reel geometry, bounded cells, and one announced result |
+| Preview a continuing log or process | [Reasoning stream](directions/transitions/text/reasoning-stream.md) | Fixed line geometry, one visual clone, pause, restart, and static fallback |
+| Resolve a complete response word by word | [Streaming text](directions/transitions/text/streaming-text.md) | Whitespace-preserving wrappers and one complete live announcement |
 
-Prefer number pop-in for ordinary balances and counters; reserve spinning counter for an infrequent milestone because its reels add more motion and DOM. Use text states swap for replacement, texts reveal for a small group entering together, and streaming text for cumulative prose. Shimmer text and reasoning stream run continuously, so their examples include explicit motion controls.
+Prefer the quieter recipe when several fit: use number pop-in instead of spinning reels for routine values, text states swap instead of a staged reveal for frequent labels, and streaming text only when prose accumulates rather than replacing one state.
 
-## Set up
+## Adapt the selected recipe
 
-Require Tailwind CSS 4.3 or newer; report an older consumer version instead of changing it silently. Import `assets/transitions/motion.css` after Tailwind CSS once, then copy only the selected recipe’s CSS-first block into a stylesheet Tailwind processes. The shared asset supplies the fast 150ms feedback duration, normal 250ms state duration, slow 400ms spatial duration, and enter, exit, and spring easing tokens.
+1. Keep the application state as the source of truth. Bind the recipe's render function to the real save, response, or validated-value event; remove demo inputs and replay buttons only after preserving their cancellation and lifecycle behavior.
+2. Preserve one semantic representation of the animated content, including real heading/paragraph lines and a separate status when the recipe requires them. Put only duplicated glyphs, words, reels, and transcript copies in an `aria-hidden` visual layer. Announce a completed value or meaningful status once through `output`, `role="status"`, or a deliberate `aria-live` node; do not make every animated fragment live.
+3. Insert untrusted or user-entered strings with `textContent`. Treat visible characters as grapheme clusters when animation targets arbitrary Unicode: use `Intl.Segmenter` or the consumer's grapheme utility instead of splitting combined marks or emoji. Recipes restricted to ASCII digits state that boundary explicitly.
+4. Keep class names literal so Tailwind can discover them. Merge the selected CSS fence after the shared tokens, map compatible project tokens, insert the HTML before measuring it, and adapt `mount(root)` to the component lifecycle.
+5. Preserve the recipe's timing model. Read CSS duration variables at runtime when JavaScript schedules the matching completion, measure live geometry after insertion, and calculate the last stagger from the actual item count. Retain each stated cap because it bounds DOM size or total delay.
+6. Make replay and interruption latest-state safe. Cancel old timeouts and animation frames before rebuilding, retain the pending final value, and call the returned cleanup before unmount, replacement, remount, or hot reload.
+7. Implement reduced motion as a meaningful live state: commit the pending label or value, reveal the complete response, or stop a persistent preview at its useful static position. Handle preference changes during motion in both CSS and JavaScript.
 
-Insert the recipe’s single `section`, then call its `mount(root)` with that section and retain the returned cleanup function. Mount after insertion so measurement-based reels and streams read real geometry. Call cleanup before removing or remounting the section; every recipe cancels its own timers, animation frames, media-query listeners, clones, and event listeners.
+## Test the integrated transition
 
-Keep every complete Tailwind class string in the consumer’s scanned source. JavaScript may assign the recipe’s static class strings and dynamic custom-property values, but it must not construct utility names from input. Replace application text with `textContent`, preserve the example’s single semantic live node, and keep visual clones hidden from assistive technology.
-
-## Adapt safely
-
-Tune frequency before amplitude. A frequently changing label should use the fast state swap; a one-off reveal may use the slow duration and a short 40ms line or column stagger. Cap the number of staged items or shorten the stagger when total delay would make the final item feel late. Do not add a layout transition to text whose wrapping or intrinsic size changes; let the text reflow and animate only opacity, filter, or a small transform.
-
-Connect the examples to the application’s real state producer. Demo inputs and replay buttons show the behavior boundary; production code should call the same rendering function from a completed save, received stream chunk, or validated value update. Preserve the latest-state cancellation pattern when replacing the controls.
-
-## Acceptance
-
-- Initial, action, and final states remain understandable without animation, and reduced motion shows the intended final state immediately even when the preference changes mid-run.
-- Rapid replay, reversal, or replacement cannot let a stale timeout overwrite the latest value; cleanup leaves no timer, animation frame, observer, media-query handler, or visual clone behind.
-- A changing value or response is announced once as a complete unit. Digit, word, reel, and duplicate-transcript layers are `aria-hidden`, and continuous motion has a keyboard-accessible pause or stop control.
-- Every interactive control has a visible focus indicator, a descriptive label, and at least a 44px target. Hidden content uses `hidden` when it should leave layout and the accessibility tree.
-- Text insertion uses `textContent`; user-entered strings never become markup. Static Tailwind classes compile under Tailwind 4.3 or newer, and the selected example owns no dependency beyond the shared motion asset.
-- Responsive wrapping works at 320px without horizontal scrolling, final text remains readable in light and dark themes, and motion does not shift surrounding layout.
+Exercise the initial state, trigger, settled state, rapid replay or replacement, and cleanup/remount path. Toggle reduced motion while the transition is active and confirm the current intended final state appears without stale work. Verify keyboard controls and focus, one screen-reader announcement per meaningful update, Unicode and whitespace handling, 320px wrapping without horizontal scroll, light/dark readability, the recipe's item or character bound, measured timing, and an empty console. Inspect the rendered consumer; source review alone does not prove the transition works.

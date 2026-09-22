@@ -54,7 +54,7 @@ Create only needed evidence directories: `boards/`, `previews/<preview-slug>/`, 
 
 ## Team and design procedure
 
-First classify whether the request is transition-only. An explicit `transition` input or a natural-language request to design, select, or refine a UI transition loads [Transition design](directions/transition.md), which selects only the matching motion domain and recipes. Do not load surface subskills or require a page-wide redesign unless the request also changes the surrounding surface. Transition-only work uses targeted motion choices and previews while retaining the same approval, designer, implementer, and evaluator ownership.
+First classify whether the request is transition-only. An explicit `transition` input or a natural-language request to design, select, or refine a UI transition loads [Transition design](directions/transition.md), which selects only the matching motion domain and task guides with embedded code. Do not load surface subskills or require a page-wide redesign unless the request also changes the surrounding surface. Transition-only work uses targeted motion choices and previews while retaining the same approval, designer, implementer, and evaluator ownership.
 
 For broader interface work, classify each surface by its user task and load only matching subskills. Resolve supporting paths from this skill root. Mixed projects may use several; a component or general homepage does not inherit every workflow.
 

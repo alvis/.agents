@@ -1,30 +1,31 @@
 # Feedback transitions
 
-Use feedback motion to clarify a state change after the user or system acts. Import `assets/transitions/motion.css` once, require Tailwind CSS 4.3 or later, then load only the selected recipe.
+Implement feedback motion as a semantic state change, then use animation only to clarify what changed.
 
-## Choose a recipe
+## Choose one recipe
 
-| Need | Recipe | State contract |
+1. Identify the authoritative state, its trigger, its terminal or persistent behavior, and the text assistive technology must receive.
+2. Choose the smallest recipe below. Load only that task guide, then adapt its ordered steps and embedded code to the existing component.
+3. Import the [shared motion asset](assets/transitions/motion.css) once. Merge only the selected recipe's local CSS, and retain its `mount(root)` cleanup when translating it to a framework.
+
+| State change | Task guide | Preserve |
 | --- | --- | --- |
-| Add or remove an unread count without moving its trigger | [Notification badge](directions/transitions/feedback/notification-badge.md) | A pressed trigger updates a visible count and live text together. |
-| Confirm a completed action with a durable status | [Success check](directions/transitions/feedback/success-check.md) | Replay resets one keyframe run; status text remains authoritative. |
-| Reinforce an invalid field without hiding recovery guidance | [Error state shake](directions/transitions/feedback/error-state-shake.md) | `aria-invalid`, persistent error text, and a replayable finite shake stay synchronized. |
-| Replace a shape-matched placeholder with loaded content | [Skeleton reveal](directions/transitions/feedback/skeleton-reveal.md) | `aria-busy`, `inert`, and layer visibility change as one state. |
-| Announce a transient, non-blocking result | [Toast](directions/transitions/feedback/toast.md) | Reopening replaces the dismissal timer; pointer and keyboard interaction pause it. |
-| Narrate real stages of a long-running task | [Thinking states](directions/transitions/feedback/thinking-states.md) | Live text cycles at a restrained rate with pause and live reduced-motion handling. |
-| Add a compact decorative loader beside status text | [Matrix loader](directions/transitions/feedback/matrix-loader.md) | One dot grid accepts four delay maps, a pause control, and a static reduced-motion state. |
+| Add or remove an unread count over a stable trigger | [Notification badge](directions/transitions/feedback/notification-badge.md) | Visible count, trigger label, pressed state, and live text update together. |
+| Confirm a completed action with a durable result | [Success check](directions/transitions/feedback/success-check.md) | Status text stays authoritative while one finite graphic replays. |
+| Reinforce an invalid field and its recovery guidance | [Error state shake](directions/transitions/feedback/error-state-shake.md) | Invalid semantics and the message persist after displacement stops. |
+| Replace a shape-matched placeholder with loaded content | [Skeleton reveal](directions/transitions/feedback/skeleton-reveal.md) | Busy, inert, hidden, and visible states change atomically. |
+| Announce a transient non-blocking result | [Toast](directions/transitions/feedback/toast.md) | Reopening replaces dismissal; pointer and focus pause remaining time. |
+| Report real stages of a long-running task | [Thinking states](directions/transitions/feedback/thinking-states.md) | Live updates remain restrained and automatic motion has a pause control. |
+| Show compact decorative progress beside status text | [Matrix loader](directions/transitions/feedback/matrix-loader.md) | Status carries meaning; variants reuse one dot grid and expose pause. |
 
-## Setup differences
+## Adapt the state contract
 
-Notification badge and toast need only the shared motion asset and their HTML/JavaScript fences. Success check, error shake, thinking states, and matrix loader also need their recipe-local keyframes. Skeleton reveal uses Tailwind's pulse animation and shared transition tokens. Keep every `mount(root)` scoped to the provided section and retain its returned cleanup function for unmounting.
+1. Preserve existing semantic elements and framework state ownership. Treat example `data-*` attributes as a portable view of real state, not a second source of truth.
+2. Keep every status, alert, busy, invalid, hidden, inert, and focus update in the same transaction as its visible state. Decorative graphics stay hidden from assistive technology.
+3. Replace or cancel every owned timer and animation frame before replay. Retain cleanup and call it before unmount, replacement, remount, or hot reload.
+4. Implement the recipe's reduced-motion state in every CSS and JavaScript path it uses. A live preference change must settle to meaningful content or a controlled static state immediately.
+5. Keep completed feedback finite. Persistent motion is allowed only while work remains active and must provide the recipe's visible pause control.
 
-Choose finite feedback for completed actions and persistent motion only for work that is still active. Preserve the semantic result when animation is disabled: status text, validation guidance, loaded content, and busy state must never depend on transform, opacity, or a generated visual clone.
+## Test the adaptation
 
-## Acceptance
-
-- Compile the selected fences with Tailwind CSS 4.3 or later and verify every utility is statically discoverable.
-- Exercise initial, action, interrupted, repeated, and final states; rapid replay must not leave stale timers, frames, or attributes.
-- Toggle `prefers-reduced-motion` while motion is active and confirm the meaningful state settles immediately or remains available without movement.
-- Verify status, alert, busy, invalid, live-region, focus, and inert semantics with animation both enabled and disabled.
-- Confirm cleanup aborts listeners and cancels every owned timer or animation frame.
-- For thinking states and matrix loader, verify the visible pause control stops persistent animation and automatic state changes before focus leaves the control.
+Compile the selected fences with the consumer's proven Tailwind CSS 4.3 or later. Exercise initial, action, interrupted, repeated, and final states; rapid replay must not leave stale timers, frames, attributes, or focus. Toggle `prefers-reduced-motion` while active, verify live-region output and keyboard interaction, then run cleanup and confirm all owned asynchronous work and listeners stop. A semantic synchronization, live preference, pause, or cleanup failure means the adaptation is incomplete.
