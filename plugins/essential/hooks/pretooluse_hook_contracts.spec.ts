@@ -36,10 +36,7 @@ Incomplete plan submissions receive actionable feedback before execution.
 
 ## 🧭 Context
 
-### Current Scenario
-
-Incomplete plans can pass without feedback. Without validation, users must find missing sections themselves.
-
+- **Current Scenario** — Incomplete plans can pass without feedback. Without validation, users must find missing sections themselves.
 - **Current state** — nothing implemented yet.
 
 ## 📋 Requirements

@@ -25,9 +25,7 @@ Incomplete plans receive corrective feedback in T3.
 
 ## 🧭 Context
 
-### Current Scenario
-
-T3 emits plans without calling the plan tool. Without the Stop check, incomplete plans receive no validation feedback.
+- **Current Scenario** — T3 emits plans without calling the plan tool. Without the Stop check, incomplete plans receive no validation feedback.
 
 ## 📋 Requirements
 

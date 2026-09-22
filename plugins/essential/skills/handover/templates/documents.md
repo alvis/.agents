@@ -65,15 +65,12 @@ The charter owns goal, scope, success criteria, and every specification anchor; 
 ## Plan graph
 ## Context
 
-### Current Scenario
-
-<Plain-language current behavior and what happens if the planned work is not delivered.>
-
-- Current state: [<brief revision-aware status and next action or blocker>](#status)
-- Related decisions:
+- **Current Scenario** — <Plain-language current behavior and what happens if the planned work is not delivered.>
+- **Current state** — [<brief revision-aware status and next action or blocker>](#status)
+- **Related decisions**:
   - [<directly related summary of at most 19 words>](decisions/<slug>.md)
   - [<another directly related summary of at most 19 words>](decisions/<slug>.md)
-- Related recent work:
+- **Related recent work**:
   - [<directly related summary of at most 19 words>](state/journal.md)
   - [<another directly related summary of at most 19 words>](state/journal.md)
 

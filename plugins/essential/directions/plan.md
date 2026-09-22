@@ -18,12 +18,13 @@ Every presented plan, including conversational and sample plans, uses the five h
 
 ### 🎯 Goal
 
-State the end state the work will achieve and the observable bar that proves it was achieved. Completing tasks is not itself a goal; put those tasks under Direction. Link the authoritative charter or specification when one exists.
+State the end state the work will achieve, or one verifiable outcome when the work has no clear end state. Give the observable bar that proves it was achieved. Completing tasks is not itself a goal; put those tasks under Direction. Link the authoritative charter or specification when one exists.
 
 ### 🧭 Context
 
-Include a **Current Scenario** subsection explaining in plain language how things behave today and what would happen if the planned work is not delivered. Add other context needed to understand the plan and retain these navigation aids:
+Include these labeled entries and any other context needed to understand the plan:
 
+- **Current Scenario** — explain in plain language how things behave today and what would happen if the planned work is not delivered.
 - **Current state** — a brief, revision-aware status and the immediate next action or blocker.
 - **Related decisions** — zero or more record items, one per directly related decision. Each summary uses at most 19 words, excludes decision detail, and links the file containing the full decision.
 - **Related recent work** — zero or more record items, one per directly related work record. Each summary uses at most 19 words, excludes decisions, and links the file containing the full journey.
@@ -72,4 +73,4 @@ Non-authoritative detail such as `state/plan.md` may expand an existing task ID,
 
 Revise Direction without operator approval when evidence changes the route but Goal, Requirements, and Boundary remain fixed and the owning workflow grants that authority. Surface any proposed contract change to its owner before continuing.
 
-Before handing off, approving, or executing a plan, check that all five sections appear in the required order with emoji prefixes, the goal describes a verifiable end state, scope and assumptions are clear, and the next step and validation are executable. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery lists any established deliverables without displacing other requirements, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.
+Before handing off, approving, or executing a plan, check that all five sections appear in the required order with emoji prefixes, the goal describes a verifiable end state or outcome, scope and assumptions are clear, and the next step and validation are executable. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery lists any established deliverables without displacing other requirements, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.
