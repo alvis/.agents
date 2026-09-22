@@ -6,13 +6,13 @@ Use feedback motion to clarify a state change after the user or system acts. Imp
 
 | Need | Recipe | State contract |
 | --- | --- | --- |
-| Add or remove an unread count without moving its trigger | [Notification badge](examples/transitions/feedback/notification-badge.md) | A pressed trigger updates a visible count and live text together. |
-| Confirm a completed action with a durable status | [Success check](examples/transitions/feedback/success-check.md) | Replay resets one keyframe run; status text remains authoritative. |
-| Reinforce an invalid field without hiding recovery guidance | [Error state shake](examples/transitions/feedback/error-state-shake.md) | `aria-invalid`, persistent error text, and a replayable finite shake stay synchronized. |
-| Replace a shape-matched placeholder with loaded content | [Skeleton reveal](examples/transitions/feedback/skeleton-reveal.md) | `aria-busy`, `inert`, and layer visibility change as one state. |
-| Announce a transient, non-blocking result | [Toast](examples/transitions/feedback/toast.md) | Reopening replaces the dismissal timer; pointer and keyboard interaction pause it. |
-| Narrate real stages of a long-running task | [Thinking states](examples/transitions/feedback/thinking-states.md) | Live text cycles at a restrained rate with pause and live reduced-motion handling. |
-| Add a compact decorative loader beside status text | [Matrix loader](examples/transitions/feedback/matrix-loader.md) | One dot grid accepts four delay maps, a pause control, and a static reduced-motion state. |
+| Add or remove an unread count without moving its trigger | [Notification badge](directions/transitions/feedback/notification-badge.md) | A pressed trigger updates a visible count and live text together. |
+| Confirm a completed action with a durable status | [Success check](directions/transitions/feedback/success-check.md) | Replay resets one keyframe run; status text remains authoritative. |
+| Reinforce an invalid field without hiding recovery guidance | [Error state shake](directions/transitions/feedback/error-state-shake.md) | `aria-invalid`, persistent error text, and a replayable finite shake stay synchronized. |
+| Replace a shape-matched placeholder with loaded content | [Skeleton reveal](directions/transitions/feedback/skeleton-reveal.md) | `aria-busy`, `inert`, and layer visibility change as one state. |
+| Announce a transient, non-blocking result | [Toast](directions/transitions/feedback/toast.md) | Reopening replaces the dismissal timer; pointer and keyboard interaction pause it. |
+| Narrate real stages of a long-running task | [Thinking states](directions/transitions/feedback/thinking-states.md) | Live text cycles at a restrained rate with pause and live reduced-motion handling. |
+| Add a compact decorative loader beside status text | [Matrix loader](directions/transitions/feedback/matrix-loader.md) | One dot grid accepts four delay maps, a pause control, and a static reduced-motion state. |
 
 ## Setup differences
 

@@ -1,7 +1,5 @@
 # Icon swap
 
-Use this for two mutually exclusive icons that occupy one stable slot, such as play and pause or sun and moon. Both icons stay in the accessibility tree only through the button's changing name; the SVGs are decorative.
-
 ```html
 <section data-demo="icon-swap" class="grid min-h-40 place-items-center rounded-2xl bg-slate-100 p-8 text-slate-950 dark:bg-slate-900 dark:text-white">
   <button type="button" aria-pressed="false" aria-label="Start playback" class="group inline-grid size-12 place-items-center rounded-full bg-white shadow-sm outline-none ring-sky-500/50 hover:bg-slate-50 focus-visible:ring-4 dark:bg-slate-800 dark:hover:bg-slate-700">
@@ -25,5 +23,3 @@ function mount(root) {
   return () => controller.abort();
 }
 ```
-
-Check the initial play icon, activate the button by pointer and keyboard, and confirm the pause icon settles into the same slot. Reverse it rapidly to verify the browser interpolates from the current visual state. With reduced motion enabled, the icon changes immediately without blur or scale. After cleanup, activation must no longer change `aria-pressed`.

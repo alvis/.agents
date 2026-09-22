@@ -1,11 +1,5 @@
 # Page side-by-side
 
-Use this pattern for two peer views that benefit from directional continuity. Both views remain mounted, while only the selected view participates in focus and accessibility navigation.
-
-Import [`motion.css`](assets/transitions/motion.css) after Tailwind CSS 4.3+.
-
-## HTML
-
 ```html
 <section data-demo="page-side-by-side" class="mx-auto w-full max-w-4xl bg-slate-100 p-4 text-slate-950 sm:p-8">
   <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
@@ -41,8 +35,6 @@ Import [`motion.css`](assets/transitions/motion.css) after Tailwind CSS 4.3+.
   </div>
 </section>
 ```
-
-## JavaScript
 
 ```js
 /**
@@ -88,14 +80,3 @@ function mount(root) {
   return () => abortController.abort();
 }
 ```
-
-## Check
-
-| Stage | Expected result |
-| --- | --- |
-| Initial | Overview is selected, Details is inert and `aria-hidden`, and the track starts at zero. |
-| Action | Clicking either tab slides the matching page into place and updates tab and panel semantics. |
-| Keyboard | Left/Home select Overview; Right/End select Details and move focus to the selected tab. |
-| Rapid reversal | Repeated selection reverses the transform from its rendered position with no stale timer. |
-| Reduced motion | The chosen page replaces its peer immediately while the same semantic state updates. |
-| Cleanup | Calling the returned function removes click and key listeners; the selected page remains readable. |

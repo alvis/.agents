@@ -1,9 +1,5 @@
 # Matrix loader
 
-Use this compact loader beside a status label in dense interfaces. The label communicates progress; the 4×4 dot matrix is decorative and may switch among four timing patterns without rebuilding the DOM.
-
-Import `assets/transitions/motion.css` once before using this recipe.
-
 ```html
 <section data-demo="matrix-loader" data-paused="false" aria-busy="true" class="group flex min-h-64 flex-col items-center justify-center gap-6 rounded-3xl border border-neutral-200 bg-white p-8 text-neutral-950">
   <div class="flex items-center gap-3">
@@ -111,5 +107,3 @@ function mount(root) {
   };
 }
 ```
-
-The 1.2-second cycle keeps the loader legible at this small size without flickering. Exercise every pattern and the rounded option, pause and resume each one, and toggle reduced motion while dots are active; the status label must remain meaningful when all dots become static. After cleanup, controls must no longer change the loader.

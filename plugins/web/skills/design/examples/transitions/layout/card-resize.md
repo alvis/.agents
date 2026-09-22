@@ -1,11 +1,5 @@
 # Card resize
 
-Use this pattern when one card reveals its own secondary content. The grid track supports unknown content height while the native button keeps state and focus stable.
-
-Import [`motion.css`](assets/transitions/motion.css) after Tailwind CSS 4.3+.
-
-## HTML
-
 ```html
 <section data-demo="card-resize" class="mx-auto grid min-h-72 w-full max-w-xl place-items-center bg-slate-100 p-4 text-slate-950 sm:p-8">
   <article data-card data-open="false" class="group w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -30,8 +24,6 @@ Import [`motion.css`](assets/transitions/motion.css) after Tailwind CSS 4.3+.
   </article>
 </section>
 ```
-
-## JavaScript
 
 ```js
 /**
@@ -68,13 +60,3 @@ function mount(root) {
   return () => abortController.abort();
 }
 ```
-
-## Check
-
-| Stage | Expected result |
-| --- | --- |
-| Initial | Details are collapsed, inert, and hidden from the accessibility tree; the button says “Show details.” |
-| Action | Activating the button expands the grid track and updates the label and `aria-expanded` without moving focus. |
-| Reverse and replay | Repeated activation reverses cleanly from the current size with no timeout or stale state. |
-| Reduced motion | The same open or closed state appears immediately with no track or chevron transition. |
-| Cleanup | Calling the returned function removes the click listener; later activation no longer changes state. |

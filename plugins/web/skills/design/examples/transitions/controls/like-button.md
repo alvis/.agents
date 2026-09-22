@@ -1,7 +1,5 @@
 # Like button
 
-Use this for a boolean favorite action that merits a brief celebration. The heart fills, its HTML wrapper pops to preserve SVG sharpness, and eight particles travel along distinct vectors only when entering the liked state.
-
 ```html
 <section data-demo="like-button" class="grid min-h-48 place-items-center rounded-2xl bg-slate-100 p-8 text-slate-950 dark:bg-slate-900 dark:text-white">
   <button type="button" aria-pressed="false" aria-label="Like this item" class="group relative inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold shadow-sm outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-rose-400/40 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700" data-like>
@@ -90,5 +88,3 @@ function mount(root) {
   };
 }
 ```
-
-Check the unliked initial state, then activate by pointer and keyboard. The heart must fill and pop while all particles radiate once; unliking must reverse the fill without a burst. Toggle rapidly to verify timers cannot remove a newer burst. Reduced motion must retain the state and label changes without pop or particles. Cleanup must cancel the burst timer and disable activation.

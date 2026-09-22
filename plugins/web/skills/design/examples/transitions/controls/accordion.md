@@ -1,7 +1,5 @@
 # Accordion
 
-Use this for a disclosure whose content height is unknown. A `0fr` to `1fr` grid track animates the panel without measurement while the chevron flips through a flat midpoint; JavaScript owns only disclosure semantics and reliable close finalization.
-
 ```html
 <section data-demo="accordion" class="grid min-h-64 place-items-center rounded-2xl bg-slate-100 p-8 text-slate-950 dark:bg-slate-900 dark:text-white">
   <div data-accordion data-open="false" class="group w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -78,5 +76,3 @@ function mount(root) {
   };
 }
 ```
-
-Check the initial closed state, then open by pointer and keyboard and follow the link inside the panel. Close and reopen rapidly to verify the pending hide cannot win after reversal. Closing must make content inert immediately and hide it after the duration without depending on `transitionend`. Enable reduced motion during a close to verify immediate finalization. Cleanup must cancel every pending frame and timer.

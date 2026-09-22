@@ -1,9 +1,5 @@
 # Spinning counter
 
-Use this recipe when a score, total, or milestone should roll through digits before landing. Every numeric column is an independent clipped reel; choose [number pop-in](examples/transitions/text/number-pop-in.md) for a quieter update that enters only the final glyphs.
-
-Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or newer stylesheet, then include the recipe CSS below. The six-digit input cap bounds the visual clone at 240 reel cells and the final column delay at 200ms; format currencies or decimals outside this ceremonial pattern.
-
 ```html
 <section data-demo="spinning-counter" class="grid max-w-md gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm [--reel-cell:3rem] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
   <div class="grid gap-1">
@@ -20,7 +16,6 @@ Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or n
   </div>
 </section>
 ```
-
 ```css
 @utility text-reel-column {
   width: 1ch;
@@ -153,12 +148,3 @@ function mount(root) {
   };
 }
 ```
-
-## Checks
-
-- Initial: `128` is visible as plain tabular text and exposed as one semantic value; mount does not spin it.
-- Action: **Spin counter** creates one clipped four-cycle reel per digit, staggers columns by 40ms and lands on the sanitized target.
-- Final: the reels collapse back to plain text and the live `output` announces the complete number once.
-- Replay and cleanup: rapid spins cancel queued frames and the settle timer before building the latest reels; cleanup cancels the same work and restores static text.
-- Reduced motion: enabling the live preference during a spin immediately replaces every reel with its intended final digit.
-- Accessibility: all intermediate digits sit inside one `aria-hidden` visual clone, the named button has a 44px target and visible focus, and only digits accepted by the bounded input reach the counter.

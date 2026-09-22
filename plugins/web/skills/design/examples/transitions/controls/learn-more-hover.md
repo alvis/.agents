@@ -1,7 +1,5 @@
 # Learn more hover
 
-Use this for an inline destination whose trailing chevron can acknowledge hover or keyboard focus. The chevron shifts in the reading direction while its arms spread around a shared apex; the link meaning never depends on motion.
-
 ```html
 <section data-demo="learn-more-hover" class="grid min-h-40 place-items-center rounded-2xl bg-slate-950 p-8 text-white">
   <a href="#learn-more-destination" class="group inline-flex items-center gap-2 rounded-md text-lg font-semibold outline-none ring-sky-400/50 focus-visible:ring-4">
@@ -13,5 +11,3 @@ Use this for an inline destination whose trailing chevron can acknowledge hover 
   </a>
 </section>
 ```
-
-Check the resting chevron, then hover the link and focus it with the keyboard. The whole icon should shift toward the destination while the two arms open evenly and return together. Verify the horizontal shift reverses in an RTL container. Reduced motion must leave a stable chevron while the focus ring and link remain usable.

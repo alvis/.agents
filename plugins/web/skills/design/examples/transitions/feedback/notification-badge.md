@@ -1,9 +1,5 @@
 # Notification badge
 
-Use this pattern when a count or unseen-state marker appears over a stable trigger. The trigger never moves; only the badge enters or leaves.
-
-Import `assets/transitions/motion.css` once before using this recipe.
-
 ```html
 <section data-demo="notification-badge" class="flex min-h-64 flex-col items-center justify-center gap-8 rounded-3xl border border-neutral-200 bg-white p-8 text-neutral-950">
   <button type="button" data-trigger aria-label="Inbox, 3 unread messages" aria-pressed="true" class="relative grid size-12 place-items-center rounded-full border border-neutral-200 bg-white text-neutral-700 shadow-sm transition-[background-color,border-color,color,box-shadow] duration-(--motion-duration-fast) ease-motion-enter hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-950 active:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950">
@@ -43,5 +39,3 @@ function mount(root) {
   return () => controller.abort();
 }
 ```
-
-Check the initial visible badge, toggle it off and on rapidly, and confirm the count never changes the trigger's position. With reduced motion enabled, the same unread/all-caught-up states must update without travel or scale motion; after cleanup, the trigger must no longer respond.

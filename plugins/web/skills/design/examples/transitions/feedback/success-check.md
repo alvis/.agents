@@ -1,9 +1,5 @@
 # Success check
 
-Use this pattern after a completed action that deserves a clear, persistent confirmation. The text carries the status; the check is decorative reinforcement.
-
-Import `assets/transitions/motion.css` once before using this recipe.
-
 ```html
 <section data-demo="success-check" data-state="idle" class="group flex min-h-64 flex-col items-center justify-center gap-6 rounded-3xl border border-neutral-200 bg-white p-8 text-center text-neutral-950">
   <div aria-hidden="true" class="grid size-16 place-items-center rounded-full bg-emerald-50 text-emerald-700 opacity-0 group-data-[state=shown]:opacity-100 group-data-[state=shown]:[animation:feedback-success-check_var(--motion-duration-slow)_var(--ease-motion-spring)_both] group-data-[state=shown]:motion-reduce:animate-none">
@@ -75,5 +71,3 @@ function mount(root) {
   };
 }
 ```
-
-Check the visible success state, replay it repeatedly, and confirm each replay starts from the hidden baseline without stacking frames. Turn reduced motion on during a replay and confirm the check and status settle immediately; after cleanup, replay must stop responding.

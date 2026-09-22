@@ -1,7 +1,5 @@
 # Tooltip
 
-Use this recipe when several compact controls share one non-interactive hint bubble. The bubble waits 80ms before appearing to ignore brief pointer fly-bys, then moves and resizes between neighboring triggers without replacing the accessible names already on those controls. Import `assets/transitions/motion.css` after Tailwind, then pass the rendered section to `mount(root)`.
-
 ```html
 <section data-demo="tooltip" class="grid min-h-72 place-items-center rounded-3xl bg-slate-950 p-8 text-white">
   <div data-tooltip-group data-state="closed" class="group/tooltip relative inline-flex gap-1 rounded-2xl border border-white/10 bg-white/10 p-1.5 shadow-xl">
@@ -86,7 +84,3 @@ function mount(root) {
   };
 }
 ```
-
-## Focused check
-
-The initial state keeps the shared tooltip visually and semantically hidden while every icon button retains its own accessible name. Hover or focus a trigger and confirm the bubble appears above it after the brief intent delay. Move directly across the row and confirm one bubble travels and resizes to the new label. Leave the toolbar with the pointer, move keyboard focus away, or press Escape and confirm the final state hides the tooltip immediately. Toggle reduced motion while the bubble is moving and confirm the CSS media query removes the active transition. Resize the toolbar, replay hover and focus visits, then call the cleanup function and confirm the observer and listeners no longer update the bubble.

@@ -1,9 +1,5 @@
 # Shimmer text
 
-Use this recipe for a short in-progress label whose activity continues for an unknown duration. The traveling highlight keeps the base text readable; use a determinate progress indicator when progress can be measured.
-
-Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or newer stylesheet, then include the recipe CSS below. Keep the pause control because this animation repeats until the underlying task finishes.
-
 ```html
 <section data-demo="shimmer-text" class="grid max-w-md gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm [--shimmer-base:var(--color-zinc-500)] [--shimmer-highlight:var(--color-zinc-950)] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:[--shimmer-base:var(--color-zinc-400)] dark:[--shimmer-highlight:var(--color-white)]">
   <div role="status" class="min-h-10">
@@ -13,7 +9,6 @@ Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or n
   <button data-pause type="button" aria-pressed="false" class="min-h-11 justify-self-start rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50 active:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:active:bg-zinc-700 dark:focus-visible:ring-offset-zinc-950">Pause shimmer</button>
 </section>
 ```
-
 ```css
 @keyframes shimmer-text {
   from { background-position: 100% 0; }
@@ -74,12 +69,3 @@ function mount(root) {
   };
 }
 ```
-
-## Checks
-
-- Initial: the highlight crosses the readable “Planning the next steps” label while the semantic status exists once.
-- Action: **Pause shimmer** freezes the current frame and becomes **Resume shimmer**; resuming continues the same loop.
-- Final: when the application replaces this status, remove the section or update both text nodes together so visual and semantic copy agree.
-- Replay and cleanup: pause and resume can repeat without creating timers; cleanup removes listeners and leaves the shimmer paused.
-- Reduced motion: enabling the live preference removes the gradient animation, restores a solid readable color and disables the pause control.
-- Accessibility: the animated layer is hidden from assistive technology, the status is announced as one phrase and the 44px control reports its pressed state.

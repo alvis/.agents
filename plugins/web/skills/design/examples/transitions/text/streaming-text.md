@@ -1,9 +1,5 @@
 # Streaming text
 
-Use this recipe when a complete response should resolve word by word without imitating keystrokes. Each word is wrapped once and sharpens into place while normal whitespace remains outside the wrappers, so the paragraph reflows naturally at every viewport width.
-
-Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or newer stylesheet, then include the recipe CSS below. The 240-character cap keeps the demo bounded, while **Show complete response** lets a user end any long sequence immediately. The complete response updates one live semantic node before the visual sequence begins, preventing a separate announcement for every word.
-
 ```html
 <section data-demo="streaming-text" class="grid max-w-xl gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm [--stream-gap:60ms] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
   <div class="grid gap-2">
@@ -21,7 +17,6 @@ Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or n
   </div>
 </section>
 ```
-
 ```css
 @utility streaming-word {
   opacity: 0;
@@ -146,12 +141,3 @@ function mount(root) {
   };
 }
 ```
-
-## Checks
-
-- Initial: the complete first paragraph is visible and available as one semantic response; mount wraps words without replaying them.
-- Action: **Stream response** replaces the visual paragraph safely, then resolves one word every 60ms through opacity and a 1px blur.
-- Final: all word wrappers remain visible while spaces and line breaks preserve natural responsive wrapping; **Show complete response** stops a long sequence and reveals the remainder.
-- Replay and cleanup: a new stream cancels the earlier frame and timer before rebuilding; cleanup cancels the sequence and leaves the complete response visible.
-- Reduced motion: enabling the live preference mid-stream reveals every remaining word immediately; later streams render complete text in one step.
-- Accessibility: the word wrappers are one `aria-hidden` visual clone, the live paragraph announces the complete response once, and textarea content reaches the DOM through `textContent`.

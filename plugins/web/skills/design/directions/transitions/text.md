@@ -6,13 +6,13 @@ Choose this domain when motion belongs to changing text or a numeric value rathe
 
 | Need | Recipe | Mechanism |
 | --- | --- | --- |
-| Give a short updated value a compact entrance | [Number pop-in](examples/transitions/text/number-pop-in.md) | Rebuilt glyphs enter independently with a short stagger |
-| Replace one compact label with another | [Text states swap](examples/transitions/text/text-states-swap.md) | Old text exits before the new state enters in the same footprint |
-| Keep an indeterminate status visibly active | [Shimmer text](examples/transitions/text/shimmer-text.md) | A pausable gradient crosses one readable label continuously |
-| Introduce a heading and supporting copy in sequence | [Texts reveal](examples/transitions/text/texts-reveal.md) | Semantic lines rise with a bounded stagger and dismiss as one fade |
-| Celebrate an integer change | [Spinning counter](examples/transitions/text/spinning-counter.md) | Independent clipped digit reels roll through intermediate cells |
-| Preview a continuing log or process | [Reasoning stream](examples/transitions/text/reasoning-stream.md) | A stepped transcript wraps through one visual clone with pause and restart |
-| Resolve a complete response word by word | [Streaming text](examples/transitions/text/streaming-text.md) | Word wrappers sharpen in sequence while whitespace preserves wrapping |
+| Give a short updated value a compact entrance | [Number pop-in](directions/transitions/text/number-pop-in.md) | Rebuilt glyphs enter independently with a short stagger |
+| Replace one compact label with another | [Text states swap](directions/transitions/text/text-states-swap.md) | Old text exits before the new state enters in the same footprint |
+| Keep an indeterminate status visibly active | [Shimmer text](directions/transitions/text/shimmer-text.md) | A pausable gradient crosses one readable label continuously |
+| Introduce a heading and supporting copy in sequence | [Texts reveal](directions/transitions/text/texts-reveal.md) | Semantic lines rise with a bounded stagger and dismiss as one fade |
+| Celebrate an integer change | [Spinning counter](directions/transitions/text/spinning-counter.md) | Independent clipped digit reels roll through intermediate cells |
+| Preview a continuing log or process | [Reasoning stream](directions/transitions/text/reasoning-stream.md) | A stepped transcript wraps through one visual clone with pause and restart |
+| Resolve a complete response word by word | [Streaming text](directions/transitions/text/streaming-text.md) | Word wrappers sharpen in sequence while whitespace preserves wrapping |
 
 Prefer number pop-in for ordinary balances and counters; reserve spinning counter for an infrequent milestone because its reels add more motion and DOM. Use text states swap for replacement, texts reveal for a small group entering together, and streaming text for cumulative prose. Shimmer text and reasoning stream run continuously, so their examples include explicit motion controls.
 

@@ -6,16 +6,16 @@ Use these recipes when motion clarifies a control's state, target, proximity, or
 
 | Need | Recipe | Mechanism |
 | --- | --- | --- |
-| Replace one icon in a fixed slot | [Icon swap](examples/transitions/controls/icon-swap.md) | stacked SVGs cross scale, blur, and opacity |
-| Show proximity in a compact row | [Avatar group hover](examples/transitions/controls/avatar-group-hover.md) | distance-falloff lift with asymmetric return easing |
-| Preserve selection position across labels | [Tabs sliding](examples/transitions/controls/tabs-sliding.md) | measured pill width and translation |
-| Give clearing text a visible empty-state handoff | [Input clear dissolve](examples/transitions/controls/input-clear-dissolve.md) | RAF text flight with measured word glows |
-| Make a visual destination feel spatial | [Card tilt](examples/transitions/controls/card-tilt.md) | flat pointer geometry drives 3D rotation and glare |
-| Reveal content of unknown height | [Accordion](examples/transitions/controls/accordion.md) | `0fr` to `1fr` grid track and chevron flip |
-| Celebrate a boolean favorite | [Like button](examples/transitions/controls/like-button.md) | fill, wrapper pop, and directional particles |
-| Reinforce an inline destination | [Learn more hover](examples/transitions/controls/learn-more-hover.md) | direction-aware shift and chevron-arm spread |
-| Sequence a checked state | [Checkbox check](examples/transitions/controls/checkbox-check.md) | native checkbox, box fill, and SVG stroke draw |
-| Add physical settlement to on/off state | [Toggle](examples/transitions/controls/toggle.md) | native switch with directional overshoot keyframes |
+| Replace one icon in a fixed slot | [Icon swap](directions/transitions/controls/icon-swap.md) | stacked SVGs cross scale, blur, and opacity |
+| Show proximity in a compact row | [Avatar group hover](directions/transitions/controls/avatar-group-hover.md) | distance-falloff lift with asymmetric return easing |
+| Preserve selection position across labels | [Tabs sliding](directions/transitions/controls/tabs-sliding.md) | measured pill width and translation |
+| Give clearing text a visible empty-state handoff | [Input clear dissolve](directions/transitions/controls/input-clear-dissolve.md) | RAF text flight with measured word glows |
+| Make a visual destination feel spatial | [Card tilt](directions/transitions/controls/card-tilt.md) | flat pointer geometry drives 3D rotation and glare |
+| Reveal content of unknown height | [Accordion](directions/transitions/controls/accordion.md) | `0fr` to `1fr` grid track and chevron flip |
+| Celebrate a boolean favorite | [Like button](directions/transitions/controls/like-button.md) | fill, wrapper pop, and directional particles |
+| Reinforce an inline destination | [Learn more hover](directions/transitions/controls/learn-more-hover.md) | direction-aware shift and chevron-arm spread |
+| Sequence a checked state | [Checkbox check](directions/transitions/controls/checkbox-check.md) | native checkbox, box fill, and SVG stroke draw |
+| Add physical settlement to on/off state | [Toggle](directions/transitions/controls/toggle.md) | native switch with directional overshoot keyframes |
 
 ## Setup differences
 

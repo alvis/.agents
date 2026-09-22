@@ -1,7 +1,5 @@
 # Avatar group hover
 
-Use this for a compact horizontal row where proximity should reinforce the hovered or focused item. The active avatar rises and grows; neighboring avatars follow with an exponential falloff, then the row returns on a softer spring curve.
-
 ```html
 <section data-demo="avatar-group-hover" class="grid min-h-48 place-items-center rounded-2xl bg-slate-950 p-8 text-white">
   <div aria-label="Project collaborators" class="flex -space-x-3" data-avatar-group>
@@ -56,5 +54,3 @@ function mount(root) {
   };
 }
 ```
-
-Check the flat initial row, then hover and keyboard-focus every avatar to verify the active lift, neighbor falloff, stacking, and spring return. Move quickly across the row to confirm no avatar captures stale state. Enabling reduced motion while an avatar is raised must flatten the row immediately. Cleanup must remove interaction and inline transforms.

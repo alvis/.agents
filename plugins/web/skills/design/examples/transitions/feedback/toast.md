@@ -1,9 +1,5 @@
 # Toast
 
-Use this pattern for a brief, non-blocking confirmation with an optional direct dismissal. Keep critical errors and required decisions in the page flow instead of an auto-dismissing surface.
-
-Import `assets/transitions/motion.css` once before using this recipe.
-
 ```html
 <section data-demo="toast" class="relative flex min-h-72 flex-col items-center justify-center overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-50 p-6 text-neutral-950">
   <button type="button" data-show class="min-h-11 rounded-full bg-neutral-950 px-5 text-sm font-medium text-white transition-[background-color,scale] duration-(--motion-duration-fast) ease-motion-enter hover:bg-neutral-800 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none motion-reduce:active:scale-100">Show save confirmation</button>
@@ -105,5 +101,3 @@ function mount(root) {
   };
 }
 ```
-
-The five-second display window gives readers time to find and use the dismissal control. Show the toast repeatedly, hover it, and focus its close button to confirm each action replaces the prior timer and pauses auto-dismissal; turn reduced motion on while it is visible and confirm only the movement disappears. Cleanup must cancel dismissal and every listener.

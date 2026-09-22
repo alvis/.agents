@@ -1,6 +1,6 @@
 # Overlay transitions
 
-Choose an overlay recipe by the relationship between its trigger and surface, then load only that example. Use [menu dropdown](examples/transitions/overlays/menu-dropdown.md) for an anchored action surface, [modal](examples/transitions/overlays/modal.md) for a blocking centered decision, [tooltip](examples/transitions/overlays/tooltip.md) for a non-interactive hover or focus hint, and [plus-menu morph](examples/transitions/overlays/plus-menu-morph.md) when the trigger visually becomes the menu container.
+Choose an overlay recipe by the relationship between its trigger and surface, then load only that direction. Use [menu dropdown](directions/transitions/overlays/menu-dropdown.md) for an anchored action surface, [modal](directions/transitions/overlays/modal.md) for a blocking centered decision, [tooltip](directions/transitions/overlays/tooltip.md) for a non-interactive hover or focus hint, and [plus-menu morph](directions/transitions/overlays/plus-menu-morph.md) when the trigger visually becomes the menu container.
 
 ## Setup
 

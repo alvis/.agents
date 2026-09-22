@@ -1,9 +1,5 @@
 # Reasoning stream
 
-Use this recipe for a compact, continuously moving preview of process activity, logs, or generated steps. It advances by two lines and wraps through one visual clone, preserving the rhythm of a reel rather than scrolling one pixel at a time.
-
-Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or newer stylesheet, then include the recipe CSS below. The 840ms hold gives each two-line step time to be read before the 250ms state transition. Keep both pause and restart controls because the motion persists until its parent task ends.
-
 ```html
 <section data-demo="reasoning-stream" class="grid max-w-lg gap-5 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm [--reason-fade:1.75rem] [--reason-hold:840ms] [--reason-lines:2] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
   <div class="grid gap-1">
@@ -30,7 +26,6 @@ Import `assets/transitions/motion.css` after Tailwind CSS in a Tailwind 4.3 or n
   </div>
 </section>
 ```
-
 ```css
 @utility reasoning-stream-mask {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, black var(--reason-fade), black calc(100% - var(--reason-fade)), transparent 100%);
@@ -170,12 +165,3 @@ function mount(root) {
   };
 }
 ```
-
-## Checks
-
-- Initial: one transcript copy is visible in the masked viewport; mount adds exactly one matching clone below it and waits 840ms.
-- Action: every step moves up by two 24px lines over the normal 250ms motion duration; the clone fills the viewport while the offset wraps.
-- Final: **Pause activity** holds the current offset, **Resume activity** continues it and **Restart activity** returns to the first line.
-- Replay and cleanup: restart clears both pending timers before resetting; cleanup clears them, removes the clone and restores the first line.
-- Reduced motion: enabling the live preference stops both timers, resets to the meaningful first state and disables motion controls; disabling it resumes unless the user paused.
-- Accessibility: the viewport and visual clone are hidden from assistive technology, the complete transcript exists once as semantic text, and the controls expose names, pressed state, focus and 44px targets.

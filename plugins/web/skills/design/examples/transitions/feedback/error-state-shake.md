@@ -1,9 +1,5 @@
 # Error state shake
 
-Use this pattern to draw attention to a validation error after submission. Keep the message visible until the field is valid; the shake is a brief supplement, never the only error cue.
-
-Import `assets/transitions/motion.css` once before using this recipe.
-
 ```html
 <section data-demo="error-state-shake" class="flex min-h-72 items-center justify-center rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950">
   <form data-form novalidate class="w-full max-w-sm space-y-5">
@@ -106,5 +102,3 @@ function mount(root) {
   };
 }
 ```
-
-The four evenly spaced beats give two full-distance swings and a half-distance settling leg within the shared normal duration. Submit an empty or partial address several times, verify that the message persists while each shake replays cleanly, then type a valid address and confirm the error clears. Enable reduced motion during a shake and confirm the red border and message remain while displacement stops; cleanup must cancel the pending shake reset and every listener.

@@ -1,9 +1,5 @@
 # Skeleton reveal
 
-Use this pattern when loaded content replaces a shape-matched placeholder in the same grid area. The placeholder is decorative, the container exposes its busy state, and the real content becomes available only when revealed.
-
-Import `assets/transitions/motion.css` once before using this recipe.
-
 ```html
 <section data-demo="skeleton-reveal" data-state="loading" aria-busy="true" class="group mx-auto flex min-h-72 max-w-lg flex-col justify-center gap-6 rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-950">
   <div class="grid rounded-2xl border border-neutral-200 p-5 shadow-sm [&>*]:[grid-area:1/1]">
@@ -72,5 +68,3 @@ function mount(root) {
   };
 }
 ```
-
-Two finite pulse cycles make loading visible without creating an unbounded animation; the one-second replay delay exists only to make that state observable in the demo. Check initial loading and automatic reveal, replay repeatedly to confirm stale timers cannot win, and verify the link is inert while loading. Enable reduced motion during loading and confirm the meaningful content appears immediately; cleanup must cancel the reveal timer and listeners.

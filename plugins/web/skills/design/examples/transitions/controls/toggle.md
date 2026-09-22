@@ -1,7 +1,5 @@
 # Toggle
 
-Use this for a native on/off setting where the thumb can overshoot and settle while the track changes on its own clock. JavaScript adds directional animation only after a real change, preventing an unwanted return animation on page load.
-
 ```html
 <section data-demo="toggle" class="grid min-h-48 place-items-center rounded-2xl bg-slate-100 p-8 text-slate-950 dark:bg-slate-900 dark:text-white">
   <label class="flex cursor-pointer items-center gap-4 rounded-xl p-2">
@@ -70,5 +68,3 @@ function mount(root) {
   };
 }
 ```
-
-Check that the off thumb does not animate on mount. Toggle with pointer and Space: the thumb must overshoot in the correct direction, settle at the native checked position, and update the live status. Reverse it before settlement to verify the previous timer cannot remove the new animation. Reduced motion must retain the native switch and track state without the bounce. Cleanup must cancel settlement and leave the checkbox functional without scripted motion.
