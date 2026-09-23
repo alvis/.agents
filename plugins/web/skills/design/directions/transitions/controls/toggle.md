@@ -3,7 +3,7 @@
 ## Implement and adapt
 
 1. Keep the native checkbox with `role="switch"` as the authoritative on/off state. Its label owns the accessible name, and descendant-state selectors own the track, thumb, and visible status.
-2. Use the spring easing on the thumb's explicit transform transition. Because the browser reverses a transition from its current interpolated value, rapid changes preserve continuity and the easing overshoots toward either destination without transient classes or timers.
+2. Use the spring easing on the thumb's explicit translate transition. Because the browser reverses a transition from its current interpolated value, rapid changes preserve continuity and the easing overshoots toward either destination without transient classes or timers.
 3. Keep the resting translations synchronized with track width, thumb size, and inset. The example's 48px track, 20px thumb, and 4px inset leave a 20px checked translation; adapt those four values as one geometry contract.
 4. Preserve label click, Tab, Space, form, focus, disabled, and reset behavior from the native checkbox. Do not add click or key handlers, duplicate checked state, or a scripted status mirror.
 5. Keep the track and thumb reduced-motion branches. A live preference change snaps the thumb to the native checked destination while track color, focus ring, visible status, and switch semantics remain available. This recipe has no runtime state, scheduled work, or cleanup.
@@ -25,7 +25,7 @@ Confirm the initial state does not animate, then toggle by label click and Space
     <span class="relative ml-auto inline-flex">
       <input type="checkbox" role="switch" class="peer sr-only"/>
       <span aria-hidden="true" class="h-7 w-12 rounded-full bg-slate-300 transition-[background-color,box-shadow] duration-(--motion-duration-fast) ease-motion-enter peer-checked:bg-emerald-500 peer-focus-visible:ring-4 peer-focus-visible:ring-emerald-400/40 motion-reduce:transition-none"></span>
-      <span aria-hidden="true" class="pointer-events-none absolute left-1 top-1 size-5 translate-x-0 rounded-full bg-white shadow-sm transition-[transform] duration-(--motion-duration-slow) ease-motion-spring peer-checked:translate-x-5 motion-reduce:transition-none"></span>
+      <span aria-hidden="true" class="pointer-events-none absolute left-1 top-1 size-5 translate-x-0 rounded-full bg-white shadow-sm transition-[translate] duration-(--motion-duration-slow) ease-motion-spring peer-checked:translate-x-5 motion-reduce:transition-none"></span>
     </span>
   </label>
 </section>
