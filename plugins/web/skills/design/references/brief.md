@@ -1,6 +1,6 @@
 # Design brief
 
-Apply the design guardrails, design psychology, and world-class element checklist below. Read only the component design pattern sections relevant to the UI types being designed. Work-artifact procedures live in [`../SKILL.md`](../SKILL.md#browser-framework-and-work-paths); [`../templates/design.md`](../templates/design.md) owns the design-child shape.
+Apply the design guardrails, design psychology, and world-class element checklist below. Read only the component design pattern sections relevant to the UI types being designed. Work-artifact procedures live in [`SKILL.md`](SKILL.md#browser-framework-and-work-paths); [`templates/design.md`](templates/design.md) owns the design-child shape.
 
 ## Design guardrails
 
@@ -69,19 +69,19 @@ Non-negotiable requirements before handoff. Only apply craft details when they s
 
 #### Animation
 
-- Honor `prefers-reduced-motion`: disable or reduce animations when set
-- Animate `transform`/`opacity` only (compositor-friendly, no layout thrash)
+- Honor live `prefers-reduced-motion` changes in CSS and JavaScript; remove large translation, scale, parallax, repeated motion, and overshoot while preserving the final meaningful state and feedback
+- Prefer `transform` and `opacity`; profile filters, especially blur, and allow layout or size animation only for a contained state change that passes layout and paint checks
 - Never `transition: all`; list properties explicitly
 - Interruptible animations: prefer CSS transitions for interactive state changes (hover, toggle, open/close); reserve keyframe animations for staged sequences that run once (e.g., staggered page enters)
-- Staggered enter: split content into semantic chunks with ~100ms delay; titles into words at ~80ms; typical enter uses `opacity: 0 -> 1`, `translateY(12px) -> 0`, and `blur(4px) -> 0`
+- Optional staged entrance: use only when the sequence clarifies hierarchy; split content into semantic chunks with an ~80–100ms starting stagger and keep the accessible text intact
 - Subtle exit: small fixed `translateY(-12px)` instead of full height; keep duration ~150ms `ease-in`, shorter and softer than enter
-- Scale on press: buttons use `scale(0.96)` on active/press via CSS transitions; add a `static` prop to disable when motion would be distracting
+- Scale on press: when physical feedback helps, buttons may use `scale(0.96)` on active/press via CSS transitions; provide a static option when motion would distract
 - Page-load guard: use `initial={false}` on animated presence wrappers for toggles, tabs, and icon swaps to prevent enter animations on first render; do not use it for intentional page-load entrance sequences
 
 #### Performance
 
-- Never `transition: all`; list exact properties (e.g., `transition-property: scale, opacity`). Tailwind's `transition-transform` covers `transform, translate, scale, rotate`; use `transition-[scale,opacity,filter]` for mixed properties
-- Only use `will-change` for `transform`, `opacity`, or `filter`. Never `will-change: all`. Add only when you notice first-frame stutter; do not apply preemptively
+- Never `transition: all`; list exact properties (e.g., `transition-property: scale, opacity`). Tailwind's `transition-transform` covers `transform, translate, scale, rotate`; use an arbitrary transition property only for the exact measured effect
+- Use `will-change` only for the measured property after first-frame stutter is observed, remove it when the effect ends, and never use `will-change: all`
 - Images: explicit `width` and `height` (prevents layout shift)
 - Below-fold images: `loading="lazy"`
 - Critical fonts: `font-display: swap`
@@ -143,29 +143,31 @@ These patterns appear in the majority of AI-generated interfaces. Each has a spe
 | `border-radius: 9999px` on containers and section cards | Pill radius on large containers looks bloated and unanchored; intended for small elements (pills, toggles, avatars) | Use the project's radius roles; containers get `--radius-card` or `--radius-modal` at most |
 | Generic rounded-rect card with `box-shadow` as the default container | Template thinking; applies the same container to every content type | Default to cardless sections; only add card treatment when content type requires it |
 | Modals as a lazy escape for overflow UI | Interrupts flow and breaks browser back navigation | Inline expand, detail panel, or dedicated route; modals only when the action truly requires focus-lock |
-| `transition: all` or animating width/height/padding/margin | Forces layout recalculation on every frame | List exact properties; use `grid-template-rows: 0fr` to `1fr` for height reveals |
+| `transition: all` or unmeasured width/height/padding/margin animation | Broad transitions hide expensive work; layout animation can recalculate geometry on every frame | List exact properties; prefer transforms or snapshots, and use a contained grid-track or measured size transition only when the size change communicates state and profiling passes |
 
 ### Motion Specifics
 
+`DES-ICON-02` owns motion purpose, accessibility, stability, and performance policy. The values below are design-skill starting defaults, not universal conformance limits.
+
 | Property | Value | Notes |
 |---|---|---|
-| Entrance duration | 200-400ms | Ease-out (decelerate into rest position) |
-| Exit duration | 150-250ms | Ease-in (accelerate out of view); shorter and softer than entrance |
-| Easing (entrance) | `cubic-bezier(0.16, 1, 0.3, 1)` | Exponential ease-out; no bounce or elastic |
+| Entrance duration | 200-400ms starting range | Optional and purpose-driven; tune for distance, size, complexity, and urgency |
+| Exit duration | 150-250ms starting range | Usually shorter and softer than entrance; never delay state availability |
+| Easing (entrance) | `cubic-bezier(0.16, 1, 0.3, 1)` default | Smooth ease-out; restrained overshoot is allowed only for direct manipulation or physical response |
 | Easing (exit) | `ease-in` or `cubic-bezier(0.4, 0, 1, 1)` | Quick departure |
-| Max motion types per page | 2-3 | More than 3 distinct motion patterns creates visual noise |
-| Stagger delay | ~80-100ms per element | Titles at ~80ms per word, content chunks at ~100ms |
+| Motion vocabulary per page | 2-3 families as a starting limit | A small vocabulary preserves consistent meaning; add another only when it communicates a distinct relationship |
+| Stagger delay | ~80-100ms per semantic chunk | Optional; keep source and reading order intact and avoid delaying usable content |
 | Icon swap | 120ms cross-fade | `opacity` + subtle `scale(0.9)` to `scale(1)`; no rotation unless semantically meaningful |
-| Height reveal | `grid-template-rows: 0fr` to `1fr` | Avoids the `height: auto` animation trap |
-| Page transition | ≤300ms | View Transitions API or equivalent; crossfade / shared-element morph / directional slide — one style per site, with a reduced-motion fallback |
-| Scroll reveal | translate ≤24px, stagger 80-100ms | Trigger at ~20% visibility; once-only (never re-animate on scroll-up); opacity + translate (+ optional `blur(4px)→0`) |
-| Animate only | `transform`, `opacity`, `filter` | Every other property triggers layout or paint |
+| Contained height reveal | `grid-template-rows: 0fr` to `1fr` candidate | Use only when size communicates state; preserve focus/reading order and verify layout and paint cost |
+| Page transition | ≤300ms starting target | View Transitions API or equivalent; choose crossfade, shared-element morph, or directional slide only when continuity benefits, with a reduced-motion fallback |
+| Scroll reveal | translate ≤24px, stagger 80-100ms starting values | Optional, once-only, and subordinate; avoid hiding usable content pending observation |
+| Preferred properties | `transform`, `opacity` | Profile `filter`; use contained layout or size animation only when it communicates state and passes measurement |
 
-No bounce or elastic easing. Real objects decelerate smoothly. Do not use `transition: all` even as a prototype shortcut.
+Avoid repeated or high-amplitude bounce and elastic easing. Restrained overshoot is acceptable when it clarifies direct manipulation or physical response and is removed under reduced motion. Do not use `transition: all` even as a prototype shortcut.
 
 ### Motion Libraries — GSAP & Three.js
 
-Reach for a JS motion library only when the locked direction needs what CSS and the View Transitions API cannot express: scroll-*scrubbed* timelines (progress-driven, not merely triggered), pinned sequences, or real-time 3D. Entrances, hovers, toggles, and trigger-once reveals stay on CSS + IntersectionObserver — a library there is weight without payoff. A library is something the design writes *against*, not a new capability that relaxes the rules: the perf budgets, the 2–3-motion-types cap, the `transform`/`opacity`/`filter`-only rule, and `prefers-reduced-motion` all still bind. Current APIs only — no pre-2024 patterns.
+Reach for a JS motion library only when the locked direction needs what CSS and the View Transitions API cannot express: scroll-*scrubbed* timelines (progress-driven, not merely triggered), pinned sequences, or real-time 3D. Entrances, hovers, toggles, and trigger-once reveals stay on CSS + IntersectionObserver — a library there is weight without payoff. A library is something the design writes *against*, not a new capability that relaxes the rules: the performance checks, small motion vocabulary, explicit-property rule, and live `prefers-reduced-motion` behavior all still bind. Current APIs only — no pre-2024 patterns.
 
 #### GSAP + ScrollTrigger
 
@@ -272,11 +274,13 @@ Every component must handle these 5 states:
 
 ### Motion Patterns
 
-- Each animation explains hierarchy or state change — not decoration
-- Default vocabulary: fade → small translate+fade → tiny scale+fade for overlays
-- Canvas/content area stays stable; only panels/overlays animate
+- Each animation supports comprehension, feedback, spatial continuity, or deliberate brand expression; expressive motion stays brief, subordinate, and non-blocking
+- Start with fade → small translate+fade → tiny scale+fade for overlays, then depart only when a different relationship needs a different motion
+- Animate the element whose state or spatial relationship changes; controls, feedback, content swaps, reordering, panels, overlays, and contained measured size changes are eligible while unaffected content stays stable
+- Make entrances optional and purpose-driven; do not animate an element merely because it appeared
 - Same component type uses same motion pattern
-- No layout jumps; use skeletons to keep layout stable while loading
+- Preserve focus and reading order, prevent unexpected layout jumps, and use reserved space or skeletons while loading
+- Honor reduced motion in CSS and JavaScript without removing the final meaningful state or feedback
 
 ### Dashboards
 
@@ -336,24 +340,24 @@ Every component must handle these 5 states:
 
 ## World-class element checklist
 
-Every design this skill produces — and every board variant it shows the user — covers this checklist as standard. These are not enhancements bolted on at the end; they are part of the proposal, the active work design ("Motion, Transitions & Separators"), and the evaluation. Verify the checklist row by row against the rendered result: any missing applicable row is a defect, not a nice-to-have. Motion values (durations, easings, distances, staggers) come from [Motion Specifics](#motion-specifics) above — do not restate or invent them. When a direction needs scroll-scrubbed or 3D motion, the [Motion Libraries](#motion-libraries--gsap--threejs) section (GSAP/Three.js scoped teardown, DPR caps, offscreen pausing, reduced-motion branches) is binding, not optional.
+Every design this skill produces — and every board variant it shows the user — covers this checklist as standard. These are not enhancements bolted on at the end; they are part of the proposal, the active work design ("Motion, Transitions & Separators"), and the evaluation. Verify the checklist row by row against the rendered result: any missing applicable row is a defect, not a nice-to-have. A conditional motion row is complete when it records either a named purpose and treatment or an explicit `None`; an effect is never required merely to fill the row. Motion values (durations, easings, distances, staggers) come from [Motion Specifics](#motion-specifics) above — do not restate or invent them. When a direction needs scroll-scrubbed or 3D motion, the [Motion Libraries](#motion-libraries--gsap--threejs) section (GSAP/Three.js scoped teardown, DPR caps, offscreen pausing, reduced-motion branches) is binding, not optional.
 
 | # | Element | Standard |
 |---|---------|----------|
-| 1 | **Page transitions** | Route/page-level transition specced per direction (View Transitions API or equivalent); crossfade, shared-element morph, slide, or wipe — a deliberate choice, ≤300ms. |
-| 2 | **Section entrance transitions** | Scroll-triggered reveals with stagger (IntersectionObserver or `animation-timeline`); ONE consistent reveal language per page, once-only. |
+| 1 | **Page continuity** | Decide whether a route/page-level transition aids orientation; when it does, name the purpose and treatment (View Transitions API or equivalent), otherwise record `None`. |
+| 2 | **Section entrance transitions** | Use one consistent, once-only reveal language only when it clarifies hierarchy; otherwise show content immediately and record `None`. |
 | 3 | **Section separators** | Every section boundary gets a deliberate treatment from the [Section Separator Vocabulary](#section-separator-vocabulary); "plain whitespace" must be a stated choice, never an omission; consecutive boundaries never repeat the same treatment. |
-| 4 | **Hover-state animations** | Every interactive element — links, buttons, cards, nav items, images — has a designed hover treatment consistent with the motion language. No default-browser hover anywhere. |
+| 4 | **Hover-state treatments** | Every interactive element — links, buttons, cards, nav items, images — has deliberate hover feedback; animation is optional and requires a named purpose. No default-browser hover anywhere. |
 | 5 | **Focus-visible states** | Designed `:focus-visible` on every interactive element — part of the visual language, not the browser default ring. |
-| 6 | **Signature micro-interaction** | The one named in the direction summary, visible above the fold. |
+| 6 | **Signature micro-interaction** | When the direction needs one, it has a named purpose and remains subordinate; no effect is required merely to add motion above the fold. |
 | 7 | **Scroll behavior** | Sticky elements, scroll progress, and parallax are specced deliberately; parallax budget ≤1 layer. |
-| 8 | **Reduced-motion fallbacks** | `prefers-reduced-motion` honored for every animation above — reduced, not merely disabled, where motion carries meaning. |
+| 8 | **Reduced-motion fallbacks** | Live `prefers-reduced-motion` changes are honored in CSS and JavaScript; motion is reduced or removed while meaning, final state, focus, and feedback remain available. |
 | 9 | **Loading, empty & error states** | Every dynamic content region has skeleton/loading, empty, and error designs. |
 | 10 | **Image treatment** | Consistent radius + inset outline from [Surfaces](#surfaces) plus any direction-specific treatment (duotone, grain, mask). |
 | 11 | **Responsive proof** | Verified at 375 / 768 / 1280 px; touch targets ≥44px; no horizontal scroll. |
 | 12 | **Light/dark parity** | Both modes designed and contrast-verified per `../directions/contrast-protocol.md` — never light-only with an inverted afterthought. |
 
-Applicability: full pages cover all 12; single components cover every row that has a surface to land on (a button has no section separator; it still has hover, focus, motion, states, responsive proof, and mode parity).
+Applicability: full pages cover all 12, recording `None` for conditional motion that lacks a purpose; single components cover every row that has a surface to land on (a button has no section separator; it still has hover, focus, states, responsive proof, and mode parity).
 
 ---
 

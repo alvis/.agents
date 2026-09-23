@@ -6,7 +6,7 @@ Web UX design and verification: visual direction, design audits, image generatio
 
 | Skill | Use when |
 | --- | --- |
-| `web:design` | Owning the visual contract and orchestration for an interface, with ranked variant boards and independent evaluation; authorized production edits route to `frontend-implementer`. |
+| `web:design` | Owning the visual contract and orchestration for an interface, loading relevant Tailwind 4.3+ transition guidance as each component or use case needs it; authorized production edits route to `frontend-implementer`, followed by independent evaluation. |
 | `web:audit` | Design QA of a rendered interface: bundled deterministic CLI, responsive viewports, WCAG checks, focused visual adjudication. Findings route into canonical work reviews. |
 | `web:css` | Root stylesheet scaffolding/maintenance with the CSS-only light/dark/system color-mode contract. |
 | `web:imagine` | Image generation and editing through the bundled multi-provider CLI: concept art, UI assets, inpainting, batch variants. |

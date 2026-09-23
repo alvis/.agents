@@ -9,7 +9,7 @@
 - Design every UI state explicitly: loading (skeleton/spinner), empty (explanation + next step), error (problem + cause + fix), success (confirmation + next action), and permission (why blocked + how to request)
 - Treat WCAG AA as the accessibility floor for contrast, keyboard access, names/labels, reflow, and visible focus; separately enforce the project's stricter >=44px touch-target rule
 - Use a single icon set consistently; reserve icon-only affordances for universally understood actions (search, close, menu) and label everything else
-- Use animation only to communicate hierarchy changes or state transitions -- keep motion subtle (fade, small translate) and layout-stable
+- Use motion to support comprehension, feedback, spatial continuity, or deliberate brand expression; keep it subordinate, layout-stable outside the changing region, accessible, and performance-checked
 - Express brand personality through restrained color, spacious layout, and typographic voice -- never through dark patterns or decorative excess
 
 ## Core Rules Summary
@@ -67,7 +67,7 @@
 ### Imagery, Icons & Motion (DES-ICON)
 
 - **DES-ICON-01**: Single icon set (Lucide/Material Symbols/SF Symbols); no emoji; standardized sizes 16/20/24px; icon-only for universals only (search/close/more); label ambiguous icons.
-- **DES-ICON-02**: Animation explains state changes only, not decoration; motion vocabulary: fade → translate+fade → scale+fade; layout stays stable; respect `prefers-reduced-motion`.
+- **DES-ICON-02**: Start with fade → translate+fade → scale+fade, then use only purposeful motion; expressive effects stay brief and subordinate, entrances remain optional, contained sizing requires measurement, and every CSS/JavaScript path honors reduced motion without losing state or feedback.
 
 ### Branding & Modern Standards (DES-BRND)
 
@@ -137,7 +137,7 @@
 - Color as the sole differentiator for status or meaning without icon/text pairing.
 - Placeholder text used as the only form label.
 - `outline: none` on focusable elements without a `:focus-visible` replacement.
-- Decorative animation that causes layout shifts or distracts from content.
+- Motion that competes with content, conveys meaning alone, causes unexpected layout shifts, or lacks an equivalent reduced-motion state.
 - Dark patterns: confirmshaming, pre-checked marketing consent, hidden cancellation flows.
 
 ## Quick Decision Tree

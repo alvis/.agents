@@ -60,7 +60,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 ### Imagery, Icons & Motion
 
 - DO NOT mix icon styles (outline/filled/emoji) or use emoji as UI icons [`DES-ICON-01`]
-- DO NOT add decorative animation that causes layout shifts or has no `prefers-reduced-motion` fallback [`DES-ICON-02`]
+- DO NOT ship motion that competes with content, carries meaning by itself, lacks reduced-motion handling in any CSS or JavaScript path it uses, disrupts focus or reading order, causes unexpected layout shifts, leaves persistent automatic motion without controls, or animates filters or layout without measurement [`DES-ICON-02`]
 
 ### Branding & Modern Standards
 
@@ -93,6 +93,6 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 | `DES-RESP-01` | Broken mobile layout | Fixed-width tables; horizontal scroll on phone; content overflow |
 | `DES-RESP-02` | Tiny mobile targets | 24px touch targets; primary actions outside thumb zone |
 | `DES-ICON-01` | Mixed icon styles or emoji in UI | Outlined + filled + emoji mixed; icon-only for non-universal actions |
-| `DES-ICON-02` | Decorative/disruptive animation | Bouncy effects; layout jumps during transitions; no reduced-motion |
+| `DES-ICON-02` | Distracting, inaccessible, or unmeasured motion | Repeating bounce; unexpected layout jump; missing CSS/JS reduced-motion branch; unprofiled blur or size animation |
 | `DES-BRND-01` | Generic/template appearance | Default Bootstrap look; no brand colors; stock typography |
 | `DES-BRND-02` | Dark patterns present | Confirmshaming; pre-checked marketing consent; hidden cancellation |
