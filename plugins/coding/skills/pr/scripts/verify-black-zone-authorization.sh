@@ -17,6 +17,7 @@ repository=$2
 pr_number=$3
 expected_head_oid=$4
 expected_base_oid=$5
+github_cli=${REVIEW_PUBLICATION_GH_BIN:-gh}
 
 [[ "$host" =~ ^[A-Za-z0-9.-]+$ ]] || usage
 [[ "$repository" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || usage
@@ -24,14 +25,14 @@ expected_base_oid=$5
 [[ "$expected_head_oid" =~ ^[0-9a-f]{40}$ ]] || usage
 [[ "$expected_base_oid" =~ ^[0-9a-f]{40}$ ]] || usage
 
-pull=$(gh api --hostname "$host" "repos/$repository/pulls/$pr_number") ||
+pull=$("$github_cli" api --hostname "$host" "repos/$repository/pulls/$pr_number") ||
   authorization_required
 live_head_oid=$(jq -er '.head.sha' <<<"$pull") || authorization_required
 live_base_oid=$(jq -er '.base.sha' <<<"$pull") || authorization_required
 [ "$live_head_oid" = "$expected_head_oid" ] || authorization_required
 [ "$live_base_oid" = "$expected_base_oid" ] || authorization_required
 
-comments=$(gh api --hostname "$host" --paginate --slurp \
+comments=$("$github_cli" api --hostname "$host" --paginate --slurp \
   "repos/$repository/issues/$pr_number/comments?per_page=100") ||
   authorization_required
 

@@ -30,6 +30,57 @@ function globalHooks(command: string, event: string, matcher?: string): string {
 }
 
 describe("OpenCode hook receipt command validation", () => {
+  it("should bind review publication enforcement to the projected gate and contract", async () => {
+    const pluginRoot = await createTemporaryDirectory(
+      "opencode-review-receipt-",
+    );
+    const gate = "hooks/scripts/validate-review-publication";
+    const runtime = "skills/pr/scripts/review-publication.ts";
+    try {
+      await writeFixture(
+        pluginRoot,
+        "hooks/hooks.json",
+        globalHooks(
+          `${PLUGIN_ROOT_GUARD.replace("exit 1", "exit 2")}"${PLUGIN_ROOT_ANCHOR}/${gate}" || { echo "review publication hook unavailable" >&2; exit 2; }`,
+          "PreToolUse",
+          "Bash|exec_command|shell_command",
+        ),
+      );
+      await writeFixture(pluginRoot, gate, "#!/bin/sh\nexit 0\n");
+      await writeFixture(pluginRoot, runtime, "export {};\n");
+      const params = {
+        contract,
+        pluginFiles: ["hooks/hooks.json", gate, runtime],
+        pluginName: "coding",
+        pluginRoot,
+      };
+
+      expect(resolveHookReceipts(params)).toEqual([
+        {
+          audiences: ["root", "child"],
+          enforcement_mode: "before",
+          managed_resource: `alvis/plugins/coding/${gate}`,
+          requirements: {
+            supporting_resource: `alvis/plugins/coding/${runtime}`,
+          },
+          source_event: "PreToolUse",
+          source_order: 0,
+          source_plugin: "coding",
+          source_scope: "global",
+          tool_aliases: ["Bash", "exec_command", "shell_command", "bash"],
+        },
+      ]);
+      expect(() =>
+        resolveHookReceipts({
+          ...params,
+          pluginFiles: ["hooks/hooks.json", gate],
+        }),
+      ).toThrow(/hook resource is not projected/);
+    } finally {
+      await removeTemporaryDirectory(pluginRoot);
+    }
+  });
+
   it("should not require a projected agent for an unguarded MAINAGENT payload", async () => {
     const pluginRoot = await createTemporaryDirectory("opencode-hook-receipt-");
     try {

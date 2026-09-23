@@ -220,7 +220,18 @@ function nativeScriptCommand(scriptName: string, policy: JsonObject): string {
       return ` "${PLUGIN_ROOT_ANCHOR}/${argument}"`;
     })
     .join("");
-  return `${PLUGIN_ROOT_GUARD}"${PLUGIN_ROOT_ANCHOR}/hooks/scripts/${scriptName}"${argumentsText}`;
+  const failureMode = policy.native_failure_mode;
+  if (failureMode !== undefined && failureMode !== "block") {
+    throw new Error(`unsupported native failure mode: ${failureMode}`);
+  }
+  const guard =
+    failureMode === "block"
+      ? PLUGIN_ROOT_GUARD.replace("exit 1", "exit 2")
+      : PLUGIN_ROOT_GUARD;
+  const command = `${guard}"${PLUGIN_ROOT_ANCHOR}/hooks/scripts/${scriptName}"${argumentsText}`;
+  return failureMode === "block"
+    ? `${command} || { echo "review publication hook unavailable" >&2; exit 2; }`
+    : command;
 }
 
 function nativeMatcher(policy: JsonObject, description: string): string | undefined {

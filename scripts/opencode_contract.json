@@ -110,6 +110,15 @@
         "matcher": null,
         "supporting_resource": "hooks/scripts/validate-plan"
       },
+      "validate-review-publication": {
+        "audiences": ["root", "child"],
+        "enforcement_mode": "before",
+        "event": "PreToolUse",
+        "matcher": "Bash|exec_command|shell_command",
+        "native_failure_mode": "block",
+        "opencode_aliases": ["bash"],
+        "supporting_resource": "skills/pr/scripts/review-publication.ts"
+      },
       "validate-question": {
         "audiences": ["root", "child"],
         "enforcement_mode": "before",

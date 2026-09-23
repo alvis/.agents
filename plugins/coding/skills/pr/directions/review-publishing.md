@@ -1,62 +1,53 @@
-# Publishing the review to GitHub
+# Publishing review communication
 
-Load this from the *Publish the review* step of `coding:pr review`.
+Load this from the publication step of `coding:pr review` and for any PR review supplement, review status, or discussion reply. [review-publication.ts](../scripts/review-publication.ts) is the single executable authority for assessment fields, semantic-evidence bindings, rendering, receipts, live validation, and transport. Do not hand-render its output or copy its rules into another template.
 
-Submit body, verdict, and every inline comment in one `POST`. The create-pending / add-comments / submit sequence leaves a half-populated pending review on the PR when any step fails, and a pending review is invisible to the author but blocks the next run.
+## Roles and artifacts
 
-Render every `comments[].body` through [inline-review.md](../templates/inline-review.md).
+The independent reviewer writes a structured assessment and runs `approve`; the publication owner receives only the resulting approval artifact and runs `publish`. The publisher never receives loose notes as authority to summarize the review. Each records a distinct logical `agent_id` and its capability; both may use the same authenticated GitHub login. Both files are secret-free temporary artifacts and remain outside the reviewed tree.
+
+Use exactly one discriminated message class:
+
+- `review` carries the complete semantic assessment and its bound inline findings. It is the only class with a substantive verdict and publishes through GitHub's native review endpoint.
+- `review-supplement` selects finding IDs from one attached, validated `review` receipt. It can publish derived evidence or unanchored findings as a PR issue comment but cannot introduce, restate, or replace a verdict.
+- `status` selects one contract-defined status value. It has no free-form body.
+- `discussion-reply` binds an independently classified exact body to a target issue or inline comment, or binds a thread-resolution operation to its thread ID. A reply body that contains an overall assessment or verdict is invalid regardless of its label.
+
+The review assessment must substantively cover intent and behavior, goal and requirement alignment, every applicable static standard with evidence, test-sensitivity reasoning, executed test evidence or a scoped runtime-test waiver, reuse, minimality, limitations or an explicit complete-review state, findings, trust caps, and a substantive verdict. The independent reviewer—not heading detection or the publication agent—owns the quality of that reasoning. A runtime-test waiver replaces only execution evidence; all static, sensitivity, limitation, finding, and verdict fields remain mandatory.
+
+## Approve
+
+Set `REVIEW_PUBLICATION` to the absolute path of `scripts/review-publication.ts` only while preparing artifacts. The reviewer materializes the assessment shape declared by that executable, fills every field from its evidence, then issues the receipt:
 
 ```bash
-gh api --hostname "$HOST" --method POST \
-  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" --input "$REVIEW_PAYLOAD"
+bun run "$REVIEW_PUBLICATION" approve \
+  --assessment "$REVIEW_ASSESSMENT" >"$REVIEW_APPROVAL"
 ```
 
-## Payload
+A supplement additionally passes `--parent-approval "$PARENT_REVIEW_APPROVAL"`. Approval performs structural validation and deterministic rendering, then binds the contract version, repository and PR, reviewer and publisher identities, head and base revisions, semantic-evidence digest, normalized assessment digest, exact rendered UTF-8 payload bytes and digest, inline anchors, substantive verdict, submitted event, trust caps, authorization evidence, and any parent review receipt. It does not infer semantic adequacy from nonempty strings; running `approve` is the independent reviewer's explicit semantic approval of the assessment and rendered result.
 
-```json
-{
-  "commit_id": "<the pinned HEAD_OID>",
-  "body": "<overall review, from ../templates/overall-review.md>",
-  "event": "REQUEST_CHANGES | APPROVE | COMMENT",
-  "comments": [
-    { "path": "src/auth/session.ts", "line": 42, "side": "RIGHT", "body": "<rendered inline-review.md>" },
-    { "path": "src/auth/session.ts", "start_line": 51, "line": 58, "side": "RIGHT", "body": "<rendered inline-review.md>" }
-  ]
-}
+Run `validate --approval "$REVIEW_APPROVAL"` to inspect an artifact without GitHub access. Validation regenerates the receipt and fails on missing, malformed, altered, or internally inconsistent content. Any assessment, body, anchor, event, identity, revision, parent, or receipt change requires the independent reviewer to issue a new artifact.
+
+## Publish
+
+The publication owner invokes the resolved script path literally; shell variables, aliases, compound commands, and extra flags are not the supported hook form:
+
+```bash
+bun run /absolute/path/to/plugins/coding/skills/pr/scripts/review-publication.ts publish --approval /absolute/path/to/review-approval.json
 ```
 
-- [review-tone.md](review-tone.md) selects each marker's meaning; [inline-review.md](../templates/inline-review.md) is the only owner of its markup and comment shape.
-- `commit_id` is mandatory here even though the API treats it as optional. Without it GitHub anchors against the current head, so a push mid-review silently relocates every comment.
-- Immediately before assembling this payload, re-read `headRefOid`, `baseRefName`, and `baseRefOid` for the PR. A stacked review re-reads and compares those three values for every `PR_SURFACES` entry. If any value differs from its pinned capsule, stop before writing or submitting the payload and return a concurrency blocker; never publish against a moved head or base.
-- For a black-zone `APPROVE`, the review workflow must also run `scripts/verify-black-zone-authorization.sh` immediately before payload assembly against those same live head/base OIDs. Parse its compact JSON receipt and require `comment_url`, `comment_id`, `comment_node_id`, `author_login`, `head_oid`, `base_oid`, `authorization_body`, and the three `rationale` strings. Use `authorization_body` and `rationale` as the sole semantic authorization-review input; never substitute an earlier fetched comment or body. Missing authorization or an invalid receipt caps the event at `COMMENT`; it does not prevent `REQUEST_CHANGES`.
-- `line` is the line number in the file at `commit_id`, not a diff offset.
-- `start_line` must be below `line` on the same `side`.
+The publisher first regenerates the approved payload in memory, re-reads the PR head OID, base ref and OID, PR author, and authenticated publisher, validates the target comment or review thread for replies and thread operations, rechecks black-zone authorization when it applies, and then sends the already validated bytes through one `gh api --input -` call. The native review payload pins `commit_id`; inline findings are submitted with the overall review in that call. A trust cap or GitHub self-review rule changes only the submitted event to `COMMENT`; the review body and receipt retain the independent reviewer's substantive `APPROVE` or `REQUEST_CHANGES` conclusion.
 
-Assemble the file with `jq` and shell redirection into the review tree. Comment bodies carry newlines, backticks, and code fences, so string-concatenated JSON breaks on the first one — and a file-writing capability is denied by this agent's filesystem write/edit fence.
+`publish --dry-run` is available to the reviewer outside the guarded publication form: it performs live metadata reads and returns the exact outgoing payload without the final write. A publication failure or GitHub 422 never authorizes editing or retrying a receipt. Re-anchor or reclassify the finding in the structured assessment, have the independent reviewer approve the new exact payload, and publish that new artifact.
 
-## Failure recovery
+## Guarded routes and limits
 
-| Response | Cause | Action |
-|---|---|---|
-| 422 naming a comment path or line | The line is not in the diff | Drop that comment, null its anchoring fields, set `subject` to its path, and re-render it from the finding into the overall body. Resubmit once. |
-| 422 on `APPROVE`/`REQUEST_CHANGES` | Self-review | Resubmit with `COMMENT`; state the downgrade in the body. |
+The global PreToolUse gate denies supported raw review/comment writes through direct `gh pr review`, `gh pr comment`, `gh issue comment`, protected `gh api` REST endpoints supplied as relative paths or full URLs, and protected GraphQL mutations, including body-file or stdin forms and global `-R`/`--repo`/`--hostname` options. It recognizes direct commands plus `rtk`, `rtk proxy`, `env`, `command`, and a single literal `bash`, `sh`, or `zsh -c` wrapper in the native Claude, Codex, Grok, and authenticated OpenCode V1 projections. Read-only `gh` operations remain available.
 
-Recovery moves the raw finding's `title` and `body`, never the rendered comment. The inline body already opens with its marker, and the overall body's bullet prepends one of its own, so relocating the posted text verbatim would ship two markers on one finding and break the exactly-one rule in [review-tone.md](review-tone.md).
+This is a finite shell boundary, not universal network interception. Arbitrary aliases or generated scripts, nested language runtimes, `curl`, SDK or MCP clients, unsupported wrappers, and OpenCode V2 are outside executable enforcement. The receipt provides exact-content and revision consistency, not cryptographic proof against a malicious process with the same filesystem and command authority. The publisher's final metadata read and GitHub's write are not atomic, so a remote revision change after that read remains a race; `commit_id` prevents silent inline relocation, but GitHub supplies no compare-and-publish primitive.
 
-Never answer a 422 by re-anchoring the comment to a nearby line that happens to be in the diff. A comment on the wrong line costs more author time than no comment.
+Agent instructions require the independent reviewer to own semantic approval and the publisher to relay only its receipt. Executable checks enforce receipt structure, exact bytes, supported shell routes, live bindings, event derivation, and transport; they cannot independently judge prose quality or authenticate a logical agent beyond the exposed GitHub identity and recorded capability.
 
 ## Re-review hygiene
 
-The PR re-review ledger uses these dispositions; local review-code finding statuses remain owned by that skill's report template:
-
-| Disposition | Meaning |
-|---|---|
-| `still_applies` | Current evidence confirms the reported violation remains unresolved. |
-| `fixed` | A correction addresses the violation, verified at the recorded revision. |
-| `does_not_apply` | The claimed violation is inapplicable: cite the governing contract or missing applicability evidence. It does not mean fixed or accepted risk. |
-
-- Apply `coding:standards/code-review/`'s settled-finding rule (`CRV-FDBK-02`): reopen only with new evidence invalidating the prior disposition, and cite that evidence. Current-head checks alone do not reset dispositions.
-- Skip a finding whose path, line, and substance already appear in `gh api --hostname "$HOST" repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments`. The author has seen it.
-- Re-evaluate every existing unresolved P0/P1/P2 thread against the pinned head and return `still_applies`, `fixed`, or `does_not_apply` in completion. Do not repost it.
-- When a previously reported issue's latest verdict differs from its verdict in the immediately preceding review, add one line under `### 🔄 Previous Reports` that links the original report and summarizes the latest verdict and changed evidence. Omit the section when no prior issue changed verdict, and do not repeat unchanged issues. A fixed issue remains an overall-body line rather than a new inline comment.
-- For each unresolved inline thread, inspect the pinned head for related changes. When the concern is addressed, post a concise confirmation reply only if no existing reply records the work, then resolve the thread. Never resolve a concern that still applies, and never duplicate an existing implementation reply.
+The PR re-review ledger uses `still_applies`, `fixed`, and `does_not_apply`; local review-code finding statuses remain owned by that skill's report template. Reopen a settled finding only when new evidence invalidates its prior disposition. Do not repost an existing finding. For a changed disposition, record it in the next independently approved assessment or exact-body discussion reply, and let the contract render and publish it.

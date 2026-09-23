@@ -190,6 +190,92 @@ describe("opencode adapter manifest validation", () => {
     )).rejects.toThrow(/question/i);
   });
 
+  it("should stop raw review publication before the OpenCode tool executes", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
+    const writes: string[] = [];
+    const execute = async (command: string): Promise<void> => {
+      await hooks["tool.execute.before"](
+        {
+          callID: "review-publication",
+          sessionID: "review-session",
+          tool: "bash",
+        },
+        { args: { command } },
+      );
+      writes.push(command);
+    };
+
+    await expect(
+      execute('gh pr comment 35 --body "evidence receipt: APPROVE"'),
+    ).rejects.toThrow(/Review publication blocked/);
+    expect(writes).toEqual([]);
+    await expect(
+      execute("gh api repos/acme/app/pulls/35/reviews"),
+    ).resolves.toBeUndefined();
+    expect(writes).toEqual(["gh api repos/acme/app/pulls/35/reviews"]);
+    const publisher = join(
+      sandbox.project,
+      ".opencode/alvis/plugins/coding/skills/pr/scripts/review-publication.ts",
+    );
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "review-approved",
+          sessionID: "review-session",
+          tool: "bash",
+        },
+        {
+          args: {
+            command: `bun '${publisher}' publish --approval '/tmp/approval.json'`,
+          },
+        },
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it.each([
+    "hooks/scripts/validate-review-publication",
+    "skills/pr/scripts/review-publication.ts",
+  ])(
+    "should reject a tampered publication resource before execution: %s",
+    async (resource) => {
+      const { AlvisMarketplace } = await loadAdapter();
+      const hooks = await AlvisMarketplace({
+        client: {},
+        directory: sandbox.project,
+      });
+      const path = join(
+        sandbox.project,
+        ".opencode/alvis/plugins/coding",
+        resource,
+      );
+      const original = readFileSync(path);
+      try {
+        writeFileSync(
+          path,
+          `${original.toString("utf8")}\n# changed after projection\n`,
+        );
+
+        await expect(
+          hooks["tool.execute.before"](
+            {
+              callID: "tampered-publication",
+              sessionID: "review-session",
+              tool: "bash",
+            },
+            { args: { command: "gh pr review 35 --approve" } },
+          ),
+        ).rejects.toThrow(/modified|digest|mismatch/i);
+      } finally {
+        writeFileSync(path, original);
+      }
+    },
+  );
+
   it("should retain allow advice until the matching result and clear it on idle", async () => {
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
