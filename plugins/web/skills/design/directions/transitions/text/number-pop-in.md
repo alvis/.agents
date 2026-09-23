@@ -4,34 +4,43 @@ Implement this for a short formatted value whose final glyphs enter independentl
 
 ## Implement and adapt
 
-1. Format and validate upstream. Keep `output` as the single polite live value and the glyph container as an `aria-hidden` clone. Write both with `textContent`.
-2. Build the clone in a `DocumentFragment`, assign numeric `--digit-index`, and replace children once. `Array.from` fits bounded numeric formatting characters. For arbitrary text, use `Intl.Segmenter` or the consumer's grapheme utility so emoji and combining marks stay intact.
-3. Merge the utility after [the shared motion tokens](assets/transitions/motion.css). Keep class names literal. The 12-character cap bounds the last 40ms stagger to 440ms; with the 400ms entrance, settlement is within 840ms. Recalculate the cap when timing changes.
-4. Replay by rebuilding the latest value. Replacing nodes cancels old CSS animations without a timer. Update the semantic output once per accepted value.
-5. A live reduced-motion change rebuilds the current value without animation. Cleanup aborts listeners, removes the media-query listener, and replaces the clone with plain current text.
+1. Format and validate the value upstream. Keep `output` as the single polite live value and the glyph container as an `aria-hidden` clone; update both from the same accepted value.
+2. Segment the clone into grapheme clusters, create one child per cluster, assign a zero-based `--digit-index`, and replace the clone in one render. A simple character iterator is sufficient only for the stated numeric-formatting character set.
+3. Copy the Tailwind CSS 4.3 `@utility` block after [the shared motion tokens](assets/transitions/motion.css). The 12-character cap bounds the last 40ms stagger to 440ms; with the 400ms entrance, settlement stays within 840ms. Recalculate the cap when either timing changes.
+4. Replay by replacing the visual children from the latest accepted value; replacing them restarts their CSS animations without a completion timer. Update the semantic output once per accepted value, even if the same visual value is replayed.
+5. Let the reduced-motion media rule reveal every current glyph without animation; this recipe needs no preference listener. On cleanup, cancel any queued render and leave the clone as complete plain text.
 
-## Verify
+## Markup
 
-Test signs, separators, decimals, spaces, empty fallback, cap, grapheme-safe adaptation, one announcement, calculated stagger, rapid replay, reduced motion mid-entrance, cleanup/remount, baseline alignment, and no layout shift.
-
-## Complete example
+The sample starts settled. The application replaces the visual text with indexed spans when it accepts a new value.
 
 ```html
-<section data-demo="number-pop-in" class="grid max-w-md gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
+<section class="grid max-w-md gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
   <div class="grid gap-1">
     <span class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Current balance</span>
-    <output data-value-output aria-live="polite" class="sr-only">$1,249.30</output>
-    <span data-digits aria-hidden="true" class="inline-flex min-h-12 items-baseline overflow-hidden font-mono text-4xl font-semibold tracking-tight tabular-nums">$1,249.30</span>
+    <output id="balance-value" aria-live="polite" class="sr-only">$1,249.30</output>
+    <span aria-hidden="true" class="inline-flex min-h-12 items-baseline overflow-hidden font-mono text-4xl font-semibold tracking-tight tabular-nums">$1,249.30</span>
   </div>
   <div class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-    <label class="grid gap-2 text-sm font-medium" for="number-pop-in-value">
+    <label class="grid gap-2 text-sm font-medium" for="next-balance">
       Next value
-      <input id="number-pop-in-value" data-value-input inputmode="decimal" maxlength="12" value="$1,314.80" class="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-950 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-offset-zinc-950">
+      <input id="next-balance" inputmode="decimal" maxlength="12" value="$1,314.80" class="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-950 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-offset-zinc-950">
     </label>
-    <button data-replay type="button" class="min-h-11 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 active:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-zinc-950">Show value</button>
+    <button type="button" aria-controls="balance-value" class="min-h-11 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 active:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-zinc-950">Show value</button>
   </div>
 </section>
 ```
+
+Use this shape for generated visual children; the `aria-hidden` parent keeps them out of the accessibility tree.
+
+```html
+<span aria-hidden="true" class="inline-flex min-h-12 items-baseline overflow-hidden font-mono text-4xl font-semibold tracking-tight tabular-nums">
+  <span class="animate-number-pop-in inline-block [--digit-index:0]">$</span>
+  <span class="animate-number-pop-in inline-block [--digit-index:1]">1</span>
+  <span class="animate-number-pop-in inline-block [--digit-index:2]">,</span>
+</span>
+```
+
 ```css
 @keyframes number-pop-in {
   from {
@@ -57,47 +66,10 @@ Test signs, separators, decimals, spaces, empty fallback, cap, grapheme-safe ada
 }
 ```
 
-```js
-function mount(root) {
-  const controller = new AbortController();
-  const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const input = root.querySelector("[data-value-input]");
-  const output = root.querySelector("[data-value-output]");
-  const digits = root.querySelector("[data-digits]");
-  const replayButton = root.querySelector("[data-replay]");
+## Runtime behavior
 
-  function renderValue(value, shouldAnimate) {
-    const fragment = document.createDocumentFragment();
+The application must validate and format the next value, fall back to `0` only when that is the product rule, and reject or truncate values beyond the 12-cluster bound before rendering. On acceptance, it must update the live `output` once and replace the ignored clone with indexed text nodes or spans. The CSS handles a live reduced-motion change by removing animation while leaving every glyph in its complete base state. Lifecycle cleanup must invalidate any queued render and retain the current accepted value in both representations.
 
-    Array.from(value).forEach((character, index) => {
-      const glyph = document.createElement("span");
-      glyph.className = shouldAnimate ? "inline-block animate-number-pop-in" : "inline-block";
-      glyph.style.setProperty("--digit-index", String(index));
-      glyph.textContent = character === " " ? "\u00a0" : character;
-      fragment.appendChild(glyph);
-    });
+## Verify
 
-    digits.replaceChildren(fragment);
-    output.textContent = value;
-  }
-
-  function replay() {
-    const value = input.value.trim() || "0";
-    renderValue(value, !motionQuery.matches);
-  }
-
-  function handleMotionChange(event) {
-    if (event.matches) renderValue(output.textContent, false);
-  }
-
-  replayButton.addEventListener("click", replay, { signal: controller.signal });
-  motionQuery.addEventListener("change", handleMotionChange);
-  renderValue(output.textContent, false);
-
-  return function cleanup() {
-    controller.abort();
-    motionQuery.removeEventListener("change", handleMotionChange);
-    digits.replaceChildren(output.textContent);
-  };
-}
-```
+Test signs, separators, decimals, spaces, empty-value policy, the 12-cluster cap, grapheme-safe adaptation, one announcement, calculated stagger, rapid replay, reduced motion mid-entrance, cleanup/remount, baseline alignment, and no layout shift.

@@ -2,27 +2,34 @@
 
 ## Implement and adapt
 
-1. Keep the labeled native search input as the value and focus owner. Before clearing, snapshot its exact current value into an `aria-hidden` mirror, hide only the input glyph color, assign the empty value, dispatch a bubbling `input` event for the owning application, and return focus to the input without scrolling.
+1. Keep the labeled native search input as the value and focus owner. Before clearing, snapshot its exact current value into an `aria-hidden` mirror, then route the empty value through the consumer's existing value owner and keep focus on the input without scrolling.
 2. Preserve three independent visual layers: the text mirror falls, blurs, and fades; the placeholder enters from above; and an `aria-hidden` glow layer follows measured word positions. Do not replace the mirror with the already-cleared input or expose any clone to assistive technology.
-3. Build glow geometry with a canvas context using the input's computed font, padding, and field width. Measure whitespace-separated segments, place one radial gradient at each word center, and keep this dynamic geometry inline while Tailwind owns static layout and state styles.
-4. Own one RAF id plus `isClearing` and `isProgrammaticClear` guards. Reject duplicate clears, cancel an active run when the user types, clear old visual styles before replay, and use the slow duration token to calculate normalized time and the cubic ease. Prevent the clear button's pointerdown from stealing input focus.
-5. `finishClear()` is the single finalizer for natural completion, interruption, reduced motion, and cleanup. It must cancel RAF, remove mirror, placeholder, glow, and input-color overrides, recompute button availability, and leave the actual input value untouched.
-6. Subscribe to live reduced-motion changes. If reduction becomes active during a frame, finalize the empty state immediately; if already active, clear and dispatch the same semantic event without creating visible motion.
+3. Build glow geometry from the input's computed font, inline padding, and field width. Measure whitespace-preserving text segments with an offscreen canvas context, place one radial gradient at each non-whitespace segment's center, and keep this dynamic background inline while Tailwind and the recipe CSS own static layout and state styles.
+4. The HTML below renders a populated field with inactive transient layers. It requires the runtime behavior that follows; the clear button is not functional from static markup alone.
+
+## Runtime behavior
+
+1. Derive clear-button disabled state and `data-empty` from the authoritative value after every value change. Route a clear through the existing controlled-state setter; for a plain uncontrolled input, assign the empty value and dispatch one bubbling `input` event. Never keep a second durable value.
+2. Reject a clear while one is already active or when the value is empty. Otherwise snapshot the value into the mirror, compute the glow background, update the authoritative value to empty, focus the input with scroll prevention, set `data-clearing="true"`, disable the button, and schedule one completion deadline from the computed `--motion-duration-slow` value.
+3. Treat a user value change during playback as an interruption: invalidate the deadline, clear mirror text and the glow background, set `data-clearing="false"`, recompute `data-empty` and button availability, and preserve the new value. Use an operation generation so an older deadline cannot finalize a newer clear.
+4. Prevent a primary pointer press on the clear button from transferring focus away from the input; do not suppress keyboard activation. If the consumer's button primitive already preserves focus, reuse its behavior.
+5. When reduced motion is already active, perform the same semantic clear and focus update without setting `data-clearing` or scheduling a deadline. Subscribe to preference changes; if reduction becomes active during playback, invalidate the deadline and finalize the empty state immediately.
+6. Finalization, interruption, and teardown share one reset operation: cancel the deadline, clear transient content and inline glow geometry, set `data-clearing="false"`, and derive `data-empty` and disabled state from the current authoritative value. Teardown also removes owned listeners and the preference subscription; it never changes the current input value.
 
 ## Verify
 
-Edit the initial value, clear by pointer and keyboard, and confirm the dispatched value is empty while focus remains in the input. Type during the animation, clear several new multiword values, resize the field, switch reduced motion mid-frame, and clean up mid-run. Confirm no RAF survives, each glow follows its word, the placeholder is readable, and the input remains editable and correctly named.
+Edit the initial value, clear by pointer and keyboard, and confirm the authoritative value becomes empty while focus remains in the input. Type during playback, clear several new multiword values, resize the field before another clear, switch reduced motion mid-run, and tear down mid-run. Confirm no deadline survives, each glow follows its word, the placeholder is readable, and the input remains editable and correctly named.
 
 ```html
-<section data-demo="input-clear-dissolve" class="grid min-h-48 place-items-center rounded-2xl bg-slate-950 p-8 text-white">
+<section class="grid min-h-48 place-items-center rounded-2xl bg-slate-950 p-8 text-white">
   <div class="w-full max-w-md">
     <label for="dissolve-search" class="mb-2 block text-sm font-medium text-slate-300">Search projects</label>
-    <div data-clear-field class="relative overflow-hidden rounded-xl border border-white/15 bg-white/10 shadow-inner focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/20">
-      <input id="dissolve-search" type="search" value="Motion design systems" autocomplete="off" class="relative z-10 h-12 w-full appearance-none bg-transparent px-4 pr-12 text-base text-white outline-none [&::-webkit-search-cancel-button]:hidden"/>
-      <span data-mirror aria-hidden="true" class="pointer-events-none absolute inset-0 z-20 flex items-center overflow-hidden whitespace-pre px-4 pr-12 text-base opacity-0"></span>
-      <span data-placeholder aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 flex items-center px-4 pr-12 text-base text-slate-400 opacity-0">Search projects</span>
-      <span data-glow aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-7 opacity-0 mix-blend-screen"></span>
-      <button type="button" data-clear-button aria-label="Clear search" class="absolute right-2 top-1/2 z-40 grid size-8 -translate-y-1/2 place-items-center rounded-full text-slate-300 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-sky-400 disabled:pointer-events-none disabled:opacity-0">
+    <div data-clearing="false" data-empty="false" class="control-clear-field relative overflow-hidden rounded-xl border border-white/15 bg-white/10 shadow-inner focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/20">
+      <input id="dissolve-search" type="search" value="Motion design systems" autocomplete="off" class="control-clear-input relative z-10 h-12 w-full appearance-none bg-transparent px-4 pr-12 text-base text-white outline-none [&::-webkit-search-cancel-button]:hidden"/>
+      <span aria-hidden="true" class="control-clear-mirror pointer-events-none absolute inset-0 z-20 flex items-center overflow-hidden whitespace-pre px-4 pr-12 text-base opacity-0"></span>
+      <span aria-hidden="true" class="control-clear-placeholder pointer-events-none absolute inset-0 z-0 flex items-center px-4 pr-12 text-base text-slate-400 opacity-0">Search projects</span>
+      <span aria-hidden="true" class="control-clear-glow pointer-events-none absolute inset-x-0 bottom-0 z-30 h-7 opacity-0 mix-blend-screen"></span>
+      <button type="button" aria-label="Clear search" class="absolute right-2 top-1/2 z-40 grid size-8 min-h-11 min-w-11 -translate-y-1/2 place-items-center rounded-full text-slate-300 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-sky-400 disabled:pointer-events-none disabled:opacity-0">
         <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 fill-none stroke-current" stroke-linecap="round" stroke-width="1.75"><path d="m6 6 8 8m0-8-8 8"/></svg>
       </button>
     </div>
@@ -30,122 +37,33 @@ Edit the initial value, clear by pointer and keyboard, and confirm the dispatche
 </section>
 ```
 
-```js
-function mount(root) {
-  const controller = new AbortController();
-  const field = root.querySelector("[data-clear-field]");
-  const input = field.querySelector("input");
-  const mirror = field.querySelector("[data-mirror]");
-  const placeholder = field.querySelector("[data-placeholder]");
-  const glow = field.querySelector("[data-glow]");
-  const button = field.querySelector("[data-clear-button]");
-  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  const context = document.createElement("canvas").getContext("2d");
-  let animationFrameId = 0;
-  let isClearing = false;
-  let isProgrammaticClear = false;
+```css
+@keyframes control-clear-mirror {
+  from { opacity: 1; filter: blur(0); transform: translateY(0); }
+  to { opacity: 0; filter: blur(3px); transform: translateY(14px); }
+}
 
-  function getDurationMs(name, fallbackMs) {
-    const value = getComputedStyle(root).getPropertyValue(name).trim();
-    const amount = Number.parseFloat(value);
-    if (!Number.isFinite(amount) || amount < 0) return fallbackMs;
-    if (value.endsWith("ms")) return amount;
-    if (value.endsWith("s")) return amount * 1000;
-    return fallbackMs;
+@keyframes control-clear-placeholder {
+  from { opacity: 0; filter: blur(2px); transform: translateY(-12px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+@keyframes control-clear-glow {
+  0%, 100% { opacity: 0; }
+  22% { opacity: 0.8; }
+}
+
+@layer components {
+  .control-clear-field[data-clearing="true"] .control-clear-input { color: transparent; }
+  .control-clear-field[data-clearing="true"] .control-clear-mirror { animation: control-clear-mirror var(--motion-duration-slow) var(--ease-motion-enter) both; }
+  .control-clear-field[data-clearing="true"] .control-clear-placeholder { animation: control-clear-placeholder var(--motion-duration-slow) var(--ease-motion-enter) both; }
+  .control-clear-field[data-clearing="true"] .control-clear-glow { animation: control-clear-glow var(--motion-duration-slow) var(--ease-motion-enter) both; }
+  .control-clear-field[data-empty="true"]:not([data-clearing="true"]) .control-clear-placeholder { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .control-clear-field[data-clearing="true"] .control-clear-mirror,
+    .control-clear-field[data-clearing="true"] .control-clear-placeholder,
+    .control-clear-field[data-clearing="true"] .control-clear-glow { animation: none; }
   }
-
-  function syncField() {
-    const hasValue = input.value.length > 0;
-    button.disabled = !hasValue || isClearing;
-    placeholder.style.opacity = hasValue ? "0" : "1";
-  }
-
-  function buildGlowLayers(text) {
-    if (!context) return "";
-    const inputStyle = getComputedStyle(input);
-    context.font = inputStyle.font;
-    const width = field.clientWidth || 320;
-    const left = Number.parseFloat(inputStyle.paddingLeft) || 16;
-    let cursor = 0;
-    const layers = [];
-    text.split(/(\s+)/).forEach((segment) => {
-      const segmentWidth = context.measureText(segment).width;
-      if (segment.trim()) {
-        const center = left + cursor + segmentWidth / 2;
-        const radius = Math.max(10, segmentWidth * 0.65);
-        layers.push(`radial-gradient(ellipse ${radius.toFixed(1)}px 10px at ${((center / width) * 100).toFixed(2)}% 100%, rgba(125,211,252,.75), rgba(125,211,252,.16) 55%, transparent 80%)`);
-      }
-      cursor += segmentWidth;
-    });
-    return layers.join(", ");
-  }
-
-  function finishClear() {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = 0;
-    isClearing = false;
-    mirror.textContent = "";
-    mirror.style.cssText = "";
-    placeholder.style.cssText = "";
-    glow.style.cssText = "";
-    input.style.removeProperty("color");
-    syncField();
-  }
-
-  function clearInput() {
-    if (isClearing || !input.value) return;
-    isClearing = true;
-    const clearedText = input.value;
-    mirror.textContent = clearedText;
-    mirror.style.opacity = "1";
-    input.style.color = "transparent";
-    input.value = "";
-    isProgrammaticClear = true;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    isProgrammaticClear = false;
-    input.focus({ preventScroll: true });
-    glow.style.background = buildGlowLayers(clearedText);
-    placeholder.style.opacity = "0";
-    button.disabled = true;
-
-    if (reducedMotion.matches) {
-      finishClear();
-      return;
-    }
-
-    const startedAt = performance.now();
-    const durationMs = getDurationMs("--motion-duration-slow", 400);
-    function drawFrame(now) {
-      const progress = Math.min(1, (now - startedAt) / durationMs);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const glowEnvelope = progress < 0.22 ? progress / 0.22 : 1 - ((progress - 0.22) / 0.78);
-      mirror.style.transform = `translateY(${(eased * 14).toFixed(2)}px)`;
-      mirror.style.opacity = String(1 - eased);
-      mirror.style.filter = `blur(${(eased * 3).toFixed(2)}px)`;
-      placeholder.style.transform = `translateY(${((-1 + eased) * 12).toFixed(2)}px)`;
-      placeholder.style.opacity = String(eased);
-      placeholder.style.filter = `blur(${((1 - eased) * 2).toFixed(2)}px)`;
-      glow.style.opacity = String(Math.max(0, glowEnvelope) * 0.8);
-      if (progress < 1) animationFrameId = requestAnimationFrame(drawFrame);
-      else finishClear();
-    }
-    animationFrameId = requestAnimationFrame(drawFrame);
-  }
-
-  input.addEventListener("input", () => {
-    if (isClearing && !isProgrammaticClear) finishClear();
-    syncField();
-  }, { signal: controller.signal });
-  button.addEventListener("pointerdown", (event) => event.preventDefault(), { signal: controller.signal });
-  button.addEventListener("click", clearInput, { signal: controller.signal });
-  reducedMotion.addEventListener("change", () => {
-    if (reducedMotion.matches && isClearing) finishClear();
-  }, { signal: controller.signal });
-  syncField();
-
-  return () => {
-    controller.abort();
-    finishClear();
-  };
 }
 ```

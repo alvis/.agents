@@ -1,6 +1,6 @@
 # Text and value transitions
 
-Apply this domain when the text itself changes over time. Start with the [shared transition workflow](directions/transition.md): prove Tailwind compatibility, capture the initial and final states, and merge the [shared motion tokens](assets/transitions/motion.css) once after Tailwind's import.
+Apply this domain when text changes over time. Start with the [shared transition workflow](directions/transition.md): prove Tailwind CSS 4.3 or newer compatibility, capture initial and final states, and merge the [shared motion tokens](assets/transitions/motion.css) once after Tailwind's import.
 
 ## Select one recipe
 
@@ -20,14 +20,14 @@ Prefer the quieter recipe when several fit: use number pop-in instead of spinnin
 
 ## Adapt the selected recipe
 
-1. Keep the application state as the source of truth. Bind the recipe's render function to the real save, response, or validated-value event; remove demo inputs and replay buttons only after preserving their cancellation and lifecycle behavior.
-2. Preserve one semantic representation of the animated content, including real heading/paragraph lines and a separate status when the recipe requires them. Put only duplicated glyphs, words, reels, and transcript copies in an `aria-hidden` visual layer. Announce a completed value or meaningful status once through `output`, `role="status"`, or a deliberate `aria-live` node; do not make every animated fragment live.
-3. Insert untrusted or user-entered strings with `textContent`. Treat visible characters as grapheme clusters when animation targets arbitrary Unicode: use `Intl.Segmenter` or the consumer's grapheme utility instead of splitting combined marks or emoji. Recipes restricted to ASCII digits state that boundary explicitly.
-4. Keep class names literal so Tailwind can discover them. Merge the selected CSS fence after the shared tokens, map compatible project tokens, insert the HTML before measuring it, and adapt `mount(root)` to the component lifecycle.
-5. Preserve the recipe's timing model. Read CSS duration variables at runtime when JavaScript schedules the matching completion, measure live geometry after insertion, and calculate the last stagger from the actual item count. Retain each stated cap because it bounds DOM size or total delay.
-6. Make replay and interruption latest-state safe. Cancel old timeouts and animation frames before rebuilding, retain the pending final value, and call the returned cleanup before unmount, replacement, remount, or hot reload.
-7. Implement reduced motion as a meaningful live state: commit the pending label or value, reveal the complete response, or stop a persistent preview at its useful static position. Handle preference changes during motion in both CSS and JavaScript.
+1. Keep application state as the source of truth. Bind the recipe to the real save, response, or validated-value event. The HTML is a state template; it does not provide the runtime behavior described by the guide.
+2. Preserve one semantic representation of the animated content, including real heading and paragraph lines or a separate status where specified. Put only duplicated glyphs, words, reels, and transcript copies in an `aria-hidden` visual layer. Announce a completed value or meaningful status once through `output`, `role="status"`, or a deliberate `aria-live` node; never make every animated fragment live.
+3. Insert untrusted or user-entered strings as text. Treat visible characters as grapheme clusters when animation targets arbitrary Unicode; use a standards-based segmenter or the consumer's grapheme utility instead of splitting combined marks or emoji. Recipes restricted to ASCII digits state that boundary explicitly.
+4. Keep Tailwind classes literal and copy each `@utility` block into CSS processed by Tailwind CSS 4.3 or newer after the shared tokens. Map compatible project tokens and render the markup before measuring live geometry.
+5. Preserve the recipe's timing model. Prefer `animationend` or `transitionend` for settlement; when a sequence needs scheduled gaps, derive them from the same CSS custom properties and calculate the last stagger from the actual item count. Retain each stated cap because it bounds DOM size or total delay.
+6. Make every interruption latest-state safe. Record the intended final value, invalidate older completion work, and cancel scheduled frames, timeouts, and event subscriptions before replacement or unmount. Cleanup must leave complete, usable content rather than an intermediate visual state.
+7. Implement reduced motion as a live state: commit the pending label or value, reveal the complete response, or stop a persistent preview at its useful static position. CSS supplies the visual fallback; stateful recipes also require the application to react when the preference changes during motion.
 
 ## Test the integrated transition
 
-Exercise the initial state, trigger, settled state, rapid replay or replacement, and cleanup/remount path. Toggle reduced motion while the transition is active and confirm the current intended final state appears without stale work. Verify keyboard controls and focus, one screen-reader announcement per meaningful update, Unicode and whitespace handling, 320px wrapping without horizontal scroll, light/dark readability, the recipe's item or character bound, measured timing, and an empty console. Inspect the rendered consumer; source review alone does not prove the transition works.
+Exercise the initial state, trigger, settled state, rapid replay or replacement, and cleanup/remount path. Toggle reduced motion while the transition is active and confirm the current intended final state appears without stale work. Verify keyboard controls and focus, one screen-reader announcement per meaningful update, Unicode and whitespace handling, 320px wrapping without horizontal scroll, light and dark readability, the recipe's item or character bound, measured timing, and an empty console. Inspect the rendered consumer; source review alone does not prove the transition works.

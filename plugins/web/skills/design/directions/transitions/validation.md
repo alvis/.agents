@@ -1,26 +1,27 @@
 # Transition recipe author validation
 
-Load this guide only when authoring or verifying the shipped transition recipes, shared motion asset, fence contract, fixture builder, or behavior checker. Consumer selection and implementation do not need it.
+Load this guide only when authoring or verifying shipped transition recipes, domain guides, the shared motion asset, or their markup/CSS contract. Consumer selection and implementation do not need it.
 
-## Build deterministic fixtures
+## Review the authored contract
 
-Run from the design skill root. Point the build only at an absolute disposable consumer whose `node_modules` already contains `tailwindcss@4.3.3` and `@tailwindcss/cli@4.3.3`; the author harness deliberately pins both packages even though consumer guidance accepts versions at or above 4.3. The build replaces the consumer's `fixtures/` directory, so never target an application workspace or a directory containing evidence that must survive.
+For each changed recipe, confirm that its domain guide still selects it and that the recipe contains Tailwind `html` fences for its initial and any generated markup, optional `css` fences only when utilities cannot express the behavior clearly, precise framework behavior prose, and acceptance checks. Recipes do not ship executable JavaScript fences or a generic lifecycle API.
 
-```sh
-bun scripts/transitions.ts self-check
-bun scripts/transitions.ts build --consumer /absolute/disposable/consumer
-```
+Prefer native elements, HTML state, and CSS selectors. When the interaction cannot be expressed with CSS alone, require the recipe prose to name:
 
-`self-check` must exit zero with one JSON line reporting `status: "success"` and `cases: 5`. `build` discovers only `directions/transitions/<domain>/<recipe>.md`, so the domain indexes and `validation.md` at the transitions root are not recipes. It validates each discovered recipe's fence contract, compiles it, replaces `<consumer>/fixtures/`, and exits zero with one JSON line containing `status`, the discovered recipe count, and the absolute manifest path. It writes the gallery plus each recipe's `index.html`, `input.css`, and `output.css`; there is no per-recipe build selector.
+- inputs and events;
+- framework-owned output states and the classes, data attributes, ARIA values, visibility, and inertness each state renders;
+- measurement timing and recomputation triggers, when geometry is required;
+- focus ordering and keyboard behavior;
+- cancellation and replacement rules for timers, frames, observers, and asynchronous completion;
+- the meaningful reduced-motion result, including a preference change during motion; and
+- teardown obligations for temporary work.
 
-A precondition, schema, or compiler failure exits one with `TransitionFixtureError` on standard error. Treat every partial fixture from a failed build as invalid and do not claim a manifest or preserve it as evidence.
+Check that every Tailwind class is a complete, statically discoverable string; shared definitions come from [motion.css](assets/transitions/motion.css); transition properties are explicit; decorative copies are hidden from assistive technology; and content removed visually is also removed from interaction at the stated point.
 
-## Exercise behavior
+## Build and exercise a representative consumer
 
-Serve the generated fixtures in a working native browser context. Read `manifest.json` and verify the SHA-256 of every file in `behavior_checks`. For every fixture and each of `primary`, `replay`, `disposed`, `controlled_js_reduce`, `controlled_css_reduce`, and `native_reduce`, open or reload a fresh `fixture_url`, evaluate the listed harness and five domain registration modules, then call `await globalThis.__runTransitionChecks({ phase })`; registration order is not significant. Repeat the overflow assertion from a fresh fixture at 375, 768, and 1280 CSS pixels. Record every returned failure and the browser context used instead of substituting visual judgment for a phase.
+Use Tailwind CSS 4.3.0 or newer, proven by a lockfile, installed package metadata, or an exact dependency pin. A disposable consumer may compile the recipe's markup and CSS and expose its static and native-CSS states for inspection. That evidence proves class discovery, CSS generation, responsive containment, and native or CSS-only behavior; it does not prove framework state, interruption, focus, asynchronous work, or teardown.
 
-Run `native_reduce` against the browser's actual reduced-motion preference, independently of the controlled probes. If the active browser context cannot emulate that preference, report the unsupported capability explicitly. When native `matchMedia` is false, `native_reduce` must report `unverified`; it is not evidence that the native media branch ran. `controlled_js_reduce` replaces only that query before remount and flips false to true, proving the recipe's live JavaScript branch, final semantics, and listener cleanup without proving browser preference emulation. `controlled_css_reduce` extracts matching compiled `CSSMediaRule` contents into a trailing style, proving the fallback declarations affect the fixture without proving native media-query activation. Normal native phases plus both controlled probes are the bounded evidence; report the native branch as unverified rather than upgrading that claim.
+To claim framework behavior, integrate the recipe through a representative consumer's owning framework and run its normal Tailwind build, formatter, typecheck, focused tests, and browser path. Exercise the initial, action, final, reverse, rapid-interruption, and replay states; keyboard and focus behavior; responsive containment at supported breakpoints; a live reduced-motion change; cleanup during framework teardown when temporary work exists; and console errors. Confirm stale asynchronous completion cannot overwrite newer state and that reduced motion reaches the final meaningful state without waiting for `transitionend`.
 
-## Bind the receipt
-
-Bind the behavior results to the manifest's `aggregate_sha256`; every `behavior_checks` path and SHA-256; compiler package versions; shared motion path and hash; and each exercised entry's source, source hash, fence hashes, fixture URL, kind, and compiled input/output hashes. Rebuild after any checker, source, asset, compiler, or generated-output change. A source-only move or instructional edit may reuse existing behavior results only when the compiler versions, shared asset hash, behavior-checker hashes, fence hashes, and generated input and compiled CSS hashes are unchanged, and the generated fixture HTML is byte-identical after normalizing only the diagnostic `sourceSha256` value. Preserve both original fixture hashes and the normalization comparison in the equivalence record, then bind the reused results to the regenerated manifest. Rerun affected behavior after any other runtime change.
+Record the consumer path and Tailwind version evidence, changed recipes, build commands and results, exercised states and viewports, reduced-motion result, cleanup result when applicable, browser context, and unresolved behavior. Label isolated markup/CSS evidence separately from framework runtime evidence, and do not carry behavior claims from the removed recipe scripts forward. Re-run the affected build and browser checks after any change to recipe markup, CSS, shared motion definitions, framework behavior requirements, or acceptance checks.

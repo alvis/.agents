@@ -4,27 +4,23 @@ Implement this for a short status whose end time is unknown. If progress is meas
 
 ## Implement and adapt
 
-1. Keep one semantic status and one decorative copy. The `role="status"` wrapper contains the screen-reader text once; the shimmering span stays `aria-hidden`. When the status changes, assign the same Unicode string to both nodes with `textContent`.
-2. Merge the CSS after [the shared motion tokens](assets/transitions/motion.css). Preserve the solid `--shimmer-base` fallback under the clipped gradient. Tune the two-second loop only if the result remains calm and legible.
-3. Keep the pause button for this persistent animation. `renderControl()` remains the single writer for the paused dataset, disabled state, pressed state, and label after user input and every live motion-preference change.
-4. Reduced motion removes the gradient, renders readable solid text, and disables the irrelevant pause action with the meaningful label “Motion reduced.” Retain this behavior when the preference changes during animation.
-5. Cleanup aborts DOM listeners, removes the media-query listener, and leaves the visual paused. Pause and resume must not allocate timers or duplicate listeners.
+1. Keep one semantic status and one decorative copy. The `role="status"` wrapper contains the screen-reader text once; the shimmering span stays `aria-hidden`. Update both from the same Unicode string.
+2. Copy the Tailwind CSS 4.3 utility after [the shared motion tokens](assets/transitions/motion.css). Preserve the solid `--shimmer-base` fallback under the clipped gradient. Change the two-second loop only when the result remains calm and legible.
+3. Use a native checkbox for pause state. Its checked state persists without scripting, the label keeps a stable accessible name, and `peer-checked` pauses the decorative animation.
+4. Reduced motion removes the gradient, renders readable solid text, and hides both the motion-only checkbox and its label. The browser applies this live without an application preference listener.
+5. Updating the status text still requires the application to set the semantic and decorative strings from the same state. No runtime work is required for pause, resume, reduced motion, or cleanup.
 
-## Verify
-
-Confirm one status announcement, an ignored visual copy, readable light/dark text, repeatable pause/resume, a solid live reduced-motion state, and no mutation after cleanup.
-
-## Complete example
+## Markup and Tailwind CSS
 
 ```html
-<section data-demo="shimmer-text" class="grid max-w-md gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm [--shimmer-base:var(--color-zinc-500)] [--shimmer-highlight:var(--color-zinc-950)] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:[--shimmer-base:var(--color-zinc-400)] dark:[--shimmer-highlight:var(--color-white)]">
-  <div role="status" class="min-h-10">
-    <span class="sr-only">Planning the next steps</span>
-    <span data-shimmer aria-hidden="true" class="animate-shimmer-text inline-block text-2xl font-semibold" data-paused="false">Planning the next steps</span>
-  </div>
-  <button data-pause type="button" aria-pressed="false" class="min-h-11 justify-self-start rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50 active:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:active:bg-zinc-700 dark:focus-visible:ring-offset-zinc-950">Pause shimmer</button>
+<section class="grid max-w-md gap-6 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-950 shadow-sm [--shimmer-base:var(--color-zinc-500)] [--shimmer-highlight:var(--color-zinc-950)] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:[--shimmer-base:var(--color-zinc-400)] dark:[--shimmer-highlight:var(--color-white)]">
+  <span id="planning-status" role="status" class="sr-only">Planning the next steps</span>
+  <input id="pause-planning-shimmer" type="checkbox" class="peer sr-only motion-reduce:hidden">
+  <span aria-hidden="true" class="animate-shimmer-text inline-block min-h-10 text-2xl font-semibold peer-checked:[animation-play-state:paused]">Planning the next steps</span>
+  <label for="pause-planning-shimmer" class="min-h-11 cursor-pointer justify-self-start rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-zinc-50 active:bg-zinc-100 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-violet-500 peer-focus-visible:ring-offset-2 motion-reduce:hidden dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:active:bg-zinc-700 dark:peer-focus-visible:ring-offset-zinc-950">Pause shimmer</label>
 </section>
 ```
+
 ```css
 @keyframes shimmer-text {
   from { background-position: 100% 0; }
@@ -40,10 +36,6 @@ Confirm one status announcement, an ignored visual copy, readable light/dark tex
   -webkit-text-fill-color: transparent;
   animation: shimmer-text 2s linear infinite;
 
-  &[data-paused="true"] {
-    animation-play-state: paused;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     color: var(--shimmer-base);
     background-image: none;
@@ -53,35 +45,10 @@ Confirm one status announcement, an ignored visual copy, readable light/dark tex
 }
 ```
 
-```js
-function mount(root) {
-  const controller = new AbortController();
-  const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const shimmer = root.querySelector("[data-shimmer]");
-  const pauseButton = root.querySelector("[data-pause]");
-  let isPaused = false;
+## Runtime behavior
 
-  function renderControl() {
-    const isMotionReduced = motionQuery.matches;
-    shimmer.dataset.paused = String(isPaused || isMotionReduced);
-    pauseButton.disabled = isMotionReduced;
-    pauseButton.setAttribute("aria-pressed", String(isPaused));
-    pauseButton.textContent = isMotionReduced ? "Motion reduced" : isPaused ? "Resume shimmer" : "Pause shimmer";
-  }
+The native checkbox and Tailwind variants own pause and reduced-motion behavior; do not replace them with a scripted button. When application status changes, update the `role="status"` text and the ignored decorative copy together. Keep the checkbox mounted across status updates so a user's pause choice is retained.
 
-  function togglePause() {
-    isPaused = !isPaused;
-    renderControl();
-  }
+## Verify
 
-  pauseButton.addEventListener("click", togglePause, { signal: controller.signal });
-  motionQuery.addEventListener("change", renderControl);
-  renderControl();
-
-  return function cleanup() {
-    controller.abort();
-    motionQuery.removeEventListener("change", renderControl);
-    shimmer.dataset.paused = "true";
-  };
-}
-```
+Confirm one status announcement, an ignored visual copy, readable light and dark text, keyboard and pointer pause toggling, retained checked state across live preference changes, a hidden motion-only control and solid text under reduced motion, and no runtime listener requirement.

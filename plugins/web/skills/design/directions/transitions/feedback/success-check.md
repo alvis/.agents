@@ -3,29 +3,32 @@
 ## Implement
 
 1. Keep the durable result in the heading and polite status text; mark the check graphic decorative so drawing the path never carries the success message by itself.
-2. Measure the rendered SVG path with `getTotalLength()` after mount and assign it to `--check-length`. Preserve the dash-offset reduced-motion override so the completed check remains visible when keyframes are disabled.
-3. Implement replay as a state reset followed by a forced style flush and one animation frame. Cancel the previous frame first so repeated clicks cannot complete an older replay after a newer one starts.
-4. Import the [shared motion asset](assets/transitions/motion.css) once and place the recipe keyframes in the same Tailwind input. Keep both animations finite and tied to `data-state="shown"`.
-5. On a live reduced-motion change, cancel the frame and settle immediately in the shown state. Cleanup must do the same before aborting listeners, leaving the authoritative success state in place.
+2. Normalize the check path with native SVG `pathLength="1"`, then use `1` for the dash array and offset. Preserve the reduced-motion dash-offset override so the completed check remains visible when keyframes are disabled.
+3. Import the [shared motion asset](assets/transitions/motion.css) once and place the recipe keyframes in the same Tailwind input. Keep both animations finite and tied to `data-state="shown"`.
+4. Implement replay as an `idle` state commit followed by a `shown` commit after the browser has rendered the reset state. Replace any pending shown commit before starting a newer replay.
+
+## Runtime requirements
+
+The embedded HTML starts in the durable shown state; its replay button has no behavior until the owning runtime binds it. A replay must announce the in-progress text, commit `data-state="idle"`, wait until that reset is rendered, then commit `data-state="shown"` and restore the durable status. A live reduced-motion change must cancel a pending replay and settle immediately on `shown`. Teardown must remove the binding, cancel pending work, and leave the authoritative success state shown.
 
 ## Verify
 
-Replay repeatedly and during an active frame; each run must start from the hidden baseline and finish once. Toggle reduced motion mid-replay and confirm the check and status settle immediately. After cleanup, replay must no longer respond.
+Replay repeatedly and interrupt an active replay; each run must start from the hidden baseline and finish once. Toggle reduced motion mid-replay and confirm the check and status settle immediately. After teardown, pending replay work and stale actions must not change the shown result.
 
-## Complete example
+## State markup and Tailwind styling
 
 ```html
-<section data-demo="success-check" data-state="idle" class="group flex min-h-64 flex-col items-center justify-center gap-6 rounded-3xl border border-neutral-200 bg-white p-8 text-center text-neutral-950">
+<section data-state="shown" class="group flex min-h-64 flex-col items-center justify-center gap-6 rounded-3xl border border-neutral-200 bg-white p-8 text-center text-neutral-950">
   <div aria-hidden="true" class="grid size-16 place-items-center rounded-full bg-emerald-50 text-emerald-700 opacity-0 group-data-[state=shown]:opacity-100 group-data-[state=shown]:[animation:feedback-success-check_var(--motion-duration-slow)_var(--ease-motion-spring)_both] group-data-[state=shown]:motion-reduce:animate-none">
     <svg viewBox="0 0 48 48" fill="none" class="size-10 overflow-visible">
-      <path data-check-path d="M13 25.5 20.5 33 36 17" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="[stroke-dasharray:var(--check-length)] [stroke-dashoffset:var(--check-length)] group-data-[state=shown]:[animation:feedback-success-path_var(--motion-duration-slow)_var(--ease-motion-enter)_both] group-data-[state=shown]:motion-reduce:animate-none group-data-[state=shown]:motion-reduce:[stroke-dashoffset:0]" />
+      <path pathLength="1" d="M13 25.5 20.5 33 36 17" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="[stroke-dasharray:1] [stroke-dashoffset:1] group-data-[state=shown]:[animation:feedback-success-path_var(--motion-duration-slow)_var(--ease-motion-enter)_both] group-data-[state=shown]:motion-reduce:animate-none group-data-[state=shown]:motion-reduce:[stroke-dashoffset:0]" />
     </svg>
   </div>
   <div class="space-y-1">
     <h2 class="text-lg font-semibold">Changes saved</h2>
-    <p data-status role="status" aria-live="polite" class="text-sm text-neutral-600">Your preferences are up to date.</p>
+    <p role="status" aria-live="polite" aria-atomic="true" class="text-sm text-neutral-600">Your preferences are up to date.</p>
   </div>
-  <button type="button" data-replay class="min-h-11 rounded-full bg-neutral-950 px-5 text-sm font-medium text-white transition-[background-color,scale] duration-(--motion-duration-fast) ease-motion-enter hover:bg-neutral-800 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none motion-reduce:active:scale-100">Replay confirmation</button>
+  <button type="button" class="min-h-11 rounded-full bg-neutral-950 px-5 text-sm font-medium text-white transition-[background-color,scale] duration-(--motion-duration-fast) ease-motion-enter hover:bg-neutral-800 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950 motion-reduce:transition-none motion-reduce:active:scale-100">Replay confirmation</button>
 </section>
 ```
 
@@ -36,52 +39,7 @@ Replay repeatedly and during an active frame; each run must start from the hidde
 }
 
 @keyframes feedback-success-path {
-  from { stroke-dashoffset: var(--check-length); }
+  from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
-}
-```
-
-```js
-function mount(root) {
-  const controller = new AbortController();
-  const replay = root.querySelector("[data-replay]");
-  const path = root.querySelector("[data-check-path]");
-  const status = root.querySelector("[data-status]");
-  const motion = matchMedia("(prefers-reduced-motion: reduce)");
-  let frame = 0;
-
-  const length = Math.ceil(path.getTotalLength());
-  path.style.setProperty("--check-length", String(length));
-
-  const finish = () => {
-    cancelAnimationFrame(frame);
-    root.dataset.state = "shown";
-    status.textContent = "Your preferences are up to date.";
-  };
-
-  const replayCheck = () => {
-    cancelAnimationFrame(frame);
-    root.dataset.state = "idle";
-    status.textContent = "Saving your preferences.";
-    if (motion.matches) {
-      finish();
-      return;
-    }
-    void root.offsetWidth;
-    frame = requestAnimationFrame(finish);
-  };
-
-  const handleMotion = () => {
-    if (motion.matches) finish();
-  };
-
-  replay.addEventListener("click", replayCheck, { signal: controller.signal });
-  motion.addEventListener("change", handleMotion, { signal: controller.signal });
-  finish();
-
-  return () => {
-    finish();
-    controller.abort();
-  };
 }
 ```
