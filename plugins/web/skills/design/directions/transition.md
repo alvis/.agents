@@ -1,12 +1,12 @@
-# Transition design
+# Component transitions
 
-Design the requested component's state change, capture its motion contract, and hand the approved behavior to `frontend-implementer`. Keep the parent skill's approval and evaluation gates; expand into page design only when the request also changes the surrounding surface.
+Apply transition guidance while working on a component or use case with a relevant state change. Capture its motion alongside its layout, content, and interaction decisions in the existing design contract. Keep the parent skill's approval, implementation, and evaluation ownership.
 
 ## Establish compatibility and intent
 
 1. Inspect the actual consumer before loading a recipe. Accept Tailwind CSS only when the package-manager lockfile, installed `tailwindcss` package metadata, or an exact consumer dependency pin proves version 4.3.0 or newer; a manifest range or prose claim is insufficient. If evidence is missing or older, report the gap and do not apply recipe markup or CSS or silently install or upgrade Tailwind. A design-only run may still specify motion intent, but it cannot claim recipe compatibility.
 2. Identify the element, initial state, triggering action, final state, reverse or interruption behavior, focus and reading-order requirements, and the state change or spatial relationship the motion explains. Preserve the target's existing components, tokens, and interaction semantics.
-3. Select the smallest matching domain and load only its guide. Load multiple guides only when the requested interaction genuinely spans their responsibilities.
+3. Use the table to identify the domain for the current component, then read only that guide and its matching recipe. Do not open every domain or recipe. Consult another only when the component's behavior requires it; defer guidance for other areas until working on them.
 
 | Domain | Use when | Guide |
 | --- | --- | --- |
@@ -16,9 +16,9 @@ Design the requested component's state change, capture its motion contract, and 
 | Controls | A button, input, tab, toggle, checkbox, accordion, or direct manipulation state changes. | [Controls](directions/transitions/controls.md) |
 | Text | Text, labels, numbers, counters, or streamed content changes over time. | [Text](directions/transitions/text.md) |
 
-## Choose and approve the behavior
+## Include motion in the component design
 
-Read the selected domain guide, choose the required recipe, then load only that recipe's task guide. Each recipe supplies Tailwind markup, optional CSS, behavioral requirements, and acceptance checks. Treat an explicitly named recipe or pattern as the requested direction, then show its target-state preview and capture sign-off before production edits unless `--quick` applies. When the motion remains open, present materially different targeted variants whose timing, spatial model, or interruption behavior changes the interaction; do not create page-wide direction or area boards for transition-only scope.
+Use the selected recipe's Tailwind markup, optional CSS, behavioral requirements, and acceptance checks for the current component. An explicitly named pattern supplies the requested motion direction. When that choice remains open, compare alternatives in the component's preview, then capture the choice through the parent skill's design approval flow.
 
 `frontend-designer` owns the motion choice and its reproducible contract. Record the trigger, initial and final states, properties, starting duration and easing, interruption and replay behavior, reduced-motion result, focus behavior, responsive constraints, and selected recipe direction. `frontend-implementer` owns every production source edit. `aesthetic-evaluator` independently checks the integrated render against the approved transition and applicable Web design standards.
 
