@@ -35,6 +35,7 @@ function issueComment(
     body?: string;
     id?: number | null;
     nodeId?: string;
+    userLogin?: string;
     userType?: string;
   } = {},
 ): Record<string, unknown> {
@@ -44,7 +45,7 @@ function issueComment(
     html_url: "https://github.example/octo/repo/issues/17#issuecomment-42",
     id: options.id === undefined ? 42 : options.id,
     node_id: options.nodeId ?? "IC_kwDOExample",
-    user: { login: "repository-owner", type: options.userType ?? "User" },
+    user: { login: options.userLogin ?? "repository-owner", type: options.userType ?? "User" },
   };
 }
 
@@ -67,6 +68,8 @@ if [ "\${FAKE_GH_EXIT:-0}" -ne 0 ]; then printf 'simulated GitHub failure\\n' >&
 case "$*" in
   *"repos/octo/repo/pulls/17"*) printf '%s\\n' "$FAKE_GH_PULL" ;;
   *"repos/octo/repo/issues/17/comments?per_page=100"*) printf '%s\\n' "$FAKE_GH_COMMENTS" ;;
+  *"orgs/octo/memberships/repository-owner"*) printf '%s\\n' '{"state":"active","role":"admin"}' ;;
+  *"repos/octo/repo"*) printf '%s\\n' '{"name":"repo","owner":{"login":"octo","type":"Organization"},"default_branch":"main"}' ;;
   *) exit 91 ;;
 esac
 `,
@@ -166,6 +169,21 @@ describe("black-zone authorization receipt verification", () => {
     expect(result.stdout).not.toContain(stale);
   });
 
+  it("should accept an organization code owner regardless of comment association", async () => {
+    const result = await runVerifier([issueComment({ association: "MEMBER" })]);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("should ignore a non-code-owner grant and accept a later code-owner grant", async () => {
+    const result = await runVerifier([
+      issueComment({ id: 41, userLogin: "intruder" }),
+      issueComment(),
+    ]);
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout).author_login).toBe("repository-owner");
+    expect((await runVerifier([issueComment({ userLogin: "intruder" })])).exitCode).toBe(1);
+  });
+
   for (const comment of [
     issueComment({ id: null }),
     issueComment({ nodeId: "" }),
@@ -179,8 +197,6 @@ describe("black-zone authorization receipt verification", () => {
 
   const closedCases: Array<[readonly Record<string, unknown>[], number]> = [
     [[], 0],
-    [[issueComment({ association: "MEMBER" })], 0],
-    [[issueComment({ association: "NONE" })], 0],
     [[issueComment({ userType: "Bot" })], 0],
     [
       [issueComment({ body: authorizationBody({ headOid: "c".repeat(40) }) })],

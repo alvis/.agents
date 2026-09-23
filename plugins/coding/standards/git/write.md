@@ -20,7 +20,7 @@
 - **GIT-PR-SIZE-01**: Derive file count, authored net LOC, and zone with the canonical classifier.
 - **GIT-PR-SIZE-02**: Supply Risk and Test plan evidence outside green.
 - **GIT-PR-SIZE-03**: Supply a specific indivisibility rationale in red; an atomic public contract plus its first implementation remains eligible under `GIT-PR-TYPE-02` with the required stronger review evidence.
-- **GIT-PR-SIZE-04**: Supply all black message evidence and require live, exact-revision OWNER authorization before approval.
+- **GIT-PR-SIZE-04**: Supply all black message evidence and require live, exact-revision code-owner authorization before approval.
 
 ### Implementation Composition (`GIT-PR-TYPE`)
 

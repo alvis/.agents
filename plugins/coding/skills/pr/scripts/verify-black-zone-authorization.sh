@@ -41,7 +41,6 @@ authorization_receipt=$(jq -cer \
   --arg base_oid "$expected_base_oid" '
     [
       .[] | .[]
-      | select(.author_association == "OWNER")
       | select(.user.type == "User")
       | ((.body // "") | gsub("\r\n"; "\n") | sub("\n$"; "")
           | split("\n")) as $lines
@@ -76,8 +75,16 @@ authorization_receipt=$(jq -cer \
           rationale: $rationale
         }
     ]
-    | first // empty
   ' <<<"$comments") || authorization_required
 
-[ -n "$authorization_receipt" ] || authorization_required
-printf '%s\n' "$authorization_receipt"
+while IFS= read -r candidate; do
+  author=$(jq -er '.author_login' <<<"$candidate") || authorization_required
+  if CODE_OWNER_HOST="$host" CODE_OWNER_REF="$expected_base_oid" \
+    CODE_OWNER_GH_BIN="$github_cli" \
+    bun run "$(dirname "${BASH_SOURCE[0]}")/verify-code-owner.ts" \
+    "$author" "${repository%%/*}" "${repository#*/}" >/dev/null 2>&1; then
+    printf '%s\n' "$candidate"
+    exit 0
+  fi
+done < <(jq -c '.[]' <<<"$authorization_receipt")
+authorization_required

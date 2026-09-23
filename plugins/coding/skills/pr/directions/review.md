@@ -224,7 +224,7 @@ Every zone requires Summary, `## 🎯 Goal`, `## ✅ Requirements`, `## 🧵 Con
 | green | None |
 | yellow | `## ⚠️ Risk`, `## 🧭 Test Plan`, and the policy-required reviewer evidence |
 | red | Yellow evidence plus `## 📐 Why This Size` and the policy-required reviewer evidence |
-| black | Red evidence plus full review of the self-contained unit; exact-revision OWNER authorization is required only for `APPROVE` |
+| black | Red evidence plus full review of the self-contained unit; exact-revision code-owner authorization is required only for `APPROVE` |
 
 A black-zone review first judges whether the surface is genuinely one self-contained unit, then reviews it completely. Missing authorization does not suppress findings or stop a `REQUEST_CHANGES` verdict. It caps only a substantive `APPROVE` at `COMMENT`. Before approval, verify that the canonical body supplies specific Risk, Test plan, and Why this size evidence. Then judge only the live authorization helper receipt's `authorization_body` and `rationale`: its atomic subject, coupling, and split consequence must be specific. A generic or tautological indivisibility rationale blocks approval despite structural helper acceptance. An earlier fetched comment or body cannot authorize approval. Deleted, binary, generated, and vendored paths carry no reviewable lines; list them as not reviewed.
 

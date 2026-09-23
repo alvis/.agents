@@ -29,7 +29,7 @@ Required exception note fields:
 - `temporary_mitigation`
 - `follow_up_action`
 
-Record the note in the PR discussion against the exact head and base OIDs. Repository files cannot change the fixed PR-size thresholds. `GIT-PR-SIZE-04` uses its separate exact-revision OWNER authorization gate, not this exception policy.
+Record the note in the PR discussion against the exact head and base OIDs. Repository files cannot change the fixed PR-size thresholds. `GIT-PR-SIZE-04` uses its separate exact-revision code-owner authorization gate, not this exception policy.
 
 ## Rule Groups
 
