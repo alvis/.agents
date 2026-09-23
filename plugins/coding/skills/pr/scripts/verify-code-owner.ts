@@ -1,32 +1,50 @@
 #!/usr/bin/env bun
 
 import { spawnSync } from "node:child_process";
+import { parseArgs } from "node:util";
 
 type ApiResult = { data: unknown; missing: false } | { missing: true };
 
 const rawContentType = "application/vnd.github.raw+json";
 // GitHub ignores CODEOWNERS files at 3 MiB, so larger responses cannot authorize.
 const maxCodeownersBytes = 3 * 1024 * 1024;
-const [username, account, repo, ...extra] = process.argv.slice(2);
-if (
-  !username ||
-  !account ||
-  !repo ||
-  extra.length > 0 ||
-  !/^[A-Za-z0-9-]+$/.test(username) ||
-  !/^[A-Za-z0-9-]+$/.test(account) ||
-  !/^[A-Za-z0-9_.-]+$/.test(repo)
-) {
-  console.error(
-    "usage: verify-code-owner.ts <username> <repo-account> <repo-name>",
-  );
-  process.exit(2);
-}
+const { username, account, repo } = parseArguments();
 
 const host = process.env.CODE_OWNER_HOST ?? "github.com";
 const gh = process.env.CODE_OWNER_GH_BIN ?? "gh";
 if (!/^[A-Za-z0-9.-]+$/.test(host)) {
   console.error("invalid GitHub host");
+  process.exit(2);
+}
+
+function parseArguments(): { username: string; account: string; repo: string } {
+  try {
+    const { values } = parseArgs({
+      options: {
+        username: { type: "string" },
+        "repo-account": { type: "string" },
+        "repo-name": { type: "string" },
+      },
+      strict: true,
+      allowPositionals: false,
+    });
+    const { username, "repo-account": account, "repo-name": repo } = values;
+    if (
+      username &&
+      /^[A-Za-z0-9-]+$/.test(username) &&
+      account &&
+      /^[A-Za-z0-9-]+$/.test(account) &&
+      repo &&
+      /^[A-Za-z0-9_.-]+$/.test(repo)
+    ) {
+      return { username, account, repo };
+    }
+  } catch (error) {
+    console.error((error as Error).message);
+  }
+  console.error(
+    "usage: verify-code-owner.ts --username=<username> --repo-account=<account> --repo-name=<name>",
+  );
   process.exit(2);
 }
 

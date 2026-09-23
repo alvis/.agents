@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const scripts = import.meta.dirname;
-const verifier = join(scripts, "verify-black-zone-authorization.sh");
+const verifier = join(scripts, "verify-black-zone-authorization.ts");
 const headOid = "a".repeat(40);
 const baseOid = "b".repeat(40);
 
@@ -45,14 +45,27 @@ function issueComment(
     html_url: "https://github.example/octo/repo/issues/17#issuecomment-42",
     id: options.id === undefined ? 42 : options.id,
     node_id: options.nodeId ?? "IC_kwDOExample",
-    user: { login: options.userLogin ?? "repository-owner", type: options.userType ?? "User" },
+    user: {
+      login: options.userLogin ?? "repository-owner",
+      type: options.userType ?? "User",
+    },
   };
 }
 
 async function runVerifier(
   comments: readonly Record<string, unknown>[],
-  options: { ghExit?: number; liveBaseOid?: string; liveHeadOid?: string } = {},
-) {
+  options: {
+    ghExit?: number;
+    liveBaseOid?: string;
+    liveHeadOid?: string;
+    commentsJson?: string;
+  } = {},
+): Promise<{
+  exitCode: number;
+  invocations: string;
+  stderr: string;
+  stdout: string;
+}> {
   const root = await mkdtemp(join(tmpdir(), "black-zone-"));
   const bin = join(root, "bin");
   await mkdir(bin);
@@ -76,12 +89,12 @@ esac
   );
   await chmod(gh, 0o755);
   const child = spawn(
-    "bash",
-    [verifier, "github.example", "octo/repo", "17", headOid, baseOid],
+    "bun",
+    ["run", verifier, "github.example", "octo/repo", "17", headOid, baseOid],
     {
       env: {
         ...process.env,
-        FAKE_GH_COMMENTS: JSON.stringify([comments]),
+        FAKE_GH_COMMENTS: options.commentsJson ?? JSON.stringify([comments]),
         FAKE_GH_EXIT: String(options.ghExit ?? 0),
         FAKE_GH_INVOCATIONS: log,
         FAKE_GH_PULL: JSON.stringify({
@@ -120,6 +133,27 @@ esac
 }
 
 describe("black-zone authorization receipt verification", () => {
+  it("should find a CRLF authorization on a later comment page and preserve its body", async () => {
+    const body = authorizationBody().replaceAll("\n", "\r\n") + "\r\n";
+    const result = await runVerifier([], {
+      commentsJson: JSON.stringify([[], [issueComment({ body })]]),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout).authorization_body).toBe(body);
+  });
+
+  it.each(["not json", JSON.stringify([issueComment()])])(
+    "should fail closed for malformed comment pages: %s",
+    async (commentsJson) => {
+      const result = await runVerifier([], { commentsJson });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toContain("authorization_required");
+    },
+  );
+
   it("should authorize an exact revision and return a stable receipt", async () => {
     const result = await runVerifier([issueComment()]);
     expect(result.exitCode).toBe(0);
@@ -181,7 +215,9 @@ describe("black-zone authorization receipt verification", () => {
     ]);
     expect(result.exitCode).toBe(0);
     expect(JSON.parse(result.stdout).author_login).toBe("repository-owner");
-    expect((await runVerifier([issueComment({ userLogin: "intruder" })])).exitCode).toBe(1);
+    expect(
+      (await runVerifier([issueComment({ userLogin: "intruder" })])).exitCode,
+    ).toBe(1);
   });
 
   for (const comment of [
@@ -214,6 +250,11 @@ describe("black-zone authorization receipt verification", () => {
       const result = await runVerifier(comments, { ghExit });
       expect(result.exitCode).not.toBe(0);
       expect(result.stdout).toBe("");
+      if (ghExit !== 0) {
+        expect(result.stderr).toContain("simulated GitHub failure");
+        expect(result.stderr).toContain("repos/octo/repo/pulls/17");
+        expect(result.stderr).toContain("authorization_required");
+      }
     });
 
   it("should require an explicit one-off grant", async () => {

@@ -29,7 +29,12 @@ function createCodeownersResponse(content: string): {
 function runVerifier(
   responses: Record<string, unknown>,
   username = "alice",
-  options: { ref?: string; account?: string; repo?: string } = {},
+  options: {
+    ref?: string;
+    account?: string;
+    repo?: string;
+    args?: string[];
+  } = {},
 ): SpawnSyncReturns<string> {
   const directory = mkdtempSync(join(tmpdir(), "code-owner-"));
   const gh = join(directory, "gh");
@@ -60,9 +65,11 @@ console.log(JSON.stringify(responses[path]));
     [
       "run",
       verifier,
-      username,
-      options.account ?? "octo",
-      options.repo ?? "repo",
+      ...(options.args ?? [
+        `--username=${username}`,
+        `--repo-account=${options.account ?? "octo"}`,
+        `--repo-name=${options.repo ?? "repo"}`,
+      ]),
     ],
     {
       encoding: "utf8",
@@ -79,6 +86,24 @@ console.log(JSON.stringify(responses[path]));
 }
 
 describe("cmd: verify-code-owner", () => {
+  it.each([
+    ["alice", "octo", "repo"],
+    ["--username=alice", "--repo-account=octo"],
+    ["--username=", "--repo-account=octo", "--repo-name=repo"],
+    [
+      "--username=alice",
+      "--repo-account=octo",
+      "--repo-name=repo",
+      "--unknown=yes",
+    ],
+  ])("should reject invalid command arguments: %j", (...args) => {
+    const result = runVerifier({}, "alice", { args });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("usage:");
+  });
+
   it("should accept only the account owner for a personal repository", () => {
     const responses = {
       "repos/octo/repo": {

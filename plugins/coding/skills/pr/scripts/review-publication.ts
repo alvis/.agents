@@ -1391,12 +1391,13 @@ function validateLiveBlackAuthorization(
   }
   const helper = resolve(
     dirname(modulePath),
-    "verify-black-zone-authorization.sh",
+    "verify-black-zone-authorization.ts",
   );
   const executableDirectory = dirname(resolve(executable));
   const completed = spawnSync(
-    "bash",
+    "bun",
     [
+      "run",
       helper,
       assessment.target.host,
       `${assessment.target.owner}/${assessment.target.repo}`,
