@@ -14,7 +14,11 @@ import { promisify } from "node:util";
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { deleteDomainReceipt, resolveDomainContext, writeDomainReceipt } from "../plugins/essential/scripts/domain-context.ts";
+import {
+  deleteDomainReceipt,
+  resolveDomainContext,
+  writeDomainReceipt,
+} from "../plugins/essential/scripts/domain-context.ts";
 import {
   createTemporaryDirectory,
   removeTemporaryDirectory,
@@ -47,10 +51,25 @@ interface ToolResult {
 }
 
 interface AdapterHooks {
-  readonly "chat.message": (input: { readonly sessionID: string }, output: { message: { id: string }; parts: Array<{ id: string; sessionID: string; messageID: string; type: string; text: string; synthetic?: boolean }> }) => Promise<void>;
+  readonly "chat.message": (
+    input: { readonly sessionID: string },
+    output: {
+      message: { id: string };
+      parts: Array<{
+        id: string;
+        sessionID: string;
+        messageID: string;
+        type: string;
+        text: string;
+        synthetic?: boolean;
+      }>;
+    },
+  ) => Promise<void>;
   readonly config: (config: Record<string, unknown>) => Promise<void>;
   readonly dispose: () => Promise<void>;
-  readonly event: (input: { readonly event: Record<string, unknown> }) => Promise<void>;
+  readonly event: (input: {
+    readonly event: Record<string, unknown>;
+  }) => Promise<void>;
   readonly "experimental.chat.system.transform": (
     input: { readonly sessionID?: string },
     output: { readonly system: string[] },
@@ -160,7 +179,10 @@ describe("opencode adapter manifest validation", () => {
     vi.stubEnv("PLUGIN_ROOT", "/stale-codex-root");
     const environmentBefore = { ...process.env };
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
 
     await expect(
       hooks["tool.execute.before"](
@@ -183,16 +205,114 @@ describe("opencode adapter manifest validation", () => {
 
   it("should reject malformed OpenCode question input before execution", async () => {
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
-    await expect(hooks["tool.execute.before"](
-      { callID: "malformed-question", sessionID: "session", tool: "question" },
-      { args: { questions: [] } },
-    )).rejects.toThrow(/question/i);
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "malformed-question",
+          sessionID: "session",
+          tool: "question",
+        },
+        { args: { questions: [] } },
+      ),
+    ).rejects.toThrow(/question/i);
   });
+
+  it("should stop raw review publication before the OpenCode tool executes", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
+    const writes: string[] = [];
+    const execute = async (command: string): Promise<void> => {
+      await hooks["tool.execute.before"](
+        {
+          callID: "review-publication",
+          sessionID: "review-session",
+          tool: "bash",
+        },
+        { args: { command } },
+      );
+      writes.push(command);
+    };
+
+    await expect(
+      execute('gh pr comment 35 --body "evidence receipt: APPROVE"'),
+    ).rejects.toThrow(/Review publication blocked/);
+    expect(writes).toEqual([]);
+    await expect(
+      execute("gh api repos/acme/app/pulls/35/reviews"),
+    ).resolves.toBeUndefined();
+    expect(writes).toEqual(["gh api repos/acme/app/pulls/35/reviews"]);
+    const publisher = join(
+      sandbox.project,
+      ".opencode/alvis/plugins/coding/skills/pr/scripts/review-publication.ts",
+    );
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "review-approved",
+          sessionID: "review-session",
+          tool: "bash",
+        },
+        {
+          args: {
+            command: `bun '${publisher}' publish --approval '/tmp/approval.json'`,
+          },
+        },
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it.each([
+    "hooks/scripts/validate-review-publication",
+    "skills/pr/scripts/review-publication.ts",
+  ])(
+    "should reject a tampered publication resource before execution: %s",
+    async (resource) => {
+      const { AlvisMarketplace } = await loadAdapter();
+      const hooks = await AlvisMarketplace({
+        client: {},
+        directory: sandbox.project,
+      });
+      const path = join(
+        sandbox.project,
+        ".opencode/alvis/plugins/coding",
+        resource,
+      );
+      const original = readFileSync(path);
+      try {
+        writeFileSync(
+          path,
+          `${original.toString("utf8")}\n# changed after projection\n`,
+        );
+
+        await expect(
+          hooks["tool.execute.before"](
+            {
+              callID: "tampered-publication",
+              sessionID: "review-session",
+              tool: "bash",
+            },
+            { args: { command: "gh pr review 35 --approve" } },
+          ),
+        ).rejects.toThrow(/modified|digest|mismatch/i);
+      } finally {
+        writeFileSync(path, original);
+      }
+    },
+  );
 
   it("should retain allow advice until the matching result and clear it on idle", async () => {
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
     const args = {
       questions: [
         {
@@ -242,56 +362,86 @@ describe("opencode adapter manifest validation", () => {
 
   it("should enforce every available plan alias", async () => {
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
 
     await expect(
       hooks["tool.execute.before"](
         { callID: "plan", sessionID: "session", tool: "exit_plan_mode" },
         { args: { plan: "# Goal\n\nMissing the other required headings.\n" } },
       ),
-    ).rejects.toThrow(/missing headings: Requirements, Boundary, Direction, Context/);
+    ).rejects.toThrow(
+      /missing headings: Requirements, Boundary, Direction, Context/,
+    );
   });
 
   it("should reject the current disk-backed OpenCode plan before exit", async () => {
     const planDirectory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(planDirectory, { recursive: true });
-    writeFileSync(join(planDirectory, "123-current.md"), "# Goal\nIncomplete.\n");
+    writeFileSync(
+      join(planDirectory, "123-current.md"),
+      "# Goal\nIncomplete.\n",
+    );
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "current", time: { created: 123 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "current", time: { created: 123 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
 
-    await expect(hooks["tool.execute.before"](
-      { callID: "native-plan-invalid", sessionID: "session", tool: "plan_exit" },
-      { args: {} },
-    )).rejects.toThrow(/missing headings/);
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "native-plan-invalid",
+          sessionID: "session",
+          tool: "plan_exit",
+        },
+        { args: {} },
+      ),
+    ).rejects.toThrow(/missing headings/);
   });
 
   it("should validate the current plan without replacing native arguments", async () => {
     const planDirectory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(planDirectory, { recursive: true });
-    writeFileSync(join(planDirectory, "124-complete.md"),
-      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(
+      join(planDirectory, "124-complete.md"),
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n",
+    );
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "complete", time: { created: 124 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "complete", time: { created: 124 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
     const output = { args: {} };
 
-    await expect(hooks["tool.execute.before"](
-      { callID: "native-plan-valid", sessionID: "session", tool: "plan_exit" },
-      output,
-    )).resolves.toBeUndefined();
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "native-plan-valid",
+          sessionID: "session",
+          tool: "plan_exit",
+        },
+        output,
+      ),
+    ).resolves.toBeUndefined();
     expect(output.args).toEqual({});
   });
 
@@ -300,16 +450,26 @@ describe("opencode adapter manifest validation", () => {
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "missing", time: { created: 125 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "missing", time: { created: 125 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
 
-    await expect(hooks["tool.execute.before"](
-      { callID: "native-plan-missing", sessionID: "session", tool: "plan_exit" },
-      { args: {} },
-    )).rejects.toThrow(/plan.*(?:unavailable|read|missing)/i);
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "native-plan-missing",
+          sessionID: "session",
+          tool: "plan_exit",
+        },
+        { args: {} },
+      ),
+    ).rejects.toThrow(/plan.*(?:unavailable|read|missing)/i);
   });
 
   it("should reject traversal in session plan metadata", async () => {
@@ -317,16 +477,28 @@ describe("opencode adapter manifest validation", () => {
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "../../outside", time: { created: 126 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "../../outside", time: { created: 126 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
 
-    await expect(hooks["tool.execute.before"](
-      { callID: "native-plan-traversal", sessionID: "session", tool: "plan_exit" },
-      { args: {} },
-    )).rejects.toThrow(/(?:invalid|unsafe).*plan|plan.*(?:metadata|invalid|unsafe)/i);
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "native-plan-traversal",
+          sessionID: "session",
+          tool: "plan_exit",
+        },
+        { args: {} },
+      ),
+    ).rejects.toThrow(
+      /(?:invalid|unsafe).*plan|plan.*(?:metadata|invalid|unsafe)/i,
+    );
   });
 
   it("should validate non-VCS plans from OpenCode's XDG data directory", async () => {
@@ -334,21 +506,34 @@ describe("opencode adapter manifest validation", () => {
     vi.stubEnv("XDG_DATA_HOME", dataHome);
     const planDirectory = join(dataHome, "opencode", "plans");
     mkdirSync(planDirectory, { recursive: true });
-    writeFileSync(join(planDirectory, "127-global.md"), "# Goal\nIncomplete.\n");
+    writeFileSync(
+      join(planDirectory, "127-global.md"),
+      "# Goal\nIncomplete.\n",
+    );
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: {} }) },
-        session: { get: async () => ({ data: { slug: "global", time: { created: 127 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "global", time: { created: 127 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
 
-    await expect(hooks["tool.execute.before"](
-      { callID: "native-plan-global", sessionID: "session", tool: "plan_exit" },
-      { args: {} },
-    )).rejects.toThrow(/missing headings/);
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "native-plan-global",
+          sessionID: "session",
+          tool: "plan_exit",
+        },
+        { args: {} },
+      ),
+    ).rejects.toThrow(/missing headings/);
   });
 
   it("should report session lookup failure before native plan exit", async () => {
@@ -356,107 +541,223 @@ describe("opencode adapter manifest validation", () => {
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => { throw new Error("service unavailable"); } },
+        session: {
+          get: async () => {
+            throw new Error("service unavailable");
+          },
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
 
-    await expect(hooks["tool.execute.before"](
-      { callID: "native-plan-lookup", sessionID: "session", tool: "plan_exit" },
-      { args: {} },
-    )).rejects.toThrow(/Plan validation is unavailable/);
+    await expect(
+      hooks["tool.execute.before"](
+        {
+          callID: "native-plan-lookup",
+          sessionID: "session",
+          tool: "plan_exit",
+        },
+        { args: {} },
+      ),
+    ).rejects.toThrow(/Plan validation is unavailable/);
   });
 
   it("should inject approval instructions into an explicit OpenCode prompt", async () => {
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
-    const output = { message: { id: "msg_approved" }, parts: [{ id: "prt_original", sessionID: "approved-prompt", messageID: "msg_approved", type: "text", text: "Implement the plan." }] };
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
+    const output = {
+      message: { id: "msg_approved" },
+      parts: [
+        {
+          id: "prt_original",
+          sessionID: "approved-prompt",
+          messageID: "msg_approved",
+          type: "text",
+          text: "Implement the plan.",
+        },
+      ],
+    };
     await hooks["chat.message"]({ sessionID: "approved-prompt" }, output);
     expect(output.parts).toEqual([
-      { id: "prt_original", sessionID: "approved-prompt", messageID: "msg_approved", type: "text", text: "Implement the plan." },
-      { id: expect.stringMatching(/^prt_[0-9a-f]{12}[A-Za-z0-9]{14}$/), sessionID: "approved-prompt", messageID: "msg_approved", type: "text", text: expect.stringContaining("directions/approve-plan.md"), synthetic: true },
+      {
+        id: "prt_original",
+        sessionID: "approved-prompt",
+        messageID: "msg_approved",
+        type: "text",
+        text: "Implement the plan.",
+      },
+      {
+        id: expect.stringMatching(/^prt_[0-9a-f]{12}[A-Za-z0-9]{14}$/),
+        sessionID: "approved-prompt",
+        messageID: "msg_approved",
+        type: "text",
+        text: expect.stringContaining("directions/approve-plan.md"),
+        synthetic: true,
+      },
     ]);
   });
 
   it("should deliver approval instructions after a successful native plan exit", async () => {
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
-    const approvedPlan = "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n";
+    const approvedPlan =
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n";
     writeFileSync(join(directory, "128-approved.md"), approvedPlan);
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "approved", time: { created: 128 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "approved", time: { created: 128 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
-    const input = { callID: "approve-native", sessionID: "approved-native", tool: "plan_exit" };
+    const input = {
+      callID: "approve-native",
+      sessionID: "approved-native",
+      tool: "plan_exit",
+    };
     await hooks["tool.execute.before"](input, { args: {} });
-    const result = { metadata: {}, output: "User approved switching to build agent. Wait for further instructions.", title: "Switching to build agent" };
+    const result = {
+      metadata: {},
+      output:
+        "User approved switching to build agent. Wait for further instructions.",
+      title: "Switching to build agent",
+    };
     await hooks["tool.execute.after"]({ ...input, args: {} }, result);
-    expect(result.output.startsWith("User approved switching to build agent. Wait for further instructions.")).toBe(true);
+    expect(
+      result.output.startsWith(
+        "User approved switching to build agent. Wait for further instructions.",
+      ),
+    ).toBe(true);
     expect(result.output).toContain("save-approved-plan");
     expect(result.output).toContain("opencode-v1:PostToolUse");
-    expect(result.output).toContain(join(realpathSync(sandbox.project), ".opencode", "plans", "128-approved.md"));
-    expect(result.output).toContain(createHash("sha256").update(approvedPlan).digest("hex"));
+    expect(result.output).toContain(
+      join(
+        realpathSync(sandbox.project),
+        ".opencode",
+        "plans",
+        "128-approved.md",
+      ),
+    );
+    expect(result.output).toContain(
+      createHash("sha256").update(approvedPlan).digest("hex"),
+    );
   });
 
   it("should reject approval when the plan changes after native preflight", async () => {
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
     const path = join(directory, "130-changed.md");
-    writeFileSync(path, "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(
+      path,
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n",
+    );
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "changed", time: { created: 130 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "changed", time: { created: 130 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
-    const input = { callID: "changed-native", sessionID: "changed-native", tool: "plan_exit" };
+    const input = {
+      callID: "changed-native",
+      sessionID: "changed-native",
+      tool: "plan_exit",
+    };
     await hooks["tool.execute.before"](input, { args: {} });
     writeFileSync(path, "Changed after preflight.");
-    const result = { metadata: {}, output: "User approved switching to build agent. Wait for further instructions.", title: "Switching to build agent" };
-    await expect(hooks["tool.execute.after"]({ ...input, args: {} }, result)).rejects.toThrow(/changed|revalidate|stale/i);
+    const result = {
+      metadata: {},
+      output:
+        "User approved switching to build agent. Wait for further instructions.",
+      title: "Switching to build agent",
+    };
+    await expect(
+      hooks["tool.execute.after"]({ ...input, args: {} }, result),
+    ).rejects.toThrow(/changed|revalidate|stale/i);
     expect(result.output).not.toContain("save-approved-plan");
   });
 
   it("should not fabricate approval context without native preflight", async () => {
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
-    const result = { metadata: {}, output: "User approved switching to build agent. Wait for further instructions.", title: "Switching to build agent" };
-    await hooks["tool.execute.after"]({ callID: "no-preflight", sessionID: "missing", tool: "plan_exit", args: {} }, result);
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
+    const result = {
+      metadata: {},
+      output:
+        "User approved switching to build agent. Wait for further instructions.",
+      title: "Switching to build agent",
+    };
+    await hooks["tool.execute.after"](
+      {
+        callID: "no-preflight",
+        sessionID: "missing",
+        tool: "plan_exit",
+        args: {},
+      },
+      result,
+    );
     expect(result.output).not.toContain("save-approved-plan");
   });
 
   it("should not deliver approval context after a rejected native exit", async () => {
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, "129-rejected.md"), "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(
+      join(directory, "129-rejected.md"),
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n",
+    );
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "rejected", time: { created: 129 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "rejected", time: { created: 129 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
-    const input = { callID: "reject-native", sessionID: "rejected-native", tool: "plan_exit" };
+    const input = {
+      callID: "reject-native",
+      sessionID: "rejected-native",
+      tool: "plan_exit",
+    };
     await hooks["tool.execute.before"](input, { args: {} });
-    const result = { metadata: {}, output: "User rejected switching to build agent.", title: "Staying in plan mode" };
+    const result = {
+      metadata: {},
+      output: "User rejected switching to build agent.",
+      title: "Staying in plan mode",
+    };
     await hooks["tool.execute.after"]({ ...input, args: {} }, result);
     expect(result.output).not.toContain("save-approved-plan");
   });
 
   it("should enforce the OpenCode task alias with the native dispatch validator", async () => {
     const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
+    const hooks = await AlvisMarketplace({
+      client: {},
+      directory: sandbox.project,
+    });
 
     await expect(
       hooks["tool.execute.before"](
@@ -482,7 +783,9 @@ describe("opencode adapter manifest validation", () => {
       rootOutput,
     );
     const rootContext = rootOutput.system.join("\n");
-    expect(rootContext).toContain("OpenCode host limitation: Stop hook is advisory");
+    expect(rootContext).toContain(
+      "OpenCode host limitation: Stop hook is advisory",
+    );
 
     const childHooks = await AlvisMarketplace({
       client: {
@@ -529,18 +832,25 @@ describe("opencode adapter manifest validation", () => {
     };
     const marker = "context-without-a-lead-agent\n";
     delete manifest.file_digests["agents/tech-lead.md"];
-    manifest.file_digests[contextResource] = createHash("sha256").update(marker).digest("hex");
+    manifest.file_digests[contextResource] = createHash("sha256")
+      .update(marker)
+      .digest("hex");
     try {
       writeFileSync(contextPath, marker);
       writeFileSync(manifestPath, JSON.stringify(manifest));
       const { AlvisMarketplace } = await loadAdapter();
       const hooks = await AlvisMarketplace({
-        client: { session: { get: async () => ({ data: { id: "root-no-lead" } }) } },
+        client: {
+          session: { get: async () => ({ data: { id: "root-no-lead" } }) },
+        },
         directory: sandbox.project,
       });
       const output: { system: string[] } = { system: [] };
 
-      await hooks["experimental.chat.system.transform"]({ sessionID: "root-no-lead" }, output);
+      await hooks["experimental.chat.system.transform"](
+        { sessionID: "root-no-lead" },
+        output,
+      );
 
       expect(output.system.join("\n")).toContain(marker.trim());
     } finally {
@@ -558,37 +868,66 @@ describe("opencode adapter manifest validation", () => {
     const originalContext = readFileSync(contextPath, "utf8");
     const receiptTemp = join(sandbox.root, "unavailable-receipts");
     mkdirSync(receiptTemp);
-    const blockedDirectory = join(receiptTemp, `alvis-domain-context-${process.getuid?.() ?? "user"}`);
+    const blockedDirectory = join(
+      receiptTemp,
+      `alvis-domain-context-${process.getuid?.() ?? "user"}`,
+    );
     writeFileSync(blockedDirectory, "blocks receipt directory creation");
     const marker = "fixture-storage-coding\n";
-    const manifest = JSON.parse(originalManifest) as { file_digests: Record<string, string> };
-    manifest.file_digests[resource] = createHash("sha256").update(marker).digest("hex");
+    const manifest = JSON.parse(originalManifest) as {
+      file_digests: Record<string, string>;
+    };
+    manifest.file_digests[resource] = createHash("sha256")
+      .update(marker)
+      .digest("hex");
     try {
       vi.stubEnv("TMPDIR", receiptTemp);
       writeFileSync(contextPath, marker);
       writeFileSync(manifestPath, JSON.stringify(manifest));
       const { AlvisMarketplace } = await loadAdapter();
-      const createHooks = () => AlvisMarketplace({
-        client: { session: { get: async () => ({ data: { id: "storage-root" } }) } },
-        directory: sandbox.project,
-      });
+      const createHooks = () =>
+        AlvisMarketplace({
+          client: {
+            session: { get: async () => ({ data: { id: "storage-root" } }) },
+          },
+          directory: sandbox.project,
+        });
       const hooks = await createHooks();
       const activate = async (sessionID: string) => {
-        const message = { message: { id: "msg_storage" }, parts: [{ id: "prt_storage", sessionID, messageID: "msg_storage", type: "text", text: "/coding:fixture" }] };
+        const message = {
+          message: { id: "msg_storage" },
+          parts: [
+            {
+              id: "prt_storage",
+              sessionID,
+              messageID: "msg_storage",
+              type: "text",
+              text: "/coding:fixture",
+            },
+          ],
+        };
         await hooks["chat.message"]({ sessionID }, message);
         expect(message.parts).toHaveLength(1);
         expect(message.parts[0].text).toBe("/coding:fixture");
       };
       const occurrences = async (target: AdapterHooks, sessionID: string) => {
         const output = { system: [] as string[] };
-        await target["experimental.chat.system.transform"]({ sessionID }, output);
+        await target["experimental.chat.system.transform"](
+          { sessionID },
+          output,
+        );
         return output.system.join("\n").split(marker.trim()).length - 1;
       };
       await activate("storage-root");
       expect(await occurrences(hooks, "storage-root")).toBe(1);
       expect(await occurrences(hooks, "storage-root")).toBe(1);
       expect(await occurrences(hooks, "other-storage-root")).toBe(0);
-      await hooks.event({ event: { type: "session.deleted", properties: { info: { id: "storage-root" } } } });
+      await hooks.event({
+        event: {
+          type: "session.deleted",
+          properties: { info: { id: "storage-root" } },
+        },
+      });
       expect(await occurrences(hooks, "storage-root")).toBe(0);
       await activate("storage-root");
       expect(await occurrences(hooks, "storage-root")).toBe(1);
@@ -599,7 +938,12 @@ describe("opencode adapter manifest validation", () => {
       expect(await occurrences(hooks, "storage-root")).toBe(1);
       const recreated = await createHooks();
       expect(await occurrences(recreated, "storage-root")).toBe(1);
-      await recreated.event({ event: { type: "session.deleted", properties: { info: { id: "storage-root" } } } });
+      await recreated.event({
+        event: {
+          type: "session.deleted",
+          properties: { info: { id: "storage-root" } },
+        },
+      });
       expect(await occurrences(recreated, "storage-root")).toBe(0);
     } finally {
       writeFileSync(contextPath, originalContext);
@@ -614,129 +958,284 @@ describe("opencode adapter manifest validation", () => {
     const contextPath = join(projection, resource);
     const originalManifest = readFileSync(manifestPath, "utf8");
     const originalContext = readFileSync(contextPath, "utf8");
-    const manifest = JSON.parse(originalManifest) as { file_digests: Record<string, string> };
+    const manifest = JSON.parse(originalManifest) as {
+      file_digests: Record<string, string>;
+    };
     const marker = "fixture-coding-active\n";
-    manifest.file_digests[resource] = createHash("sha256").update(marker).digest("hex");
+    manifest.file_digests[resource] = createHash("sha256")
+      .update(marker)
+      .digest("hex");
     try {
       writeFileSync(contextPath, marker);
       writeFileSync(manifestPath, JSON.stringify(manifest));
       const { AlvisMarketplace } = await loadAdapter();
       const hooks = await AlvisMarketplace({
-        client: { session: { get: async () => ({ data: { id: "domain-root" } }) } },
+        client: {
+          session: { get: async () => ({ data: { id: "domain-root" } }) },
+        },
         directory: sandbox.project,
       });
       const unrelated = { system: [] as string[] };
-      await hooks["experimental.chat.system.transform"]({ sessionID: "domain-root" }, unrelated);
+      await hooks["experimental.chat.system.transform"](
+        { sessionID: "domain-root" },
+        unrelated,
+      );
       expect(unrelated.system.join("\n")).not.toContain(marker.trim());
 
-      const message = { message: { id: "msg_domain" }, parts: [{ id: "prt_domain", sessionID: "domain-root", messageID: "msg_domain", type: "text", text: "/coding:fixture" }] };
+      const message = {
+        message: { id: "msg_domain" },
+        parts: [
+          {
+            id: "prt_domain",
+            sessionID: "domain-root",
+            messageID: "msg_domain",
+            type: "text",
+            text: "/coding:fixture",
+          },
+        ],
+      };
       await hooks["chat.message"]({ sessionID: "domain-root" }, message);
-      expect(message.parts.filter((part) => part.text.includes(marker.trim()))).toEqual([]);
+      expect(
+        message.parts.filter((part) => part.text.includes(marker.trim())),
+      ).toEqual([]);
       for (const system of [[], []] as string[][]) {
-        await hooks["experimental.chat.system.transform"]({ sessionID: "domain-root" }, { system });
-        const modelContext = [...message.parts.map((part) => part.text), ...system].join("\n");
+        await hooks["experimental.chat.system.transform"](
+          { sessionID: "domain-root" },
+          { system },
+        );
+        const modelContext = [
+          ...message.parts.map((part) => part.text),
+          ...system,
+        ].join("\n");
         expect(modelContext.split(marker.trim())).toHaveLength(2);
       }
-      const repeated = { message: { id: "msg_repeat" }, parts: [{ id: "prt_repeat", sessionID: "domain-root", messageID: "msg_repeat", type: "text", text: "/coding:fixture" }] };
+      const repeated = {
+        message: { id: "msg_repeat" },
+        parts: [
+          {
+            id: "prt_repeat",
+            sessionID: "domain-root",
+            messageID: "msg_repeat",
+            type: "text",
+            text: "/coding:fixture",
+          },
+        ],
+      };
       await hooks["chat.message"]({ sessionID: "domain-root" }, repeated);
-      expect(repeated.parts.filter((part) => part.text.includes(marker.trim()))).toEqual([]);
-      const identity = ["opencode", "domain-root", projection, sandbox.project, "root", createHash("sha256").update(JSON.stringify(manifest.file_digests)).digest("hex")];
-      const wrongScope = resolveDomainContext({ plugins: [{ name: "coding", path: join(projection, "alvis/plugins/coding") }], cwd: sandbox.root, audience: "main", evidence: { prompt: "/coding:fixture" } }).receipt;
+      expect(
+        repeated.parts.filter((part) => part.text.includes(marker.trim())),
+      ).toEqual([]);
+      const identity = [
+        "opencode",
+        "domain-root",
+        projection,
+        sandbox.project,
+        "root",
+        createHash("sha256")
+          .update(JSON.stringify(manifest.file_digests))
+          .digest("hex"),
+      ];
+      const wrongScope = resolveDomainContext({
+        plugins: [
+          { name: "coding", path: join(projection, "alvis/plugins/coding") },
+        ],
+        cwd: sandbox.root,
+        audience: "main",
+        evidence: { prompt: "/coding:fixture" },
+      }).receipt;
       for (const receipt of ["not-json", wrongScope]) {
         writeDomainReceipt(identity, receipt);
         const recovered = { system: [] as string[] };
-        await hooks["experimental.chat.system.transform"]({ sessionID: "domain-root" }, recovered);
+        await hooks["experimental.chat.system.transform"](
+          { sessionID: "domain-root" },
+          recovered,
+        );
         expect(recovered.system.join("\n")).not.toContain(marker.trim());
-        const reactivation = { message: { id: "msg_reactivate" }, parts: [{ id: "prt_reactivate", sessionID: "domain-root", messageID: "msg_reactivate", type: "text", text: "/coding:fixture" }] };
+        const reactivation = {
+          message: { id: "msg_reactivate" },
+          parts: [
+            {
+              id: "prt_reactivate",
+              sessionID: "domain-root",
+              messageID: "msg_reactivate",
+              type: "text",
+              text: "/coding:fixture",
+            },
+          ],
+        };
         await hooks["chat.message"]({ sessionID: "domain-root" }, reactivation);
       }
       const recreated = await AlvisMarketplace({
-        client: { session: { get: async () => ({ data: { id: "domain-root" } }) } },
+        client: {
+          session: { get: async () => ({ data: { id: "domain-root" } }) },
+        },
         directory: sandbox.project,
       });
       const restored = { system: [] as string[] };
-      await recreated["experimental.chat.system.transform"]({ sessionID: "domain-root" }, restored);
+      await recreated["experimental.chat.system.transform"](
+        { sessionID: "domain-root" },
+        restored,
+      );
       expect(restored.system.join("\n")).toContain(marker.trim());
       const fresh = { system: [] as string[] };
-      await recreated["experimental.chat.system.transform"]({ sessionID: "fresh-domain-root" }, fresh);
+      await recreated["experimental.chat.system.transform"](
+        { sessionID: "fresh-domain-root" },
+        fresh,
+      );
       expect(fresh.system.join("\n")).not.toContain(marker.trim());
-      await recreated.event({ event: { type: "session.deleted", properties: { info: { id: "domain-root" } } } });
+      await recreated.event({
+        event: {
+          type: "session.deleted",
+          properties: { info: { id: "domain-root" } },
+        },
+      });
       const deleted = { system: [] as string[] };
-      await recreated["experimental.chat.system.transform"]({ sessionID: "domain-root" }, deleted);
+      await recreated["experimental.chat.system.transform"](
+        { sessionID: "domain-root" },
+        deleted,
+      );
       expect(deleted.system.join("\n")).not.toContain(marker.trim());
-      const operation = { callID: "domain-first-operation", sessionID: "operation-root", tool: "bash" };
+      const operation = {
+        callID: "domain-first-operation",
+        sessionID: "operation-root",
+        tool: "bash",
+      };
       const output = { args: { command: "git diff" } };
-      await expect(hooks["tool.execute.before"](operation, output)).rejects.toThrow(marker.trim());
-      await expect(hooks["tool.execute.before"]({ ...operation, callID: "domain-operation-retry" }, output)).resolves.toBeUndefined();
+      await expect(
+        hooks["tool.execute.before"](operation, output),
+      ).rejects.toThrow(marker.trim());
+      await expect(
+        hooks["tool.execute.before"](
+          { ...operation, callID: "domain-operation-retry" },
+          output,
+        ),
+      ).resolves.toBeUndefined();
     } finally {
-      for (const sessionID of ["domain-root", "operation-root"]) deleteDomainReceipt(["opencode", sessionID, projection, sandbox.project, "root", createHash("sha256").update(JSON.stringify(manifest.file_digests)).digest("hex")]);
+      for (const sessionID of ["domain-root", "operation-root"])
+        deleteDomainReceipt([
+          "opencode",
+          sessionID,
+          projection,
+          sandbox.project,
+          "root",
+          createHash("sha256")
+            .update(JSON.stringify(manifest.file_digests))
+            .digest("hex"),
+        ]);
       writeFileSync(contextPath, originalContext);
       writeFileSync(manifestPath, originalManifest);
     }
   });
 
-  it("should retain commit backup advice and post-rewrite diagnostics after a repository rewrite", async () => {
-    // keep backup traversal independent of the installed adapter bundle
-    const repository = join(sandbox.root, "rewrite-repository");
-    mkdirSync(repository);
-    writeFileSync(join(repository, ".gitignore"), ".opencode/\n");
-    writeFileSync(join(repository, "tracked.txt"), "tracked\n");
-    execFileSync("git", ["init", "--quiet"], { cwd: repository });
-    execFileSync("git", ["config", "user.email", "test@example.com"], {
-      cwd: repository,
-    });
-    execFileSync("git", ["config", "user.name", "Test User"], {
-      cwd: repository,
-    });
-    execFileSync("git", ["add", ".gitignore", "tracked.txt"], {
-      cwd: repository,
-    });
-    execFileSync("git", ["commit", "--quiet", "-m", "test: initial"], {
-      cwd: repository,
-    });
-    const { AlvisMarketplace } = await loadAdapter();
-    const hooks = await AlvisMarketplace({ client: {}, directory: repository });
-    const args = { command: "git rebase --onto main base branch" };
-    await hooks["tool.execute.before"](
-      { callID: "rewrite", sessionID: "session", tool: "bash" },
-      { args },
-    );
-    const metadata = { exit: 0, retained: true };
-    const result = { metadata, output: "command output", title: "Shell" };
+  it(
+    "should retain commit backup advice and post-rewrite diagnostics after a repository rewrite",
+    async () => {
+      // keep backup traversal independent of the installed adapter bundle
+      const repository = join(sandbox.root, "rewrite-repository");
+      mkdirSync(repository);
+      writeFileSync(join(repository, ".gitignore"), ".opencode/\n");
+      writeFileSync(join(repository, "tracked.txt"), "tracked\n");
+      execFileSync("git", ["init", "--quiet"], { cwd: repository });
+      execFileSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: repository,
+      });
+      execFileSync("git", ["config", "user.name", "Test User"], {
+        cwd: repository,
+      });
+      execFileSync("git", ["add", ".gitignore", "tracked.txt"], {
+        cwd: repository,
+      });
+      execFileSync("git", ["commit", "--quiet", "-m", "test: initial"], {
+        cwd: repository,
+      });
+      const { AlvisMarketplace } = await loadAdapter();
+      const hooks = await AlvisMarketplace({
+        client: {},
+        directory: repository,
+      });
+      const args = { command: "git rebase --onto main base branch" };
+      await hooks["tool.execute.before"](
+        { callID: "rewrite", sessionID: "session", tool: "bash" },
+        { args },
+      );
+      const metadata = { exit: 0, retained: true };
+      const result = { metadata, output: "command output", title: "Shell" };
 
-    await hooks["tool.execute.after"](
-      { args, callID: "rewrite", sessionID: "session", tool: "bash" },
-      result,
-    );
+      await hooks["tool.execute.after"](
+        { args, callID: "rewrite", sessionID: "session", tool: "bash" },
+        result,
+      );
 
-    expect(result.output).toContain("Auto-backup:");
-    expect(result.output).toContain("Integrity Check");
-    expect(result.metadata).toBe(metadata);
-  }, hookTimeoutMs);
+      expect(result.output).toContain("Auto-backup:");
+      expect(result.output).toContain("Integrity Check");
+      expect(result.metadata).toBe(metadata);
+    },
+    hookTimeoutMs,
+  );
 
   it("should reject approval delivery after the projected shell context is tampered", async () => {
     const { AlvisMarketplace } = await loadAdapter();
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, "131-tamper.md"), "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(
+      join(directory, "131-tamper.md"),
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n## Context\nCurrent.\n",
+    );
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },
-        session: { get: async () => ({ data: { slug: "tamper", time: { created: 131 } } }) },
+        session: {
+          get: async () => ({
+            data: { slug: "tamper", time: { created: 131 } },
+          }),
+        },
       },
       directory: sandbox.project,
       worktree: sandbox.project,
     });
-    const input = { callID: "tampered-after", sessionID: "tampered-after", tool: "plan_exit" };
+    const input = {
+      callID: "tampered-after",
+      sessionID: "tampered-after",
+      tool: "plan_exit",
+    };
     await hooks["tool.execute.before"](input, { args: {} });
-    const contextPath = join(realpathSync(sandbox.project), ".opencode", "alvis", "plugins", "essential", "hooks", "scripts", "context.sh");
+    const contextPath = join(
+      realpathSync(sandbox.project),
+      ".opencode",
+      "alvis",
+      "plugins",
+      "essential",
+      "hooks",
+      "scripts",
+      "context.sh",
+    );
     const original = readFileSync(contextPath, "utf8");
     try {
       writeFileSync(contextPath, `${original}\n# tampered test input\n`);
-      const output = { message: { id: "msg_approved" }, parts: [{ id: "prt_original", sessionID: "approved-prompt", messageID: "msg_approved", type: "text", text: "Implement the plan." }] };
-      await expect(hooks["chat.message"]({ sessionID: "tampered-context" }, output)).rejects.toThrow(/modified|digest|mismatch/i);
-      const result = { metadata: {}, output: "User approved switching to build agent. Wait for further instructions.", title: "Switching to build agent" };
-      await expect(hooks["tool.execute.after"]({ ...input, args: {} }, result)).rejects.toThrow(/modified|digest|mismatch/i);
+      const output = {
+        message: { id: "msg_approved" },
+        parts: [
+          {
+            id: "prt_original",
+            sessionID: "approved-prompt",
+            messageID: "msg_approved",
+            type: "text",
+            text: "Implement the plan.",
+          },
+        ],
+      };
+      await expect(
+        hooks["chat.message"]({ sessionID: "tampered-context" }, output),
+      ).rejects.toThrow(/modified|digest|mismatch/i);
+      const result = {
+        metadata: {},
+        output:
+          "User approved switching to build agent. Wait for further instructions.",
+        title: "Switching to build agent",
+      };
+      await expect(
+        hooks["tool.execute.after"]({ ...input, args: {} }, result),
+      ).rejects.toThrow(/modified|digest|mismatch/i);
     } finally {
       writeFileSync(contextPath, original);
     }
@@ -753,7 +1252,9 @@ describe("opencode adapter manifest validation", () => {
     const { AlvisMarketplace } = await loadAdapter();
     await expect(
       AlvisMarketplace({ client: {}, directory: sandbox.project }),
-    ).rejects.toThrow(/managed runtime file was modified alvis\/contract\.json/);
+    ).rejects.toThrow(
+      /managed runtime file was modified alvis\/contract\.json/,
+    );
   });
 
   it("rejects a manifest that stops managing a runtime file", async () => {

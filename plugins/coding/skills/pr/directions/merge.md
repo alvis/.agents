@@ -163,13 +163,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 
    f. Wait for GitHub to observe the push, then re-check CI before merging the next PR. If checks are pending, report that the stack was restacked and stop unless the user asked to wait; if asked to wait, poll at a reasonable interval for up to the user's requested duration.
 
-7. **Fix handling gate.** If any CI fix was made during this workflow by invoking or following `coding:fix`, update the affected PR branches/bookmarks using the same restack and push instructions above, but do not perform any `gh pr merge` action for the fixed PR or any downstream PR until the user gives explicit approval. Post a comment on the relevant PRs with the fix summary:
-
-   ```bash
-   gh pr comment <number> --body-file <summary-file>
-   ```
-
-   Then present the same summary to the user and wait for explicit approval before returning to step 4. Until approval arrives, treat all downstream PRs as blocked even if their checks are green.
+7. **Fix handling gate.** If any CI fix was made during this workflow by invoking or following `coding:fix`, update the affected PR branches/bookmarks using the same restack and push instructions above, but do not perform any `gh pr merge` action for the fixed PR or any downstream PR until the user gives explicit approval. Publish the contract-defined `merge-fix-published` status through [review-publishing.md](review-publishing.md), present the detailed fix summary to the user, and wait for explicit approval before returning to step 4. Until approval arrives, treat all downstream PRs as blocked even if their checks are green.
 
 8. **Conflict or failure recovery.** On rebase conflict, stop immediately and show the recovery commands for the active VCS:
 

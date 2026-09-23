@@ -6,7 +6,7 @@ _Scannable requirements for implementation diffs and rendered PR messages._
 
 This standard owns only violations detectable mechanically or semantically in an implementation diff or rendered PR message. Each violation is an issue that requires a fix.
 
-The [commit-message standard](../commit/meta.md) owns the text of a commit message, including the header contract a PR title reuses. [coding:commit](../../skills/commit/SKILL.md) owns commit, branch, and local history directions. [create-update.md](../../skills/pr/directions/create-update.md), [stacked-prs.md](../../skills/pr/directions/stacked-prs.md), [review.md](../../skills/pr/directions/review.md), and [merge.md](../../skills/pr/directions/merge.md) own PR directions. The PR skill's [message.md](../../skills/pr/templates/message.md) and [inline-review.md](../../skills/pr/templates/inline-review.md) own rendered message shapes. Those directions and templates are not standards.
+The [commit-message standard](../commit/meta.md) owns the text of a commit message, including the header contract a PR title reuses. [coding:commit](../../skills/commit/SKILL.md) owns commit, branch, and local history directions. [create-update.md](../../skills/pr/directions/create-update.md), [stacked-prs.md](../../skills/pr/directions/stacked-prs.md), [review.md](../../skills/pr/directions/review.md), and [merge.md](../../skills/pr/directions/merge.md) own PR directions. The PR skill's [message.md](../../skills/pr/templates/message.md) owns the PR body shape, while [review-publication.ts](../../skills/pr/scripts/review-publication.ts) owns review assessment, rendering, approval, and publication. Those directions and artifacts are not standards.
 
 ## Canonical Inputs
 

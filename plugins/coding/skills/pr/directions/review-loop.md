@@ -27,7 +27,7 @@ jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
 
 A failure stops the batch before dispatch; the publication owner reconciles it. Never create or adopt a different review surface inside this gate.
 
-Apply `coding:directions/review-evidence.md` before dispatch: record the changed inputs, retained coverage, affected findings/paths/contracts, and the bounded mission. Initial review establishes complete coverage; follow-ups recheck that impact, expanding only when evidence or risk requires it. Record the current iteration, stack PR URLs, and expected head/base refs and OIDs. For each stack, the parent performs the resolve and tree/artifact provisioning steps in [review.md](review.md), retains its one tree lease, and builds one bounded capsule containing `STACK_BASE_OID`, `STACK_HEAD_OID`, the `PR_SURFACES` map, `REVIEW_DIR`, `REVIEW_LEDGER`, and `REVIEW_PAYLOAD`. Use a distinct artifact directory for each stack, never one checkout or lease per PR.
+Apply `coding:directions/review-evidence.md` before dispatch: record the changed inputs, retained coverage, affected findings/paths/contracts, and the bounded mission. Initial review establishes complete coverage; follow-ups recheck that impact, expanding only when evidence or risk requires it. Record the current iteration, stack PR URLs, and expected head/base refs and OIDs. For each stack, the parent performs the resolve and tree/artifact provisioning steps in [review.md](review.md), retains its one tree lease, and builds one bounded capsule containing `STACK_BASE_OID`, `STACK_HEAD_OID`, the `PR_SURFACES` map, `REVIEW_DIR`, `REVIEW_LEDGER`, `REVIEW_ASSESSMENT`, and `REVIEW_APPROVAL`. Use a distinct artifact directory for each stack, never one checkout or lease per PR.
 
 For each batch, retain its independent `code-quality-critic` across ordinary follow-ups, starting a fresh session without inherited implementation context when none is assigned. Include any companion evidence receipt from `coding:directions/review-evidence.md`. Give it the repository path, that batch's bottom-to-top capsules, prior reports/dispositions, the recorded impact mission, and this instruction:
 
@@ -61,28 +61,9 @@ Complete the disposition ledger using [the PR re-review dispositions](review-pub
 - **Accepted without code:** perform the requested process or documentation action and capture evidence.
 - **Question or rejected finding:** answer with concrete code, test, standard, or requirement evidence. Disagreement is not resolution by assertion; the independent reviewer must be able to confirm the disposition.
 
-Reply to each inline comment after the claimed action exists remotely:
+After the claimed action exists remotely, send each inline or unanchored disposition through [review-publishing.md](review-publishing.md) as an exact-body `discussion-reply` bound to the comment or review issue-comment target it answers. The independent reviewer classifies and approves that exact reply; the implementation-and-publication parent relays the artifact without editing it. An unanchored finding whose approved content belongs in a review supplement instead uses the parent review receipt and selected finding ID, never a free-form "evidence receipt" summary.
 
-```bash
-gh api --hostname "$HOST" --method POST \
-  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" \
-  -f body="$REPLY"
-```
-
-For an unanchored overall-review finding, post a PR comment that links to the review and names the disposition:
-
-```bash
-gh pr comment "$PR_URL" --body "$REPLY"
-```
-
-Keep replies concise: state `fixed`, `answered`, or `declined with evidence`; name the pushed head SHA or evidence; never claim a local-only edit is fixed. The implementation-and-publication parent must not resolve the thread; only the independent reviewer may do so after independently checking the published head. If a resolved thread regresses, reopen it before replying:
-
-```bash
-gh api graphql --hostname "$HOST" -F threadId="$THREAD_ID" -f query='
-mutation($threadId:ID!){
-  unresolveReviewThread(input:{threadId:$threadId}){thread{isResolved}}
-}'
-```
+Keep replies concise: state `fixed`, `answered`, or `declined with evidence`; name the pushed head SHA or evidence; never claim a local-only edit is fixed. The implementation-and-publication parent must not classify or resolve the thread. Only the independent reviewer may approve a thread-bound `resolve-thread` or `unresolve-thread` operation after independently checking the published head; the parent then relays that immutable approval artifact through the canonical publisher.
 
 ## Republish and repeat
 

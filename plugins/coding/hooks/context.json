@@ -5,7 +5,7 @@
   ],
   "tool_patterns": [
     "\\.(?:[cm]?[jt]sx?|py|rs|go|java|sh)(?:[\\s\"':]|$)",
-    "\\b(?:git|jj|gh)\\s+(?:commit|push|pr|diff)\\b"
+    "\\b(?:git|jj)\\s+(?:commit|push|pr|diff)\\b|\\bgh\\s+(?:api|issue|pr)\\b"
   ],
   "agent_patterns": [
     "engineer|implementer|tech-lead|test-runner|testing-evangelist|code-quality-critic|devops"
