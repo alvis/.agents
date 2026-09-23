@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
+  cpSync,
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -11,7 +13,11 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { classifyReviewPublicationCommand } from "../../skills/pr/scripts/review-publication.ts";
+import {
+  CONTRACT_VERSION,
+  classifyReviewPublicationCommand,
+  createReviewPublicationReceipt,
+} from "../../skills/pr/scripts/review-publication.ts";
 
 import type { SpawnSyncReturns } from "node:child_process";
 
@@ -288,6 +294,141 @@ describe("review publication shell guard", () => {
       rmSync(missingRoot, { recursive: true, force: true });
     }
   });
+
+  it.each(["missing", "changed"] as const)(
+    "should stop guarded publication before transport when its installed template is %s",
+    (state) => {
+      const directory = mkdtempSync(join(tmpdir(), "review-guard-publisher-"));
+      try {
+        const scripts = join(directory, "skills/pr/scripts");
+        const templates = join(directory, "skills/pr/templates");
+        mkdirSync(scripts, { recursive: true });
+        cpSync(contractPath, join(scripts, "review-publication.ts"));
+        cpSync(join(pluginRoot, "skills/pr/templates"), templates, {
+          recursive: true,
+        });
+        const identity = {
+          agent_id: "reviewer-session",
+          capability: "independent-code-review",
+          login: "reviewer",
+        };
+        const receipt = createReviewPublicationReceipt({
+          contract_version: CONTRACT_VERSION,
+          kind: "review",
+          publisher: {
+            agent_id: "publisher-session",
+            capability: "publication-agent",
+            login: "publisher",
+          },
+          reviewer: identity,
+          semantic_approval: {
+            approved: true,
+            evidence_sha256: "a".repeat(64),
+            reviewer_agent_id: identity.agent_id,
+            reviewer_capability: identity.capability,
+            reviewer_login: identity.login,
+          },
+          target: {
+            base_oid: "2".repeat(40),
+            base_ref: "main",
+            head_oid: "1".repeat(40),
+            host: "github.com",
+            owner: "example",
+            repo: "project",
+            pr_author_login: "author",
+            pull_number: 35,
+          },
+          authorization: {
+            black_zone_receipt: null,
+            review_evidence_sha256: "a".repeat(64),
+            zone: "green",
+          },
+          assessment: {
+            alerts: {
+              must_change: null,
+              worth_considering: null,
+              unanchored: null,
+            },
+            statistics: { files_changed: 1, additions: 1, deletions: 0 },
+            previous_reports: [],
+            verdict_sentence: "The boundary correction is ready.",
+            findings: [],
+            goal_alignment: "Meets the requested input boundary.",
+            requirements_alignment: "Empty input remains supported.",
+            intent_behavior: "The guard precedes indexing.",
+            limitations: { entries: [], review_complete: true },
+            minimality: "Only the guard changes.",
+            reuse: "Uses the existing parser.",
+            standards: [
+              {
+                standard: "universal",
+                result: "passes",
+                evidence: "The entrypoint checks empty input.",
+              },
+            ],
+            substantive_verdict: "APPROVE",
+            summary: "The guard fixes the empty-input boundary.",
+            tests: {
+              confidence: "convincing",
+              execution: {
+                status: "executed",
+                evidence: "The empty-input test passed.",
+              },
+              sensitivity:
+                "Removing the guard makes the empty-input test throw.",
+            },
+            trust_caps: [],
+          },
+        });
+        const approvalPath = join(directory, "approval.json");
+        const installedContract = join(scripts, "review-publication.ts");
+        const templatePath = join(templates, "inline-review.md");
+        const transportPath = join(directory, "transport.log");
+        const executable = join(directory, "gh");
+        writeFileSync(approvalPath, JSON.stringify(receipt));
+        writeFileSync(
+          executable,
+          `#!/bin/sh\nprintf invoked > '${transportPath}'\nexit 1\n`,
+          { mode: 0o755 },
+        );
+        if (state === "missing") rmSync(templatePath);
+        else
+          writeFileSync(
+            templatePath,
+            readFileSync(templatePath, "utf8").replace(
+              "<!--",
+              "<!-- Changed guidance.\n",
+            ),
+          );
+        const hook = runHook({
+          input: JSON.stringify({
+            tool_name: "exec_command",
+            tool_input: {
+              cmd: `bun '${installedContract}' publish --approval '${approvalPath}'`,
+            },
+          }),
+          roots: { PLUGIN_ROOT: directory },
+        });
+
+        expect(hook.status).toBe(0);
+        expect(JSON.parse(hook.stdout)).toMatchObject({
+          hookSpecificOutput: { permissionDecision: "allow" },
+        });
+        const publication = spawnSync(
+          "bun",
+          [installedContract, "publish", "--approval", approvalPath],
+          {
+            encoding: "utf8",
+            env: { ...process.env, REVIEW_PUBLICATION_GH_BIN: executable },
+          },
+        );
+        expect(publication.status).not.toBe(0);
+        expect(existsSync(transportPath)).toBe(false);
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("should catch a seeded classifier bypass and restore the real guard", () => {
     const directory = mkdtempSync(join(tmpdir(), "review-gate-mutation-"));

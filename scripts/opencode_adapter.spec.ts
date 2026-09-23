@@ -127,7 +127,7 @@ describe("opencode adapter manifest validation", () => {
       worktree?: string;
     }) => Promise<AdapterHooks>;
   }> {
-    return import(pathToFileURL(adapterPath).href) as {
+    return (await import(pathToFileURL(adapterPath).href)) as {
       AlvisMarketplace: (input: {
         client: unknown;
         directory: string;
@@ -240,6 +240,8 @@ describe("opencode adapter manifest validation", () => {
   it.each([
     "hooks/scripts/validate-review-publication",
     "skills/pr/scripts/review-publication.ts",
+    "skills/pr/templates/inline-review.md",
+    "skills/pr/templates/overall-review.md",
   ])(
     "should reject a tampered publication resource before execution: %s",
     async (resource) => {

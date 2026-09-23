@@ -36,6 +36,10 @@ describe("OpenCode hook receipt command validation", () => {
     );
     const gate = "hooks/scripts/validate-review-publication";
     const runtime = "skills/pr/scripts/review-publication.ts";
+    const templates = [
+      "skills/pr/templates/inline-review.md",
+      "skills/pr/templates/overall-review.md",
+    ];
     try {
       await writeFixture(
         pluginRoot,
@@ -48,9 +52,11 @@ describe("OpenCode hook receipt command validation", () => {
       );
       await writeFixture(pluginRoot, gate, "#!/bin/sh\nexit 0\n");
       await writeFixture(pluginRoot, runtime, "export {};\n");
+      for (const template of templates)
+        await writeFixture(pluginRoot, template, "fixture template\n");
       const params = {
         contract,
-        pluginFiles: ["hooks/hooks.json", gate, runtime],
+        pluginFiles: ["hooks/hooks.json", gate, runtime, ...templates],
         pluginName: "coding",
         pluginRoot,
       };
@@ -62,6 +68,9 @@ describe("OpenCode hook receipt command validation", () => {
           managed_resource: `alvis/plugins/coding/${gate}`,
           requirements: {
             supporting_resource: `alvis/plugins/coding/${runtime}`,
+            supporting_resources: templates.map(
+              (template) => `alvis/plugins/coding/${template}`,
+            ),
           },
           source_event: "PreToolUse",
           source_order: 0,
@@ -70,12 +79,20 @@ describe("OpenCode hook receipt command validation", () => {
           tool_aliases: ["Bash", "exec_command", "shell_command", "bash"],
         },
       ]);
+      for (const missing of templates) {
+        expect(() =>
+          resolveHookReceipts({
+            ...params,
+            pluginFiles: params.pluginFiles.filter((path) => path !== missing),
+          }),
+        ).toThrow(/resource is not projected/);
+      }
       expect(() =>
         resolveHookReceipts({
           ...params,
           pluginFiles: ["hooks/hooks.json", gate],
         }),
-      ).toThrow(/hook resource is not projected/);
+      ).toThrow(/resource is not projected/);
     } finally {
       await removeTemporaryDirectory(pluginRoot);
     }

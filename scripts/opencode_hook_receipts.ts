@@ -17,7 +17,9 @@ export interface HookReceipt {
   readonly audiences: readonly string[];
   readonly enforcement_mode: string;
   readonly managed_resource: string;
-  readonly requirements: Readonly<Record<string, string>>;
+  readonly requirements: Readonly<
+    Record<string, string | readonly string[]>
+  >;
   readonly source_event: string;
   readonly source_order: number;
   readonly source_plugin: string;
@@ -323,11 +325,17 @@ function receiptFromGlobalRegistration(
       typeof policy.managed_resource === "string"
         ? policy.managed_resource
         : `hooks/scripts/${scriptName}`;
-    const requirements: Record<string, string> = {};
+    const requirements: Record<string, string | readonly string[]> = {};
     if (resource !== `hooks/scripts/${scriptName}`) {
       requirements.supporting_resource = `${bundlePath}/hooks/scripts/${scriptName}`;
     } else if (typeof policy.supporting_resource === "string") {
       requirements.supporting_resource = `${bundlePath}/${policy.supporting_resource}`;
+    }
+    if (policy.supporting_resources !== undefined) {
+      requirements.supporting_resources = stringArray(
+        policy.supporting_resources,
+        `${scriptName} supporting resources`,
+      ).map((resource) => `${bundlePath}/${resource}`);
     }
     return {
       audiences: stringArray(policy.audiences, `${scriptName} audiences`),
@@ -412,17 +420,30 @@ function validateReceiptResources(
     const supportingResource = receipt.requirements.supporting_resource;
     if (
       supportingResource !== undefined &&
-      (!supportingResource.startsWith(bundlePrefix) ||
+      (typeof supportingResource !== "string" ||
+        !supportingResource.startsWith(bundlePrefix) ||
         !pluginFiles.has(supportingResource.slice(bundlePrefix.length)))
     ) {
       throw new Error(`hook resource is not projected: ${supportingResource}`);
     }
+    const supportingResources = receipt.requirements.supporting_resources ?? [];
+    if (
+      !Array.isArray(supportingResources) ||
+      supportingResources.some(
+        (resource) =>
+          !resource.startsWith(bundlePrefix) ||
+          !pluginFiles.has(resource.slice(bundlePrefix.length)),
+      )
+    ) {
+      throw new Error("hook supporting resource is not projected");
+    }
     const runtimeResource = receipt.requirements.runtime_resource;
     if (runtimeResource !== undefined) {
-      const projected = runtimeResource === DOMAIN_RUNTIME_BUNDLE_RESOURCE
+      const projected = typeof runtimeResource === "string" &&
+        (runtimeResource === DOMAIN_RUNTIME_BUNDLE_RESOURCE
         ? pluginFilesByName?.essential?.includes(DOMAIN_RUNTIME_RESOURCE)
         : runtimeResource.startsWith(bundlePrefix)
-          && pluginFiles.has(runtimeResource.slice(bundlePrefix.length));
+          && pluginFiles.has(runtimeResource.slice(bundlePrefix.length)));
       if (!projected) {
         throw new Error(`hook resource is not projected: ${runtimeResource}`);
       }

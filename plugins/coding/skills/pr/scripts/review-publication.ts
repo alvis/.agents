@@ -57,6 +57,11 @@ interface ReviewFinding {
 }
 
 interface ReviewAssessment {
+  readonly alerts: {
+    readonly must_change: string | null;
+    readonly unanchored: string | null;
+    readonly worth_considering: string | null;
+  };
   readonly findings: readonly ReviewFinding[];
   readonly goal_alignment: string;
   readonly intent_behavior: string;
@@ -68,6 +73,12 @@ interface ReviewAssessment {
     readonly review_complete: boolean;
   };
   readonly minimality: string;
+  readonly previous_reports: readonly {
+    readonly evidence: string;
+    readonly label: string;
+    readonly url: string;
+    readonly verdict: "does_not_apply" | "fixed" | "still_applies";
+  }[];
   readonly requirements_alignment: string;
   readonly reuse: string;
   readonly standards: readonly {
@@ -76,6 +87,11 @@ interface ReviewAssessment {
     readonly standard: string;
   }[];
   readonly substantive_verdict: "APPROVE" | "REQUEST_CHANGES";
+  readonly statistics: {
+    readonly additions: number;
+    readonly deletions: number;
+    readonly files_changed: number;
+  };
   readonly summary: string;
   readonly tests: {
     readonly confidence: "convincing" | "unconvincing";
@@ -92,7 +108,35 @@ interface ReviewAssessment {
     readonly sensitivity: string;
   };
   readonly trust_caps: readonly TrustCap[];
+  readonly verdict_sentence: string;
 }
+
+interface ReviewTemplates {
+  readonly inline: string;
+  readonly markers: Readonly<Record<ReviewMarker, string>>;
+  readonly overall: string;
+  readonly sha256: {
+    readonly inline_review: string;
+    readonly overall_review: string;
+  };
+}
+
+interface TemplateBlock {
+  readonly fields: readonly string[];
+  readonly rows: readonly Readonly<Record<string, string>>[];
+}
+
+type ReviewMarker =
+  | "P0"
+  | "P1"
+  | "P2"
+  | "P3"
+  | "P4"
+  | "chore"
+  | "note"
+  | "praise"
+  | "question"
+  | "thought";
 
 interface CommonAssessment {
   readonly contract_version: typeof CONTRACT_VERSION;
@@ -170,6 +214,7 @@ export interface ReviewPublicationReceipt {
     readonly reviewer_login: string;
     readonly submitted_event: ReviewEvent | null;
     readonly substantive_verdict: "APPROVE" | "REQUEST_CHANGES" | null;
+    readonly template_sha256: ReviewTemplates["sha256"] | null;
     readonly trust_caps: readonly TrustCap[];
   };
   readonly contract_version: typeof CONTRACT_VERSION;
@@ -197,8 +242,8 @@ interface PublishOptions {
   readonly executable?: string;
 }
 
-export const CONTRACT_VERSION = "coding-pr-review-publication/v1" as const;
-export const RECEIPT_VERSION = 1 as const;
+export const CONTRACT_VERSION = "coding-pr-review-publication/v2" as const;
+export const RECEIPT_VERSION = 2 as const;
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const OID_PATTERN = /^[0-9a-f]{40}$/;
@@ -233,6 +278,7 @@ const PROTECTED_GRAPHQL_PATTERN =
 
 const modulePath = fileURLToPath(import.meta.url);
 const defaultPluginRoot = resolve(dirname(modulePath), "../../../..");
+const templateDirectory = resolve(dirname(modulePath), "../templates");
 
 /**
  * validates an independent assessment and creates its exact publication receipt
@@ -252,7 +298,11 @@ export function createReviewPublicationReceipt(
   if (assessment.kind !== "review-supplement" && parentApproval !== undefined) {
     throw new Error("parent approval is valid only for a review supplement");
   }
-  const publication = renderPublication(assessment, parent);
+  const templates =
+    assessment.kind === "review" || assessment.kind === "review-supplement"
+      ? loadReviewTemplates()
+      : null;
+  const publication = renderPublication(assessment, parent, templates);
   const payloadBytes = Buffer.from(
     `${JSON.stringify(publication.body)}\n`,
     "utf8",
@@ -295,6 +345,7 @@ export function createReviewPublicationReceipt(
       reviewer_login: assessment.reviewer.login,
       submitted_event: publication.submittedEvent,
       substantive_verdict: publication.substantiveVerdict,
+      template_sha256: templates?.sha256 ?? null,
       trust_caps: publication.trustCaps,
     },
     contract_version: CONTRACT_VERSION,
@@ -635,7 +686,40 @@ function parseReviewJudgment(input: unknown): ReviewAssessment {
     parseFinding,
   );
   uniqueArray(findings.map((finding) => finding.id));
+  const substantiveVerdict = enumValue(
+    value.substantive_verdict,
+    ["APPROVE", "REQUEST_CHANGES"] as const,
+    "substantive verdict",
+  );
+  const alerts = objectValue(value.alerts, "review alerts");
+  const parsedAlerts: ReviewAssessment["alerts"] = {
+    must_change: nullableString(alerts.must_change, "must-change alert"),
+    unanchored: nullableString(alerts.unanchored, "unanchored alert"),
+    worth_considering: nullableString(
+      alerts.worth_considering,
+      "worth-considering alert",
+    ),
+  };
+  const previousReports = arrayValue(
+    value.previous_reports,
+    "changed previous reports",
+  ).map((entry, index) => {
+    const report = objectValue(entry, `changed previous report ${index + 1}`);
+    return {
+      evidence: nonemptyString(report.evidence, "previous report evidence"),
+      label: nonemptyString(report.label, "previous report label"),
+      url: httpUrl(report.url, "previous report URL"),
+      verdict: enumValue(
+        report.verdict,
+        ["does_not_apply", "fixed", "still_applies"] as const,
+        "previous report verdict",
+      ),
+    };
+  });
+  const statistics = objectValue(value.statistics, "review statistics");
+  validateReviewAlerts(parsedAlerts, findings, substantiveVerdict, trustCaps);
   return {
+    alerts: parsedAlerts,
     findings,
     goal_alignment: nonemptyString(value.goal_alignment, "goal alignment"),
     intent_behavior: nonemptyString(
@@ -647,17 +731,22 @@ function parseReviewJudgment(input: unknown): ReviewAssessment {
       review_complete: reviewComplete,
     },
     minimality: nonemptyString(value.minimality, "minimality assessment"),
+    previous_reports: previousReports,
     requirements_alignment: nonemptyString(
       value.requirements_alignment,
       "requirements alignment",
     ),
     reuse: nonemptyString(value.reuse, "reuse assessment"),
     standards,
-    substantive_verdict: enumValue(
-      value.substantive_verdict,
-      ["APPROVE", "REQUEST_CHANGES"] as const,
-      "substantive verdict",
-    ),
+    substantive_verdict: substantiveVerdict,
+    statistics: {
+      additions: nonnegativeInteger(statistics.additions, "review additions"),
+      deletions: nonnegativeInteger(statistics.deletions, "review deletions"),
+      files_changed: nonnegativeInteger(
+        statistics.files_changed,
+        "review files changed",
+      ),
+    },
     summary: nonemptyString(value.summary, "review summary"),
     tests: {
       confidence: enumValue(
@@ -672,7 +761,41 @@ function parseReviewJudgment(input: unknown): ReviewAssessment {
       ),
     },
     trust_caps: trustCaps,
+    verdict_sentence: nonemptyString(
+      value.verdict_sentence,
+      "review verdict sentence",
+    ),
   };
+}
+
+function validateReviewAlerts(
+  alerts: ReviewAssessment["alerts"],
+  findings: readonly ReviewFinding[],
+  substantiveVerdict: ReviewAssessment["substantive_verdict"],
+  trustCaps: readonly TrustCap[],
+): void {
+  const anchored = findings.filter((finding) => finding.path !== null);
+  const blocking = anchored.some(isBlockingFinding);
+  const optional = anchored.some((finding) => !isBlockingFinding(finding));
+  const unanchored = findings.some((finding) => finding.path === null);
+  const expectsMustChange =
+    substantiveVerdict === "REQUEST_CHANGES" &&
+    blocking &&
+    trustCaps.length === 0;
+  const expectsWorthConsidering =
+    substantiveVerdict === "APPROVE" && optional;
+  const expectations: readonly [string, boolean, string | null][] = [
+    ["must_change", expectsMustChange, alerts.must_change],
+    ["worth_considering", expectsWorthConsidering, alerts.worth_considering],
+    ["unanchored", unanchored, alerts.unanchored],
+  ];
+  for (const [name, expected, value] of expectations) {
+    if (expected !== (value !== null)) {
+      throw new Error(
+        `${name} alert must be ${expected ? "present" : "null"} for the recorded review`,
+      );
+    }
+  }
 }
 
 function parseWaiver(input: unknown): {
@@ -934,9 +1057,227 @@ function validateTrustCaps(
   }
 }
 
+function isBlockingFinding(finding: ReviewFinding): boolean {
+  return (
+    finding.priority === "P0" ||
+    finding.priority === "P1" ||
+    finding.kind === "chore"
+  );
+}
+
+function loadReviewTemplates(): ReviewTemplates {
+  const inlinePath = resolve(templateDirectory, "inline-review.md");
+  const overallPath = resolve(templateDirectory, "overall-review.md");
+  let inlineSource: string;
+  let overallSource: string;
+  try {
+    inlineSource = readFileSync(inlinePath, "utf8");
+    overallSource = readFileSync(overallPath, "utf8");
+  } catch (error) {
+    throw new Error(
+      `review template unavailable: ${(error as Error).message}`,
+      { cause: error },
+    );
+  }
+  const inlineMatch = /^<!--([\s\S]*?)-->\r?\n\r?\n([\s\S]+)$/.exec(
+    inlineSource,
+  );
+  if (inlineMatch === null) {
+    throw new Error("inline-review template has no canonical body");
+  }
+  const overallMatches = [
+    ...overallSource.matchAll(/```markdown\r?\n([\s\S]*?)\r?\n```/g),
+  ];
+  if (overallMatches.length !== 1) {
+    throw new Error("overall-review template must contain one canonical body");
+  }
+  const markerKeys: readonly ReviewMarker[] = [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "chore",
+    "note",
+    "praise",
+    "question",
+    "thought",
+  ];
+  const markerEntries = [
+    ...inlineMatch[1]!.matchAll(
+      /^- `(P[0-4]|chore|note|praise|question|thought)`: `([^\r\n]+)`$/gm,
+    ),
+  ].map((match) => [match[1]!, match[2]!] as const);
+  if (
+    markerEntries.length !== markerKeys.length ||
+    new Set(markerEntries.map(([key]) => key)).size !== markerKeys.length ||
+    markerKeys.some((key) => !markerEntries.some(([entry]) => entry === key))
+  ) {
+    throw new Error("inline-review marker definitions are malformed");
+  }
+  const markers = Object.fromEntries(markerEntries) as Record<
+    ReviewMarker,
+    string
+  >;
+  const inline = canonicalTemplateBody(inlineMatch[2]!, "inline-review");
+  const overall = canonicalTemplateBody(
+    overallMatches[0]![1]!,
+    "overall-review",
+  );
+  renderTemplate(
+    inline,
+    { body: "body", marker: "marker", title: "title" },
+    {},
+    "inline-review",
+  );
+  return {
+    inline,
+    markers,
+    overall,
+    sha256: {
+      inline_review: hashBytes(Buffer.from(inlineSource, "utf8")),
+      overall_review: hashBytes(Buffer.from(overallSource, "utf8")),
+    },
+  };
+}
+
+function canonicalTemplateBody(input: string, name: string): string {
+  const normalized = input.replaceAll("\r\n", "\n");
+  if (
+    normalized.trim() === "" ||
+    normalized !== normalized.trimStart() ||
+    normalized.split("\n").some((line) => /[ \t]+$/.test(line))
+  ) {
+    throw new Error(`${name} canonical body is malformed`);
+  }
+  return `${normalized.trimEnd()}\n`;
+}
+
+function renderTemplate(
+  template: string,
+  values: Readonly<Record<string, string>>,
+  blocks: Readonly<Record<string, TemplateBlock>>,
+  name: string,
+): string {
+  const withoutTokens = template.replace(
+    /{{(?:[#/]?[a-z][a-z0-9_]*)}}/g,
+    "",
+  );
+  const placeholderNames = [
+    ...template.matchAll(/{{([a-z][a-z0-9_]*)}}/g),
+  ].map((match) => match[1]!);
+  const conditionOpenNames = [
+    ...template.matchAll(/{{#([a-z][a-z0-9_]*)}}/g),
+  ].map((match) => match[1]!);
+  const conditionCloseNames = [
+    ...template.matchAll(/{{\/([a-z][a-z0-9_]*)}}/g),
+  ].map((match) => match[1]!);
+  const blockNames = Object.keys(blocks);
+  const allowedPlaceholders = [
+    ...Object.keys(values),
+    ...Object.values(blocks).flatMap((block) => block.fields),
+  ];
+  if (
+    withoutTokens.includes("{{") ||
+    withoutTokens.includes("}}") ||
+    !sameStringSet(placeholderNames, allowedPlaceholders) ||
+    !sameStringSet(conditionOpenNames, blockNames) ||
+    !sameStringSet(conditionCloseNames, blockNames) ||
+    conditionOpenNames.length !== conditionCloseNames.length
+  ) {
+    throw new Error(`${name} template placeholders are malformed`);
+  }
+  const rendered = renderTemplateSegment(template, values, blocks, name);
+  return `${rendered.trimEnd()}\n`;
+}
+
+function renderTemplateSegment(
+  template: string,
+  values: Readonly<Record<string, string>>,
+  blocks: Readonly<Record<string, TemplateBlock>>,
+  name: string,
+): string {
+  const opening = /{{#([a-z][a-z0-9_]*)}}\n/g.exec(template);
+  if (opening === null) {
+    if (/{{\/[^}]+}}/.test(template)) {
+      throw new Error(`${name} template condition blocks are malformed`);
+    }
+    return template.replace(
+      /{{([a-z][a-z0-9_]*)}}/g,
+      (_token, key: string) => {
+        const value = values[key];
+        if (value === undefined) {
+          throw new Error(`${name} template placeholder ${key} is unavailable`);
+        }
+        return value;
+      },
+    );
+  }
+  const blockName = opening[1]!;
+  const bodyStart = opening.index + opening[0].length;
+  const tokenPattern = /{{([#/])([a-z][a-z0-9_]*)}}\n?/g;
+  tokenPattern.lastIndex = bodyStart;
+  const stack = [blockName];
+  let closing: RegExpExecArray | null = null;
+  for (
+    let token = tokenPattern.exec(template);
+    token !== null;
+    token = tokenPattern.exec(template)
+  ) {
+    const [, kind, tokenName] = token;
+    if (kind === "#") stack.push(tokenName!);
+    else if (stack.pop() !== tokenName) {
+      throw new Error(`${name} template condition blocks are malformed`);
+    }
+    if (stack.length === 0) {
+      closing = token;
+      break;
+    }
+  }
+  if (closing === null) {
+    throw new Error(`${name} template condition blocks are malformed`);
+  }
+  const block = blocks[blockName];
+  if (block === undefined) {
+    throw new Error(`${name} template block ${blockName} is unavailable`);
+  }
+  const before = renderTemplateSegment(
+    template.slice(0, opening.index),
+    values,
+    blocks,
+    name,
+  );
+  const body = template.slice(bodyStart, closing.index);
+  const repeated = block.rows
+    .map((row) =>
+      renderTemplateSegment(body, { ...values, ...row }, blocks, name),
+    )
+    .join("");
+  const after = renderTemplateSegment(
+    template.slice(closing.index + closing[0].length),
+    values,
+    blocks,
+    name,
+  );
+  return `${before}${repeated}${after}`;
+}
+
+function sameStringSet(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  return (
+    leftSet.size === rightSet.size &&
+    [...leftSet].every((value) => rightSet.has(value))
+  );
+}
+
 function renderPublication(
   assessment: PublicationAssessment,
   parent: ReviewPublicationReceipt | null,
+  templates: ReviewTemplates | null,
 ): {
   readonly body: JsonObject;
   readonly substantiveVerdict: "APPROVE" | "REQUEST_CHANGES" | null;
@@ -945,9 +1286,19 @@ function renderPublication(
 } {
   switch (assessment.kind) {
     case "review":
-      return renderReview(assessment);
+      if (templates === null) {
+        throw new Error("review templates are required for review rendering");
+      }
+      return renderReview(assessment, templates);
     case "review-supplement":
-      return renderReviewSupplement(assessment, requiredParentReview(parent));
+      if (templates === null) {
+        throw new Error("review templates are required for supplement rendering");
+      }
+      return renderReviewSupplement(
+        assessment,
+        requiredParentReview(parent),
+        templates,
+      );
     case "status":
       return {
         body: { body: renderStatus(assessment) },
@@ -965,7 +1316,10 @@ function renderPublication(
   }
 }
 
-function renderReview(assessment: ReviewPublicationAssessment): {
+function renderReview(
+  assessment: ReviewPublicationAssessment,
+  templates: ReviewTemplates,
+): {
   readonly body: JsonObject;
   readonly substantiveVerdict: "APPROVE" | "REQUEST_CHANGES";
   readonly submittedEvent: ReviewEvent;
@@ -982,7 +1336,7 @@ function renderReview(assessment: ReviewPublicationAssessment): {
   const comments = judgment.findings
     .filter((finding) => finding.path !== null)
     .map((finding) => ({
-      body: renderInlineFinding(finding),
+      body: renderInlineFinding(finding, templates),
       line: finding.line,
       path: finding.path,
       side: finding.side,
@@ -992,7 +1346,7 @@ function renderReview(assessment: ReviewPublicationAssessment): {
   return {
     body: {
       commit_id: assessment.target.head_oid,
-      body: renderOverallReview(assessment, submittedEvent),
+      body: renderOverallReview(assessment, templates),
       event: submittedEvent,
       comments,
     },
@@ -1004,15 +1358,11 @@ function renderReview(assessment: ReviewPublicationAssessment): {
 
 function renderOverallReview(
   input: ReviewPublicationAssessment,
-  submittedEvent: ReviewEvent,
+  templates: ReviewTemplates,
 ): string {
   const { assessment, target } = input;
   const blocking = assessment.findings.filter(
-    (finding) =>
-      finding.path !== null &&
-      (finding.priority === "P0" ||
-        finding.priority === "P1" ||
-        finding.kind === "chore"),
+    (finding) => finding.path !== null && isBlockingFinding(finding),
   );
   const optional = assessment.findings.filter(
     (finding) => finding.path !== null && !blocking.includes(finding),
@@ -1020,12 +1370,6 @@ function renderOverallReview(
   const unanchored = assessment.findings.filter(
     (finding) => finding.path === null,
   );
-  const limitations =
-    assessment.limitations.entries.length === 0
-      ? "No reviewable paths or concerns were excluded."
-      : assessment.limitations.entries
-          .map((entry) => `- \`${entry.path}\` — ${entry.reason}`)
-          .join("\n");
   const standards = assessment.standards
     .map(
       (entry) => `- **${entry.standard}** — ${entry.result}: ${entry.evidence}`,
@@ -1035,106 +1379,138 @@ function renderOverallReview(
     assessment.tests.execution.status === "waived"
       ? `Runtime execution waived by ${assessment.tests.execution.waiver.authorized_by} for ${assessment.tests.execution.waiver.scope}: ${assessment.tests.execution.waiver.reason}`
       : `${assessment.tests.execution.status}: ${assessment.tests.execution.evidence}`;
-  const submittedExplanation =
-    submittedEvent === assessment.substantive_verdict
-      ? ""
-      : ` GitHub received COMMENT because ${assessment.trust_caps.length > 0 ? `the review is capped (${assessment.trust_caps.join(", ")})` : "the reviewer is the PR author"}; the substantive verdict is unchanged.`;
-  return [
-    "📌",
-    "",
-    `${assessment.substantive_verdict === "APPROVE" ? "✅" : "❌"} Reviewed \`${target.head_oid.slice(0, 12)}\` against \`${target.base_ref}\` (\`${target.base_oid.slice(0, 12)}\`).`,
-    "",
-    assessment.summary,
-    ...renderFindingSection("### 🚨 Must Change", blocking),
-    ...renderFindingSection("### 💡 Worth Considering", optional),
-    "",
-    "### 🎯 Goal and Requirements",
-    "",
-    assessment.goal_alignment,
-    "",
-    assessment.requirements_alignment,
-    "",
-    assessment.intent_behavior,
-    "",
-    "### 🧪 Tests",
-    "",
-    assessment.tests.sensitivity,
-    "",
-    `${testExecution}. Confidence: ${assessment.tests.confidence}.`,
-    "",
-    "### 📏 Standards",
-    "",
-    standards,
-    "",
-    "### ♻️ Reuse and Minimality",
-    "",
-    assessment.reuse,
-    "",
-    assessment.minimality,
-    ...renderFindingSection("### 📍 Not Anchored to a Line", unanchored),
-    "",
-    "### 👀 Not Reviewed",
-    "",
-    limitations,
-    "",
-    "### 🧾 Verdict",
-    "",
-    `${assessment.substantive_verdict}.${submittedExplanation}`,
-    "",
-  ].join("\n");
+  const hasCap = assessment.trust_caps.length > 0;
+  return renderTemplate(
+    templates.overall,
+    {
+      additions: String(assessment.statistics.additions),
+      deletions: String(assessment.statistics.deletions),
+      files_changed: String(assessment.statistics.files_changed),
+      goal_spec_verdict: [
+        assessment.goal_alignment,
+        assessment.requirements_alignment,
+      ].join("\n\n"),
+      head_sha_short: target.head_oid.slice(0, 7),
+      intent_behavior_verdict: assessment.intent_behavior,
+      minimality_verdict: assessment.minimality,
+      one_paragraph_read: assessment.summary,
+      reuse_verdict: assessment.reuse,
+      standards_verdict: standards,
+      test_verdict: [
+        assessment.tests.sensitivity,
+        `${testExecution}. Confidence: ${assessment.tests.confidence}.`,
+      ].join("\n\n"),
+      unanchored_alert: assessment.alerts.unanchored ?? "",
+      verdict_alert: hasCap
+        ? "WARNING"
+        : assessment.substantive_verdict === "REQUEST_CHANGES"
+          ? "CAUTION"
+          : "NOTE",
+      verdict_glyph: hasCap
+        ? "⚠️"
+        : assessment.substantive_verdict === "APPROVE"
+          ? "✅"
+          : "❌",
+      verdict_sentence: renderVerdictSentence(input),
+      zone: input.authorization.zone,
+    },
+    {
+      excluded_paths: {
+        fields: ["path", "reason"],
+        rows: assessment.limitations.entries,
+      },
+      must_change: conditionBlock(blocking.length > 0),
+      must_change_alert: textBlock(assessment.alerts.must_change),
+      must_change_findings: findingBlocks(blocking, templates),
+      not_reviewed: conditionBlock(assessment.limitations.entries.length > 0),
+      previous_report_entries: {
+        fields: ["evidence", "label", "url", "verdict"],
+        rows: assessment.previous_reports,
+      },
+      previous_reports: conditionBlock(assessment.previous_reports.length > 0),
+      unanchored: conditionBlock(unanchored.length > 0),
+      unanchored_findings: findingBlocks(unanchored, templates),
+      worth_considering: conditionBlock(optional.length > 0),
+      worth_considering_alert: textBlock(
+        assessment.alerts.worth_considering,
+      ),
+      worth_considering_findings: findingBlocks(optional, templates),
+    },
+    "overall-review",
+  );
 }
 
-function renderFindingSection(
-  heading: string,
+function findingBlocks(
   findings: readonly ReviewFinding[],
-): readonly string[] {
-  if (findings.length === 0) return [];
-  return [
-    "",
-    heading,
-    "",
-    ...findings.map((finding) => {
+  templates: ReviewTemplates,
+): TemplateBlock {
+  return {
+    fields: ["body", "evidence", "location", "marker", "title"],
+    rows: findings.map((finding) => {
       const location =
         finding.path === null
           ? (finding.subject ?? "This PR")
           : `${finding.path}:${finding.line}`;
-      return `- ${renderMarker(finding)} **${location}** — ${finding.title}: ${finding.body} Evidence: ${finding.evidence}`;
+      return {
+        body: finding.body,
+        evidence: finding.evidence,
+        location,
+        marker: renderMarker(finding, templates),
+        title: finding.title,
+      };
     }),
-  ];
+  };
 }
 
-function renderInlineFinding(finding: ReviewFinding): string {
-  return `**${renderMarker(finding)} ${finding.title}** — ${finding.body}\n\nEvidence: ${finding.evidence}\n`;
+function conditionBlock(enabled: boolean): TemplateBlock {
+  return { fields: [], rows: enabled ? [{}] : [] };
 }
 
-function renderMarker(finding: ReviewFinding): string {
-  if (finding.priority !== null) {
-    const colors: Readonly<
-      Record<NonNullable<ReviewFinding["priority"]>, string>
-    > = {
-      P0: "red",
-      P1: "orange",
-      P2: "yellow",
-      P3: "blue",
-      P4: "lightgrey",
-    };
-    return `<sub><sub>![${finding.priority} Badge](https://img.shields.io/badge/${finding.priority}-${colors[finding.priority]}?style=flat)</sub></sub>`;
+function textBlock(value: string | null): TemplateBlock {
+  return {
+    fields: ["text"],
+    rows: value === null ? [] : [{ text: value }],
+  };
+}
+
+function renderVerdictSentence(input: ReviewPublicationAssessment): string {
+  const { assessment, publisher, target } = input;
+  if (assessment.trust_caps.length > 0) {
+    return `${assessment.verdict_sentence} GitHub received COMMENT because the review is capped (${assessment.trust_caps.join(", ")}); the substantive verdict is ${assessment.substantive_verdict}.`;
   }
-  const markers: Readonly<Record<NonNullable<ReviewFinding["kind"]>, string>> =
+  if (publisher.login.toLowerCase() === target.pr_author_login.toLowerCase()) {
+    return `${assessment.verdict_sentence} GitHub weakened the event to COMMENT because the publisher is the PR author; the substantive ${assessment.substantive_verdict} finding is unchanged.`;
+  }
+  return assessment.verdict_sentence;
+}
+
+function renderInlineFinding(
+  finding: ReviewFinding,
+  templates: ReviewTemplates,
+): string {
+  return renderTemplate(
+    templates.inline,
     {
-      chore:
-        "<sub><sub>![WARNING Badge](https://img.shields.io/badge/WARNING-yellow?style=flat)</sub></sub>",
-      note: "📝",
-      praise: "💯",
-      question: "❓",
-      thought: "💭",
-    };
-  return markers[finding.kind!];
+      body: `${finding.body}\n\nEvidence: ${finding.evidence}`,
+      marker: renderMarker(finding, templates),
+      title: finding.title,
+    },
+    {},
+    "inline-review",
+  );
+}
+
+function renderMarker(
+  finding: ReviewFinding,
+  templates: ReviewTemplates,
+): string {
+  return templates.markers[(finding.priority ?? finding.kind)!];
 }
 
 function renderReviewSupplement(
   assessment: ReviewSupplementAssessment,
   parent: ReviewPublicationReceipt,
+  templates: ReviewTemplates,
 ): {
   readonly body: JsonObject;
   readonly substantiveVerdict: null;
@@ -1176,7 +1552,7 @@ function renderReviewSupplement(
         "",
         ...findings.map(
           (finding) =>
-            `- ${renderMarker(finding)} **${finding.subject ?? finding.path ?? "This PR"}** — ${finding.title}: ${finding.body} Evidence: ${finding.evidence}`,
+            `- ${renderMarker(finding, templates)} **${finding.subject ?? finding.path ?? "This PR"}** — ${finding.title}: ${finding.body} Evidence: ${finding.evidence}`,
         ),
         "",
       ].join("\n"),
@@ -1848,6 +2224,13 @@ function positiveInteger(input: unknown, description: string): number {
   return input as number;
 }
 
+function nonnegativeInteger(input: unknown, description: string): number {
+  if (!Number.isSafeInteger(input) || (input as number) < 0) {
+    throw new Error(`${description} must be a nonnegative integer`);
+  }
+  return input as number;
+}
+
 function nullablePositiveInteger(
   input: unknown,
   description: string,
@@ -1857,6 +2240,20 @@ function nullablePositiveInteger(
 
 function nullableString(input: unknown, description: string): string | null {
   return input === null ? null : nonemptyString(input, description);
+}
+
+function httpUrl(input: unknown, description: string): string {
+  const value = nonemptyString(input, description);
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${description} must be an HTTP(S) URL`);
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`${description} must be an HTTP(S) URL`);
+  }
+  return value;
 }
 
 function stringValue(input: unknown, description: string): string {
