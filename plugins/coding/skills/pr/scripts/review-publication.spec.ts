@@ -796,6 +796,8 @@ if (Number(process.env.PUBLICATION_METADATA_EXIT)) process.exit(Number(process.e
 if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
 else if (args.includes("--paginate")) process.stdout.write(process.env.PUBLICATION_AUTHORIZATION_COMMENTS);
 else if (args.includes("graphql")) process.stdout.write(process.env.PUBLICATION_THREAD_METADATA);
+else if (args.includes("repos/example/project")) process.stdout.write(JSON.stringify({name: "project", owner: {login: "example", type: "Organization"}, default_branch: "main"}));
+else if (args.includes("orgs/example/memberships/owner")) process.stdout.write(JSON.stringify({state: "active", role: "admin"}));
 else if (args.some(arg => /comments\\/81$/.test(arg))) process.stdout.write(JSON.stringify({pull_request_url: "https://api.github.com/repos/example/project/pulls/" + process.env.PUBLICATION_RELATION, issue_url: "https://api.github.com/repos/example/project/issues/" + process.env.PUBLICATION_RELATION}));
 else process.stdout.write(process.env.PUBLICATION_METADATA);
 `,
