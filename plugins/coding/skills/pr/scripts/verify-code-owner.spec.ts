@@ -160,6 +160,59 @@ describe("cmd: verify-code-owner", () => {
     ).toBe(1);
   });
 
+  it.each(["docs/foo\\ @alice @bob", "docs/foo\\\t@alice @bob"])(
+    "should not treat an escaped pattern fragment as an owner: %s",
+    (line) => {
+      const responses = {
+        "repos/octo/repo": repository,
+        "repos/octo/repo/contents/CODEOWNERS?ref=main":
+          createCodeownersResponse(line),
+        "repos/octo/repo/codeowners/errors?ref=main": { errors: [] },
+        "repos/octo/repo/collaborators/alice/permission": {
+          permission: "write",
+        },
+        "repos/octo/repo/collaborators/bob/permission": { permission: "write" },
+      };
+
+      const fragment = runVerifier(responses, "alice");
+      const owner = runVerifier(responses, "bob");
+
+      expect(fragment.status).toBe(1);
+      expect(fragment.stdout).toBe("");
+      expect(owner.status).toBe(0);
+    },
+  );
+
+  it("should continue past a directory to the first CODEOWNERS file", () => {
+    const result = runVerifier({
+      "repos/octo/repo": repository,
+      "repos/octo/repo/contents/.github/CODEOWNERS?ref=main": {
+        type: "dir",
+        entries: [],
+      },
+      "repos/octo/repo/contents/CODEOWNERS?ref=main":
+        createCodeownersResponse("* @alice\n"),
+      "repos/octo/repo/codeowners/errors?ref=main": { errors: [] },
+      "repos/octo/repo/collaborators/alice/permission": { permission: "write" },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("listed in CODEOWNERS");
+  });
+
+  it("should report unknown ownership when organization membership is forbidden", () => {
+    const result = runVerifier({
+      "repos/octo/repo": repository,
+      "orgs/octo/memberships/alice": "forbidden",
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("code_owner_unknown:");
+    expect(result.stderr).toContain("orgs/octo/memberships/alice");
+    expect(result.stderr).toContain("HTTP 403");
+  });
+
   it("should read a valid CODEOWNERS file above the Contents API base64 limit", () => {
     const result = runVerifier({
       "repos/octo/repo": repository,

@@ -9,6 +9,7 @@ const rawContentType = "application/vnd.github.raw+json";
 // GitHub ignores CODEOWNERS files at 3 MiB, so larger responses cannot authorize.
 const maxCodeownersBytes = 3 * 1024 * 1024;
 const { username, account, repo } = parseArguments();
+const inaccessibleLookups: string[] = [];
 
 const host = process.env.CODE_OWNER_HOST ?? "github.com";
 const gh = process.env.CODE_OWNER_GH_BIN ?? "gh";
@@ -89,6 +90,9 @@ function readApi(
     const failure = result.stderr ?? result.error?.message ?? "unknown error";
     if (failure.includes("(HTTP 404)")) return { missing: true };
     if (allowForbidden && failure.includes("(HTTP 403)")) {
+      inaccessibleLookups.push(
+        `GitHub API failed for ${path}: ${failure.trim()}`,
+      );
       return { missing: true };
     }
     throw new Error(`GitHub API failed for ${path}: ${failure.trim()}`);
@@ -156,6 +160,7 @@ try {
         "application/vnd.github.object+json",
       );
       if (!content) continue;
+      if (content.type === "dir") continue;
       if (content.type !== "file") {
         throw new Error("CODEOWNERS content could not be verified");
       }
@@ -200,7 +205,8 @@ try {
       const lines = codeowners.split(/\r?\n/);
       for (const [index, line] of lines.entries()) {
         if (invalidLines.has(index + 1)) continue;
-        const tokens = line.trim().split(/\s+/);
+        // consume escaped pattern characters before separating owner tokens
+        const tokens = line.trim().match(/(?:\\.|[^\s\\])+/g) ?? [];
         if (tokens.length < 2 || tokens[0]?.startsWith("#")) continue;
         for (const token of tokens.slice(1)) {
           if (token.startsWith("#")) break;
@@ -251,6 +257,9 @@ try {
     }
   } else {
     throw new Error("repository account type could not be verified");
+  }
+  if (inaccessibleLookups.length > 0) {
+    throw new Error(inaccessibleLookups.join("; "));
   }
   console.error(
     `not_code_owner: ${username} is not a code owner of ${account}/${repo}`,
