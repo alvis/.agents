@@ -1,6 +1,6 @@
 # Publishing review communication
 
-Load this from the publication step of `coding:pr review` and for any PR review supplement, review status, or discussion reply. [review-publication.ts](../scripts/review-publication.ts) is the single executable authority for assessment fields, semantic-evidence bindings, rendering, receipts, live validation, and transport. Do not hand-render its output or copy its rules into another template.
+Load this from the publication step of `coding:pr review` and for any PR review supplement, review status, or discussion reply. Read and follow [inline-review.md](../templates/inline-review.md) and [overall-review.md](../templates/overall-review.md) before preparing a review assessment. Those templates own presentation; [review-publication.ts](../scripts/review-publication.ts) consumes them and owns assessment fields, semantic-evidence bindings, receipts, live validation, and transport. Never bypass approval by hand-rendering a publication payload.
 
 ## Roles and artifacts
 
@@ -17,16 +17,26 @@ The review assessment must substantively cover intent and behavior, goal and req
 
 ## Approve
 
-Set `REVIEW_PUBLICATION` to the absolute path of `scripts/review-publication.ts` only while preparing artifacts. The reviewer materializes the assessment shape declared by that executable, fills every field from its evidence, then issues the receipt:
+Set `REVIEW_PUBLICATION` to the absolute path of `scripts/review-publication.ts` only while preparing artifacts. Materialize the complete assessment shape declared by that executable, filling every field from the pinned review evidence. The templates map their presentation to these assessment inputs:
+
+| Input under `assessment` | Evidence to supply |
+| --- | --- |
+| `statistics` | Nonnegative integer `files_changed`, `additions`, and `deletions` from the reviewed PR surface, not the whole stack. The zone remains in `authorization.zone`. |
+| `summary` | The opening judgment described by the overall template. |
+| `previous_reports` | An array of changed dispositions selected by the review-to-review comparison in [review.md](review.md): each entry carries the original report's `label` and `url`, latest `verdict` (`still_applies`, `fixed`, or `does_not_apply`), and the `evidence` that changed it. Use `[]` when nothing qualifies. |
+| `alerts` | `must_change`, `worth_considering`, and `unanchored` carry the corresponding template alert text, or `null` when omitted. Supply `must_change` only for uncapped `REQUEST_CHANGES` with anchored blockers, `worth_considering` only for substantive `APPROVE` with anchored optional findings, and `unanchored` whenever unanchored findings exist. |
+| `verdict_sentence` | The template's closing sentence: what clears the blockers, what could not be trusted, or what to watch after approval. The renderer selects the glyph and alert, and adds any event-downgrade explanation. |
+
+Keep findings as raw title, body, and evidence; never pre-render badges or inline markup into them. The executable reads its adjacent installed templates, selects their applicable sections, and substitutes literal tokens. Missing or malformed templates block approval and publication. Then issue the receipt:
 
 ```bash
 bun run "$REVIEW_PUBLICATION" approve \
   --assessment "$REVIEW_ASSESSMENT" >"$REVIEW_APPROVAL"
 ```
 
-A supplement additionally passes `--parent-approval "$PARENT_REVIEW_APPROVAL"`. Approval performs structural validation and deterministic rendering, then binds the contract version, repository and PR, reviewer and publisher identities, head and base revisions, semantic-evidence digest, normalized assessment digest, exact rendered UTF-8 payload bytes and digest, inline anchors, substantive verdict, submitted event, trust caps, authorization evidence, and any parent review receipt. It does not infer semantic adequacy from nonempty strings; running `approve` is the independent reviewer's explicit semantic approval of the assessment and rendered result.
+A supplement additionally passes `--parent-approval "$PARENT_REVIEW_APPROVAL"`. Approval performs structural validation and deterministic template rendering, then binds the contract version, template content digests, repository and PR, reviewer and publisher identities, head and base revisions, semantic-evidence digest, normalized assessment digest, exact rendered UTF-8 payload bytes and digest, inline anchors, substantive verdict, submitted event, trust caps, authorization evidence, and any parent review receipt. It does not infer semantic adequacy from nonempty strings; running `approve` is the independent reviewer's explicit semantic approval of the assessment and rendered result. Inspect the decoded `payload_utf8_base64` against the templates before handing off the artifact.
 
-Run `validate --approval "$REVIEW_APPROVAL"` to inspect an artifact without GitHub access. Validation regenerates the receipt and fails on missing, malformed, altered, or internally inconsistent content. Any assessment, body, anchor, event, identity, revision, parent, or receipt change requires the independent reviewer to issue a new artifact.
+Run `validate --approval "$REVIEW_APPROVAL"` to inspect an artifact without GitHub access. Validation regenerates the receipt and fails on missing, malformed, altered, or internally inconsistent content. Any assessment, template, body, anchor, event, identity, revision, parent, or receipt change requires the independent reviewer to issue a new artifact. Pre-template contract approvals are stale; prepare and approve a current assessment instead of relabeling an old receipt.
 
 ## Publish
 

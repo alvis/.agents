@@ -65,7 +65,12 @@ function validateHookReceipt(receipt, plugin, manifest) {
     typeof receipt?.requirements !== "object" ||
     receipt.requirements === null ||
     Array.isArray(receipt.requirements) ||
-    Object.values(requirements).some((value) => typeof value !== "string") ||
+    Object.entries(requirements).some(([key, value]) =>
+      key === "supporting_resources"
+        ? !Array.isArray(value) ||
+          value.length === 0 ||
+          value.some((entry) => typeof entry !== "string")
+        : typeof value !== "string") ||
     !["PostToolUse", "PreToolUse", "SessionStart", "Stop", "SubagentStart", "UserPromptSubmit"].includes(
       receipt?.source_event,
     ) ||
@@ -92,6 +97,14 @@ function validateHookReceipt(receipt, plugin, manifest) {
   const runtimeResource = requirements.runtime_resource
   if (runtimeResource !== undefined && (!Object.hasOwn(manifest.file_digests, runtimeResource)
     || (receipt.enforcement_mode !== "domain" && !runtimeResource.startsWith(`${plugin.bundle_path}/`)))) {
+    throw new Error("invalid Alvis OpenCode hook receipt")
+  }
+  const supportingResources = requirements.supporting_resources ?? []
+  if (supportingResources.some(
+    (resource) =>
+      !resource.startsWith(`${plugin.bundle_path}/`) ||
+      !Object.hasOwn(manifest.file_digests, resource),
+  )) {
     throw new Error("invalid Alvis OpenCode hook receipt")
   }
 }
@@ -288,6 +301,7 @@ async function runHookReceipt(
   const resources = [
     receipt.managed_resource,
     receipt.requirements.supporting_resource,
+    ...(receipt.requirements.supporting_resources ?? []),
   ].filter((value) => typeof value === "string")
   const managedFiles = await Promise.all(
     resources.map((relativePath) =>
@@ -579,7 +593,12 @@ export const AlvisMarketplace = async ({ client, directory, worktree }) => {
     catch { return "" }
     for (const plugin of plugins) {
       const resources = new Set(plugin.hooks.filter((receipt) => receipt.enforcement_mode === "domain")
-        .flatMap((receipt) => [receipt.managed_resource, receipt.requirements.supporting_resource, receipt.requirements.runtime_resource].filter((resource) => resource !== undefined)))
+        .flatMap((receipt) => [
+          receipt.managed_resource,
+          receipt.requirements.supporting_resource,
+          ...(receipt.requirements.supporting_resources ?? []),
+          receipt.requirements.runtime_resource,
+        ].filter((resource) => resource !== undefined)))
       for (const resource of resources) await readManagedFile(configRoot, manifest, resource)
     }
     const { resolveDomainContext, readDomainReceipt, writeDomainReceipt } = await domainRuntime()

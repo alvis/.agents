@@ -117,7 +117,11 @@
         "matcher": "Bash|exec_command|shell_command",
         "native_failure_mode": "block",
         "opencode_aliases": ["bash"],
-        "supporting_resource": "skills/pr/scripts/review-publication.ts"
+        "supporting_resource": "skills/pr/scripts/review-publication.ts",
+        "supporting_resources": [
+          "skills/pr/templates/inline-review.md",
+          "skills/pr/templates/overall-review.md"
+        ]
       },
       "validate-question": {
         "audiences": ["root", "child"],

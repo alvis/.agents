@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  cpSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -41,6 +43,10 @@ interface RunOptions {
   rawInput?: string;
   relationPullNumber?: number;
   threadMetadata?: string;
+  templateMutation?: {
+    readonly name: "inline-review.md" | "overall-review.md";
+    readonly content: string | null | ((source: string) => string);
+  };
 }
 
 interface RunResult {
@@ -129,6 +135,15 @@ const review = {
     zone: "green",
   },
   assessment: {
+    alerts: {
+      must_change: null,
+      worth_considering:
+        "The note provides context for future boundary changes.",
+      unanchored: null,
+    },
+    statistics: { files_changed: 2, additions: 8, deletions: 1 },
+    previous_reports: [],
+    verdict_sentence: "The change is ready to merge.",
     findings: [finding],
     goal_alignment: "The change returns an empty result for an empty sequence.",
     intent_behavior:
@@ -175,6 +190,340 @@ const reply = {
 const receipt = createReviewPublicationReceipt(review);
 
 describe("cmd:review-publication", () => {
+  it.each(["inline-review.md", "overall-review.md"] as const)(
+    "should reject publication when installed %s is missing",
+    (name) => {
+      const result = runCommand(receipt, {
+        templateMutation: { name, content: null },
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.records).toEqual([]);
+    },
+  );
+
+  it.each(["inline-review.md", "overall-review.md"] as const)(
+    "should reject publication when installed %s differs from approval",
+    (name) => {
+      const result = runCommand(receipt, {
+        templateMutation: {
+          name,
+          content: (source) =>
+            name === "inline-review.md"
+              ? source.replace("<!--", "<!-- Changed reviewer guidance.\n")
+              : `Changed reviewer guidance.\n\n${source}`,
+        },
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.records).toEqual([]);
+    },
+  );
+
+  it.each(["inline-review.md", "overall-review.md"] as const)(
+    "should reject malformed installed %s during approval",
+    (name) => {
+      const result = runCommand(review, {
+        action: "approve",
+        templateMutation: { name, content: "{{UNKNOWN_REVIEW_TOKEN}}" },
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.records).toEqual([]);
+    },
+  );
+
+  it("should reject an unresolved token in the installed template before approval", () => {
+    const result = runCommand(review, {
+      action: "approve",
+      templateMutation: {
+        name: "inline-review.md",
+        content: (source) =>
+          source.replaceAll("{{title}}", "{{unknown_review_token}}"),
+      },
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.records).toEqual([]);
+  });
+
+  it("should reject a malformed inline template even when there are no findings", () => {
+    const result = runCommand(
+      {
+        ...review,
+        assessment: {
+          ...review.assessment,
+          findings: [],
+          alerts: {
+            must_change: null,
+            worth_considering: null,
+            unanchored: null,
+          },
+        },
+      },
+      {
+        action: "approve",
+        templateMutation: {
+          name: "inline-review.md",
+          content: (source) =>
+            source.replace("{{body}}", "{{body}} {{UNKNOWN}}"),
+        },
+      },
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.records).toEqual([]);
+  });
+
+  it.each(["{{UNKNOWN}}", "{{foo.bar}}"])(
+    "should reject an unresolved template expression outside the token grammar: %s",
+    (token) => {
+      const result = runCommand(review, {
+        action: "approve",
+        templateMutation: {
+          name: "inline-review.md",
+          content: (source) => source.replace("{{body}}", `{{body}} ${token}`),
+        },
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.records).toEqual([]);
+    },
+  );
+
+  it("should keep optional improvement advice when approval is capped by an incomplete review", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: {
+        ...review.assessment,
+        trust_caps: ["partial-review"],
+        limitations: {
+          review_complete: false,
+          entries: [
+            {
+              path: "integration",
+              reason: "Integration environment unavailable.",
+            },
+          ],
+        },
+      },
+    });
+    const payload = JSON.parse(
+      Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
+    );
+
+    expect(payload.event).toBe("COMMENT");
+    expect(payload.body).toContain(
+      "> [!TIP]\n> The note provides context for future boundary changes.",
+    );
+    expect(payload.body).toContain("> [!WARNING]");
+    expect(payload.body).not.toContain("> [!CAUTION]");
+  });
+
+  it("should render from the installed template instead of a competing inline layout", () => {
+    const result = runCommand(review, {
+      action: "approve",
+      templateMutation: {
+        name: "inline-review.md",
+        content: (source) =>
+          source.replace(
+            "**{{marker}} {{title}}** — {{body}}",
+            "**{{marker}} {{title}}** :: {{body}}",
+          ),
+      },
+    });
+
+    expect(result).toMatchObject({ status: 0, records: [] });
+    const approval: ReviewPublicationReceipt = JSON.parse(result.stdout);
+    const payload = JSON.parse(
+      Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
+    );
+    expect(payload.comments[0].body).toBe(
+      `**📝 ${finding.title}** :: ${finding.body}\n\nEvidence: ${finding.evidence}\n`,
+    );
+  });
+
+  it("should render review metadata, conditional sections and the closing verdict", () => {
+    const payload = JSON.parse(
+      Buffer.from(receipt.payload_utf8_base64, "base64").toString("utf8"),
+    );
+
+    expect(payload.body).toBe(
+      [
+        "📌",
+        "",
+        "✅ Reviewed `1111111` — 2 files, +8/-1, green zone.",
+        "",
+        review.assessment.summary,
+        "",
+        "### 💡 Worth Considering",
+        "",
+        "> [!TIP]",
+        "> The note provides context for future boundary changes.",
+        "",
+        `- 📝 **src/sequence.ts:12** — ${finding.title}: ${finding.body} Evidence: ${finding.evidence}`,
+        "",
+        "### 🎯 Goal and Requirements",
+        "",
+        review.assessment.goal_alignment,
+        "",
+        review.assessment.requirements_alignment,
+        "",
+        review.assessment.intent_behavior,
+        "",
+        "### 🧪 Tests",
+        "",
+        review.assessment.tests.sensitivity,
+        "",
+        `executed: ${review.assessment.tests.execution.evidence}. Confidence: convincing.`,
+        "",
+        "### 📏 Standards",
+        "",
+        "- **universal** — passes: src/sequence.ts:12 validates input",
+        "",
+        "### ♻️ Reuse and Minimality",
+        "",
+        review.assessment.reuse,
+        "",
+        review.assessment.minimality,
+        "",
+        "### 🧾 Verdict",
+        "",
+        "> [!NOTE]",
+        "> The change is ready to merge.",
+        "",
+      ].join("\n"),
+    );
+    expect(payload.comments[0].body).toBe(
+      `**📝 ${finding.title}** — ${finding.body}\n\nEvidence: ${finding.evidence}\n`,
+    );
+  });
+
+  it("should substitute review input literally without expanding tokens or replacement patterns", () => {
+    const literal =
+      "Keep {{marker}} and {{summary}} and $& and $` and $' literal.";
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: {
+        ...review.assessment,
+        summary: literal,
+        findings: [{ ...finding, body: literal }],
+      },
+    });
+    const payload = JSON.parse(
+      Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
+    );
+
+    expect(payload.body).toContain(literal);
+    expect(payload.comments[0].body).toBe(
+      `**📝 ${finding.title}** — ${literal}\n\nEvidence: ${finding.evidence}\n`,
+    );
+    expect(
+      createReviewPublicationReceipt(approval.approved_assessment),
+    ).toEqual(approval);
+  });
+
+  it("should render changed previous reports, unanchored findings and exclusions", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: {
+        ...review.assessment,
+        previous_reports: [
+          {
+            label: "Old empty-input report",
+            url: "https://github.com/example/project/pull/35#discussion_r81",
+            verdict: "fixed",
+            evidence: "The new guard prevents the observed exception.",
+          },
+        ],
+        findings: [
+          {
+            ...finding,
+            line: null,
+            path: null,
+            side: null,
+            start_line: null,
+            subject: null,
+            kind: "chore",
+          },
+        ],
+        substantive_verdict: "REQUEST_CHANGES",
+        alerts: {
+          must_change: null,
+          worth_considering: null,
+          unanchored: "The release note is absent from the diff.",
+        },
+        limitations: {
+          review_complete: false,
+          entries: [
+            {
+              path: "vendor/generated.ts",
+              reason: "Generated dependency output excluded.",
+            },
+          ],
+        },
+        trust_caps: ["partial-review"],
+        verdict_sentence: "Add the missing release note before merging.",
+      },
+    });
+    const payload = JSON.parse(
+      Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
+    );
+
+    expect(payload.comments).toEqual([]);
+    expect(payload.body).toContain(
+      "[Old empty-input report](https://github.com/example/project/pull/35#discussion_r81)",
+    );
+    expect(payload.body).toContain(
+      "The new guard prevents the observed exception.",
+    );
+    expect(payload.body).toContain(
+      "### 📍 Not Anchored to a Line\n\n> [!IMPORTANT]\n> The release note is absent from the diff.",
+    );
+    expect(payload.body).toContain("**This PR**");
+    expect(payload.body).toContain(
+      "![WARNING Badge](https://img.shields.io/badge/WARNING-yellow?style=flat)",
+    );
+    expect(payload.body).toContain("vendor/generated.ts");
+    expect(payload.body).toContain("Generated dependency output excluded.");
+    expect(payload.body).toContain(
+      "> [!WARNING]\n> Add the missing release note before merging.",
+    );
+  });
+
+  it.each([
+    { priority: "P0", color: "red" },
+    { priority: "P1", color: "orange" },
+    { priority: "P2", color: "yellow" },
+    { priority: "P3", color: "blue" },
+    { priority: "P4", color: "lightgrey" },
+  ])(
+    "should render exactly one $priority marker in an inline finding",
+    ({ priority, color }) => {
+      const isBlocker = priority === "P0" || priority === "P1";
+      const approval = createReviewPublicationReceipt({
+        ...review,
+        assessment: {
+          ...review.assessment,
+          substantive_verdict: isBlocker ? "REQUEST_CHANGES" : "APPROVE",
+          findings: [{ ...finding, priority, kind: null }],
+          alerts: {
+            must_change: isBlocker ? "Fix the boundary." : null,
+            worth_considering: isBlocker ? null : "Consider the boundary.",
+            unanchored: null,
+          },
+        },
+      });
+      const payload = JSON.parse(
+        Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
+      );
+
+      expect(payload.comments[0].body).toBe(
+        `**<sub><sub>![${priority} Badge](https://img.shields.io/badge/${priority}-${color}?style=flat)</sub></sub> ${finding.title}** — ${finding.body}\n\nEvidence: ${finding.evidence}\n`,
+      );
+    },
+  );
+
   it("should allow independent agents using the same GitHub account", () => {
     const assessment = {
       ...review,
@@ -459,6 +808,46 @@ describe("cmd:review-publication", () => {
   });
 
   it.each([
+    {
+      ...review,
+      assessment: {
+        ...review.assessment,
+        statistics: { files_changed: -1, additions: 0, deletions: 0 },
+      },
+    },
+    {
+      ...review,
+      assessment: {
+        ...review.assessment,
+        statistics: { files_changed: 1.5, additions: 0, deletions: 0 },
+      },
+    },
+    {
+      ...review,
+      assessment: {
+        ...review.assessment,
+        previous_reports: [
+          {
+            label: "Old report",
+            url: "not-a-url",
+            verdict: "fixed",
+            evidence: "New test passes.",
+          },
+        ],
+      },
+    },
+    { ...review, assessment: { ...review.assessment, verdict_sentence: "" } },
+    {
+      ...review,
+      assessment: {
+        ...review.assessment,
+        alerts: {
+          must_change: "Merge blocked",
+          worth_considering: null,
+          unanchored: null,
+        },
+      },
+    },
     { ...review, semantic_approval: null },
     {
       ...review,
@@ -581,7 +970,7 @@ describe("cmd:review-publication", () => {
       ),
     },
     { ...receipt, payload_sha256: "b".repeat(64) },
-    { ...receipt, contract_version: "obsolete" },
+    { ...receipt, contract_version: "coding-pr-review-publication/v1" },
     { ...receipt, receipt_version: 0 },
     {
       ...receipt,
@@ -685,9 +1074,7 @@ describe("cmd:review-publication", () => {
       expect(result.writes).toHaveLength(accepted ? 1 : 0);
       if (accepted) {
         expect(result.writes[0]?.body).toBe(
-          Buffer.from(approval.payload_utf8_base64, "base64").toString(
-            "utf8",
-          ),
+          Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
         );
       }
     },
@@ -725,6 +1112,10 @@ describe("cmd:review-publication", () => {
     expect(result.writes.map((write) => JSON.parse(write.body).event)).toEqual([
       "COMMENT",
     ]);
+    const payload = JSON.parse(result.writes[0]!.body);
+    expect(payload.body).toMatch(/^📌\n\n✅/);
+    expect(payload.body).toContain("> [!NOTE]");
+    expect(payload.body).not.toContain("> [!WARNING]");
   });
 
   it("should preserve a blocker verdict while a trust cap submits COMMENT", () => {
@@ -736,6 +1127,11 @@ describe("cmd:review-publication", () => {
         substantive_verdict: "REQUEST_CHANGES",
         tests: { ...review.assessment.tests, confidence: "unconvincing" },
         trust_caps: ["tests-unconvincing"],
+        alerts: {
+          must_change: null,
+          worth_considering: null,
+          unanchored: null,
+        },
       },
     });
     const result = runCommand(approval);
@@ -749,28 +1145,48 @@ describe("cmd:review-publication", () => {
     expect(result.writes.map((write) => JSON.parse(write.body).event)).toEqual([
       "COMMENT",
     ]);
+    const payload = JSON.parse(result.writes[0]!.body);
+    expect(payload.body).toMatch(/^📌\n\n⚠️/);
+    expect(payload.body).toContain("### 🚨 Must Change");
+    expect(payload.body).toContain("> [!WARNING]");
+    expect(payload.body).not.toContain("> [!CAUTION]");
   });
 
-  it("should submit REQUEST_CHANGES for an uncapped blocking finding", () => {
-    const approval = createReviewPublicationReceipt({
-      ...review,
-      assessment: {
-        ...review.assessment,
-        findings: [{ ...finding, kind: null, priority: "P1" }],
+  it.each(["author", "publisher"])(
+    "should preserve blocker presentation when the PR author is %s",
+    (author) => {
+      const approval = createReviewPublicationReceipt({
+        ...review,
+        target: { ...common.target, pr_author_login: author },
+        assessment: {
+          ...review.assessment,
+          findings: [{ ...finding, kind: null, priority: "P1" }],
+          alerts: {
+            must_change: "Resolve the empty-input failure before merging.",
+            worth_considering: null,
+            unanchored: null,
+          },
+          substantive_verdict: "REQUEST_CHANGES",
+        },
+      });
+      const result = runCommand(approval, { author });
+
+      expect(approval.binding).toMatchObject({
         substantive_verdict: "REQUEST_CHANGES",
-      },
-    });
-    const result = runCommand(approval);
-
-    expect(approval.binding).toMatchObject({
-      substantive_verdict: "REQUEST_CHANGES",
-      submitted_event: "REQUEST_CHANGES",
-    });
-    expect(result.status).toBe(0);
-    expect(result.writes.map((write) => JSON.parse(write.body).event)).toEqual([
-      "REQUEST_CHANGES",
-    ]);
-  });
+        submitted_event: author === "publisher" ? "COMMENT" : "REQUEST_CHANGES",
+      });
+      expect(result.status).toBe(0);
+      expect(
+        result.writes.map((write) => JSON.parse(write.body).event),
+      ).toEqual([author === "publisher" ? "COMMENT" : "REQUEST_CHANGES"]);
+      const payload = JSON.parse(result.writes[0]!.body);
+      expect(payload.body).toMatch(/^📌\n\n❌/);
+      expect(payload.body).toContain(
+        "> [!CAUTION]\n> Resolve the empty-input failure before merging.",
+      );
+      expect(payload.body).not.toContain("> [!WARNING]");
+    },
+  );
 });
 
 function runCommand(input: unknown, options: RunOptions = {}): RunResult {
@@ -803,10 +1219,38 @@ else process.stdout.write(process.env.PUBLICATION_METADATA);
 `,
       { mode: 0o755 },
     );
+    const installedScript = join(
+      root,
+      "skills/pr/scripts/review-publication.ts",
+    );
+    if (options.templateMutation !== undefined) {
+      mkdirSync(join(root, "skills/pr/scripts"), { recursive: true });
+      cpSync(scriptPath, installedScript);
+      const templates = join(import.meta.dirname, "../templates");
+      cpSync(templates, join(root, "skills/pr/templates"), { recursive: true });
+      const templatePath = join(
+        root,
+        "skills/pr/templates",
+        options.templateMutation.name,
+      );
+      if (options.templateMutation.content === null)
+        rmSync(templatePath, { force: true });
+      else
+        writeFileSync(
+          templatePath,
+          typeof options.templateMutation.content === "function"
+            ? options.templateMutation.content(
+                readFileSync(templatePath, "utf8"),
+              )
+            : options.templateMutation.content,
+        );
+    }
+    const executableScript =
+      options.templateMutation === undefined ? scriptPath : installedScript;
     const arguments_ =
       options.action === "approve"
         ? [
-            scriptPath,
+            executableScript,
             "approve",
             "--assessment",
             approvalPath,
@@ -814,7 +1258,7 @@ else process.stdout.write(process.env.PUBLICATION_METADATA);
               ? []
               : ["--parent-approval", parentPath]),
           ]
-        : [scriptPath, "publish", "--approval", approvalPath];
+        : [executableScript, "publish", "--approval", approvalPath];
     const result = spawnSync("bun", arguments_, {
       encoding: "utf8",
       env: {

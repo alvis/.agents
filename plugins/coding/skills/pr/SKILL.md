@@ -14,7 +14,7 @@ Before any script call, set `CODING_PR_SKILL_DIR` to the absolute directory cont
 
 Route every remote pull-request operation through one explicit subcommand. Local history mutation remains owned by `coding:commit`; local pre-commit review remains owned by `coding:review-code`.
 
-Each action reference owns its directions. Scan each implementation diff and rendered PR body against `coding:standards/git/`. Author PR bodies through [message.md](templates/message.md), then validate them with [scan-pr-message.ts](scripts/scan-pr-message.ts). The executable [review-publication.ts](scripts/review-publication.ts) is the sole authority for review assessment validation, rendering, approval receipts, and GitHub publication; do not reproduce its payload rules in a template or publication agent prompt.
+Each action reference owns its directions. Scan each implementation diff and rendered PR body against `coding:standards/git/`. Author PR bodies through [message.md](templates/message.md), then validate them with [scan-pr-message.ts](scripts/scan-pr-message.ts). Before preparing a review assessment, read and follow [inline-review.md](templates/inline-review.md) and [overall-review.md](templates/overall-review.md), which own the posted presentation. [review-publication.ts](scripts/review-publication.ts) renders those templates and owns assessment validation, approval receipts, and GitHub publication; the publisher relays approved bytes without rewriting them.
 
 ## Usage
 
