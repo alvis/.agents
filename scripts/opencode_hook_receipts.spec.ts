@@ -41,7 +41,7 @@ describe("OpenCode hook receipt command validation", () => {
         pluginRoot,
         "hooks/hooks.json",
         globalHooks(
-          `${PLUGIN_ROOT_GUARD}"${PLUGIN_ROOT_ANCHOR}/${gate}"`,
+          `${PLUGIN_ROOT_GUARD.replace("exit 1", "exit 2")}"${PLUGIN_ROOT_ANCHOR}/${gate}" || { echo "review publication hook unavailable" >&2; exit 2; }`,
           "PreToolUse",
           "Bash|exec_command|shell_command",
         ),

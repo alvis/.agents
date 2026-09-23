@@ -147,7 +147,7 @@ type PublicationAssessment =
   | ReviewSupplementAssessment
   | StatusAssessment;
 
-/** Exact, deterministic evidence consumed by the publication-only command. */
+/** exact, deterministic evidence consumed by the publication-only command */
 export interface ReviewPublicationReceipt {
   readonly approved_assessment: PublicationAssessment;
   readonly assessment_sha256: string;
@@ -181,7 +181,7 @@ export interface ReviewPublicationReceipt {
   readonly semantic_approval: SemanticApproval;
 }
 
-/** Hook classifier result for one shell command. */
+/** hook classifier result for one shell command */
 export interface ReviewWriteGuardDecision {
   readonly decision: "allow" | "deny" | "ignore";
   readonly reason: string;
@@ -235,7 +235,7 @@ const modulePath = fileURLToPath(import.meta.url);
 const defaultPluginRoot = resolve(dirname(modulePath), "../../../..");
 
 /**
- * Validates an independent assessment and creates its exact publication receipt.
+ * validates an independent assessment and creates its exact publication receipt
  * @param input untrusted assessment JSON
  * @param parentApproval required only for a review supplement
  * @returns deterministic approval evidence and exact outgoing bytes
@@ -308,7 +308,7 @@ export function createReviewPublicationReceipt(
 }
 
 /**
- * Reconstructs a receipt from its assessment and rejects every changed binding or byte.
+ * reconstructs a receipt from its assessment and rejects changed bindings or bytes
  * @param input untrusted approval JSON
  * @returns the fully validated approval
  */
@@ -329,7 +329,7 @@ export function validateReviewPublicationReceipt(
 }
 
 /**
- * Classifies a shell command before execution and denies supported raw review writes.
+ * classifies a shell command before execution and denies supported raw review writes
  * @param command exact command string supplied to the shell tool
  * @param pluginRoot resolved coding plugin root
  * @returns allow, deny, or unrelated decision
@@ -381,7 +381,7 @@ export function classifyReviewPublicationCommand(
 }
 
 /**
- * Revalidates a receipt and live PR metadata immediately before one exact GitHub write.
+ * revalidates a receipt and live PR metadata immediately before one exact GitHub write
  * @param receipt validated publication evidence
  * @param options injectable transport and dry-run behavior
  * @returns GitHub response text, or the exact outgoing body in dry-run mode
@@ -434,7 +434,10 @@ export function publishReviewPublication(
     "user",
   ]);
   const livePublisher = stringValue(currentUser.login, "live publisher login");
-  if (livePublisher.toLowerCase() !== targetIdentity(validated).toLowerCase()) {
+  if (
+    livePublisher.toLowerCase() !==
+    validated.binding.publisher_login.toLowerCase()
+  ) {
     throw new Error("review publication refused: publisher identity changed");
   }
   validateLiveSelfReview(validated, liveAuthor);
@@ -983,9 +986,8 @@ function renderReview(assessment: ReviewPublicationAssessment): {
       line: finding.line,
       path: finding.path,
       side: finding.side,
-      ...(finding.start_line === null
-        ? {}
-        : { start_line: finding.start_line, start_side: finding.side }),
+      start_line: finding.start_line ?? undefined,
+      start_side: finding.start_line === null ? undefined : finding.side,
     }));
   return {
     body: {
@@ -1425,10 +1427,6 @@ function validateLiveBlackAuthorization(
       "black-zone authorization receipt changed before publication",
     );
   }
-}
-
-function targetIdentity(receipt: ReviewPublicationReceipt): string {
-  return receipt.binding.publisher_login;
 }
 
 function assertSameTarget(

@@ -238,8 +238,55 @@ describe("review publication shell guard", () => {
       roots: { PLUGIN_ROOT: "/missing-coding-plugin" },
     });
 
-    expect(result.status).not.toBe(0);
+    expect(result.status).toBe(2);
     expect(executeTransportAfterHook(result)).toEqual([]);
+  });
+
+  it("should treat ordinary hook failure as non-blocking, but missing roots as blocking", () => {
+    const nonblocking = spawnSync("bash", ["-c", "exit 1"], {
+      encoding: "utf8",
+    });
+    const missingRoot = runHook({
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "gh pr review 35 --approve" },
+      }),
+      roots: {},
+    });
+
+    expect(executeTransportAfterHook(nonblocking)).toEqual([
+      "transport-executed",
+    ]);
+    expect(missingRoot.status).toBe(2);
+    expect(executeTransportAfterHook(missingRoot)).toEqual([]);
+  });
+
+  it("should block when the native manifest points to an unavailable hook", () => {
+    const missingRoot = mkdtempSync(join(tmpdir(), "review-hook-missing-"));
+    try {
+      const manifest = JSON.parse(
+        readFileSync(join(pluginRoot, "hooks/hooks.json"), "utf8"),
+      ) as {
+        hooks: {
+          PreToolUse: Array<{ hooks: Array<{ command: string }> }>;
+        };
+      };
+      const command = manifest.hooks.PreToolUse[0]?.hooks[0]?.command;
+      if (command === undefined) throw new Error("missing native hook command");
+      const result = spawnSync("bash", ["-c", command], {
+        encoding: "utf8",
+        env: { ...process.env, PLUGIN_ROOT: missingRoot },
+        input: JSON.stringify({
+          tool_name: "Bash",
+          tool_input: { command: "gh pr review 35 --approve" },
+        }),
+      });
+
+      expect(result.status).toBe(2);
+      expect(executeTransportAfterHook(result)).toEqual([]);
+    } finally {
+      rmSync(missingRoot, { recursive: true, force: true });
+    }
   });
 
   it("should catch a seeded classifier bypass and restore the real guard", () => {
@@ -293,7 +340,7 @@ function runHook(params: {
 function executeTransportAfterHook(
   result: SpawnSyncReturns<string>,
 ): readonly string[] {
-  if (result.status !== 0) return [];
+  if (result.status === 2) return [];
   const output =
     result.stdout.trim() === ""
       ? {}

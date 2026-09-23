@@ -2,7 +2,7 @@
 set -euo pipefail
 
 plugin_root="${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}"
-[ -n "$plugin_root" ] || { echo "plugin root unset" >&2; exit 1; }
+[ -n "$plugin_root" ] || { echo "plugin root unset" >&2; exit 2; }
 contract="$plugin_root/skills/pr/scripts/review-publication.ts"
-[ -f "$contract" ] || { echo "review publication contract unavailable" >&2; exit 1; }
-exec bun "$contract" guard
+[ -f "$contract" ] || { echo "review publication contract unavailable" >&2; exit 2; }
+bun "$contract" guard || { echo "review publication validation failed" >&2; exit 2; }

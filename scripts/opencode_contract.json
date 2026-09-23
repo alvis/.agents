@@ -115,6 +115,7 @@
         "enforcement_mode": "before",
         "event": "PreToolUse",
         "matcher": "Bash|exec_command|shell_command",
+        "native_failure_mode": "block",
         "opencode_aliases": ["bash"],
         "supporting_resource": "skills/pr/scripts/review-publication.ts"
       },
