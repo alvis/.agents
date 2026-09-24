@@ -15,7 +15,7 @@ const hooks = JSON.parse(
     PreToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }>;
   };
 };
-const questions = "AskUserQuestion|request_user_input|ask_user_question";
+const questions = "AskUserQuestion|request_user_input|request_user_input_async|ask_user_question";
 const plans = "ExitPlanMode|update_plan|enter_plan_mode|exit_plan_mode";
 const dispatch = "Agent|spawn_agent|Task|spawn_subagent";
 const matchers = [questions, plans, dispatch] as const;
@@ -266,19 +266,36 @@ describe("PreToolUse hook wiring", () => {
 });
 
 describe("question validator", () => {
-  it.each([
-    ["tagged strings", { questions: [{ title: "Choose a route", options: ["Ship [Recommended]", "Wait [Pragmatic]"] }] }],
-    ["free text", { questions: [{ title: "What constraint must we preserve?" }] }],
-  ])("should accept async %s questions", (_name, toolInput) => {
-    const entry = hooks.hooks.PreToolUse.find(({ matcher }) => new RegExp(matcher).test("request_user_input_async") && matcher !== ".*");
-    expect(entry).toBeDefined();
+  function runAsyncQuestion(toolInput: Record<string, unknown>): Envelope {
+    const entry = hooks.hooks.PreToolUse.find(({ matcher }) =>
+      matcher.split("|").includes("request_user_input_async"),
+    );
+    expect(entry?.matcher).toBe(questions);
     const completed = spawnSync("bash", ["-c", entry!.hooks[0]!.command], {
       encoding: "utf8",
       env: harnessEnvironment("PLUGIN_ROOT"),
       input: JSON.stringify({ tool_name: "request_user_input_async", tool_input: toolInput }),
     });
     expect(completed.status, completed.stderr).toBe(0);
-    expectAllowed(JSON.parse(completed.stdout));
+    return JSON.parse(completed.stdout) as Envelope;
+  }
+
+  it.each([
+    ["tagged strings", { questions: [{ title: "Choose a route", options: ["Ship [Recommended]", "Wait [Pragmatic]"] }] }],
+    ["free text", { questions: [{ title: "What constraint must we preserve?" }] }],
+  ])("should accept async %s questions", (_name, toolInput) => {
+    expectAllowed(runAsyncQuestion(toolInput));
+  });
+
+  it("should deny untagged async options and allow a corrected new call", () => {
+    const reason = denialReason(runAsyncQuestion({
+      questions: [{ title: "Choose a route", options: ["Ship now", "Wait [Pragmatic]"] }],
+    }));
+    expect(reason).toContain("Ship now");
+    for (const tag of validTags) expect(reason).toContain(tag);
+    expectAllowed(runAsyncQuestion({
+      questions: [{ title: "Choose a route", options: ["Ship now [Recommended]", "Wait [Pragmatic]"] }],
+    }));
   });
 
   it.each([{}, { questions: [] }, { questions: "invalid" }, { questions: [{ question: "Choose?", options: [42] }] }])(

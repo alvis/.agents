@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion|request_user_input|ask_user_question",
+        "matcher": "AskUserQuestion|request_user_input|request_user_input_async|ask_user_question",
         "hooks": [
           {
             "type": "command",
