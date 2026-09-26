@@ -1,6 +1,6 @@
 # Architecture decision records
 
-Read this when creating, accepting, superseding, indexing, or reviewing an architecture decision record (ADR). It is the contract for durable ADRs; work- local `decisions/` children keep their separate lifecycle.
+Read this when creating, accepting, superseding, indexing, or reviewing an architecture decision record (ADR). It is the contract for durable ADRs; work-local `decisions/` children keep their separate lifecycle.
 
 ## Paths and authority
 
@@ -10,6 +10,10 @@ Read this when creating, accepting, superseding, indexing, or reviewing an archi
 - `docs/architecture/README.md` is the index. It lists every effective ADR (with its `decisions/<domain>/` path) and no archived ADR.
 
 The ADR explains why a choice was accepted. The architecture document explains the current structure. Neither copies the other.
+
+Follow the shared [durable documentation reader contract](durable-documentation.md#terminology-and-migration). In Motivation, show a concrete situation the team would face without the decision: who needs to do what, and what would fail or become difficult. In Context, explain only the existing system facts, terms, and constraints needed to understand why that problem arises; leave the failure story in Motivation and the chosen approach in Decision. State the choice in plain English before its precise rules, then explain its benefits and costs. The [ADR template](../templates/docs/adr.md) supplies the prompts.
+
+An active accepted ADR may be clarified in place when the edit changes only wording, definitions, or examples. Compare the diff with the prior version: the choice, rationale, alternatives, consequences, and technical guarantees must retain their meaning. Git history records the clarification; no new ADR metadata is needed. A substantive change follows the supersession process below. An archived ADR's historical body is never clarified in place.
 
 ## Superseding an ADR
 
