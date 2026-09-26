@@ -39,6 +39,10 @@ Incomplete plans receive corrective feedback in T3.
 
 Only the Essential hooks change.
 
+## 🗂️ Tasks
+
+- TST: Validate the plan.
+
 ## 🛠️ Direction
 
 Validate the current turn at Stop.
@@ -198,6 +202,16 @@ describe("Codex plan Stop validator", () => {
     expect(result.stdout).toBe("");
   });
 
+  it("should block a plan missing Tasks", () => {
+    const result = runHook({
+      lines: [createAssistantMessage(turnId, validPlan.replace(/## 🗂️ Tasks\n\n- TST: Validate the plan\.\n\n/, ""))],
+    });
+    expect(parseHookOutput(result)).toMatchObject({
+      decision: "block",
+      reason: expect.stringContaining("missing headings: Tasks."),
+    });
+  });
+
   it("should return the existing heading feedback", () => {
     const result = runHook({
       lines: [
@@ -210,7 +224,7 @@ describe("Codex plan Stop validator", () => {
     const decision = parseHookOutput(result);
     expect(decision.decision).toBe("block");
     expect(decision.reason).toContain(
-      "missing headings: Goal, Requirements, Boundary, Direction.",
+      "missing headings: Goal, Requirements, Boundary, Tasks, Direction.",
     );
   });
 

@@ -32,6 +32,7 @@ MARK_STATUS = {
     "✓": "done",
     "X": "failed",
     "!": "blocked",
+    "↪": "superseded",
     "⊘": "cancelled",
 }
 LIFECYCLE_STATUSES = (
@@ -1478,21 +1479,96 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
             )
         if row["status"] == "blocked" and "unblock:" not in evidence:
             report.error(work, "evidence", f"{task_id}: blocked without unblock:")
-        if row["status"] == "cancelled" and row["required"] == "yes":
+        if row["status"] in {"cancelled", "superseded"} and row["required"] == "yes":
             report.error(
-                work, "roll-up", f"{task_id}: required work cannot stay cancelled"
+                work, "roll-up", f"{task_id}: required work cannot stay {row['status']}"
             )
+
+    replacements: dict[str, list[str]] = {}
+    for task_id, row in seen.items():
+        if row["status"] != "superseded":
+            continue
+        evidence = row["evidence"]
+        reason = re.search(r"(?:^|;)\s*reason:\s*([^;]+)", evidence)
+        successors = re.search(r"(?:^|;)\s*replaced-by:\s*([^;]+)", evidence)
+        if reason is None or not reason.group(1).strip():
+            report.error(
+                work, "evidence", f"{task_id}: superseded without nonempty reason:"
+            )
+        if successors is None or not successors.group(1).strip():
+            report.error(
+                work, "evidence", f"{task_id}: superseded without replaced-by:"
+            )
+            continue
+        targets = [item.strip() for item in successors.group(1).split(",")]
+        if any(
+            not target
+            or not (PARENT_ID.fullmatch(target) or CHILD_ID.fullmatch(target))
+            for target in targets
+        ):
+            report.error(
+                work, "evidence", f"{task_id}: malformed replaced-by: task IDs"
+            )
+            continue
+        replacements[task_id] = targets
+        for target in targets:
+            if target not in seen:
+                report.error(
+                    work, "replacement", f"{task_id}: unknown replacement {target}"
+                )
+            elif target == task_id:
+                report.error(
+                    work,
+                    "replacement",
+                    f"{task_id}: self-referencing replacement {target}",
+                )
+
+    replacement_state: dict[str, int] = {}
+
+    def visit_replacement(node: str, trail: list[str]) -> None:
+        replacement_state[node] = 1
+        for successor in replacements.get(node, []):
+            if successor not in replacements:
+                continue
+            if replacement_state.get(successor) == 1:
+                cycle = trail[trail.index(successor) :] if successor in trail else trail
+                report.error(
+                    work,
+                    "replacement",
+                    "replacement cycle: " + " → ".join([*cycle, successor]),
+                )
+            elif replacement_state.get(successor, 0) == 0:
+                visit_replacement(successor, [*trail, successor])
+        replacement_state[node] = 2
+
+    for task_id in replacements:
+        if replacement_state.get(task_id, 0) == 0:
+            visit_replacement(task_id, [task_id])
 
     graph: dict[str, list[str]] = {}
     for task_id, row in seen.items():
         dependencies = parse_dependencies(row["depends_on"])
         graph[task_id] = dependencies
-        for dependency in dependencies:
+        parent_match = CHILD_ID.match(task_id)
+        inherited = (
+            parse_dependencies(seen[parent_match.group(1)]["depends_on"])
+            if parent_match and parent_match.group(1) in seen
+            else []
+        )
+        for dependency in [*dependencies, *inherited]:
             if dependency not in seen:
                 report.error(
                     work,
                     "dependency",
                     f"{task_id}: depends on unknown task {dependency}",
+                )
+            elif seen[dependency]["status"] in {"cancelled", "superseded"} and row[
+                "status"
+            ] not in {"blocked", "cancelled", "superseded"}:
+                report.error(
+                    work,
+                    "dependency",
+                    f"{task_id}: {row['status']} while dependency {dependency} is {seen[dependency]['status']}; block and update obsolete edge",
                 )
 
     state: dict[str, int] = {}
@@ -1539,6 +1615,23 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
                     "roll-up",
                     f"{parent_id}: done while required children are not: "
                     + ", ".join(unfinished),
+                )
+        if all(child["required"] == "no" for child in child_rows) and all(
+            child["status"] in {"done", "superseded", "cancelled"}
+            for child in child_rows
+        ):
+            expected_status = (
+                "done"
+                if any(child["status"] == "done" for child in child_rows)
+                else "superseded"
+                if any(child["status"] == "superseded" for child in child_rows)
+                else "cancelled"
+            )
+            if parent["status"] != expected_status:
+                report.error(
+                    work,
+                    "roll-up",
+                    f"{parent_id}: {parent['status']} contradicts optional terminal children (expected {expected_status})",
                 )
 
 

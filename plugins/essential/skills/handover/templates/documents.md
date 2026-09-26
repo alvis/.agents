@@ -14,6 +14,9 @@ Use the Essential state contract as authoritative. These shapes add handover-spe
 - State: [state.md](state.md)
 
 ## Goal
+
+<Improvement, beneficiaries, end state or verifiable outcome, and acceptance evidence.>
+
 ## Scope and non-goals
 
 ## Success criteria
@@ -59,8 +62,8 @@ The charter owns goal, scope, success criteria, and every specification anchor; 
 
 | ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |
 |---|---|---|---|---|---|---|---|---|
-| `LFE` | `⧗` | `working` | `<summary> [targets: none]` | `-` | `yes` | `<criterion>` | `<owner>` | `<evidence or action>` |
-| `LFE01` | `✓` | `done` | `<summary> [targets: src/example.ts]` | `-` | `yes` | `<criterion>` | `<owner>` | `<evidence>` |
+| `LFE` | `⧗` | `working` | `<summary> [targets: none]` | `-` | `yes` | `<criterion>` | `<role; agent; planned model/effort; observed model/effort>` | `<evidence or action>` |
+| `LFE01` | `✓` | `done` | `<summary> [targets: src/example.ts]` | `-` | `yes` | `<criterion>` | `<role; agent; planned model/effort; observed model/effort>` | `<evidence>` |
 
 ## Plan graph
 ## Context
@@ -74,8 +77,16 @@ The charter owns goal, scope, success criteria, and every specification anchor; 
   - [<directly related summary of at most 19 words>](state/journal.md)
   - [<another directly related summary of at most 19 words>](state/journal.md)
 
+### Assumptions
+
+1. `A1`: <Falsifiable assumption; verification task ID and documentation check or focused test.>
+
+### Known issues
+
+1. `I1`: <Known issue; corrective task ID.>
+
 ## Current state and file status
-## Approved decisions and accepted assumptions
+## Approved decisions
 ## Outstanding proposals
 ## Dependencies, blockers, risks, and pivot signals
 ## Reviews and dispositions
@@ -90,7 +101,7 @@ The `## Context` content follows [Making plans](../../../directions/plan.md); re
 
 Add one further metadata line, `- Blocked on: <named blocker>`, only when the stream is stopped — or `- Blocked on: unknown` when it is stopped and nobody recorded why. The line is absent from the template because absence is a fact: it means the stream is not blocked. It is never carried as an empty or placeholder value, which would claim a blocker that does not exist and cost the distinction between a healthy stream and a forgotten one ([state-format.md](../../../references/state-format.md)).
 
-The root table contains the complete registry: every three-letter parent and every `AAA01`-style child exactly once. A resumable `state/*.md` child may mirror only its parent's existing subset and cannot introduce an ID. Store full IDs in `Depends on`; parent edges target parents and child edges target siblings. Every Task cell is exactly `<summary> [targets: <comma-separated paths>|none]`. Marks and status words use `- planned`, `⧗ working`, `✓ done`, `X failed`, `! blocked`, or `⊘ cancelled`. Graph notation and diagrams are derived display, not authority.
+The root table contains the complete registry: every three-letter parent and every `AAA01`-style child exactly once. A resumable `state/*.md` child may mirror only its parent's existing subset and cannot introduce an ID. Store full IDs in `Depends on`; parent edges target parents and child edges target siblings. Every Task cell is exactly `<summary> [targets: <comma-separated paths>|none]`. The linked state-file format owns marks, statuses, delivery settings, and supersession evidence. Keep the registry as one nine-column table; use the linked plan direction when presenting grouped task rows and approved-baseline comparisons. Graph notation and diagrams are derived display, not authority.
 
 `## Outstanding proposals` preserves the proposal inventory across the state rewrite: every `proposals/` child still awaiting user approval and every approved proposal not yet implemented, each with its status and child path, so a same-machine resume reads the outstanding approval/implementation work from `state.md` without scanning the folder. Omit the section only when no such proposal exists.
 

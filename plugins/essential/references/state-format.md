@@ -1,6 +1,6 @@
 # State-file format
 
-Use this convention for every new or main-agent-migrated `state.md` and every resumable `state/*.md` child. A work item is free-form, LLM-readable Markdown: nothing is machine-validated and any layout a reader can follow works. This document describes the shared shape that keeps state files easy to resume from; Essential owns the convention, domain skills own task definitions and evidence.
+Use this convention for every new or main-agent-migrated `state.md` and every resumable `state/*.md` child. Work items are LLM-readable Markdown; the doctor checks machine-readable structure while agents judge meaning and evidence. Essential owns the convention, domain skills own task definitions and evidence.
 
 ## Roles and authority
 
@@ -86,11 +86,13 @@ Every state file has `## Status` and `## Tasks`. The root table uses exactly the
 
 The `Task` cell is an immutable definition with the exact grammar `<summary> [targets: <comma-separated targets>|none]`. Targets may be source paths, artifact paths, or named external surfaces. Escape a literal Markdown pipe as `\|`. Use `—` for no dependency and `yes|no` for `Required`.
 
+The `Owner` cell carries delivery role, agent name, native model, and reasoning effort, distinguishing planned settings from observed execution. For example: `role: Testing evangelist; agent: Ava; planned: model=gpt-6-sol, effort=low; observed: model=gpt-6-sol, effort=low`. Before execution, observed settings are `not started`; unavailable settings name the reason. [Making plans](../directions/plan.md) owns setting resolution, expanded presentation columns, checkpoint grouping, and approved-baseline comparisons. Keep the registry in one nine-column table.
+
 - Give every top-level task one mnemonic ID matching `^[A-Z]{3}$`.
 - Give every subtask its parent ID plus `01` through `99`, for example `LFE01`.
 - Permit only that one child level. Promote deeper work to another parent.
 - Assign IDs before approval. Never rename, recycle, or reuse an ID.
-- Retain every assigned ID as history. Removed scope becomes an optional `cancelled` tombstone; never delete its row from a later plan revision.
+- Retain every assigned ID as history. An approved revision makes removed unfinished scope an optional `cancelled` tombstone, or `superseded` when identified tasks replace it; never delete its row.
 - Treat a parent with children as a derived roll-up, not executable work. A parent with no children is an executable leaf.
 - Store full IDs in `Depends on`. Parent dependencies reference parents; subtask dependencies reference siblings under the same parent. Prohibit cross-parent partial dependencies; promote that boundary to a parent.
 - Treat row order and diagrams as presentation only.
@@ -99,14 +101,15 @@ Use these exact mark/status pairs:
 
 | Mark | Status | Meaning |
 | --- | --- | --- |
-| `-` | `planned` | Definition is approved but execution has not started. |
+| `-` | `planned` | Defined; execution has not started. Approval still gates execution. |
 | `⧗` | `working` | An owner is actively executing it. |
 | `✓` | `done` | Acceptance is met and evidence is recorded. |
 | `X` | `failed` | An attempt failed and has a retry or disposition. |
 | `!` | `blocked` | Work cannot advance and has an owner/unblock action. |
+| `↪` | `superseded` | An approved plan revision replaced unfinished work with identified tasks. |
 | `⊘` | `cancelled` | An approved plan revision removed optional scope. |
 
-Record `attempt:` plus either `retry:` or `disposition:` for failed work. Record `unblock:` for blocked work. Required work cannot remain cancelled; revise and reapprove the definition so it is optional or absent.
+Record `attempt:` plus either `retry:` or `disposition:` for failed work. Record `unblock:` for blocked work. Superseded rows require `reason: <nonempty explanation>; replaced-by: <comma-separated full task IDs>;` in Evidence, including derived parent rows. Replacement IDs must exist, differ from the superseded ID, and form no replacement cycle. Required work cannot remain cancelled or superseded: an approved revision makes the retired row optional, transfers required obligations and acceptance mappings to replacements when replacing work, and updates obsolete dependency edges and assumption/issue mappings. Cancellation removes scope without replacement; supersession preserves where its obligations went.
 
 Validity is orthogonal to status (see Essential's `truth.md`). Mark/status pairs are history and are never falsified; `✓ done` is terminal. When later truth invalidates a done row's result, append `validity: stale (<reason or superseding id>)` — or `validity: unknown (…)` when unverified — to its Evidence cell and add remediation tasks with new IDs. An unmarked row is `current`.
 
@@ -121,9 +124,12 @@ Derive a parent with children as follows:
 - `done`: every required child is done; when a parent has only optional children, every child is terminal and at least one is done.
 - `failed`: an unresolved required child failed.
 - `blocked`: required work remains but no child is running or runnable.
-- `cancelled`: all considered optional children were removed by an approved plan revision.
+- `superseded`: all children are optional and terminal, none is done, and at least one is superseded.
+- `cancelled`: all children are optional and cancelled.
 
-A failed leaf blocks only its downstream closure. Independent siblings remain runnable. The main agent alone changes task status after reconciling a result that carries `task_id`, attempt outcome, and evidence. Any dependency edge that still names a cancelled predecessor is also blocked; an approved plan revision must remove that obsolete edge before execution. Reconcile a planned leaf downstream of any failed, blocked, or cancelled predecessor to explicit `! blocked` with `unblock:` evidence. Leave ordinary future work `planned` while it waits only on planned or working predecessors. An executable task may become `working`, `done`, or `failed` only after every own dependency and every predecessor of its parent is `done`; a task that cannot be attempted is `blocked`, never `failed`.
+A terminal child is done, superseded, or cancelled. For an all-optional terminal family, a completed child takes precedence over replaced children in the parent roll-up. Completed rows remain done when later evidence becomes stale; create new remediation tasks instead of superseding history.
+
+A failed leaf blocks only its downstream closure. Independent siblings remain runnable. The main agent alone changes task status after reconciling a result that carries `task_id`, attempt outcome, and evidence. Any dependency edge that still names a cancelled or superseded predecessor is blocked; supersession does not satisfy dependencies or silently redirect them to replacements. An approved plan revision must replace obsolete edges before execution. Reconcile a planned leaf downstream of any failed, blocked, cancelled, or superseded predecessor to explicit `! blocked` with `unblock:` evidence. Leave ordinary future work `planned` while it waits only on planned or working predecessors. An executable task may become `working`, `done`, or `failed` only after every own dependency and every predecessor of its parent is `done`; a task that cannot be attempted is `blocked`, never `failed`.
 
 A `planned` or `working` stream with a runnable required executable leaf carries no `Blocked on:` line; its execution blocker requires unfinished required work and no runnable required leaf. Phase `reviewing` requires every required executable leaf to be `done` and the stream's applicable submission recorded, and MAY carry the named external landing/acceptance wait as its blocker. `completed` is terminal, reachable only from `reviewing`, only on the applicable landing evidence. That transition clears a resolved submission blocker and retains only a separate unresolved blocker whose owner and carrier remain independently valid. [stream-completion.md](stream-completion.md) states both in full. Passing tests do not reach `completed` while review, sync, publication, or history anchoring remains required.
 
