@@ -4,7 +4,7 @@ _Compact rules for comments, JSDoc, inline documentation, and maintenance._
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - General Coding Principles (standard:universal) - clarity, maintainability, and consistency baseline
 

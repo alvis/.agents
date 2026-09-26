@@ -4,7 +4,7 @@ _Compact naming rules for functions, types, variables, and data operations._
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - General Coding Principles (standard:universal) - baseline quality and consistency rules
 - TypeScript Standards (standard:typescript) - naming must align with type-safety and import rules

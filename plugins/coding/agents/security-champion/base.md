@@ -13,7 +13,7 @@ Perform deep security review only when explicitly requested. Keep source read-on
 - the `code-review` standard at coding:standards/code-review/
 - the `universal` standard at coding:standards/universal/
 
-Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 - the repo area under review, its own conventions and siblings (lazy, resolved per task — never preloaded)
 - No dedicated security standard exists yet. Until one is authored, I lean on OWASP practice and defense-in-depth judgment as domain expertise, not a citable SD.

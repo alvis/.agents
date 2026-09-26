@@ -4,7 +4,7 @@ _Requirements for accurate, constructive reviews that prioritize material risk a
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - General Coding Principles (standard:universal) - Defines the implementation baseline and is the canonical authority for suppression policy, including `GEN-SAFE-01`.
 

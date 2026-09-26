@@ -4,7 +4,7 @@ _Repository-wide policy for authoring coherent, operational skills, agents, and 
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - Delegated Execution (standard:delegation) - batching, message, report, review, and retry limits
 

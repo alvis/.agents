@@ -19,7 +19,7 @@ Role context:
 - the `testing` standard at coding:standards/testing/
 - the `observability` standard at coding:standards/observability/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 Resolve lazily, per task, never preload: the repo's actual model/feature-store layout and its training and serving config. When model serving crosses into another application boundary, define the interface and serving constraints, then hand the integration requirement back to the caller instead of assuming ownership of that application.
 

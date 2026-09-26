@@ -18,7 +18,7 @@ Role context:
 - the `universal` standard at coding:standards/universal/
 - the `typescript` standard at coding:standards/typescript/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 Resolved lazily per task, never preloaded:
 

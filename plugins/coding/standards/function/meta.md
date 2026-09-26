@@ -4,7 +4,7 @@ _Compact rules for function design, interfaces, parameters, purity, and immutabi
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - General Coding Principles (standard:universal) - baseline design constraints and consistency rules
 

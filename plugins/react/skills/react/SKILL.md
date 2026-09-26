@@ -20,11 +20,11 @@ Load only the React standards relevant to the current work and route the work it
 
 ## Standards
 
-Select every applicable standard from [the React standards index](../../standards/INDEX.md), then apply the selection under [the shared standards protocol](../../../essential/directions/standards.md). These are the sole selection and application contracts for this router.
+Select every applicable scan from `react:directions/WORKFLOW.md`, then apply the selection under `essential:directions/standards.md`. These are the sole selection and application contracts for this router.
 
 ## Workflow
 
-1. Identify the surfaces the task touches and follow the linked index and protocol to select and apply their standards.
+1. Identify the surfaces the task touches and follow the linked workflow and protocol to select and apply their standards.
 2. Route the work itself:
    - Mechanical enforcement across one or more eligible files: `react:lint` — never route React linting through generic lint first.
    - Feature or bug implementation: `coding:write-code` with the applicable React standards.
@@ -39,7 +39,7 @@ Select every applicable standard from [the React standards index](../../standard
 
 ## Verification
 
-- Every touched surface has every standard selected for it by the React index.
+- Every touched surface has every standard selected for it by the React workflow.
 - Every flagged violation code was either re-scanned clean, routed to its owning skill, or reported as blocked.
 - Optional Web work is recommended and handed to its owner when the task includes visual design, theming, or runtime diagnosis.
 

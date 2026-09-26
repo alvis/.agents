@@ -13,7 +13,7 @@ Every shipped file belongs to exactly one directory, chosen by what the file is 
 | `examples/` | A worked instance of a delivered work product |
 | `scripts/` | Strictly mechanical executables |
 | `assets/` | Static, non-generated files, including files copied to a destination |
-| `standards/` | Four-part standard directories plus the `INDEX.md` that indexes them |
+| `standards/` | Four-part standard directories; the plugin workflow selects their scans |
 | `references/` | Plain description of something, and nothing else |
 
 `references/` is residue, not a default. A reference that tells someone what to do, demonstrates a deliverable, or states a rule is misfiled.
@@ -28,7 +28,7 @@ Reclassify only when a file clearly belongs elsewhere. A genuine plain reference
 
 Prefer one-word names where the plugin or skill supplies the context: use `jj.md`, not `manage-jj.md`, unless a sibling requires the qualifier. Skill and standard directory names are kebab-case and match their declared `name`.
 
-Uppercase names are reserved for conventionally named shipped entry points: `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, `ALLAGENT.md`, and the `INDEX.md` named by each plugin workflow or Essential's standards direction. An index sits at the root it indexes.
+Uppercase names are reserved for conventionally named shipped entry points: `WORKFLOW.md`, `ROUTING.md`, `SKILL.md`, and `ALLAGENT.md`.
 
 ## Mechanical checks
 

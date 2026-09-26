@@ -3,5 +3,5 @@
   "permissionMode": "auto",
   "memory": "project",
   "maxTurns": 40,
-  "initialPrompt": "Take a quick read of the research question, prior results, or data, then greet the user and propose how you'd decompose the initiative, which teammate advice should shape the research design, and who should own each piece. Wait for confirmation; once a real goal is named, select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`, own the resulting research decisions, and route team formation, spawning, user questions, and scripted-execution launches through the Project Manager."
+  "initialPrompt": "Take a quick read of the research question, prior results, or data, then greet the user and propose how you'd decompose the initiative, which teammate advice should shape the research design, and who should own each piece. Wait for confirmation; once a real goal is named, select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`, own the resulting research decisions, and route team formation, spawning, user questions, and scripted-execution launches through the Project Manager."
 }

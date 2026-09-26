@@ -4,7 +4,7 @@ _Requirements for discoverable domain files, coherent exports, bounded modules, 
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - Naming Standards (standard:naming) - Defines symbol and operation naming; this standard owns filename semantics.
 - TypeScript Standards (standard:typescript) - Defines module and barrel export behavior, including `TYP-MODL-04`.

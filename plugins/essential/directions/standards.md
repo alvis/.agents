@@ -4,18 +4,18 @@ A standard is a mechanically or semantically scannable rule over the resulting i
 
 ## Select
 
-Read the `INDEX.md` at each standards root your work touches and take every row whose *Applies to* matches the artifact you are about to produce or review:
+Use the Standards table in each relevant plugin workflow and take every row whose *Applies to* matches the artifact you are about to produce or review. Each row points directly to the scans to read:
 
-| Standards root | Indexes |
+| Workflow | Selects |
 | --- | --- |
-| `coding:standards/INDEX.md` | Implementation, tests, commits, pull requests, documentation, files |
-| `react:standards/INDEX.md` | Components, hooks, project structure, stories, accessibility |
-| `web:standards/INDEX.md` | Visual design, color modes, brand theming |
-| `governance:standards/INDEX.md` | Authored agents, skills, standards, and delegated execution |
+| `coding:directions/WORKFLOW.md` | Implementation, tests, commits, pull requests, documentation, files |
+| `react:directions/WORKFLOW.md` | Components, hooks, project structure, stories, accessibility |
+| `web:directions/WORKFLOW.md` | Visual design, color modes, brand theming |
+| `governance:directions/WORKFLOW.md` | Authored agents, skills, standards, and delegated execution |
 
-Those rows together are the whole selection. A `meta.md` dependency list explains relationships; it never adds a standard. Select only the owning plugin and its declared dependencies. A cross-standard requirement belongs in the applicable INDEX row, or as a specific trigger in an already-selected scan with a canonical link to its rule guide. A link does not authorize loading an undeclared plugin; such a dependency must be resolved by the owning plugin before the standard can claim that check.
+Those rows together are the whole selection. A `meta.md` dependency list explains relationships; it never adds a standard. Select only the owning plugin and its declared dependencies. A cross-standard requirement belongs in the applicable workflow row, or as a specific trigger in an already-selected scan with a canonical link to its rule guide. A link does not authorize loading an undeclared plugin; such a dependency must be resolved by the owning plugin before the standard can claim that check.
 
-Selection costs one index read per root. Do not read a standard's `meta.md` to decide whether it applies.
+Selection uses the workflow already read for action routing. Do not read a standard's `meta.md` to decide whether it applies.
 
 ## Apply
 

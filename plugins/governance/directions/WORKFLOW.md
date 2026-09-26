@@ -6,13 +6,20 @@ Read this before creating, updating, or reviewing agents, skills, standards, or 
 
 | Action | Instruction |
 | --- | --- |
-| Create or update an agent | `governance:create-agent` or `governance:update-agent`; select `governance:standards/authoring/` under the procedure below, then read `governance:references/context-catalog.md` and the agent templates |
-| Create or update a standard | `governance:create-standard` or `governance:update-standard`; select `governance:standards/authoring/` under the procedure below, then read the standard templates |
-| Create or update a skill | `governance:write-skill`; select `governance:standards/authoring/` under the procedure below, then read the skill template |
+| Create or update an agent | `governance:create-agent` or `governance:update-agent`; select the authoring scan below, then read `governance:references/context-catalog.md` and the agent templates |
+| Create or update a standard | `governance:create-standard` or `governance:update-standard`; select the authoring scan below, then read the standard templates |
+| Create or update a skill | `governance:write-skill`; select the authoring scan below, then read the skill template |
 | Verify a skill | `governance:write-skill`; run its verification workflow without rewriting a compliant skill |
-| Add delegation to an authored artifact | Also select `governance:standards/delegation/` under the procedure below |
+| Add delegation to an authored artifact | Also select the delegation scan below |
 | Work delegation | Before work delegation, read `governance:references/ROUTING.md` and the injected `essential:directions/delegate.md` contract |
 
 ## Standards
 
-Select from `governance:standards/INDEX.md` and apply each selected standard under `essential:directions/standards.md`.
+Select every row matching the artifact, read its scan before editing, and apply it under `essential:directions/standards.md`.
+
+| Applies to | Scan |
+| --- | --- |
+| Authored agents, skills, standards, subagent assignments, and reports | [Authoring](../standards/authoring/scan.md) |
+| Artifacts that dispatch subagents and delegated execution | [Delegation](../standards/delegation/scan.md) |
+
+Governance owns these authoring standards; do not select standards from an undeclared plugin.

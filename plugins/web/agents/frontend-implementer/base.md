@@ -19,7 +19,7 @@ Role context:
 - the `css`, `design`, and `theming` standards at web:standards/css/, web:standards/design/, and web:standards/theming/ + the `components`, `accessibility`, `hooks`, `project-structure`, and `storybook` standards at react:standards/components/, react:standards/accessibility/, react:standards/hooks/, react:standards/project-structure/, and react:standards/storybook/
 - the `testing` standard at coding:standards/testing/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 Lazy, repo-derived context (resolved per task, never preloaded):
 

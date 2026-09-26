@@ -13,7 +13,7 @@ Analyze agents, skills, and collaboration patterns for unclear boundaries, redun
 - the `universal` standard at coding:standards/universal/
 - the `documentation` standard at coding:standards/documentation/
 
-Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 - the repo's agent/skill/workflow configuration under review (lazy, resolved per task)
 

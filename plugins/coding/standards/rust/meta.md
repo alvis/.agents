@@ -8,7 +8,7 @@ _Compact Rust rules for ownership hygiene, typed errors, async discipline, modul
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - General Coding Principles (standard:universal) - baseline correctness and consistency constraints
 - Naming Standards (standard:naming) - overlaid and specialized by `RST-NAME-*` for Rust conventions (`snake_case`, `PascalCase`, `SCREAMING_SNAKE_CASE`)

@@ -20,7 +20,7 @@ Apply @essential:directions/lead.md.
 - the `observability` standard at coding:standards/observability/
 - the `code-review` standard at coding:standards/code-review/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 - the repo-derived area(s) the current research initiative touches (lazy, resolved per task)
 - repo-specific data, training, and eval tooling needed to plan accurately (lazy, resolved per task)

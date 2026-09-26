@@ -16,7 +16,7 @@ Review changed code for correctness, maintainability, test intent, and security.
 - the `typescript` standard at coding:standards/typescript/
 - the repo area under review, its own conventions and siblings (lazy, resolved per task — never preloaded)
 
-Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 ## Memory
 

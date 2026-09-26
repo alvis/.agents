@@ -1,6 +1,6 @@
 # Base-Context Catalog
 
-This catalog owns role context assignments. Standards indexes own canonical names, paths, and task applicability; an agent never invents a standard or path.
+This catalog owns role context assignments. Plugin workflows own standard names, scan paths, and task applicability; an agent never invents a standard or path.
 
 ## Rules
 
@@ -10,7 +10,7 @@ This catalog owns role context assignments. Standards indexes own canonical name
 
 ## Standards menu
 
-Standard names used in the assignment map below resolve through the standards indexes, which own the list, the paths, and the dependency edges: `coding:standards/INDEX.md`, `react:standards/INDEX.md`, `web:standards/INDEX.md`, and `governance:standards/INDEX.md`. An agent's `base.md` cites the path its owning index gives and never derives one. *The design standards* is this catalog's shorthand for `web:standards/{css,design, theming}/` plus `react:standards/{components,accessibility,hooks,project-structure,storybook}/`.
+Standard names used in the assignment map below resolve through `coding:directions/WORKFLOW.md`, `react:directions/WORKFLOW.md`, `web:directions/WORKFLOW.md`, and `governance:directions/WORKFLOW.md`, which own the scan paths and dependency edges. An agent's `base.md` cites the path its owning workflow gives and never derives one. *The design standards* means the CSS, design, theming, components, accessibility, hooks, project-structure, and Storybook scans selected by the Web and React workflows.
 
 Selecting and applying a standard follows `essential:directions/standards.md`; this catalog says which agent gets which standards, not how they are applied.
 
@@ -33,7 +33,7 @@ An agent's base.md names which of these it consults and states that resolution h
 
 ## Per-agent context assignment map
 
-The table names each agent's role context. Producers also resolve the task area and repo configuration lazily; critics resolve the task area. Task-based standard selection follows the indexes.
+The table names each agent's role context. Producers also resolve the task area and repo configuration lazily; critics resolve the task area. Task-based standard selection follows the workflows.
 
 | Agent | Standards subset |
 |---|---|
@@ -64,4 +64,4 @@ Update this catalog when changing a role's context assignment, not when a task s
 
 ## How an agent cites this catalog
 
-An agent's `base.md` Base Context section lists its role context by canonical name + real path from the owning index, states which repo-derived context it resolves lazily, and — if it carries a `memory` frontmatter key — states that it self-curates `.claude/agent-memory/<name>/MEMORY.md`. See `../skills/create-agent/templates/agent.md` for the required `## Memory` section, `essential:templates/memory.md` for its maintenance schema, and `../skills/create-agent/templates/role-prompt.md` for how the same context list is compressed into an `initialPrompt` load-context clause.
+An agent's `base.md` Base Context section lists its role context by canonical name + real scan path from the owning workflow, states which repo-derived context it resolves lazily, and — if it carries a `memory` frontmatter key — states that it self-curates `.claude/agent-memory/<name>/MEMORY.md`. See `../skills/create-agent/templates/agent.md` for the required `## Memory` section, `essential:templates/memory.md` for its maintenance schema, and `../skills/create-agent/templates/role-prompt.md` for how the same context list is compressed into an `initialPrompt` load-context clause.

@@ -19,7 +19,7 @@ Role context:
 - the `observability` standard at coding:standards/observability/
 - the `code-review` standard at coding:standards/code-review/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 Resolve lazily, per task, never preloaded:
 
