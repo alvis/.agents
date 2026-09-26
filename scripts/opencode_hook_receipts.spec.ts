@@ -191,7 +191,7 @@ describe("OpenCode hook receipt command validation", () => {
         globalHooks(
           `${command}; true`,
           "PreToolUse",
-          "AskUserQuestion|request_user_input|ask_user_question",
+          "AskUserQuestion|request_user_input|request_user_input_async|ask_user_question",
         ),
       );
       await writeFixture(
