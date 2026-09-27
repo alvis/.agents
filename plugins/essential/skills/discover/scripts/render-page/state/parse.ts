@@ -14,7 +14,7 @@ const NEEDED = {
 /**
  * lists optional table columns displayed where present
  *
- * missing columns stay visible as malformed rather than hiding streams
+ * missing columns leave their task values empty
  */
 const WANTED = {
   depends: "Depends on",
