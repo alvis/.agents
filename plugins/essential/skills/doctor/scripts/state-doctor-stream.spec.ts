@@ -225,27 +225,6 @@ async function writeOverview(
 function runStateDir(root: string): Run {
   return run(["--state-dir", join(root, ".state")]);
 }
-async function writeEffectiveAdr(
-  root: string,
-  name = "adr-1-choice.md",
-  body = "",
-): Promise<string> {
-  const architecture = join(root, "docs/architecture");
-  const decisions = join(architecture, "decisions/runtime");
-  await mkdir(decisions, { recursive: true });
-  const number = /^adr-(\d+)-/.exec(name)?.[1] ?? "1";
-  const path = join(decisions, name);
-  await writeFile(
-    path,
-    `# ADR-${number}: Choice\n\n- Status: \`Accepted\`\n\n${body}`,
-  );
-  await writeFile(
-    join(architecture, "README.md"),
-    `# Architecture\n\n| Document | Status |\n| --- | --- |\n| [ADR](decisions/runtime/${name}) | Accepted |\n`,
-  );
-  return path;
-}
-
 describe("state-doctor stream and lifecycle tail parity", () => {
   let workspace: Workspace;
   beforeEach(async () => {
@@ -253,6 +232,48 @@ describe("state-doctor stream and lifecycle tail parity", () => {
   });
   afterEach(async () => {
     await workspace.remove();
+  });
+
+  it.each(["--work-dir", "--state-dir"])(
+    "should ignore malformed ADRs when diagnosing %s",
+    async (scope) => {
+      await workspace.writeState(row("AAA"));
+      const directory =
+        scope === "--work-dir"
+          ? workspace.workDir
+          : join(workspace.root, ".state");
+      const baseline = run([scope, directory, "--strict"]);
+      const decisions = join(
+        workspace.root,
+        "docs/architecture/decisions/runtime",
+      );
+      await mkdir(decisions, { recursive: true });
+      await writeFile(
+        join(decisions, "adr-1-broken.md"),
+        "# ADR-99: Broken\n\n- Status: `Superseded`\n\n<unfilled decision>\n",
+      );
+
+      expect(run([scope, directory, "--strict"])).toEqual(baseline);
+    },
+  );
+
+  it("should limit diagnosis to the selected stream", async () => {
+    await workspace.writeState(row("AAA"));
+    const baseline = workspace.run("--strict");
+    const other = join(workspace.root, ".state/works/other");
+    await mkdir(other);
+    await writeFile(
+      join(other, "state.md"),
+      `# Work state\n\n- Work ID: \`other\`\n- Phase: \`working\`\n\n## Tasks\n\n${header}${row("BAD", "-", "planned", "ZZZ")}`,
+    );
+
+    expect(workspace.run("--strict")).toEqual(baseline);
+    expect(run(["--work-dir", other, "--strict"])).toMatchObject({
+      code: 1,
+      findings: expect.arrayContaining([
+        expect.objectContaining({ work: "other", check: "dependency" }),
+      ]),
+    });
   });
 
   it("reports expired and conflicting leases", async () => {
@@ -345,111 +366,6 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ severity: "info" });
     expect(findings[0]?.message).toContain("written under contract 00000000");
-  });
-
-  it("still checks ADRs when state is absent", async () => {
-    await writeEffectiveAdr(workspace.root);
-    await rm(join(workspace.root, ".state"), { recursive: true });
-    expect(runStateDir(workspace.root)).toMatchObject({
-      code: 0,
-      findings: [],
-    });
-  });
-  it("validates ADR filenames and duplicate numeric identities", async () => {
-    await writeEffectiveAdr(workspace.root);
-    const decisions = join(
-      workspace.root,
-      "docs/architecture/decisions/runtime",
-    );
-    await writeFile(
-      join(decisions, "choice.md"),
-      "# Invalid\n\n- Status: `Accepted`\n",
-    );
-    const archived = join(decisions, "../superseded/runtime");
-    await mkdir(archived, { recursive: true });
-    await writeFile(
-      join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](../../runtime/choice.md)\n>\n> **What changed:** Replaced.\n",
-    );
-    const findings = runStateDir(workspace.root).findings;
-    expect(
-      findings.some(
-        ({ check, message }) =>
-          check === "adr-layout" && message.includes("filename must use"),
-      ),
-    ).toBe(true);
-    expect(
-      findings.some(({ message }) =>
-        message.includes("ADR numeric identity 1 is duplicated"),
-      ),
-    ).toBe(true);
-  });
-  it("ignores ADR-like content inside HTML comments", async () => {
-    await writeEffectiveAdr(
-      workspace.root,
-      "adr-1-choice.md",
-      "<!-- - Status: Superseded; TODO <fill this> -->\n",
-    );
-    expect(
-      selected(runStateDir(workspace.root).findings, "adr-integrity"),
-    ).toEqual([]);
-  });
-  it("reports nested ADR files as layout errors", async () => {
-    await writeEffectiveAdr(workspace.root);
-    const nested = join(
-      workspace.root,
-      "docs/architecture/decisions/runtime/archive",
-    );
-    await mkdir(nested);
-    await writeFile(
-      join(nested, "adr-2-nested.md"),
-      "# Nested\n\n- Status: `Accepted`\n",
-    );
-    expect(checks(runStateDir(workspace.root).findings)).toContain(
-      "adr-layout",
-    );
-  });
-  it("does not let narrative ADR links satisfy the index", async () => {
-    await writeEffectiveAdr(workspace.root);
-    await writeFile(
-      join(workspace.root, "docs/architecture/README.md"),
-      "See [the choice](decisions/runtime/adr-1-choice.md).\n\n| Document | Status |\n| --- | --- |\n",
-    );
-    expect(checks(runStateDir(workspace.root).findings)).toContain("adr-index");
-  });
-  it("rejects absolute successor links", async () => {
-    await writeEffectiveAdr(workspace.root, "adr-2-new-choice.md");
-    const archived = join(
-      workspace.root,
-      "docs/architecture/decisions/superseded/runtime",
-    );
-    await mkdir(archived, { recursive: true });
-    await writeFile(
-      join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](/docs/architecture/decisions/runtime/adr-2-new-choice.md)\n>\n> **What changed:** Replaced.\n",
-    );
-    expect(
-      selected(runStateDir(workspace.root).findings, "adr-superseded").some(
-        ({ message }) => message.includes("portable relative path"),
-      ),
-    ).toBe(true);
-  });
-  it("rejects placeholder archive summaries", async () => {
-    await writeEffectiveAdr(workspace.root, "adr-2-new-choice.md");
-    const archived = join(
-      workspace.root,
-      "docs/architecture/decisions/superseded/runtime",
-    );
-    await mkdir(archived, { recursive: true });
-    await writeFile(
-      join(archived, "adr-1-old-choice.md"),
-      "> **Status:** Superseded\n>\n> **Superseded by:** [ADR](../../runtime/adr-2-new-choice.md)\n>\n> **What changed:** <State whether the decision changed>.\n",
-    );
-    expect(
-      selected(runStateDir(workspace.root).findings, "adr-superseded").some(
-        ({ message }) => message.includes("What changed"),
-      ),
-    ).toBe(true);
   });
 
   it("detects overview monolith content and missing siblings", async () => {

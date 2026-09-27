@@ -37,7 +37,7 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 - **`scripts/resolve-state-workspace`** — resolves the work identity and paths, enforces the `.state/` ignore gate and symlink/traversal safety, and performs the main-agent-only no-clobber bootstrap of `goal.md`, `state.md`, `state/working.md`, and `state/journal.md`.
 - **`scripts/state-lease`** — the on-disk main-agent lease (`ensure | acquire | heartbeat | release | status | takeover`). The file stores only the token's SHA-256 digest, so reading it never confers the lease; exactly one live token may write main-agent-owned state; a live foreign lease is never replaced; an expired foreign lease yields only to an explicit, journaled takeover.
 - **`scripts/state-write`** — the lease-verified write path: verifies the presented token, refuses free/expired/foreign leases, heartbeats, and applies the temp-write + atomic rename in one call, so a working main agent can never expire its own lease by working.
-- **`skills/doctor/scripts/state-doctor`** — read-only structural checker: duplicate or malformed task IDs, dangling dependencies, cycles, impossible roll-ups, contradictory mark/status pairs, missing evidence annotations, broken file references, unsuperseded decisions, ADR archive/index/integrity drift, stale leases, overview drift. Advisory by default; `--strict` for irreversible or release-critical moments. It never silently edits files.
+- **`skills/doctor/scripts/state-doctor`** — read-only `.state/` structural checker for stream and overview findings. [The doctor skill](skills/doctor/SKILL.md) owns when and how to invoke it and repair findings.
 
 ## Skills
 
@@ -49,7 +49,7 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 | `essential:autoresearch` | Metric-driven optimization loops (define metric → evolve candidates → verify → mutate). |
 | `essential:handover` | Pausing work: persists all stream state, updates the global overview, releases leases. |
 | `essential:takeover` | Resuming paused work from the on-disk work directories: checks leases, resolves blocking decisions, and drives streams to their success criteria. |
-| `essential:doctor` | Health-checking `.state/`: runs the structural doctor, diagnoses format drift against the current contracts, and offers user-approved migration to the latest structure — judged by reading the contracts, never a version token. |
+| [`essential:doctor`](skills/doctor/SKILL.md) | Structural diagnosis and scoped repair of `.state/`. |
 | `essential:handoff` | A zero-context cross-domain orchestration plan another agent can execute verbatim. |
 | `essential:install` | Installing or refreshing native specialist agents and Grok's startup attachment. |
 | `essential:uninstall` | Removing owned agents and the Grok attachment while preserving edited or unrelated files. |

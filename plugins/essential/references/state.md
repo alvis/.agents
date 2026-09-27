@@ -78,7 +78,7 @@ Keep logs, screenshots, captures, binaries, and large raw evidence outside Markd
 
 Continuity has one mechanism: the on-disk work directory. A handover completes the stream's state and updates `overview.md`, both under the default source tree's `.state/`; a resume reads those files and continues from whichever tree the reader is in, since every tree resolves to the same state. Nothing else is needed — the directory holds state, decisions, specification, and `artifacts/` together, and each stream records the source anchor that names the revision its work assumes. Handover scopes to the stream being paused and releases the main-agent lease.
 
-Remember that `.state/` is ignored: one reflexive `git clean -fdx` deletes every stream on the machine, silently. A copy of `.state/` kept outside the repository is the designed recovery — take one before a stream carries non-recoverable decisions, and promote durable knowledge early. [essential:doctor](../skills/doctor/SKILL.md) checks a recovered tree's structural integrity before it is resumed. Idle streams are parked and completed streams retired per [retirement.md](retirement.md); retirement permanently archives the operational projection, so it is gated on promotion and decision dispositions. A completed stream's directory moves into `archive/` — the one sink for everything that leaves `works/` — when its overview row is dropped. The archive is permanent; this lifecycle does not delete archived streams.
+Remember that `.state/` is ignored: one reflexive `git clean -fdx` deletes every stream on the machine, silently. A copy of `.state/` kept outside the repository is the designed recovery — take one before a stream carries non-recoverable decisions, and promote durable knowledge early. Idle streams are parked and completed streams retired per [retirement.md](retirement.md); retirement permanently archives the operational projection, so it is gated on promotion and decision dispositions. A completed stream's directory moves into `archive/` — the one sink for everything that leaves `works/` — when its overview row is dropped. The archive is permanent; this lifecycle does not delete archived streams.
 
 ## Write boundary
 
@@ -88,7 +88,7 @@ Remember that `.state/` is ignored: one reflexive `git clean -fdx` deletes every
 
 ## Structural doctor
 
-`"$ESSENTIAL_ROOT/skills/doctor/scripts/state-doctor" --work-dir <work_dir> \ --repository-root <durable_root>` is a read-only structural checker (broken IDs, cycles, contradictory statuses, missing evidence annotations, dead links, unsuperseded decisions, lease conflicts, overview drift). It never judges prose or blocks by default — findings inform the main agent's own reading. Run it before large dispatch batches, handover, and retirement; pass `--strict` (nonzero exit on errors) when work is irreversible or release-critical and treat failure as stop-and-report.
+[essential:doctor](../skills/doctor/SKILL.md) owns the trigger, read-only diagnosis scope, and approved repair workflow for `.state/` structural findings. The checker reports findings without judging prose.
 
 ## Output manifests
 

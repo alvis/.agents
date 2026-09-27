@@ -8,7 +8,7 @@ Read this when checking durable architecture decision record (ADR) integrity or 
 2. Compare archived records against [supersession](adr-supersession.md): archive placement, preserved historical body, header fields and order, distinct existing successor targets, later identities, optional metadata agreement, and change-summary completeness. Apply the [identity rules](adr-authoring.md#place-and-identify-the-record) to their retained headings and filenames.
 3. Compare edits to active accepted records with their previous versions under [the clarification boundary](adr-authoring.md#clarify-an-accepted-record).
 
-The structural doctor reports each violation with a proposed repair. Follow [doctor](../skills/doctor/SKILL.md) for investigation and its explicit user-approved repair workflow; structural checks do not establish that prose preserves meaning.
+ADR authors and reviewers check this contract when creating or changing records. Check prose meaning against the prior decision and its context; structural checks alone cannot establish that meaning was preserved.
 
 ## Read history
 
