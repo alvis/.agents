@@ -6,30 +6,30 @@
 
 📌
 
-<Summarize the accepted choice and the problem it solves in one or two plain-English sentences.>
+TODO: Summarize the accepted choice and the problem it solves in one or two plain-English sentences.
 
 - Status: `Accepted`
 - Date: `<YYYY-MM-DD>`
 
 ## 🎯 Motivation
 
-<Describe a concrete situation in which the system must behave a certain way, and what would fail or become difficult without this decision. Make the operation and its consequences clear to someone who has not seen this codebase.>
+TODO: Describe a concrete situation in which the system must behave a certain way, and what would fail or become difficult without this decision. Make the operation and its consequences clear to someone who has not seen this codebase.
 
 ## 🧭 Context
 
-<Give the existing system facts, definitions, and constraints a new reader needs to understand why the problem arises. Leave the failure story in Motivation and the chosen approach in Decision.>
+TODO: Give the existing system facts, definitions, and constraints a new reader needs to understand why the problem arises. Leave the failure story in Motivation and the chosen approach in Decision.
 
 ## ✅ Decision
 
-<State the accepted choice in plain English first, then give the precise rules needed to apply it. Make this ADR stand on its own.>
+TODO: State the accepted choice in plain English first, then give the precise rules needed to apply it. Make this ADR stand on its own.
 
 ## 🔀 Alternatives considered
 
-<Name the meaningful alternatives and why they were not selected.>
+TODO: Name the meaningful alternatives and why they were not selected.
 
 ## ⚖️ Consequences
 
-<Explain what improves, the costs and maintenance this choice introduces, and the risks that remain.>
+TODO: Explain what improves, the costs and maintenance this choice introduces, and the risks that remain.
 
 <!-- OPTIONAL SUPERSEDED HEADER
 
