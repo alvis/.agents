@@ -22,7 +22,7 @@ A normal invocation is read-only; `--bootstrap` is the explicit main-agent-only 
 
 ### First-use work-memory bootstrap
 
-For substantial work, follow [establish-work-stream.md](../directions/establish-work-stream.md) before the first-use bootstrap. It owns contextual identity selection, charter-safe reuse, the three intent checks, workspace selection, and their order. After its gates are settled, this lifecycle owns the resolved state paths; [lease.md](lease.md) owns the lease-verified invocation, no-clobber semantics, initial content, and returned paths that enter `generated_files`.
+For substantial work, follow [establish-work-stream.md](../directions/establish-work-stream.md) before the first-use bootstrap. It owns contextual identity selection, charter-safe reuse, the three intent checks, workspace selection, and their order. After its gates are settled, this lifecycle owns the resolved state paths; [lease.md](../directions/lease.md) owns the lease-verified invocation, no-clobber semantics, initial content, and returned paths that enter `generated_files`.
 
 ## Canonical topology
 
@@ -62,7 +62,7 @@ Persist state immediately, never lazily — append first, reconcile second. The 
 
 Track material-change obligations and acknowledge completed persistence through [checkpoint.md](../directions/checkpoint.md); Stop requests recovery only for pending owned work.
 
-The main agent holds the work item's lease and is the sole writer anywhere under `.state/`. It never grants this authority to a reviewer or other subagent. Subagents return proposed child content, paths, evidence, and reconciliation deltas; the main agent applies them. The lease is on disk, not just convention — never write under a live foreign lease, and claim an expired lease only through the explicit takeover verb, journaled as a `lease` event. Verbs, the write protocol, and the `State revision` bump live in [lease.md](lease.md); read it before any main-agent state write.
+The main agent holds the work item's lease and is the sole writer anywhere under `.state/`. It never grants this authority to a reviewer or other subagent. Subagents return proposed child content, paths, evidence, and reconciliation deltas; the main agent applies them. The lease is on disk, not just convention — never write under a live foreign lease, and claim an expired lease only through the explicit takeover verb, journaled as a `lease` event. Verbs, the write protocol, and the `State revision` bump live in [lease.md](../directions/lease.md); read it before any main-agent state write.
 
 ### Overviews, decisions, and reviews
 
@@ -70,7 +70,7 @@ Create `proposals.md`, `changes.md`, `decisions.md`, or `design.md` with the fir
 
 ## Specification lifecycle
 
-An explicit local path, approved inline candidate, or selected Notion identity may supply a specification; inline prompt text is evidence only until it becomes an approved candidate in the active work's `spec/`. Neither path claims a Notion round trip. Spec freshness is checked at named moments — materialize before planning, before each dispatch batch, before review, and at completion — and a changed base triggers the revalidation sweep (non-done dependents `! blocked`; done rows keep `✓ done` and gain stale validity plus remediation tasks). Mirrors, materialization, the sweep procedure, the authored-docs sweep, and completion verification live in [spec-lifecycle.md](spec-lifecycle.md); mid-execution change routing lives in [change-control.md](change-control.md).
+An explicit local path, approved inline candidate, or selected Notion identity may supply a specification; inline prompt text is evidence only until it becomes an approved candidate in the active work's `spec/`. Neither path claims a Notion round trip. Spec freshness is checked at named moments — materialize before planning, before each dispatch batch, before review, and at completion — and a changed base triggers the revalidation sweep (affected nonterminal dependents `! blocked`; terminal cancelled and superseded rows stay terminal; done rows keep `✓ done` and gain stale validity plus remediation tasks). Mirrors, materialization, the sweep procedure, the authored-docs sweep, and completion verification live in [spec-lifecycle.md](spec-lifecycle.md); mid-execution change routing lives in [change-control.md](change-control.md).
 
 ## Evidence, continuity, and retirement
 

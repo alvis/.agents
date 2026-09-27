@@ -11,8 +11,8 @@ Reached from the [state](../../state.md) mode. Build it against a real `.state` 
 ## Suggested composition
 
 1. Put blockers first, each one naming its stream, the task, what is stuck, the owner, and the `unblock:` action recorded against it. When nothing is blocked, say so plainly — an empty section reads as a missing section.
-2. Give each live stream a group holding only its unfinished tasks, and let both open: the stream for how it was read, and each task for every column the table recorded against it. A row that shows an owner and a status but cannot be opened sends the reader back to the tree for the rest, which is the trip the board exists to save. A stream whose tasks are all done says that instead of showing an empty group.
-3. Show how far each stream has got as a progress reading, and who owns each one. A stream with no tasks recorded has no meaningful proportion and is left out of the reading rather than shown at zero.
+2. Give each live stream a group holding only open tasks under [the task identity and terminal-status contract](../../../../../references/state-format.md#task-identity-and-tables), and let both open: the stream for how it was read, and each task for every column the table recorded against it. A row that shows an owner and a status but cannot be opened sends the reader back to the tree for the rest, which is the trip the board exists to save. A stream with no open tasks says so instead of showing an empty group.
+3. Show how far each stream has got as a progress reading, and who owns each one. Derive the denominator from the same terminal-status contract; a stream with no countable tasks has no meaningful proportion and is left out of the reading rather than shown at zero.
 4. Order the recent activity by when each stream was last updated, so the top of the rail is where work is actually happening.
 5. Close with how the tree read: one row per stream with the phase key it used, its phase, its timestamp and its task count, then a note for each thing that was hard to read.
 

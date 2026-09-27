@@ -51,6 +51,10 @@ Incomplete plan submissions receive actionable feedback before execution.
 
 Inside: the three hook scripts. Outside: content heuristics.
 
+## 🗂️ Tasks
+
+- TST: Validate the plan.
+
 ## 🛠️ Direction
 
 Write each check as a bash script, then swap the command entries.
@@ -467,19 +471,21 @@ describe("plan validator", () => {
           plan: "## Context\n\nSlow.\n\n## Summary\n\nFast.\n",
         }),
       ),
-    ).toContain("missing headings: Goal, Requirements, Boundary, Direction."));
+    ).toContain("missing headings: Goal, Requirements, Boundary, Tasks, Direction."));
+  it("should reject a plan missing Tasks", () =>
+    expect(denialReason(runHook(plans, { plan: compliantPlan.replace(/## 🗂️ Tasks\n\n- TST: Validate the plan\.\n\n/, "") }))).toContain("missing headings: Tasks."));
   it("should allow a complete plan", () =>
     expectAllowed(runHook(plans, { plan: compliantPlan })));
   it("should match headings at any depth and case", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## direction\nd\n### context\ne\n",
+        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## Tasks\nf\n## direction\nd\n### context\ne\n",
       }),
     ));
   it("should recognize compound emoji prefixes at different heading depths", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n### 🛠️ direction\ne\n",
+        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
       }),
     ));
   it("should not treat prefixed words or longer names as required headings", () =>

@@ -14,6 +14,7 @@ Turn an approved work specification into a decision-complete implementation blue
 
 - Follow the injected `essential:directions/plan.md` contract; this skill adds specification and task-registry requirements without redefining it.
 - Root `state.md` is the sole canonical plan definition and contains the complete task registry; its `plan_source` is exactly `state.md`. `state/plan.md` is non-authoritative implementation detail keyed by existing task IDs. Proposals, changes, decisions, and design reasoning use the corresponding work-local child folders.
+- Apply the shared presentation to the reconciled registry: Context owns assumption-verification and issue-correction mappings; Tasks shows delivery settings and changes against the last approved snapshot. Checkpoint groups never change dependencies or the registry's nine columns. Direction assigns applicable skills by task and eligible agent.
 - `goal.md` is the main-agent-owned charter (goal, scope, numbered `SC-n` success criteria, specification provenance). Planning consumes it and proposes charter content as reconciliation payload; it never edits the file, and for a Notion-backed contract the canonical specification remains the sole authority over the charter.
 - `state/working.md` is a temporary current-focus summary, not the plan. Only the main agent writes it and reconciles the four overview indexes.
 - Do not implement source code, mutate history, or change authoritative MDC.
@@ -42,6 +43,7 @@ Turn an approved work specification into a decision-complete implementation blue
 ## Verification
 
 - Every acceptance criterion maps to at least one executable task and one verification action.
+- Every assumption has a documentation-check or focused-test task before dependent work, and every known issue has corrective work; supersession preserves those mappings and required obligations.
 - Every task ID appears once, has dependency-safe edges, and introduces no unresolved material decision.
 - Temporary detail is work-local, legacy root files are untouched, and main-agent-owned indexes have explicit reconciliation data.
 - The read-only quality gate passed and `generated_files` is complete.

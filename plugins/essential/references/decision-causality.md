@@ -18,7 +18,7 @@ Empty fields are omitted, not written as placeholders.
 
 When the user accepts a decision, the main agent runs one sweep before any further dispatch:
 
-1. Walk `affects` and `invalidates`. On each `✓ done` task row or recorded evidence, append `validity: stale (<decision-id>)` — never change the mark or status. Mark non-done dependent rows `! blocked` with `unblock: revalidate against <decision-id>`.
+1. Walk `affects` and `invalidates`. On each `✓ done` task row or recorded evidence, append `validity: stale (<decision-id>)` — never change the mark or status. Mark affected nonterminal dependent rows `! blocked` with `unblock: revalidate against <decision-id>`; preserve terminal `↪ superseded` and `⊘ cancelled` history under the [work-state contract](state-format.md).
 2. Add remediation tasks (new IDs) only for invalidated closure that must be redone; `preserves` entries need no action.
 3. Journal one `sweep` line naming the decision, the ids touched, and the evidence invalidated.
 

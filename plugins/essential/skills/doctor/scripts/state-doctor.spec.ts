@@ -268,6 +268,229 @@ describe("state and task-table contracts", () => {
         ),
     ).toBe(true);
   });
+  it("should accept an optional superseded task with structured replacement evidence", async () => {
+    await workspace.writeState(
+      row("AAA", "↪", "superseded", "—", "no", "reason: Scope changed; replaced-by: BBB, CCC;") +
+        row("BBB", "-", "planned") + row("CCC"),
+    );
+    expect(workspace.run("--strict")).toMatchObject({ code: 0, findings: [] });
+  });
+  it.each([
+    ["missing reason", "replaced-by: BBB;", "evidence"],
+    ["empty reason", "reason: ; replaced-by: BBB;", "evidence"],
+    ["missing replacement", "reason: Scope changed;", "evidence"],
+    ["empty replacement", "reason: Scope changed; replaced-by: ;", "evidence"],
+    ["unknown replacement", "reason: Scope changed; replaced-by: ZZZ;", "replacement"],
+    ["self replacement", "reason: Scope changed; replaced-by: AAA;", "replacement"],
+  ])("should diagnose %s for superseded work", async (_case, evidence, check) => {
+    await workspace.writeState(
+      row("AAA", "↪", "superseded", "—", "no", evidence) + row("BBB"),
+    );
+    expect(workspace.run("--strict").findings.some((finding) =>
+      finding.severity === "error" && finding.check === check && finding.message.includes("AAA"),
+    )).toBe(true);
+  });
+  it("should diagnose cyclic replacements", async () => {
+    await workspace.writeState(
+      row("AAA", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: BBB;") +
+        row("BBB", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: AAA;"),
+    );
+    expect(workspace.run("--strict").findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "replacement" && /cycle/i.test(message),
+    )).toBe(true);
+  });
+  it("should reject a required superseded task before its obligation transfers", async () => {
+    await workspace.writeState(
+      row("AAA", "↪", "superseded", "—", "yes", "reason: Revised; replaced-by: BBB;") + row("BBB"),
+    );
+    expect(workspace.run("--strict").findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "roll-up" && message.includes("AAA"),
+    )).toBe(true);
+  });
+  it.each(["true", "Yes", ""])(
+    "should reject a superseded task with noncanonical Required value %j",
+    async (required) => {
+      await workspace.writeState(
+        row("AAA", "↪", "superseded", "—", required, "reason: Revised; replaced-by: BBB;") +
+          row("BBB"),
+      );
+      const result = workspace.run("--strict");
+      expect(result.code).toBe(1);
+      expect(result.findings.some(({ severity, check, message }) =>
+        severity === "error" && check === "roll-up" && message.includes("AAA"),
+      )).toBe(true);
+    },
+  );
+  it("should require a planned dependent on superseded work to be blocked", async () => {
+    await workspace.writeState(
+      row("AAA", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: CCC;") +
+        row("BBB", "-", "planned", "AAA") + row("CCC"),
+    );
+    expect(workspace.run("--strict").findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "dependency" && message.includes("BBB"),
+    )).toBe(true);
+  });
+  it("should accept a blocked dependent with an unblock action", async () => {
+    await workspace.writeState(
+      row("AAA", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: CCC;") +
+        row("BBB", "!", "blocked", "AAA", "yes", "unblock: Retarget the dependency to CCC.") + row("CCC"),
+    );
+    expect(workspace.run("--strict")).toMatchObject({ code: 0, findings: [] });
+  });
+  it.each([
+    ["superseded", "↪", "reason: Revised; replaced-by: CCC;"],
+    ["cancelled", "⊘", "Removed in revision."],
+  ])("should preserve done history after its dependency is %s", async (status, mark, evidence) => {
+    await workspace.writeState(
+      row("AAA", mark, status, "—", "no", evidence) +
+        row("BBB", "✓", "done", "AAA", "yes", "Completed before retirement.") +
+        row("CCC"),
+    );
+    const findings = workspace.run("--strict").findings.filter(({ check, message }) =>
+      check === "dependency" && message.includes("BBB"),
+    );
+
+    expect(findings.length).toBeGreaterThan(0);
+    expect(findings.every(({ message, fix }) =>
+      !/\bblock\b|\bblocked\b/iu.test(`${message} ${fix ?? ""}`),
+    )).toBe(true);
+  });
+  it("should reject a completed parent with a required superseded child", async () => {
+    await workspace.writeState(
+      row("AAA", "✓", "done", "—", "yes", "Rolled up.") +
+        row("AAA01", "↪", "superseded", "—", "yes", "reason: Revised; replaced-by: BBB;") + row("BBB"),
+    );
+    expect(checks(workspace.run("--strict").findings)).toContain("roll-up");
+  });
+  it.each([
+    ["done", "✓", "done", "✓", "done"],
+    ["superseded", "↪", "superseded", "↪", "superseded"],
+    ["cancelled", "⊘", "cancelled", "⊘", "cancelled"],
+  ])("should accept %s rollup for optional terminal children", async (_case, parentMark, parentStatus, childMark, childStatus) => {
+    const evidence = childStatus === "superseded" ? "reason: Revised; replaced-by: BBB;" : "Terminal evidence.";
+    await workspace.writeState(
+      row("AAA", parentMark, parentStatus, "—", "no", evidence) +
+        row("AAA01", childMark, childStatus, "—", "no", evidence) + row("BBB"),
+    );
+    expect(workspace.run("--strict")).toMatchObject({ code: 0, findings: [] });
+  });
+  it.each([
+    ["done", "✓", "done", "✓", "done"],
+    ["superseded", "↪", "superseded", "⊘", "cancelled"],
+  ])("should select %s for mixed optional terminal children", async (_case, parentMark, parentStatus, firstMark, firstStatus) => {
+    await workspace.writeState(
+      row("AAA", parentMark, parentStatus, "—", "no", "reason: Revised; replaced-by: BBB;") +
+        row("AAA01", firstMark, firstStatus, "—", "no", "Terminal evidence.") +
+        row("AAA02", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: BBB;") +
+        row("AAA03", "⊘", "cancelled", "—", "no", "Removed in revision.") + row("BBB"),
+    );
+    expect(workspace.run("--strict")).toMatchObject({ code: 0, findings: [] });
+  });
+  it("should reject the wrong parent rollup for optional terminal children", async () => {
+    await workspace.writeState(
+      row("AAA", "⊘", "cancelled", "—", "no", "Removed in revision.") +
+        row("AAA01", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: BBB;") + row("BBB"),
+    );
+    expect(workspace.run("--strict").findings.some(({ check, message }) =>
+      check === "roll-up" && message.includes("AAA"),
+    )).toBe(true);
+  });
+  it.each([
+    ["planned", "-"],
+    ["working", "⧗"],
+  ])("should reject a done all-optional parent with a %s child", async (childStatus, childMark) => {
+    await workspace.writeState(
+      row("AAA", "✓", "done", "—", "no", "Rolled up.") +
+        row("AAA01", childMark, childStatus, "—", "no"),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    expect(result.findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "roll-up" && message.includes("AAA"),
+    )).toBe(true);
+  });
+
+  it.each([
+    ["superseded", "↪", "reason: Revised; replaced-by: BBB;", "-", "planned", "no"],
+    ["superseded", "↪", "reason: Revised; replaced-by: BBB;", "⧗", "working", "no"],
+    ["superseded", "↪", "reason: Revised; replaced-by: BBB;", "✓", "done", "yes"],
+    ["cancelled", "⊘", "Removed in revision.", "-", "planned", "no"],
+    ["cancelled", "⊘", "Removed in revision.", "⧗", "working", "no"],
+    ["cancelled", "⊘", "Removed in revision.", "✓", "done", "yes"],
+  ])("should reject a %s optional parent with a nonterminal or required child (%s, %s, %s, %s, %s)", async (parentStatus, parentMark, evidence, childMark, childStatus, childRequired) => {
+    await workspace.writeState(
+      row("AAA", parentMark, parentStatus, "—", "no", evidence) +
+        row("AAA01", childMark, childStatus, "—", childRequired, "Completed when done.") +
+        row("BBB"),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    expect(result.findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "roll-up" && message.includes("AAA"),
+    )).toBe(true);
+  });
+
+  it("should reject planned descendants of a blocked predecessor through direct and inherited edges", async () => {
+    await workspace.writeState(
+      row("AAA", "!", "blocked", "—", "yes", "unblock: Resolve the prerequisite.") +
+        row("BBB", "-", "planned", "AAA") +
+        row("CCC", "-", "planned", "BBB") +
+        row("DDD", "-", "planned", "AAA") +
+        row("DDD01", "-", "planned") +
+        row("EEE", "✓", "done", "AAA", "yes", "Completed before the block."),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    for (const id of ["BBB", "CCC", "DDD", "DDD01"])
+      expect(result.findings.some(({ severity, check, message }) =>
+        severity === "error" && check === "dependency" && message.includes(id),
+      ), id).toBe(true);
+    expect(result.findings.some(({ check, message }) =>
+      check === "dependency" && message.includes("EEE"),
+    )).toBe(false);
+  });
+
+  it("should traverse a branching dependency graph without revisiting shared ancestors", async () => {
+    const ids = Array.from({ length: 40 }, (_, index) =>
+      `A${String.fromCharCode(65 + Math.floor(index / 26))}${String.fromCharCode(65 + index % 26)}`,
+    );
+    const rows = ids.map((id, index) =>
+      row(id, "-", "planned", index < 2 ? "—" : `${ids[index - 1]}, ${ids[index - 2]}`),
+    );
+    await workspace.writeState(rows.join(""));
+
+    const clean = spawnSync(doctor, ["--work-dir", workspace.workDir, "--json", "--strict"], {
+      encoding: "utf8",
+      // pre-fix 30/40-node graphs exceeded 3s; 7s allows process startup while bounding traversal.
+      timeout: 7_000,
+    });
+    expect(clean.error).toBeUndefined();
+    expect(clean.status).toBe(0);
+    expect(JSON.parse(clean.stdout).findings).toStrictEqual([]);
+
+    rows[0] = row(ids[0]!, "!", "blocked", "—", "yes", "unblock: Repair the root task.");
+    await workspace.writeState(rows.join(""));
+    const findings = workspace.run("--strict").findings;
+    expect(findings.some(({ check, message }) =>
+      check === "dependency" && message.includes(`${ids.at(-1)}: planned downstream`),
+    )).toBe(true);
+  }, 15_000);
+
+  it.each([
+    ["blocked", "!", "unblock: Resolve the prerequisite."],
+    ["failed", "X", "attempt: Build failed; retry: Repair the prerequisite."],
+  ])("should reject working work downstream of a %s predecessor", async (status, mark, evidence) => {
+    await workspace.writeState(
+      row("AAA", mark, status, "—", "yes", evidence) +
+        row("BBB", "⧗", "working", "AAA"),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    expect(result.findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "dependency" && message.includes("BBB"),
+    )).toBe(true);
+  });
+
   it("returns nonzero in strict mode only for errors", async () => {
     await workspace.writeState(row("AAA", "✓", "working"));
     expect(workspace.run().code).toBe(0);

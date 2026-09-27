@@ -1,5 +1,5 @@
 import { leadRuns } from "./lead.ts";
-import { isBlocked, isDone, says } from "./parse.ts";
+import { isBlocked, isDone, isOpen, isRetired, says } from "./parse.ts";
 
 import type { LedgerEntry, LedgerFact, LedgerGroup, Section } from "../types.ts";
 import type { Stream, Task } from "./parse.ts";
@@ -68,18 +68,18 @@ function taskEntry(task: Task): LedgerEntry {
  * @returns the group
  */
 function streamGroup(stream: Stream): LedgerGroup {
-  const open = stream.tasks.filter((task) => !isDone(task));
+  const open = stream.tasks.filter(isOpen);
 
   return {
     label: stream.id,
     note: stream.next
       ? leadRuns(stream.next)
       : [{ kind: "dim", text: "no next action recorded" }],
-    ...(stream.tasks.length
+    ...(stream.tasks.some((task) => !isRetired(task))
       ? {
           progress: {
             done: stream.tasks.filter(isDone).length,
-            of: stream.tasks.length,
+            of: stream.tasks.filter((task) => !isRetired(task)).length,
           },
         }
       : {}),
@@ -109,9 +109,11 @@ function streamGroup(stream: Stream): LedgerGroup {
       ],
     ]),
     entries: open.map(taskEntry),
-    empty: stream.tasks.length
-      ? "every recorded task is done"
-      : "no task table could be read here",
+    empty: stream.tasks.length === 0
+      ? "no task table could be read here"
+      : stream.tasks.every(isDone)
+        ? "every recorded task is done"
+        : "no recorded task remains open",
   };
 }
 

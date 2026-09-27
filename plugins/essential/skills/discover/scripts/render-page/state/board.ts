@@ -1,6 +1,6 @@
 import { leadRuns, leadText } from "./lead.ts";
 import { ledgerSection } from "./ledger.ts";
-import { isBlocked, isDone, says } from "./parse.ts";
+import { isBlocked, isDone, isOpen, isRetired, says } from "./parse.ts";
 import { readingSection } from "./reading.ts";
 
 import type { Block, Metric, PageData, Section } from "../types.ts";
@@ -59,18 +59,24 @@ function blockerSection(streams: Stream[]): Section {
 function progressSection(streams: Stream[]): Section {
   // a stream with no task table has nothing to measure, and a meter drawn out
   // of nothing would read as no progress rather than as no record
-  const measured = streams.filter((stream) => stream.tasks.length > 0);
-  const blocks: Block[] = [
-    {
-      type: "readiness",
-      items: measured.map((stream) => ({
-        label: stream.id,
-        value: stream.tasks.filter(isDone).length,
-        of: stream.tasks.length,
-        note: stream.phase || "phase unrecorded",
-      })),
-    },
-  ];
+  const measured = streams.filter((stream) => stream.tasks.some((task) => !isRetired(task)));
+  const blocks: Block[] = measured.length
+    ? [{
+        type: "readiness",
+        items: measured.map((stream) => ({
+          label: stream.id,
+          value: stream.tasks.filter(isDone).length,
+          of: stream.tasks.filter((task) => !isRetired(task)).length,
+          note: stream.phase || "phase unrecorded",
+        })),
+      }]
+    : [{
+        type: "callout",
+        tone: "neutral",
+        title: "No active task progress to measure",
+        lead: "No meter",
+        text: "These streams have no active or completed tasks to measure.",
+      }];
   const owned = streams.filter((stream) => stream.owner);
   if (owned.length)
     blocks.push({
@@ -118,12 +124,12 @@ function recentSection(streams: Stream[]): Section {
               ? leadRuns(stream.next)
               : [{ kind: "dim" as const, text: "no next action recorded" }]),
           ],
-          // `every` is true over nothing, so a stream whose task table could
-          // not be read was drawn finished here while its own tag said it was
-          // working. `progressSection` already refuses to measure a stream it
-          // has no tasks for, and this agrees with it
+          // only nonretired tasks measure completion, as in the progress bar.
+          // require at least one such task so empty and entirely retired
+          // streams cannot read as finished through `every` on an empty set.
           state:
-            stream.tasks.length && stream.tasks.every(isDone)
+            stream.tasks.some((task) => !isRetired(task)) &&
+            stream.tasks.every((task) => isRetired(task) || isDone(task))
               ? ("done" as const)
               : stream.tasks.some((task) => says(task.status, "working"))
                 ? ("active" as const)
@@ -149,7 +155,7 @@ export function stateBoard(tree: Tree, at: string): PageData {
   const tasks = tree.streams.flatMap((stream) => stream.tasks);
   const meta: Metric[] = [
     { label: "Live streams", value: `${tree.streams.length}` },
-    { label: "Open tasks", value: `${tasks.filter((task) => !isDone(task)).length}` },
+    { label: "Open tasks", value: `${tasks.filter(isOpen).length}` },
     { label: "Blocked", value: `${tasks.filter(isBlocked).length}` },
     { label: "Read at", value: at },
   ];

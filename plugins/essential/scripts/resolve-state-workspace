@@ -507,7 +507,7 @@ if [[ $bootstrap -eq 1 ]]; then
 - Work ID: \`$work_id\`
 - Updated: \`$bootstrap_timestamp\`
 - Status: Bootstrapped; the charter is not written yet.
-- Working now: Confirm the goal, scope, and acceptance criteria.
+- Working now: Confirm the improvement, outcome, scope, and acceptance evidence.
 - Handback point: First-use bootstrap is complete; discovery has not started.
 
 ## Fast paths
@@ -544,8 +544,8 @@ if [[ $bootstrap -eq 1 ]]; then
 
 | ID | Mark | Status | Task | Depends on | Required | Acceptance | Owner | Evidence / next action |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GOL | - | planned | Confirm the charter: goal, scope, and success criteria. [targets: goal.md] | — | yes | goal.md records the goal, scope, and measurable success criteria. | PM | Confirm with the user. |
-| OWN | - | planned | Select the next owning skill. [targets: none] | GOL | yes | The next owning skill and handback point are recorded. | PM | Wait for GOL. |
+| GOL | - | planned | Confirm the improvement, outcome, scope, and acceptance evidence. [targets: goal.md] | — | yes | goal.md records the improvement, beneficiaries, outcome, scope, and acceptance evidence. | role: Main agent; agent: unavailable (bootstrap has no runtime identity); planned: model=unavailable, effort=unavailable (resolve before dispatch); observed: not started | Confirm with the user. |
+| OWN | - | planned | Select the next owning skill. [targets: none] | GOL | yes | The next owning skill and handback point are recorded. | role: Main agent; agent: unavailable (bootstrap has no runtime identity); planned: model=unavailable, effort=unavailable (resolve before dispatch); observed: not started | Wait for GOL. |
 
 ## Decisions
 
@@ -569,7 +569,7 @@ None recorded.
 
 ## Goal
 
-Pending confirmation with the user.
+Pending confirmation of what improves, for whom, the outcome, and acceptance evidence.
 
 ## Scope and non-goals
 

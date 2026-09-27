@@ -57,7 +57,7 @@ prompt=$(printf '%s' "$input" | jq -r '.prompt')
 if [[ -n "$name" ]]; then
   missing=""
   for field in Goal Requirements Boundary Directions Context; do
-    if ! printf '%s\n' "$prompt" | grep -Eq "^${field}:"; then
+    if ! grep -Eq "^${field}:" <<<"$prompt"; then
       if [[ -n "$missing" ]]; then
         missing="${missing}, ${field}:"
       else
