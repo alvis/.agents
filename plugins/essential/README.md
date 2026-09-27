@@ -12,7 +12,9 @@ Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLA
 | `references/state.md` | Before creating or rewriting any lifecycle-managed artifact | Resolver/bootstrap, main-agent lease and write protocol, journal discipline, overviews, reviews, spec freshness, promotion, retirement |
 | `references/state-format.md` | When writing or migrating a `state.md` | Task table shape, stable IDs, mark/status pairs, DAG and roll-ups, change control, journal grammar |
 | `references/truth.md` | Once per work stream | Six kinds of truth, the five constitutional rules, validity, `capability_id` |
-| `references/adr.md` | When creating, superseding, indexing, or reviewing an ADR | Current/archive paths, superseded header, current-only index, targeted history, integrity checks |
+| `directions/adr-authoring.md` | When creating, accepting, clarifying, or indexing an ADR | Identity, effective-record placement, authoring, clarification, and indexing |
+| `directions/adr-supersession.md` | When replacing an accepted architectural choice | Successor creation, archive placement, historical preservation, and index updates |
+| `directions/adr-review.md` | When checking ADR integrity or reading history | Integrity review and targeted archive inspection |
 | `references/decision-causality.md` | When creating/accepting/superseding a decision | `supersedes`/`affects`/`invalidates`/`preserves`, blast-radius sweep, decision completion gate |
 | `references/approvals.md` | When recording approvals or durable claims that age | The approval binding tuple, freshness metadata |
 | `references/anchors.md` | For non-git anchors or cross-stream initiatives | Anchor declarations, adapter contract, initiative manifests |

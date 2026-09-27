@@ -6,7 +6,7 @@ Read this when creating, accepting, or superseding a `decisions/` child or a dur
 
 Every decision child records, beyond status/headline/owner/created/provenance:
 
-- `supersedes:` the decision id it replaces, when any. For work-local decision children, the superseded record keeps its content and gains status `superseded` plus a forward link. Durable ADRs use the separate [ADR contract](adr.md): the old file moves to `decisions/superseded/<domain>/` in its existing domain and the new ADR does not mention it.
+- `supersedes:` the decision id it replaces, when any. For work-local decision children, the superseded record keeps its content and gains status `superseded` plus a forward link. For durable ADRs, follow [ADR supersession](../directions/adr-supersession.md).
 - `affects:` task IDs, docs, or streams whose direction this decision sets.
 - `invalidates:` completed outputs, evidence, or approvals this decision makes stale, each named by id and exact revision or hash.
 - `preserves:` prior outputs or approvals that explicitly remain current.
@@ -34,4 +34,4 @@ Work closes and retires only after every `accepted` decision has an explicit dis
 | Only how this task was executed? | Retain in the work receipt |
 | Temporary and expired? | Archive with the expiration reason |
 
-A promoted record carries the standard promotion front matter. A superseded work-local decision is never edited into its replacement; an ADR follows [the ADR contract](adr.md), including its archive header and current-only index.
+A promoted record carries the standard promotion front matter. A superseded work-local decision is never edited into its replacement; an ADR follows [ADR supersession](../directions/adr-supersession.md).
