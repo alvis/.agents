@@ -364,6 +364,61 @@ describe("state and task-table contracts", () => {
     )).toBe(true);
   });
 
+  it.each([
+    ["superseded", "↪", "reason: Revised; replaced-by: BBB;", "-", "planned", "no"],
+    ["superseded", "↪", "reason: Revised; replaced-by: BBB;", "⧗", "working", "no"],
+    ["superseded", "↪", "reason: Revised; replaced-by: BBB;", "✓", "done", "yes"],
+    ["cancelled", "⊘", "Removed in revision.", "-", "planned", "no"],
+    ["cancelled", "⊘", "Removed in revision.", "⧗", "working", "no"],
+    ["cancelled", "⊘", "Removed in revision.", "✓", "done", "yes"],
+  ])("rejects a %s optional parent with a nonterminal or required child (%s, %s, %s, %s, %s)", async (parentStatus, parentMark, evidence, childMark, childStatus, childRequired) => {
+    await workspace.writeState(
+      row("AAA", parentMark, parentStatus, "—", "no", evidence) +
+        row("AAA01", childMark, childStatus, "—", childRequired, "Completed when done.") +
+        row("BBB"),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    expect(result.findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "roll-up" && message.includes("AAA"),
+    )).toBe(true);
+  });
+
+  it("rejects planned descendants of a blocked predecessor through direct and inherited edges", async () => {
+    await workspace.writeState(
+      row("AAA", "!", "blocked", "—", "yes", "unblock: Resolve the prerequisite.") +
+        row("BBB", "-", "planned", "AAA") +
+        row("CCC", "-", "planned", "BBB") +
+        row("DDD", "-", "planned", "AAA") +
+        row("DDD01", "-", "planned") +
+        row("EEE", "✓", "done", "AAA", "yes", "Completed before the block."),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    for (const id of ["BBB", "CCC", "DDD", "DDD01"])
+      expect(result.findings.some(({ severity, check, message }) =>
+        severity === "error" && check === "dependency" && message.includes(id),
+      ), id).toBe(true);
+    expect(result.findings.some(({ check, message }) =>
+      check === "dependency" && message.includes("EEE"),
+    )).toBe(false);
+  });
+
+  it.each([
+    ["blocked", "!", "unblock: Resolve the prerequisite."],
+    ["failed", "X", "attempt: Build failed; retry: Repair the prerequisite."],
+  ])("rejects working work downstream of a %s predecessor", async (status, mark, evidence) => {
+    await workspace.writeState(
+      row("AAA", mark, status, "—", "yes", evidence) +
+        row("BBB", "⧗", "working", "AAA"),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    expect(result.findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "dependency" && message.includes("BBB"),
+    )).toBe(true);
+  });
+
   it("returns nonzero in strict mode only for errors", async () => {
     await workspace.writeState(row("AAA", "✓", "working"));
     expect(workspace.run().code).toBe(0);

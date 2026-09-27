@@ -374,4 +374,39 @@ describe("fn:stateBoard", () => {
       { label: "Read at", value: "2026-08-29 12:00Z" },
     ]);
   });
+
+  it("keeps retired tasks out of open work while showing completed and retired progress separately", () => {
+    const superseded = { ...DONE, id: "AAA02", mark: "↪", status: "superseded" };
+    const cancelled = { ...DONE, id: "AAA03", mark: "⊘", status: "cancelled" };
+    const open = { ...DONE, id: "AAA04", mark: "-", status: "planned" };
+    const data = board([{ tasks: [DONE, superseded, cancelled, open] }]);
+    const meta = data.masthead.meta;
+    const [ledger] = blocksOf(data, "owed", "ledger");
+    const readiness = blocksOf(data, "progress", "readiness");
+
+    expect(meta).toContainEqual({ label: "Open tasks", value: "1" });
+    expect(JSON.stringify(ledger)).toContain("AAA04");
+    expect(JSON.stringify(ledger)).not.toContain("AAA02");
+    expect(JSON.stringify(ledger)).not.toContain("AAA03");
+    expect(JSON.stringify(readiness)).toContain('"value":1');
+    expect(JSON.stringify(readiness)).toContain('"of":2');
+  });
+
+  it("renders an entirely retired stream without a zero-total meter or completed claim", () => {
+    const superseded = { ...DONE, id: "AAA02", mark: "↪", status: "superseded" };
+    const cancelled = { ...DONE, id: "AAA03", mark: "⊘", status: "cancelled" };
+    const data = board([{ tasks: [superseded, cancelled] }]);
+    const readiness = blocksOf(data, "progress", "readiness");
+    const [rail] = blocksOf(data, "recent", "timeline");
+    const [ledger] = blocksOf(data, "owed", "ledger");
+
+    expect(data.masthead.meta).toContainEqual({ label: "Open tasks", value: "0" });
+    expect(readiness).toStrictEqual([]);
+    expect(blocksOf(data, "progress", "callout").length).toBeGreaterThan(0);
+    expect(rail).toMatchObject({ items: [{ state: "pending" }] });
+    expect(ledger).toMatchObject({ groups: [{ label: "alpha" }] });
+    expect((ledger as { groups: { progress?: unknown }[] }).groups[0]).not.toHaveProperty("progress");
+    expect(JSON.stringify(ledger)).not.toContain("every recorded task is done");
+    expect(() => renderPage(data, { css: "", boot: "", runtime: "" })).not.toThrow();
+  });
 });

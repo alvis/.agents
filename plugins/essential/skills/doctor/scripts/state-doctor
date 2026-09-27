@@ -1548,13 +1548,13 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
     graph: dict[str, list[str]] = {}
     for task_id, row in seen.items():
         dependencies = parse_dependencies(row["depends_on"])
-        graph[task_id] = dependencies
         parent_match = CHILD_ID.match(task_id)
         inherited = (
             parse_dependencies(seen[parent_match.group(1)]["depends_on"])
             if parent_match and parent_match.group(1) in seen
             else []
         )
+        graph[task_id] = [*dependencies, *inherited]
         for dependency in [*dependencies, *inherited]:
             if dependency not in seen:
                 report.error(
@@ -1570,6 +1570,29 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
                     "dependency",
                     f"{task_id}: {row['status']} while dependency {dependency} is {seen[dependency]['status']}; block and update obsolete edge",
                 )
+
+    def blocking_predecessor(task_id: str, visited: set[str]) -> str | None:
+        for dependency in graph.get(task_id, []):
+            if dependency in visited or dependency not in seen:
+                continue
+            status = seen[dependency]["status"]
+            if status in {"failed", "blocked", "cancelled", "superseded"}:
+                return dependency
+            inherited_blocker = blocking_predecessor(dependency, visited | {dependency})
+            if inherited_blocker is not None:
+                return inherited_blocker
+        return None
+
+    for task_id, row in seen.items():
+        if row["status"] not in {"planned", "working", "failed"}:
+            continue
+        blocker = blocking_predecessor(task_id, {task_id})
+        if blocker is not None:
+            report.error(
+                work,
+                "dependency",
+                f"{task_id}: {row['status']} downstream of {blocker} ({seen[blocker]['status']}); block and resolve predecessor",
+            )
 
     state: dict[str, int] = {}
 
@@ -1603,6 +1626,20 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
         if parent is None:
             report.error(work, "task-id", f"children of {parent_id} have no parent row")
             continue
+        if parent["status"] in {"superseded", "cancelled"}:
+            active_children = [
+                child["id"]
+                for child in child_rows
+                if child["required"] == "yes"
+                or child["status"] not in {"done", "superseded", "cancelled"}
+            ]
+            if active_children:
+                report.error(
+                    work,
+                    "roll-up",
+                    f"{parent_id}: {parent['status']} with required or nonterminal children: "
+                    + ", ".join(active_children),
+                )
         if parent["status"] == "done":
             unfinished = [
                 child["id"]

@@ -70,7 +70,7 @@ Create `proposals.md`, `changes.md`, `decisions.md`, or `design.md` with the fir
 
 ## Specification lifecycle
 
-An explicit local path, approved inline candidate, or selected Notion identity may supply a specification; inline prompt text is evidence only until it becomes an approved candidate in the active work's `spec/`. Neither path claims a Notion round trip. Spec freshness is checked at named moments — materialize before planning, before each dispatch batch, before review, and at completion — and a changed base triggers the revalidation sweep (non-done dependents `! blocked`; done rows keep `✓ done` and gain stale validity plus remediation tasks). Mirrors, materialization, the sweep procedure, the authored-docs sweep, and completion verification live in [spec-lifecycle.md](spec-lifecycle.md); mid-execution change routing lives in [change-control.md](change-control.md).
+An explicit local path, approved inline candidate, or selected Notion identity may supply a specification; inline prompt text is evidence only until it becomes an approved candidate in the active work's `spec/`. Neither path claims a Notion round trip. Spec freshness is checked at named moments — materialize before planning, before each dispatch batch, before review, and at completion — and a changed base triggers the revalidation sweep (affected nonterminal dependents `! blocked`; terminal cancelled and superseded rows stay terminal; done rows keep `✓ done` and gain stale validity plus remediation tasks). Mirrors, materialization, the sweep procedure, the authored-docs sweep, and completion verification live in [spec-lifecycle.md](spec-lifecycle.md); mid-execution change routing lives in [change-control.md](change-control.md).
 
 ## Evidence, continuity, and retirement
 
