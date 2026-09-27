@@ -337,6 +337,24 @@ describe("state and task-table contracts", () => {
     );
     expect(workspace.run("--strict")).toMatchObject({ code: 0, findings: [] });
   });
+  it.each([
+    ["superseded", "↪", "reason: Revised; replaced-by: CCC;"],
+    ["cancelled", "⊘", "Removed in revision."],
+  ])("should preserve done history after its dependency is %s", async (status, mark, evidence) => {
+    await workspace.writeState(
+      row("AAA", mark, status, "—", "no", evidence) +
+        row("BBB", "✓", "done", "AAA", "yes", "Completed before retirement.") +
+        row("CCC"),
+    );
+    const findings = workspace.run("--strict").findings.filter(({ check, message }) =>
+      check === "dependency" && message.includes("BBB"),
+    );
+
+    expect(findings.length).toBeGreaterThan(0);
+    expect(findings.every(({ message, fix }) =>
+      !/\bblock\b|\bblocked\b/iu.test(`${message} ${fix ?? ""}`),
+    )).toBe(true);
+  });
   it("should reject a completed parent with a required superseded child", async () => {
     await workspace.writeState(
       row("AAA", "✓", "done", "—", "yes", "Rolled up.") +
@@ -431,6 +449,32 @@ describe("state and task-table contracts", () => {
       check === "dependency" && message.includes("EEE"),
     )).toBe(false);
   });
+
+  it("should traverse a branching dependency graph without revisiting shared ancestors", async () => {
+    const ids = Array.from({ length: 40 }, (_, index) =>
+      `A${String.fromCharCode(65 + Math.floor(index / 26))}${String.fromCharCode(65 + index % 26)}`,
+    );
+    const rows = ids.map((id, index) =>
+      row(id, "-", "planned", index < 2 ? "—" : `${ids[index - 1]}, ${ids[index - 2]}`),
+    );
+    await workspace.writeState(rows.join(""));
+
+    const clean = spawnSync(doctor, ["--work-dir", workspace.workDir, "--json", "--strict"], {
+      encoding: "utf8",
+      // pre-fix 30/40-node graphs exceeded 3s; 7s allows process startup while bounding traversal.
+      timeout: 7_000,
+    });
+    expect(clean.error).toBeUndefined();
+    expect(clean.status).toBe(0);
+    expect(JSON.parse(clean.stdout).findings).toStrictEqual([]);
+
+    rows[0] = row(ids[0]!, "!", "blocked", "—", "yes", "unblock: Repair the root task.");
+    await workspace.writeState(rows.join(""));
+    const findings = workspace.run("--strict").findings;
+    expect(findings.some(({ check, message }) =>
+      check === "dependency" && message.includes(`${ids.at(-1)}: planned downstream`),
+    )).toBe(true);
+  }, 15_000);
 
   it.each([
     ["blocked", "!", "unblock: Resolve the prerequisite."],

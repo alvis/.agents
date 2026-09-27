@@ -1569,20 +1569,26 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
             elif seen[dependency]["status"] in {"cancelled", "superseded"} and row[
                 "status"
             ] not in {"blocked", "cancelled", "superseded"}:
+                action = (
+                    "update obsolete edge and record stale-validity/remediation evidence while preserving completed history"
+                    if row["status"] == "done"
+                    else "block and update obsolete edge"
+                )
                 report.error(
                     work,
                     "dependency",
-                    f"{task_id}: {row['status']} while dependency {dependency} is {seen[dependency]['status']}; block and update obsolete edge",
+                    f"{task_id}: {row['status']} while dependency {dependency} is {seen[dependency]['status']}; {action}",
                 )
 
     def blocking_predecessor(task_id: str, visited: set[str]) -> str | None:
         for dependency in graph.get(task_id, []):
             if dependency in visited or dependency not in seen:
                 continue
+            visited.add(dependency)
             status = seen[dependency]["status"]
             if status in {"failed", "blocked", "cancelled", "superseded"}:
                 return dependency
-            inherited_blocker = blocking_predecessor(dependency, visited | {dependency})
+            inherited_blocker = blocking_predecessor(dependency, visited)
             if inherited_blocker is not None:
                 return inherited_blocker
         return None
