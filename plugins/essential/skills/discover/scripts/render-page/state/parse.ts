@@ -12,12 +12,9 @@ const NEEDED = {
 };
 
 /**
- * the columns the board draws where a table has them.
+ * lists optional table columns displayed where present
  *
- * wanted rather than needed, because requiring them would count every row of a
- * table written without them as unreadable — and this board is opened when
- * something has already gone wrong, which is the worst moment to hide six
- * streams behind a column one of them omitted.
+ * missing columns stay visible as malformed rather than hiding streams
  */
 const WANTED = {
   depends: "Depends on",
@@ -57,23 +54,17 @@ export interface Stream {
   /** the work id, which is its directory name */
   id: string;
   /**
-   * the `Work ID` its file records, where that is not the directory name.
+   * records a Work ID that differs from the directory identity
    *
-   * the directory is what a stream is addressed by and a filesystem cannot
-   * hold two of one name, so it is the id. A file claiming another name is a
-   * fact about the record — obeyed, it would let one stream take another's
-   * place on the board, or take the name of one the board excludes — so it is
-   * carried and drawn beside the phase spelling rather than acted on.
+   * displayed without using it as the stream's address
    */
   claimed: string;
   /** the lifecycle phase it reports */
   phase: string;
   /**
-   * the header key the phase was read from.
+   * records which supported phase header was read
    *
-   * carried rather than normalised away, because the tree spells it two ways
-   * and a board that silently picks one is a board nobody can use to find the
-   * stream that spelled it the other.
+   * retains the spelling so mixed records remain traceable
    */
   phaseKey: string;
   /** when it was last written, as the ISO timestamp it records */
