@@ -371,7 +371,7 @@ describe("state and task-table contracts", () => {
     ["cancelled", "⊘", "Removed in revision.", "-", "planned", "no"],
     ["cancelled", "⊘", "Removed in revision.", "⧗", "working", "no"],
     ["cancelled", "⊘", "Removed in revision.", "✓", "done", "yes"],
-  ])("rejects a %s optional parent with a nonterminal or required child (%s, %s, %s, %s, %s)", async (parentStatus, parentMark, evidence, childMark, childStatus, childRequired) => {
+  ])("should reject a %s optional parent with a nonterminal or required child (%s, %s, %s, %s, %s)", async (parentStatus, parentMark, evidence, childMark, childStatus, childRequired) => {
     await workspace.writeState(
       row("AAA", parentMark, parentStatus, "—", "no", evidence) +
         row("AAA01", childMark, childStatus, "—", childRequired, "Completed when done.") +
@@ -384,7 +384,7 @@ describe("state and task-table contracts", () => {
     )).toBe(true);
   });
 
-  it("rejects planned descendants of a blocked predecessor through direct and inherited edges", async () => {
+  it("should reject planned descendants of a blocked predecessor through direct and inherited edges", async () => {
     await workspace.writeState(
       row("AAA", "!", "blocked", "—", "yes", "unblock: Resolve the prerequisite.") +
         row("BBB", "-", "planned", "AAA") +
@@ -407,7 +407,7 @@ describe("state and task-table contracts", () => {
   it.each([
     ["blocked", "!", "unblock: Resolve the prerequisite."],
     ["failed", "X", "attempt: Build failed; retry: Repair the prerequisite."],
-  ])("rejects working work downstream of a %s predecessor", async (status, mark, evidence) => {
+  ])("should reject working work downstream of a %s predecessor", async (status, mark, evidence) => {
     await workspace.writeState(
       row("AAA", mark, status, "—", "yes", evidence) +
         row("BBB", "⧗", "working", "AAA"),

@@ -118,6 +118,15 @@ export function isBlocked(task: Task): boolean {
 }
 
 /**
+ * returns whether a task remains open for work
+ * @param task task to inspect
+ * @returns true when the task is neither done nor retired
+ */
+export function isOpen(task: Task): boolean {
+  return !isDone(task) && !isRetired(task);
+}
+
+/**
  * whether a task is finished
  * @param task the task
  * @returns true where it is done
@@ -126,13 +135,13 @@ export function isDone(task: Task): boolean {
   return says(task.status, "done");
 }
 
-/** Whether an approved revision has closed this task without completing it. */
+/**
+ * returns whether an approved revision closed the task without completing it
+ * @param task task to inspect
+ * @returns true when the task was superseded or cancelled
+ */
 export function isRetired(task: Task): boolean {
   return says(task.status, "superseded") || says(task.status, "cancelled");
-}
-
-export function isOpen(task: Task): boolean {
-  return !isDone(task) && !isRetired(task);
 }
 
 /**

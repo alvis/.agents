@@ -375,7 +375,7 @@ describe("fn:stateBoard", () => {
     ]);
   });
 
-  it("keeps retired tasks out of open work while showing completed and retired progress separately", () => {
+  it("should keep retired tasks out of open work while showing completed and retired progress separately", () => {
     const superseded = { ...DONE, id: "AAA02", mark: "↪", status: "superseded" };
     const cancelled = { ...DONE, id: "AAA03", mark: "⊘", status: "cancelled" };
     const open = { ...DONE, id: "AAA04", mark: "-", status: "planned" };
@@ -392,7 +392,7 @@ describe("fn:stateBoard", () => {
     expect(JSON.stringify(readiness)).toContain('"of":2');
   });
 
-  it("renders an entirely retired stream without a zero-total meter or completed claim", () => {
+  it("should render an entirely retired stream without a zero-total meter or completed claim", () => {
     const superseded = { ...DONE, id: "AAA02", mark: "↪", status: "superseded" };
     const cancelled = { ...DONE, id: "AAA03", mark: "⊘", status: "cancelled" };
     const data = board([{ tasks: [superseded, cancelled] }]);
