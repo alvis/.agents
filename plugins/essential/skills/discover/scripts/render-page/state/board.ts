@@ -124,12 +124,12 @@ function recentSection(streams: Stream[]): Section {
               ? leadRuns(stream.next)
               : [{ kind: "dim" as const, text: "no next action recorded" }]),
           ],
-          // `every` is true over nothing, so a stream whose task table could
-          // not be read was drawn finished here while its own tag said it was
-          // working. `progressSection` already refuses to measure a stream it
-          // has no tasks for, and this agrees with it
+          // only nonretired tasks measure completion, as in the progress bar.
+          // require at least one such task so empty and entirely retired
+          // streams cannot read as finished through `every` on an empty set.
           state:
-            stream.tasks.length && stream.tasks.every(isDone)
+            stream.tasks.some((task) => !isRetired(task)) &&
+            stream.tasks.every((task) => isRetired(task) || isDone(task))
               ? ("done" as const)
               : stream.tasks.some((task) => says(task.status, "working"))
                 ? ("active" as const)

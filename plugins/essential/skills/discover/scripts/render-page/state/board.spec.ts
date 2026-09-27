@@ -392,6 +392,20 @@ describe("fn:stateBoard", () => {
     expect(JSON.stringify(readiness)).toContain('"of":2');
   });
 
+  it.each([
+    ["superseded", "↪"],
+    ["cancelled", "⊘"],
+  ])("should finish a stream with a done task and a %s task", (status, mark) => {
+    const retired = { ...DONE, id: "AAA02", mark, status };
+    const data = board([{ tasks: [DONE, retired] }]);
+    const [readiness] = blocksOf(data, "progress", "readiness");
+    const [rail] = blocksOf(data, "recent", "timeline");
+
+    expect(data.masthead.meta).toContainEqual({ label: "Open tasks", value: "0" });
+    expect(readiness).toMatchObject({ items: [{ value: 1, of: 1 }] });
+    expect(rail).toMatchObject({ items: [{ state: "done" }] });
+  });
+
   it("should render an entirely retired stream without a zero-total meter or completed claim", () => {
     const superseded = { ...DONE, id: "AAA02", mark: "↪", status: "superseded" };
     const cancelled = { ...DONE, id: "AAA03", mark: "⊘", status: "cancelled" };
