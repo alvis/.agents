@@ -18,7 +18,7 @@ Author focused tests for runtime behavior and compiler-observable expectations p
 - the `code-review` standard at coding:standards/code-review/
 - the area under test, its own conventions and siblings (lazy, resolved per task from the repo under review — never preloaded)
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 ## Memory
 

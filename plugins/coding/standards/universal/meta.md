@@ -4,7 +4,7 @@ _Core engineering principles that apply to all implementation work._
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - TypeScript Standards (standard:typescript) - strict typing and import discipline
 - Naming Standards (standard:naming) - identifier consistency and intent clarity

@@ -17,7 +17,7 @@ Apply `coding:skills/commit/SKILL.md` before saving and the selected `coding:ski
 - the `file-structure` standard at coding:standards/file-structure/
 - the `git` standard at coding:standards/git/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 - the target directory being initialized (lazy, resolved per task)
 - any existing partial configuration to respect rather than overwrite (lazy, resolved per task)

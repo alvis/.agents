@@ -16,7 +16,7 @@ Role context:
 - the `css`, `design`, and `theming` standards at web:standards/css/, web:standards/design/, and web:standards/theming/ + the `components`, `accessibility`, `hooks`, `project-structure`, and `storybook` standards at react:standards/components/, react:standards/accessibility/, react:standards/hooks/, react:standards/project-structure/, and react:standards/storybook/
 - the `code-review` standard at coding:standards/code-review/
 
-Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 Resolved lazily per task, never preloaded:
 

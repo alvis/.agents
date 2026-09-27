@@ -19,7 +19,7 @@ Build eval suites, golden sets, seeded-defect tests, convergence predicates, and
 - the repo area the harness covers (lazy, resolved per task from the repo under review — never preloaded)
 - the target repo's build/lint/test configuration (lazy, resolved per task — never preloaded)
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 ## Memory
 

@@ -12,7 +12,7 @@ Execute a requested test, lint, or type sweep once and return counts and concret
 
 - the `testing` standard at coding:standards/testing/
 
-Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 ## Memory
 

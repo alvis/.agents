@@ -23,24 +23,24 @@ Update standard directories only under `plugins/<plugin>/standards/<standard-nam
 
 - **Required**: a standard path, name, or glob — or explicit `--all`.
 - **Optional**: `--changes=...` describing the requested rule or structure changes.
-- **Prerequisites**: [standard-meta.md](../../skills/create-standard/templates/standard-meta.md), [standard-scan.md](../../skills/create-standard/templates/standard-scan.md), and [standard-write.md](../../skills/create-standard/templates/standard-write.md); the target plugin's standards `INDEX.md`; and the selection protocol at `essential:directions/standards.md`.
+- **Prerequisites**: `governance:skills/create-standard/templates/standard-meta.md`, `governance:skills/create-standard/templates/standard-scan.md`, and `governance:skills/create-standard/templates/standard-write.md`; the target plugin's `directions/WORKFLOW.md`; and the selection protocol at `essential:directions/standards.md`.
 
 ## Workflow
 
 1. Read the three tier templates, then each selected standard's complete `meta.md`, `scan.md`, `write.md`, `rules/`, dependent standards, and inbound local links. List exact targets and snapshot existing IDs, prefixes, dependencies, exceptions, detection criteria, compliant guidance, examples, and external references. Reject an empty/ambiguous selector, missing tier, malformed request, duplicate target, or unapproved rule-ID renumbering.
 2. Map each requested change across all affected tiers before editing: rationale/dependency in meta, violation detection in scan, compliant behavior in write, detailed guide and links in rules.
 3. Reconcile structure with the exact templates without replacing valid content with placeholders. Fold new policy into existing sections and remove superseded contradictions; do not append changelogs.
-4. Ensure `plugins/<plugin>/standards/INDEX.md` holds a row for each selected standard, and correct that row when the change alters what the standard applies to.
-5. Keep meta concise for relationship rationale, stricter-policy context, exceptions, and groups. INDEX owns applicability; scan owns reachable prerequisites and detection. Preserve cross-standard checks in INDEX selection or independent scan triggers linked to canonical rule guides; references cannot authorize loading an undeclared plugin. Keep write compliance-oriented.
+4. Ensure `plugins/<plugin>/directions/WORKFLOW.md` holds a direct scan link for each selected standard, and correct its applicability row when the change alters what the standard applies to.
+5. Keep meta concise for relationship rationale, stricter-policy context, exceptions, and groups. The workflow owns applicability; scan owns reachable prerequisites and detection. Preserve cross-standard checks in workflow selection or independent scan triggers linked to canonical rule guides; references cannot authorize loading an undeclared plugin. Keep write compliance-oriented.
 6. Update every affected rule guide using its existing filename case and every inbound/outbound local link. Preserve unrelated rule examples and IDs.
-7. For multiple independent targets, bounded delegation per [delegation guidance](../../standards/delegation/) is allowed — at most 3 standard directories per batch (each directory is 3 tier files plus rules) and 8 parallel subagent dispatches per request — but review the combined ID/dependency/link graph before validation.
+7. For multiple independent targets, bounded delegation per `governance:standards/delegation/scan.md` is allowed — at most 3 standard directories per batch (each directory is 3 tier files plus rules) and 8 parallel subagent dispatches per request — but review the combined ID/dependency/link graph before validation.
 8. Run the verification below; when a check fails, fix the cause and re-run that check. Repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping.
 
 ## Verification
 
 - Cross-tier consistency per selected standard: compare the declared meta groups and IDs with scan bullets/matrix, write summaries, rule filenames, and repository references. Fail on missing/extra/duplicate IDs, prefix drift, contradictory scan/write wording, unresolved links, missing dependencies, invalid exception fields, orphan guides, or unapproved breaking renames.
-- Each selected standard has an INDEX row naming its directory.
-- Walk clean candidates from INDEX through scan to mandatory checks, and violating candidates to their guides using actual filename case (or write when no guide exists). No requirement may depend on reading exception-only metadata or an undeclared plugin.
+- Each selected standard has a workflow row linking to its scan.
+- Walk clean candidates from workflow through scan to mandatory checks, and violating candidates to their guides using actual filename case (or write when no guide exists). No requirement may depend on reading exception-only metadata or an undeclared plugin.
 - Run `claude plugin validate --strict plugins/<plugin>` and `bun run "${GOVERNANCE_UPDATE_STANDARD_SKILL_DIR}/../write-skill/scripts/quick_validate.ts" plugins/<plugin>` for repository policy checks.
 - Exercise representative violating and compliant examples for changed rule groups.
 - For `--all`, record every target and its per-target result; one failed target makes the migration partial.

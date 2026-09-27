@@ -96,20 +96,20 @@ Shared metadata and `base.md` must stay true when a harness omits one of these f
 
 ## Base Context
 
-<!-- INSTRUCTION: use references/context-catalog.md for role context and the owning standards INDEX.md for canonical standard names and paths. Role context does not restrict task-based selection. Retain exactly one posture-specific progressive paragraph below in the authored base and delete its label and the unused branch. -->
+<!-- INSTRUCTION: use references/context-catalog.md for role context and the owning directions/WORKFLOW.md for canonical standard names and scan paths. Role context does not restrict task-based selection. Retain exactly one posture-specific progressive paragraph below in the authored base and delete its label and the unused branch. -->
 
 Role context:
 
-- the `<canonical name>` standard at `<real path from its owning INDEX.md>`
+- the `<canonical name>` standard at `<scan path from its owning WORKFLOW.md>`
 - ...
 
 Writer or implementer:
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 Read-only critic or verifier:
 
-Select task-applicable standards from their indexes and apply them as a read-only reviewer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.
 
 Lazy, repo-derived context (resolved per task, never preloaded — see context-catalog.md for what each resolves to at task time):
 

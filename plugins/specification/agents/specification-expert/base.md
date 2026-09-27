@@ -32,7 +32,7 @@ Gather requirements with stakeholders, preserve specification consistency across
 - the `naming` standard at coding:standards/naming/
 - the `universal` standard at coding:standards/universal/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 - the repo area the specification documents (lazy, resolved per task)
 

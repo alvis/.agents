@@ -39,4 +39,20 @@ Skills own actions; never delegate work “to” a skill or pass a skill name as
 | Find unused code | Selected skill | `coding:find-unused` |
 | Pause or resume coding work | Selected skill | `essential:handover` or `essential:takeover` |
 
-Select applicable standards from `coding:standards/INDEX.md` and apply them under `essential:directions/standards.md`. The selected direction may narrow timing or add required evidence; it never replaces the owning skill.
+Select every row matching the artifact, read its scan before editing, and apply it under `essential:directions/standards.md`. The selected direction may narrow timing or add required evidence; it never replaces the owning skill.
+
+| Applies to | Scan |
+| --- | --- |
+| All implementation work, tests, and technical documentation | [Universal](../standards/universal/scan.md) |
+| Functions, methods, and APIs | [Function](../standards/function/scan.md) |
+| TypeScript and JavaScript | [TypeScript](../standards/typescript/scan.md) |
+| Python | [Python](../standards/python/scan.md) |
+| Rust | [Rust](../standards/rust/scan.md) |
+| Identifiers and operation names | [Naming](../standards/naming/scan.md) |
+| Tests and testable implementation | [Testing](../standards/testing/scan.md) |
+| Commit message text | [Commit](../standards/commit/scan.md) |
+| Rendered PR messages and implementation-diff size or composition | [Git](../standards/git/scan.md) |
+| Comments, JSDoc, technical documentation, and exported types/APIs requiring documentation | [Documentation](../standards/documentation/scan.md) |
+| Errors, logging, and operational behavior | [Observability](../standards/observability/scan.md) |
+| New or moved files and project setup | [File structure](../standards/file-structure/scan.md) |
+| Semantic review | [Code review](../standards/code-review/scan.md) plus the implementation scans above |

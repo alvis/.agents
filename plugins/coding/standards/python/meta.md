@@ -8,7 +8,7 @@ _Compact Python rules for type-system hygiene, imports, module structure, concur
 
 ## Dependent Standards
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
 - General Coding Principles (standard:universal) - baseline correctness and consistency constraints
 - Naming Standards (standard:naming) - overlaid and specialized by `PYT-NAME-*` for Python conventions (`snake_case`, `PascalCase`, `_protected`, dunders)

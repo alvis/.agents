@@ -8,13 +8,13 @@ _[Brief description of what this standard covers and its purpose]_
 
 ## Dependent Standards
 
-<!-- INSTRUCTION: Explain related standards; applicability belongs only in the owning standards INDEX.md -->
+<!-- INSTRUCTION: Explain related standards; applicability belongs only in the owning directions/WORKFLOW.md -->
 <!-- INSTRUCTION: Use the plugin reference format:
      - Same plugin: standard:name (e.g., standard:typescript)
      - Cross-plugin: `plugin:<plugin>:standard:<standard>` (e.g., `plugin:coding:standard:typescript`)
 -->
 
-Relationships below explain the selection owned by [INDEX.md](../INDEX.md).
+Relationships below explain the selection owned by the target plugin's `directions/WORKFLOW.md`.
 
 - [Related Standard 1] (standard:[name]) - [how it relates to this standard]
 - [Related Standard 2] (standard:[name]) - [how it relates to this standard]

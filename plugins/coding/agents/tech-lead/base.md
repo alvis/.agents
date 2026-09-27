@@ -18,7 +18,7 @@ Apply @essential:directions/lead.md. Apply `coding:skills/commit/SKILL.md` when 
 - the `code-review` standard at coding:standards/code-review/
 - the `git` standard at coding:standards/git/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 - the repo area(s) the current milestone touches (lazy, resolved per task)
 - repo-specific tooling/config needed to plan accurately (lazy, resolved per task)

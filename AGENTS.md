@@ -39,7 +39,7 @@ Start with [project documentation](docs/README.md), then read the authority for 
 | Skill | `plugins/<p>/skills/<name>/SKILL.md` plus its content directories |
 | Agent | `plugins/<p>/agents/<name>/base.md` + `frontmatter/{meta,claude,codex,grok}.json` |
 | Standard | `plugins/<p>/standards/<name>/{meta,scan,write}.md` + `rules/` |
-| Standards index | `plugins/<p>/standards/INDEX.md` |
+| Standard scan | `plugins/<p>/standards/<name>/scan.md` |
 | Injected payload | `plugins/<p>/hooks/{ALLAGENT,MAINAGENT,SUBAGENT}.md` |
 | Routing table | `plugins/<p>/references/ROUTING.md` |
 | Workflow entry point | `plugins/<p>/directions/WORKFLOW.md` |

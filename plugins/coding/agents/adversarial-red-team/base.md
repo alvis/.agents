@@ -13,7 +13,7 @@ Prove or disprove a finding or threat model with the smallest reproducible explo
 - the `code-review` standard at coding:standards/code-review/
 - the `universal` standard at coding:standards/universal/
 
-Select task-applicable standards from their indexes and apply them as a writer under `essential:directions/standards.md`.
+Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
 
 - the repo area under attack, its own conventions and siblings (lazy, resolved per task — never preloaded)
 
