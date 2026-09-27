@@ -2,23 +2,25 @@
 
 📌
 
-Plugins use a shared lookup command to find an installed dependency before running its scripts. This lets hooks work across Claude Code, Codex, and Grok Build without guessing where another plugin is installed.
+Plugins use a shared lookup command to find an installed dependency before running its scripts. This allows the same plugin to use its dependencies across Claude Code, Codex, and Grok Build without guessing their installation paths.
 
 - Status: Accepted
 
 ## 🎯 Motivation
 
-An engineer adds a startup command (a hook) to the Coding plugin. The hook needs to run a script supplied by the Essential plugin. Without a shared way to find Essential's installed location, the engineer would have to guess its folder. Because Claude Code, Codex, and Grok Build install plugins differently, that guess could miss the script or reach an unrelated installation.
+A hook is a command an app runs automatically in response to an event. When a hook in the Coding plugin needs to run a script from the Essential plugin, it must first locate Essential's installation. Without a shared lookup mechanism, each hook would need its own way to find that directory. Assuming a fixed path could cause the hook to miss the script or run a copy from an unrelated installation.
 
 ## 🧭 Context
 
-Each plugin is an independently installed unit. Coding declares Essential as a dependency, allowing its hook to run Essential's script under the [repository's plugin execution boundary](../../../../AGENTS.md#repository-contract). A marketplace is the set of plugins distributed together. Claude Code records installed locations in a registry, Codex uses caches with separate plugin versions, and Grok Build may run a copy that retains the marketplace's source layout.
+Claude Code, Codex, and Grok Build are the apps that load plugins and run their hooks; this record calls them native harnesses. Each harness tells a hook where its own plugin is installed, but not where its dependencies are installed.
 
-These three apps, called native harnesses here, tell a hook only where its own plugin is installed.
+Plugins are installed independently, even when they belong to the same marketplace—the set of plugins distributed together. Their locations depend on the harness: Claude Code records installed locations in a registry, Codex uses caches with separate plugin versions, and Grok Build may run a copy that retains the marketplace's source layout.
+
+Coding declares Essential as a dependency, allowing its hooks to run Essential's scripts under the [repository's plugin execution boundary](../../../../AGENTS.md#repository-contract). That declaration permits access; the hook still needs to locate the installed dependency before it can use it.
 
 ## ✅ Decision
 
-Each plugin gets a small copy of one shared resolver: a command that finds the installed location of a named plugin. A hook asks that resolver for Essential's location before running Essential's script. The repository keeps one source for the resolver so all copies follow the same rules.
+Each plugin includes a copy of a shared resolver: a command that finds an installed plugin by name. A Coding hook asks its local resolver for Essential's installation directory, then uses that directory to run the script. All copies come from one maintained source so every hook follows the same lookup rules.
 
 The repository keeps the maintained resolver source at `scripts/plugin-root`; the filename has no extension. The projection script at `scripts/plugin-root-projection.ts` copies it byte-for-byte to `scripts/plugin-root` inside every marketplace plugin. A plugin can therefore invoke its own copy without reaching outside its installation boundary.
 
@@ -28,7 +30,7 @@ The resolver accepts exactly one lowercase kebab-case plugin name, such as `esse
 
 For Claude Code, the resolver matches the invoking plugin's location to `installed_plugins.json` and selects the requested plugin from that marketplace. For Codex, it uses the invoking plugin's cached marketplace and prefers the same installed version, accepting another version only when exactly one valid installed candidate exists. For Grok Build, it uses the marketplace plugins laid out like the source repository. Every candidate must contain a harness manifest—the plugin's identity file—whose declared name equals the requested name.
 
-Hooks that need Essential invoke their own projected resolver with `essential`, then run the returned `essential:scripts/...` resource. They never assume Essential is a relative sibling or share a cache depth with the caller.
+Hooks that need Essential invoke their own copy of the resolver with `essential`, then use the returned directory to run the required `essential:scripts/...` resource. They never assume Essential is in a neighboring directory or at the same depth in a cache as the calling plugin.
 
 ## 🔀 Alternatives considered
 

@@ -13,7 +13,7 @@
 
 ## 🎯 Motivation
 
-<Show a concrete situation the team will face without this decision: who needs to do what, and what would fail or become difficult. Write for someone who has not seen this codebase.>
+<Describe a concrete situation in which the system must behave a certain way, and what would fail or become difficult without this decision. Make the operation and its consequences clear to someone who has not seen this codebase.>
 
 ## 🧭 Context
 
@@ -29,7 +29,7 @@
 
 ## ⚖️ Consequences
 
-<Explain what improves and what the team must pay, maintain, or risk because of this choice.>
+<Explain what improves, the costs and maintenance this choice introduces, and the risks that remain.>
 
 <!-- OPTIONAL SUPERSEDED HEADER
 
