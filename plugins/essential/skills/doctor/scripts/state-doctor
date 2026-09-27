@@ -1479,6 +1479,10 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
             )
         if row["status"] == "blocked" and "unblock:" not in evidence:
             report.error(work, "evidence", f"{task_id}: blocked without unblock:")
+        if row["required"] not in {"yes", "no"}:
+            report.error(
+                work, "roll-up", f"{task_id}: Required must be exactly yes or no"
+            )
         if row["status"] in {"cancelled", "superseded"} and row["required"] == "yes":
             report.error(
                 work, "roll-up", f"{task_id}: required work cannot stay {row['status']}"
@@ -1641,16 +1645,21 @@ def check_tasks(report: Report, work: str, rows: list[dict]) -> None:
                     + ", ".join(active_children),
                 )
         if parent["status"] == "done":
+            all_optional = all(child["required"] == "no" for child in child_rows)
             unfinished = [
                 child["id"]
                 for child in child_rows
-                if child["required"] == "yes" and child["status"] != "done"
+                if (child["required"] == "yes" and child["status"] != "done")
+                or (
+                    all_optional
+                    and child["status"] not in {"done", "superseded", "cancelled"}
+                )
             ]
             if unfinished:
                 report.error(
                     work,
                     "roll-up",
-                    f"{parent_id}: done while required children are not: "
+                    f"{parent_id}: done while children remain unfinished: "
                     + ", ".join(unfinished),
                 )
         if all(child["required"] == "no" for child in child_rows) and all(

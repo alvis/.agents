@@ -48,7 +48,7 @@ Name what is inside the plan, what is deliberately outside it, and any limit on 
 
 ### 🗂️ Tasks
 
-Present every task, including retained terminal history, with these columns:
+Present every active task and every task changed since the last approved plan with these columns. Keep unchanged terminal history in the canonical registry; link to that registry and the approved snapshot instead of repeating its rows in a growing plan:
 
 ```markdown
 | ID | Description | Status | Delivery role | Agent | Model | Reasoning effort | Change |

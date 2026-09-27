@@ -307,6 +307,20 @@ describe("state and task-table contracts", () => {
       severity === "error" && check === "roll-up" && message.includes("AAA"),
     )).toBe(true);
   });
+  it.each(["true", "Yes", ""])(
+    "should reject a superseded task with noncanonical Required value %j",
+    async (required) => {
+      await workspace.writeState(
+        row("AAA", "↪", "superseded", "—", required, "reason: Revised; replaced-by: BBB;") +
+          row("BBB"),
+      );
+      const result = workspace.run("--strict");
+      expect(result.code).toBe(1);
+      expect(result.findings.some(({ severity, check, message }) =>
+        severity === "error" && check === "roll-up" && message.includes("AAA"),
+      )).toBe(true);
+    },
+  );
   it("should require a planned dependent on superseded work to be blocked", async () => {
     await workspace.writeState(
       row("AAA", "↪", "superseded", "—", "no", "reason: Revised; replaced-by: CCC;") +
@@ -361,6 +375,20 @@ describe("state and task-table contracts", () => {
     );
     expect(workspace.run("--strict").findings.some(({ check, message }) =>
       check === "roll-up" && message.includes("AAA"),
+    )).toBe(true);
+  });
+  it.each([
+    ["planned", "-"],
+    ["working", "⧗"],
+  ])("should reject a done all-optional parent with a %s child", async (childStatus, childMark) => {
+    await workspace.writeState(
+      row("AAA", "✓", "done", "—", "no", "Rolled up.") +
+        row("AAA01", childMark, childStatus, "—", "no"),
+    );
+    const result = workspace.run("--strict");
+    expect(result.code).toBe(1);
+    expect(result.findings.some(({ severity, check, message }) =>
+      severity === "error" && check === "roll-up" && message.includes("AAA"),
     )).toBe(true);
   });
 
