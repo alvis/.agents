@@ -1,25 +1,35 @@
 # ADR-<n>: <decision title>
 
-<!-- Replace <n> with this ADR's positive integer number, without leading zeros. Store the file as docs/architecture/decisions/<domain>/adr-<n>-<decision-slug>.md, where <domain> is one lowercase kebab-case segment; for example, # ADR-7: Choose storage in decisions/runtime/adr-7-choose-storage.md. Follow ../../references/adr.md for identity and archival rules. -->
+<!-- Follow ../../directions/adr-authoring.md for identity, placement, acceptance, and indexing; follow ../../directions/adr-supersession.md when replacing an accepted choice. -->
+
+<!-- Write for an engineer new to this repository. Define project-specific terms when they first matter; see ../../references/durable-documentation.md for the reader contract. Remove author prompts before accepting the ADR. -->
+
+📌
+
+TODO: Summarize the accepted choice and the problem it solves in one or two plain-English sentences.
 
 - Status: `Accepted`
 - Date: `<YYYY-MM-DD>`
 
-## Context
+## 🎯 Motivation
 
-<Describe the forces and constraints that require a decision.>
+TODO: Describe a concrete situation in which the system must behave a certain way, and what would fail or become difficult without this decision. Make the operation and its consequences clear to someone who has not seen this codebase.
 
-## Decision
+## 🧭 Context
 
-<State the accepted choice so this ADR stands on its own.>
+TODO: Give the existing system facts, definitions, and constraints a new reader needs to understand why the problem arises. Leave the failure story in Motivation and the chosen approach in Decision.
 
-## Alternatives considered
+## ✅ Decision
 
-<Name the meaningful alternatives and why they were not selected.>
+TODO: State the accepted choice in plain English first, then give the precise rules needed to apply it. Make this ADR stand on its own.
 
-## Consequences
+## 🔀 Alternatives considered
 
-<Record the benefits, costs, risks, and operational consequences.>
+TODO: Name the meaningful alternatives and why they were not selected.
+
+## ⚖️ Consequences
+
+TODO: Explain what improves, the costs and maintenance this choice introduces, and the risks that remain.
 
 <!-- OPTIONAL SUPERSEDED HEADER
 

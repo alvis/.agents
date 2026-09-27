@@ -29,7 +29,7 @@ Read this before creating or materially rewriting versioned project documentatio
 
 - `docs/README.md` is the small entrypoint to architecture, design, and plugin-owned durable domains.
 - A durable directory uses `README.md` only for its reader entrypoint. Operational indexes such as `.state/overview.md` and semantic documents such as `system.md`, `manifest.md`, and `assets.md` keep their descriptive names.
-- `docs/architecture` owns structural rules, boundaries, topology, protocols, and flows. A choice with alternatives and consequences is an architectural decision record under `decisions`, never a second architecture truth. Follow [the ADR contract](adr.md) for current-only indexing and superseded archives.
+- `docs/architecture` owns structural rules, boundaries, topology, protocols, and flows. A choice with alternatives and consequences is an architectural decision record under `decisions`, never a second architecture truth. Follow [ADR authoring](../directions/adr-authoring.md#maintain-the-index) for indexing and [ADR supersession](../directions/adr-supersession.md) for archives.
 - `docs/design` owns durable system-wide and feature design.
 
 ## Plugin-owned domains

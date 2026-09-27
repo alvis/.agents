@@ -26,4 +26,4 @@ Bind every result to the exact revision and inputs it verified. A bare "passed" 
 
 ## Historical continuity
 
-Supersede accepted decisions and shipped contracts; never rewrite their historical bodies. Move superseded ADRs to `decisions/superseded/<domain>/`, add the standard forward header, and leave the successor standing alone. Other records follow their owning contract.
+Supersede accepted decisions and shipped contracts when their meaning changes; preserve their historical bodies under their owning contracts. For ADRs, follow [authoring](../../plugins/essential/directions/adr-authoring.md#clarify-an-accepted-record) for clarification and [supersession](../../plugins/essential/directions/adr-supersession.md) for changed choices and archives.
