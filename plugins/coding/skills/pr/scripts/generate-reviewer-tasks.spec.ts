@@ -27,7 +27,7 @@ function createGitHubApi(overrides: Partial<GitHubApi> = {}): GitHubApi {
           draft: false,
           merged: false,
           state: "open",
-          head: { sha: headOid },
+          head: { sha: headOid }, user: { login: "author" },
         };
       if (path.endsWith("/requested_reviewers"))
         return { teams: [], users: [{ login: "assigned" }] };
@@ -64,7 +64,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return {
@@ -80,6 +80,7 @@ describe("fn:generateReviewerTasks", () => {
     await expect(
       generateReviewerTasks(github, "acme/widget", 7),
     ).resolves.toMatchObject({
+      authorMention: "@author",
       baseOid,
       body,
       headOid,
@@ -88,6 +89,26 @@ describe("fn:generateReviewerTasks", () => {
     expect(github.list).not.toHaveBeenCalledWith(
       "orgs/acme/members?role=admin",
     );
+  });
+
+  it("should assign the PR creator an approval task even when another account authored the commits", async () => {
+    const github = createGitHubApi({
+      get: vi.fn(async (path: string) => {
+        if (path.endsWith("/pulls/7"))
+          return { base: { sha: baseOid }, body, commits: 2, draft: false, merged: false, state: "open", head: { sha: headOid }, user: { login: "creator" } };
+        if (path.endsWith("/requested_reviewers"))
+          return { teams: [], users: [{ login: "assigned" }] };
+        if (path === "repos/acme/widget")
+          return { owner: { login: "acme", type: "Organization" } };
+        throw new Error(`unexpected GET ${path}`);
+      }),
+    });
+
+    const result = await generateReviewerTasks(github, "acme/widget", 7);
+    expect(result.mentions).toEqual(["@assigned", "@author"]);
+    expect(result.authorMention).toBe("@creator");
+    expect(renderReviewerTaskBlock({ ...result, hasBlackZoneVerification: false }))
+      .toContain(`- [ ] @creator approves ${headOid.slice(0, 7)}`);
   });
 
   it.each([true, false])("should use a personal owner for draft=%s with no assignee", async (draft) => {
@@ -101,7 +122,7 @@ describe("fn:generateReviewerTasks", () => {
             draft,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [] };
@@ -130,7 +151,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [] };
@@ -156,7 +177,7 @@ describe("fn:generateReviewerTasks", () => {
     const github = createGitHubApi({
       get: vi.fn(async (path: string) => {
         if (path.endsWith("/pulls/7"))
-          return { base: { sha: baseOid }, body, commits: 2, draft: true, merged: false, state: "open", head: { sha: headOid } };
+          return { base: { sha: baseOid }, body, commits: 2, draft: true, merged: false, state: "open", head: { sha: headOid }, user: { login: "author" } };
         if (path.endsWith("/requested_reviewers")) return { teams: [], users: [] };
         if (path === "repos/acme/widget")
           return { owner: { login: "acme", type: "Organization" } };
@@ -199,6 +220,23 @@ describe("fn:generateReviewerTasks", () => {
     );
   });
 
+  it("should reject a missing PR creator account", async () => {
+    const github = createGitHubApi({
+      get: vi.fn(async (path: string) => {
+        if (path.endsWith("/pulls/7"))
+          return { base: { sha: baseOid }, body, commits: 2, draft: false, merged: false, state: "open", head: { sha: headOid } };
+        if (path.endsWith("/requested_reviewers"))
+          return { teams: [], users: [{ login: "assigned" }] };
+        if (path === "repos/acme/widget")
+          return { owner: { login: "acme", type: "Organization" } };
+        throw new Error(`unexpected GET ${path}`);
+      }),
+    });
+
+    await expect(generateReviewerTasks(github, "acme/widget", 7))
+      .rejects.toThrow("pull request author is invalid");
+  });
+
   it("should reject a PR with no commit author accounts", async () => {
     const github = createGitHubApi({
       get: vi.fn(async (path: string) => {
@@ -210,7 +248,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [{ login: "assigned" }] };
@@ -239,7 +277,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [{ login: "assigned" }] };
@@ -275,7 +313,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [{ login: "bad\n- [x] injected" }] };
@@ -301,7 +339,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [{ slug: "bad/team" }], users: [] };
@@ -327,7 +365,7 @@ describe("fn:generateReviewerTasks", () => {
             draft: false,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [] };
@@ -354,7 +392,7 @@ describe("fn:generateReviewerTasks", () => {
 describe("fn:renderReviewerTaskBlock", () => {
   it("should bind every reviewer and black-zone task to the exact revision", () => {
     expect(
-      renderReviewerTaskBlock({
+      renderReviewerTaskBlock({ authorMention: "@author",
         baseOid,
         hasBlackZoneVerification: true,
         headOid,
@@ -363,8 +401,9 @@ describe("fn:renderReviewerTaskBlock", () => {
     ).toBe(
       "<!-- coding:reviewer-tasks:start -->\n" +
         `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->\n` +
-        `- [ ] @alice review ${headOid.slice(0, 7)}\n` +
-        `- [ ] @acme/platform review ${headOid.slice(0, 7)}\n` +
+        `- [ ] @alice reviews ${headOid.slice(0, 7)}\n` +
+        `- [ ] @acme/platform reviews ${headOid.slice(0, 7)}\n` +
+        `- [ ] @author approves ${headOid.slice(0, 7)}\n` +
         `- [ ] Verify the black-zone scope and risk controls for ${headOid.slice(0, 7)}.\n` +
         "<!-- coding:reviewer-tasks:end -->",
     );
@@ -372,7 +411,7 @@ describe("fn:renderReviewerTaskBlock", () => {
 });
 
 describe("fn:upsertReviewerTaskBlock", () => {
-  const block = renderReviewerTaskBlock({
+  const block = renderReviewerTaskBlock({ authorMention: "@author",
     headOid,
     baseOid,
     mentions: ["@alice"],
@@ -388,8 +427,8 @@ describe("fn:upsertReviewerTaskBlock", () => {
 
   it("should preserve checked tasks on an exact retry", () => {
     const checkedBody = upsertReviewerTaskBlock(body, block).replace(
-      "- [ ] @alice review",
-      "- [x] @alice review",
+      "- [ ] @alice reviews",
+      "- [x] @alice reviews",
     );
     expect(upsertReviewerTaskBlock(checkedBody, block)).toBe(checkedBody);
   });
@@ -405,42 +444,57 @@ describe("fn:upsertReviewerTaskBlock", () => {
 
   it("should refresh changed assignments and retain checks for unchanged tasks", () => {
     const inserted = upsertReviewerTaskBlock(body, block);
-    const checked = inserted.replace("- [ ] @alice review", "- [x] @alice review");
-    const next = renderReviewerTaskBlock({ headOid, baseOid, mentions: ["@alice", "@bob"], hasBlackZoneVerification: false });
+    const checked = inserted
+      .replace("- [ ] @alice reviews", "- [x] @alice reviews")
+      .replace("- [ ] @author approves", "- [x] @author approves");
+    const next = renderReviewerTaskBlock({ authorMention: "@author", headOid, baseOid, mentions: ["@alice", "@bob"], hasBlackZoneVerification: false });
     const refreshed = upsertReviewerTaskBlock(checked, next);
-    expect(refreshed).toContain(`- [x] @alice review ${headOid.slice(0, 7)}`);
-    expect(refreshed).toContain(`- [ ] @bob review ${headOid.slice(0, 7)}`);
+    expect(refreshed).toContain(`- [x] @alice reviews ${headOid.slice(0, 7)}`);
+    expect(refreshed).toContain(`- [x] @author approves ${headOid.slice(0, 7)}`);
+    expect(refreshed).toContain(`- [ ] @bob reviews ${headOid.slice(0, 7)}`);
     expect(refreshed.match(/coding:reviewer-tasks:start/g)).toHaveLength(1);
   });
 
   it("should clear checks when a full head or base changes behind the same short SHA", () => {
-    const checked = upsertReviewerTaskBlock(body, block).replace(
-      "- [ ] @alice review",
-      "- [x] @alice review",
-    );
+    const checked = upsertReviewerTaskBlock(body, block)
+      .replace("- [ ] @alice reviews", "- [x] @alice reviews")
+      .replace("- [ ] @author approves", "- [x] @author approves");
     for (const revision of [
       { headOid: `${headOid.slice(0, 7)}${"3".repeat(33)}`, baseOid },
       { headOid, baseOid: "3".repeat(40) },
     ]) {
-      const next = renderReviewerTaskBlock({ ...revision, mentions: ["@alice"], hasBlackZoneVerification: false });
+      const next = renderReviewerTaskBlock({ authorMention: "@author", ...revision, mentions: ["@alice"], hasBlackZoneVerification: false });
       const refreshed = upsertReviewerTaskBlock(checked, next);
-      expect(refreshed).toContain(`- [ ] @alice review ${headOid.slice(0, 7)}`);
-      expect(refreshed).not.toContain("- [x] @alice review");
+      expect(refreshed).toContain(`- [ ] @alice reviews ${headOid.slice(0, 7)}`);
+      expect(refreshed).toContain(`- [ ] @author approves ${headOid.slice(0, 7)}`);
+      expect(refreshed).not.toContain("- [x] @alice reviews");
     }
   });
 
   it("should reject a manually altered managed task", () => {
     const inserted = upsertReviewerTaskBlock(body, block);
-    expect(() => upsertReviewerTaskBlock(inserted.replace("@alice review", "@alice approve"), block))
+    expect(() => upsertReviewerTaskBlock(inserted.replace("@alice reviews", "@alice approve"), block))
       .toThrow("managed reviewer task has invalid shape or revision");
+  });
+
+  it("should reject missing, duplicate, or singular author approval tasks", () => {
+    const inserted = upsertReviewerTaskBlock(body, block);
+    const approval = `- [ ] @author approves ${headOid.slice(0, 7)}`;
+    for (const invalid of [
+      inserted.replace(`${approval}\n`, ""),
+      inserted.replace(approval, `${approval}\n${approval}`),
+      inserted.replace(approval, approval.replace("approves", "approve")),
+    ])
+      expect(() => inspectReviewerTaskBlock(invalid, headOid, baseOid))
+        .toThrow(/managed reviewer task/);
   });
 
   it("should preserve CRLF and checked tasks when refreshing assignments", () => {
     const checked = upsertReviewerTaskBlock(body, block)
-      .replace("- [ ] @alice review", "- [x] @alice review")
+      .replace("- [ ] @alice reviews", "- [x] @alice reviews")
       .replaceAll("\n", "\r\n");
-    const next = renderReviewerTaskBlock({ headOid, baseOid, mentions: ["@alice", "@bob"], hasBlackZoneVerification: false });
-    const expectedBlock = next.replace("- [ ] @alice review", "- [x] @alice review").replaceAll("\n", "\r\n");
+    const next = renderReviewerTaskBlock({ authorMention: "@author", headOid, baseOid, mentions: ["@alice", "@bob"], hasBlackZoneVerification: false });
+    const expectedBlock = next.replace("- [ ] @alice reviews", "- [x] @alice reviews").replaceAll("\n", "\r\n");
 
     expect(upsertReviewerTaskBlock(checked, next)).toBe(
       `Summary\r\n\r\n## 🧪 Verification\r\n\r\n${expectedBlock}\r\n\r\n- [x] Tests pass.\r\n`,
@@ -463,7 +517,7 @@ describe("fn:upsertReviewerTaskBlock", () => {
 
   it("should ignore fenced headings when locating the end of Verification", () => {
     const prior = `## Verification\n\n\`\`\`markdown\n## Example\n\`\`\`\n\n${block}\n\n## Notes\nRetain this.\n`;
-    const next = renderReviewerTaskBlock({ headOid, baseOid, mentions: ["@bob"], hasBlackZoneVerification: false });
+    const next = renderReviewerTaskBlock({ authorMention: "@author", headOid, baseOid, mentions: ["@bob"], hasBlackZoneVerification: false });
 
     expect(upsertReviewerTaskBlock(prior, next)).toBe(prior.replace(block, next));
   });
@@ -568,7 +622,7 @@ describe("cmd:reviewer-tasks", () => {
     const github = createGitHubApi({
       get: vi.fn(async (path: string) => {
         if (path.endsWith("/pulls/7"))
-          return { base: { sha: baseOid }, body: "```markdown\n## Verification\n```\n", commits: 2, draft: false, merged: false, state: "open", head: { sha: headOid } };
+          return { base: { sha: baseOid }, body: "```markdown\n## Verification\n```\n", commits: 2, draft: false, merged: false, state: "open", head: { sha: headOid }, user: { login: "author" } };
         return original.get(path);
       }),
     });
@@ -580,13 +634,13 @@ describe("cmd:reviewer-tasks", () => {
   });
 
   it.each([" ", "x"])("should reject a draft preflight containing a [%s] managed reviewer task", async (check) => {
-    const block = renderReviewerTaskBlock({ headOid, baseOid, mentions: ["@alice"], hasBlackZoneVerification: false })
+    const block = renderReviewerTaskBlock({ authorMention: "@author", headOid, baseOid, mentions: ["@alice"], hasBlackZoneVerification: false })
       .replace("- [ ]", `- [${check}]`);
     const original = createGitHubApi();
     const github = createGitHubApi({
       get: vi.fn(async (path: string) => {
         if (path.endsWith("/pulls/7"))
-          return { base: { sha: baseOid }, body: `${body}\n${block}\n`, commits: 2, draft: true, merged: false, state: "open", head: { sha: headOid } };
+          return { base: { sha: baseOid }, body: `${body}\n${block}\n`, commits: 2, draft: true, merged: false, state: "open", head: { sha: headOid }, user: { login: "author" } };
         return original.get(path);
       }),
     });
@@ -607,7 +661,7 @@ describe("cmd:reviewer-tasks", () => {
             draft: true,
             merged: false,
             state: "open",
-            head: { sha: headOid },
+            head: { sha: headOid }, user: { login: "author" },
           };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [{ login: "assigned" }] };
@@ -635,7 +689,7 @@ describe("cmd:reviewer-tasks", () => {
         draft: false,
         merged: false,
         state: "open",
-        head: { sha: headOid },
+        head: { sha: headOid }, user: { login: "author" },
       }))
       .mockImplementationOnce(async () => ({
         teams: [],
@@ -651,7 +705,7 @@ describe("cmd:reviewer-tasks", () => {
         draft: false,
         merged: false,
         state: "open",
-        head: { sha: "3".repeat(40) },
+        head: { sha: "3".repeat(40) }, user: { login: "author" },
       }));
     const github = createGitHubApi({ get });
 
@@ -671,7 +725,7 @@ describe("cmd:reviewer-tasks", () => {
         draft: false,
         merged: false,
         state: "open",
-        head: { sha: headOid },
+        head: { sha: headOid }, user: { login: "author" },
       }))
       .mockImplementationOnce(async () => ({
         teams: [],
@@ -687,7 +741,7 @@ describe("cmd:reviewer-tasks", () => {
         draft: false,
         merged: false,
         state: "open",
-        head: { sha: headOid },
+        head: { sha: headOid }, user: { login: "author" },
       }));
     const github = createGitHubApi({ get });
 
@@ -703,7 +757,7 @@ describe("cmd:reviewer-tasks", () => {
       get: vi.fn(async (path: string) => {
         if (path.endsWith("/pulls/7")) {
           pullReads += 1;
-          return { base: { sha: baseOid }, body, commits: 2, draft: false, merged: false, state: pullReads === 1 ? "open" : "closed", head: { sha: headOid } };
+          return { base: { sha: baseOid }, body, commits: 2, draft: false, merged: false, state: pullReads === 1 ? "open" : "closed", head: { sha: headOid }, user: { login: "author" } };
         }
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [{ login: "assigned" }] };
@@ -721,7 +775,7 @@ describe("cmd:reviewer-tasks", () => {
     const github = createGitHubApi({
       get: vi.fn(async (path: string) => {
         if (path.endsWith("/pulls/7"))
-          return { base: { sha: baseOid }, body, commits: 2, draft: false, merged: true, state: "closed", head: { sha: headOid } };
+          return { base: { sha: baseOid }, body, commits: 2, draft: false, merged: true, state: "closed", head: { sha: headOid }, user: { login: "author" } };
         throw new Error(`unexpected GET ${path}`);
       }),
     });
@@ -744,30 +798,31 @@ describe("cmd:reviewer-tasks", () => {
         "Summary\n\n## 🧪 Verification\n\n" +
         "<!-- coding:reviewer-tasks:start -->\n" +
         `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->\n` +
-        `- [ ] @assigned review ${headOid.slice(0, 7)}\n` +
-        `- [ ] @author review ${headOid.slice(0, 7)}\n` +
+        `- [ ] @assigned reviews ${headOid.slice(0, 7)}\n` +
+        `- [ ] @author reviews ${headOid.slice(0, 7)}\n` +
+        `- [ ] @author approves ${headOid.slice(0, 7)}\n` +
         "<!-- coding:reviewer-tasks:end -->\n\n" +
         "- [x] Tests pass.\n",
     });
   });
 
   it("should return the persisted block after preserving checked tasks", async () => {
-    const prior = renderReviewerTaskBlock({
+    const prior = renderReviewerTaskBlock({ authorMention: "@author",
       headOid,
       baseOid,
       mentions: ["@assigned"],
       hasBlackZoneVerification: false,
     });
     const priorBody = upsertReviewerTaskBlock(body, prior).replace(
-      "- [ ] @assigned review",
-      "- [x] @assigned review",
+      "- [ ] @assigned reviews",
+      "- [x] @assigned reviews",
     );
     const github = createGitHubApi({
       get: vi.fn(async (path: string) => {
         if (path.endsWith("/pulls/7"))
           return { base: { sha: baseOid }, body: priorBody, commits: 2, draft: false,
           merged: false,
-          state: "open", head: { sha: headOid } };
+          state: "open", head: { sha: headOid }, user: { login: "author" } };
         if (path.endsWith("/requested_reviewers"))
           return { teams: [], users: [{ login: "assigned" }] };
         if (path === "repos/acme/widget")
@@ -776,8 +831,8 @@ describe("cmd:reviewer-tasks", () => {
       }),
     });
     const result = await runReviewerTasksCli(args, github);
-    expect(result.block).toContain(`- [x] @assigned review ${headOid.slice(0, 7)}`);
-    expect(result.block).toContain(`- [ ] @author review ${headOid.slice(0, 7)}`);
+    expect(result.block).toContain(`- [x] @assigned reviews ${headOid.slice(0, 7)}`);
+    expect(result.block).toContain(`- [ ] @author reviews ${headOid.slice(0, 7)}`);
     expect(result.body).toContain(result.block);
     expect(github.patch).toHaveBeenCalledWith("repos/acme/widget/pulls/7", { body: result.body });
   });
