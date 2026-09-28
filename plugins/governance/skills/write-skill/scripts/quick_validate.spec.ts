@@ -795,6 +795,101 @@ describe("body and Markdown references", () => {
 });
 
 describe("Claude targets and subprocess behavior", () => {
+  it("validates stitched agents from a temporary plugin projection", async () => {
+    const root = await temporaryRoot();
+    const plugin = resolve(root, "plugin");
+    write(resolve(plugin, ".claude-plugin/plugin.json"), "{}");
+    write(resolve(plugin, "agents/sample/base.md"), "# Source template\n");
+    spawnSync
+      .mockReturnValueOnce({
+        exitCode: 0,
+        stdout: Buffer.from("/essential\n"),
+        stderr: Buffer.from(""),
+      })
+      .mockReturnValueOnce({
+        exitCode: 0,
+        stdout: Buffer.from("---\nname: sample\n---\n\n# Stitched agent\n"),
+        stderr: Buffer.from(""),
+      })
+      .mockImplementationOnce((command: string[]) => {
+        const staged = command.at(-1)!;
+        expect(staged).not.toBe(plugin);
+        expect(
+          readFileSync(resolve(staged, "agents/sample.md"), "utf8"),
+        ).toContain("# Stitched agent");
+        expect(() =>
+          readFileSync(resolve(staged, "agents/sample/base.md")),
+        ).toThrow();
+        expect(
+          readFileSync(resolve(plugin, "agents/sample/base.md"), "utf8"),
+        ).toBe("# Source template\n");
+        return {
+          exitCode: 0,
+          stdout: Buffer.from("strict validation passed"),
+          stderr: Buffer.from(""),
+        };
+      });
+    const [status, results] = runClaudeValidation([plugin]);
+    expect(status).toBe(0);
+    expect(results).toEqual([
+      { path: plugin, status: "pass", output: "strict validation passed" },
+    ]);
+    expect(spawnSync.mock.calls.at(-1)?.[0]).toContain("--strict");
+  });
+
+  it("projects marketplace plugins before strict validation", async () => {
+    const root = await temporaryRoot();
+    const plugin = resolve(root, "plugins/one");
+    write(resolve(root, ".claude-plugin/marketplace.json"), "{}");
+    write(resolve(plugin, ".claude-plugin/plugin.json"), "{}");
+    write(resolve(plugin, "agents/sample/base.md"), "# Source template\n");
+    spawnSync
+      .mockReturnValueOnce({
+        exitCode: 0,
+        stdout: Buffer.from("/essential\n"),
+        stderr: Buffer.from(""),
+      })
+      .mockReturnValueOnce({
+        exitCode: 0,
+        stdout: Buffer.from("---\nname: sample\n---\n"),
+        stderr: Buffer.from(""),
+      })
+      .mockImplementationOnce((command: string[]) => {
+        const staged = command.at(-1)!;
+        expect(
+          readFileSync(resolve(staged, "plugins/one/agents/sample.md"), "utf8"),
+        ).toContain("name: sample");
+        return {
+          exitCode: 0,
+          stdout: Buffer.from("ok"),
+          stderr: Buffer.from(""),
+        };
+      });
+    expect(runClaudeValidation([root])[0]).toBe(0);
+  });
+
+  it("fails when an agent cannot be stitched", async () => {
+    const root = await temporaryRoot();
+    const plugin = resolve(root, "plugin");
+    write(resolve(plugin, ".claude-plugin/plugin.json"), "{}");
+    write(resolve(plugin, "agents/sample/base.md"), "# Source template\n");
+    spawnSync
+      .mockReturnValueOnce({
+        exitCode: 0,
+        stdout: Buffer.from("/essential\n"),
+        stderr: Buffer.from(""),
+      })
+      .mockReturnValueOnce({
+        exitCode: 1,
+        stdout: Buffer.from(""),
+        stderr: Buffer.from("bad agent"),
+      });
+    const [status, results] = runClaudeValidation([plugin]);
+    expect(status).toBe(1);
+    expect(results[0]?.output).toContain("bad agent");
+    expect(spawnSync).toHaveBeenCalledTimes(2);
+  });
+
   it("uses marketplace root once", async () => {
     const root = await temporaryRoot();
     write(resolve(root, ".claude-plugin/marketplace.json"), "{}");

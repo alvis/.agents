@@ -20,7 +20,7 @@ Mechanical gates are colocated `*.spec.ts`, so suites and gates cannot drift apa
 
 ## Native validators
 
-Run `claude plugin validate --strict .` before publishing a manifest change. Run `grok plugin validate plugins/<p>` for each affected plugin. These commands validate installed-CLI manifest and frontmatter schemas; they remain outside the repository suite and CI, so publication evidence records unavailable CLIs explicitly instead of implying they ran.
+Run `bun run plugins/governance/skills/write-skill/scripts/quick_validate.ts .` before publishing a manifest change. It projects source agent templates into a temporary plugin, runs `claude plugin validate --strict` on that projection, and checks repository skill policies. Run `grok plugin validate plugins/<p>` for each affected plugin. The native CLI checks remain outside the repository suite and CI, so publication evidence records unavailable CLIs explicitly instead of implying they ran.
 
 ## Commits and pull requests
 

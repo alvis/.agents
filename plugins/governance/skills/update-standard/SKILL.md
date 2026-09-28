@@ -41,7 +41,7 @@ Update standard directories only under `plugins/<plugin>/standards/<standard-nam
 - Cross-tier consistency per selected standard: compare the declared meta groups and IDs with scan bullets/matrix, write summaries, rule filenames, and repository references. Fail on missing/extra/duplicate IDs, prefix drift, contradictory scan/write wording, unresolved links, missing dependencies, invalid exception fields, orphan guides, or unapproved breaking renames.
 - Each selected standard has a workflow row linking to its scan.
 - Walk clean candidates from workflow through scan to mandatory checks, and violating candidates to their guides using actual filename case (or write when no guide exists). No requirement may depend on reading exception-only metadata or an undeclared plugin.
-- Run `claude plugin validate --strict plugins/<plugin>` and `bun run "${GOVERNANCE_UPDATE_STANDARD_SKILL_DIR}/../write-skill/scripts/quick_validate.ts" plugins/<plugin>` for repository policy checks.
+- Run `bun run "${GOVERNANCE_UPDATE_STANDARD_SKILL_DIR}/../write-skill/scripts/quick_validate.ts" plugins/<plugin>` for strict Claude validation of projected agents and repository policy checks.
 - Exercise representative violating and compliant examples for changed rule groups.
 - For `--all`, record every target and its per-target result; one failed target makes the migration partial.
 

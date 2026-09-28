@@ -2,8 +2,9 @@
 
 ## Key Principles
 
-- 100% statements, branches, functions, and lines with the minimum tests that preserve distinct behavioral evidence
-- TDD: write failing test -> implement -> refactor; for already-correct behavior, prove an initially passing oracle's sensitivity through a temporary mutation or equivalent controlled proof, restore the implementation, and rerun green before retaining it
+- 100% statements, branches, functions, and lines; at least one behavioral test per exported runtime function; each permanent test verifies a different behavior path, distinct supported behavior, or meaningful edge case
+- A performance-only improvement may use a one-off local before/after measurement when existing tests cover its behavior and the change introduces no new behavior path or meaningful edge case
+- For new supported behavior, write a failing test -> implement -> refactor; for already-correct behavior, prove an initially passing oracle's sensitivity through a temporary mutation or equivalent controlled proof, restore the implementation, and rerun green before retaining it
 - Test descriptions: `it("should ...")`, runtime-symbol or allowed-type-subject suites: `describe("fn:symbol")` / `describe("ty:symbol")`, general suites: plain description
 - All mocks typed with `satisfies Partial<typeof import("...")>` or `satisfies Partial<RealType>` — never `Record<string, unknown>` or inline structural types
 - Happy-path defaults inline: `vi.fn(() => value)`, never `.mockResolvedValue()`
@@ -54,9 +55,9 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 ### Testing Discipline (TST-CORE)
 
 - **TST-CORE-01**: Test code inherits full TypeScript constraints: no `any`, proper import separation, safe narrowing, typed contracts.
-- **TST-CORE-02**: Write failing tests before implementation, then implement, then refactor. For already-correct behavior that lacks an oracle, retain an initially passing regression case only after recorded sensitivity proof, implementation restoration, and a green rerun.
+- **TST-CORE-02**: Write failing tests before implementing new supported behavior, then implement and refactor. For already-correct behavior that lacks an oracle, retain an initially passing regression case only after recorded sensitivity proof, implementation restoration, and a green rerun. A performance-only improvement may use a one-off local measurement under `TST-CORE-04`.
 - **TST-CORE-03**: Every `it(...)` starts with `should`. `describe(...)` titles scoped to a runtime symbol or a compiler-observable type behavior permitted by `TST-CORE-10` use approved prefixes; general-purpose `describe(...)` titles use plain descriptions without prefixes.
-- **TST-CORE-04**: A test is valid only if it adds a new behavior path, branch, or meaningful edge case.
+- **TST-CORE-04**: Keep a permanent test only when it verifies a different behavior path, distinct supported behavior, or meaningful edge case; remove existing or proposed tests that do none. A one-off local performance measurement need not be committed.
 - **TST-CORE-05**: Do not add tests that only vary arbitrary numbers/strings without changing behavior.
 - **TST-CORE-06**: Do not test only that dependencies were called. Assert behavior and outcome.
 - **TST-CORE-07**: Do not spy on internals when external behavior can be tested.
@@ -67,10 +68,10 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 
 ### Coverage (TST-COVR)
 
-- **TST-COVR-01**: 100% statements, branches, functions, and lines required (excluding approved barrel/type-only files).
+- **TST-COVR-01**: 100% statements, branches, functions, and lines required (excluding approved barrel/type-only files), plus at least one behavioral test per exported runtime function.
 - **TST-COVR-02**: Critical failure, fallback, and validation branches require full coverage.
 - **TST-COVR-03**: One-test-at-a-time workflow: add one test, run coverage, decide next.
-- **TST-COVR-04**: Remove tests that add zero new coverage and no distinct behavior protection.
+- **TST-COVR-04**: Remove zero-coverage-gain tests without a different behavior path, distinct supported behavior, or meaningful edge case.
 
 ### Fixtures & Data (TST-DATA)
 
@@ -142,8 +143,8 @@ Pick the form by *what you assert*, not by call count:
 0. Before measuring, remove dead code — unused constants, regexps, no-value wrappers (`GEN-DESN-04`, `FUNC-ARCH-03`). Coverage applies to living code only.
 1. Write one test -> run coverage -> check delta
 2. For already-correct behavior, prove the initially passing case detects the named regression through a temporary implementation mutation or equivalent controlled proof; restore the implementation and rerun green
-3. Zero coverage gain? Keep the test only when it provides distinct behavioral evidence and satisfies `TST-CORE-02`; otherwise delete it
-4. Repeat until statements, branches, functions, and lines all reach 100%
+3. Apply `TST-CORE-04`: keep tests for different behavior paths, distinct supported behavior, or meaningful edge cases, subject to `TST-CORE-02`; delete unnecessary tests
+4. Repeat until statements, branches, functions, and lines all reach 100% and each exported runtime function has at least one behavioral test
 
 ## Quick Reference
 
@@ -173,12 +174,12 @@ Patterns derive from [`TST-STRU-01`].
 
 ## Quick Decision Tree
 
-1. Is this behavior already covered by another test? If yes, do not add duplicate (`TST-CORE-04`).
+1. Will a permanent test verify a different behavior path, distinct supported behavior, or meaningful edge case? If none, do not add it; remove an existing duplicate (`TST-CORE-04`).
 2. Are you testing only call-through behavior? Assert business outcome instead (`TST-CORE-06`).
 3. Need a mock? Only if dependency is IO/external/control-sensitive (`TST-MOCK-01`).
 4. Need hoisted mocks? Use only for call spying or error-path overrides (`TST-MOCK-02`).
 5. Reusing a hoisted/mock symbol in `vi.mock` factory? Export it directly, do not re-wrap with nested `vi.fn` (`TST-MOCK-15`).
-6. Adding a test now? For pre-implementation or diagnosed-failure work, confirm red first. For already-correct behavior, record sensitivity proof, restore the implementation, and rerun green before retaining the case; coverage or distinct evidence alone does not replace `TST-CORE-02` (`TST-COVR-03`, `TST-COVR-04`).
+6. Adding a permanent test now? For new supported behavior or a diagnosed failure, confirm red first. For already-correct behavior, record sensitivity proof, restore the implementation, and rerun green before retaining the case; test value under `TST-CORE-04` does not replace `TST-CORE-02` (`TST-COVR-03`, `TST-COVR-04`).
 7. Structuring a test file? Enforce naming, canonical layout, and AAA spacing (`TST-STRU-01`, `TST-STRU-02`, `TST-STRU-03`).
 8. Needs an env var? Validate at file top with `throw`; never `runIf`/`skipIf` (`TST-CORE-11`).
 9. Does a type assertion protect a compiler-observable behavior permitted by `TST-CORE-10`? Keep it. Otherwise use diagnostics and consumer builds; declaration/signature inventories, layout, and checked-in content remain forbidden.
