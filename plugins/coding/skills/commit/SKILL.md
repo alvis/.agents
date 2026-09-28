@@ -3,7 +3,7 @@ name: commit
 description: 'Save code changes cleanly with jj-first, git-compatible routing. Use for commits, manifest-scoped lifecycle saves, split/absorb/edit operations, stacked changes, history reordering, retrospective blame fixes, or the --create-pr compatibility handoff; preserve the repository history policy and keep coding:commit as the sole history-mutation owner.'
 requirements:
   intelligence: high
-argument-hint: "[--prepare-paths-from=<scope-request> | --paths-from=<manifest> --manifest-sha256=<sha256>] [--retrospective] [--reorder [--up-to <rev>]] [--create-pr] [--branch-prefix <name>] [--no-verify] [--dry-run] [--allow-rewrite-merged]"
+argument-hint: "[--prepare-paths-from=<scope-request> | --paths-from=<manifest> --manifest-sha256=<sha256>] [--retrospective] [--reorder [--up-to <rev>]] [--create-pr] [--branch-prefix <name>] [--no-review] [--no-verify] [--dry-run] [--allow-rewrite-merged]"
 hooks:
   PreToolUse:
     - matcher: "Bash"
@@ -68,6 +68,7 @@ Never rewrite a commit already merged into a shared destination. Fix merged work
 | `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard via `verify.sh`. See `./directions/reorder.md`. |
 | `--create-pr` | Compatibility entrypoint: finish the selected save/history route, then invoke `coding:pr create` with the resolved change or stack. |
 | `--branch-prefix <name>` | Forward the branch/bookmark prefix to `coding:pr create` when `--create-pr` is present. |
+| `--no-review` | Valid only with `--create-pr`; forward it under [PR creation inputs](../pr/directions/create-update.md#inputs). |
 | `--no-verify` | Skip this skill's ordinary pre-commit and post-commit project-script checks, including lint, type diagnostics, consumer builds, tests, and builds. It does not waive or pre-authorize the exact-revision gate before a PR handoff or sanctioned direct push. |
 | `--dry-run` | Print the plan, don't mutate. |
 | `--allow-rewrite-merged` | Explicit consent to rewrite history already merged on origin (skips the graphical or structured user-input tool corrective-PR prompt). |
@@ -127,7 +128,7 @@ Before writing any new code, plan the change structure so commits/PRs end up ind
 
 5. Run the verification below; when a check fails, fix the cause (or take the integrity table's prescribed action) and re-run that check. Repeat until every check passes or a concrete blocker remains — an integrity STOP awaiting the user, or a failure outside this skill's scope — then report the blocker instead of looping.
 
-6. **Synchronize or hand off after local work is complete.** The correct-merged Option 2 and partial-to-branch references perform their own direct bookmark sync only after `coding:pr verify`; those syncs are not PR publication. With `--create-pr` on every other route, invoke `coding:pr create <resolved-change-or-stack>` and forward `--branch-prefix <name>` and `--dry-run` when present. Never forward `--no-verify`: the PR workflow runs its own exact-revision test and lint gate, and only it may ask for user approval when a required secret is missing. After another local rewrite affects an unmerged PR stack, report its resolved metadata and current PR states to the caller; do not invoke `coding:pr update`. A separately authorized PR action owns publication, restacking, base repair, and CI convergence.
+6. **Synchronize or hand off after local work is complete.** The correct-merged Option 2 and partial-to-branch references perform their own direct bookmark sync only after `coding:pr verify`; those syncs are not PR publication. With `--create-pr` on every other route, invoke `coding:pr create <resolved-change-or-stack>` and forward `--branch-prefix <name>`, `--no-review`, and `--dry-run` when present. Route an equivalent natural-language opt-out through [PR creation inputs](../pr/directions/create-update.md#inputs). Never forward `--no-verify`: the PR workflow runs its own exact-revision test and lint gate, and only it may ask for user approval when a required secret is missing. After another local rewrite affects an unmerged PR stack, report its resolved metadata and current PR states to the caller; do not invoke `coding:pr update`. A separately authorized PR action owns publication, restacking, base repair, and CI convergence.
 
 ## Verification
 
