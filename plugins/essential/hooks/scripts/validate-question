@@ -9,10 +9,8 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=/dev/null
 source "$SCRIPTS_DIR/context.sh"
-DIRECTIONS_DIR="$(cd "$SCRIPTS_DIR/../../directions" && pwd)"
-
 deny() {
-  output_pretooluse_decision "deny" "$1 Read $DIRECTIONS_DIR/questions.md before correcting the question."
+  output_pretooluse_decision "deny" "$1 Read essential:directions/questions.md before correcting the question."
 }
 
 allow() {
@@ -70,8 +68,8 @@ reason=$(printf '%s' "$input" | jq -r '
       | if ($tagless | length) > 0
         then ( $tagless[0] ) as $first
           | if ($first.unknown | length) > 0
-            then "unknown tag [" + ($first.unknown | join("], [")) + "] on option \"" + $first.label + "\". Use only: " + ($valid | join(", ")) + ". See essential:directions/questions.md."
-            else "option \"" + $first.label + "\" carries no tag. Tag every option with one or more of: " + ($valid | join(", ")) + ". See essential:directions/questions.md."
+            then "unknown tag [" + ($first.unknown | join("], [")) + "] on option \"" + $first.label + "\". Use only: " + ($valid | join(", ")) + "."
+            else "option \"" + $first.label + "\" carries no tag. Tag every option with one or more of: " + ($valid | join(", ")) + "."
             end
         else empty
         end ]

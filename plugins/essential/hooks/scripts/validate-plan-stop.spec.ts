@@ -135,13 +135,20 @@ function parseHookOutput(
   result: ReturnType<typeof spawnSync>,
 ): Record<string, unknown> {
   expect(result.status, result.stderr).toBe(0);
-  return JSON.parse(result.stdout!) as Record<string, unknown>;
+  const output = JSON.parse(result.stdout!) as Record<string, unknown>;
+  for (const field of ["reason", "stopReason", "systemMessage"]) {
+    if (typeof output[field] !== "string") continue;
+    expect(output[field].split("essential:directions/plan.md")).toHaveLength(2);
+    expect(output[field].split("directions/plan.md")).toHaveLength(2);
+    expect(output[field]).not.toContain(pluginRoot);
+  }
+  return output;
 }
 
 describe("Codex plan Stop validator", () => {
-  it("should direct malformed Stop events to the resolved plan instructions", () => {
+  it("should direct malformed Stop events to the portable plan instructions", () => {
     expect(parseHookOutput(runHook({ eventInput: "not json" }))).toEqual({
-      systemMessage: expect.stringContaining(resolve(pluginRoot, "directions/plan.md")),
+      systemMessage: expect.stringContaining("essential:directions/plan.md"),
     });
   });
 
@@ -161,7 +168,7 @@ describe("Codex plan Stop validator", () => {
         decision: "block",
         reason: expect.stringContaining("Plan validation is unavailable"),
       });
-      expect(decision.reason).toContain(resolve(selectedPluginRoot, "directions/plan.md"));
+      expect(decision.reason).not.toContain(selectedPluginRoot);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -240,7 +247,7 @@ describe("Codex plan Stop validator", () => {
     expect(decision.reason).toContain(
       "exactly one complete <proposed_plan> block",
     );
-    expect(decision.reason).toContain(resolve(pluginRoot, "directions/plan.md"));
+    expect(decision.reason).toContain("essential:directions/plan.md");
   });
 
   it("should use the newest plan for the current turn only", () => {
@@ -383,7 +390,7 @@ describe("Codex plan Stop validator", () => {
       systemMessage: expect.stringContaining("Plan validation is unavailable"),
     });
     expect(decision.systemMessage).not.toContain(transcriptPath);
-    expect(decision.systemMessage).toContain(resolve(pluginRoot, "directions/plan.md"));
+    expect(decision.systemMessage).toContain("essential:directions/plan.md");
   });
 
   it("should report malformed transcript JSON as unavailable", () => {
@@ -400,7 +407,7 @@ describe("Codex plan Stop validator", () => {
     const result = runHook({ lines: [line] });
 
     expect(parseHookOutput(result)).toEqual({
-      systemMessage: expect.stringContaining(resolve(pluginRoot, "directions/plan.md")),
+      systemMessage: expect.stringContaining("essential:directions/plan.md"),
     });
     expect(result.stderr).toBe("");
   });

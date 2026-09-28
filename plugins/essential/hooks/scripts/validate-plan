@@ -9,10 +9,8 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=/dev/null
 source "$SCRIPTS_DIR/context.sh"
-DIRECTIONS_DIR="$(cd "$SCRIPTS_DIR/../../directions" && pwd)"
-
 deny() {
-  output_pretooluse_decision "deny" "$1 Read $DIRECTIONS_DIR/plan.md before correcting the plan."
+  output_pretooluse_decision "deny" "$1 Read essential:directions/plan.md before correcting the plan."
 }
 
 allow() {
@@ -77,7 +75,7 @@ for heading in Goal Requirements Boundary Tasks Direction Context; do
 done
 
 if [[ -n "$missing" ]]; then
-  deny "missing headings: ${missing}. See essential:directions/plan.md."
+  deny "missing headings: ${missing}."
 fi
 
 allow
