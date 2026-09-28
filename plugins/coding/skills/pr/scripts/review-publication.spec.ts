@@ -29,13 +29,23 @@ interface TransportRecord {
 }
 
 interface RunOptions {
-  action?: "approve" | "publish";
+  action?: "approve" | "publish" | "update";
+  ci?: string;
+  ciExit?: number;
+  existingReview?: Record<string, unknown>;
+  reviewAfterCi?: Record<string, unknown>;
+  checkRuns?: string;
+  workflowRun?: Record<string, unknown>;
+  policyRules?: readonly unknown[];
+  policyRulePages?: readonly (readonly unknown[])[];
+  policyRulesAfterCi?: readonly unknown[];
   author?: string;
   baseOid?: string;
   baseRef?: string;
   headOid?: string;
   isMissing?: boolean;
   metadata?: string;
+  metadataAfterCi?: string;
   metadataExit?: number;
   parent?: ReviewPublicationReceipt;
   publisher?: string;
@@ -60,6 +70,9 @@ const headOid = "1".repeat(40);
 const baseOid = "2".repeat(40);
 const changedOid = "3".repeat(40);
 const evidenceDigest = "a".repeat(64);
+const requiredPolicyDigest = createHash("sha256")
+  .update(JSON.stringify({ protection: null, rules: [] }))
+  .digest("hex");
 const scriptPath = join(import.meta.dirname, "review-publication.ts");
 const common = {
   contract_version: CONTRACT_VERSION,
@@ -108,6 +121,12 @@ const review = {
   ...common,
   kind: "review",
   review_context: {
+    human_signoff_required: false,
+    ci: {
+      expected_checks: [{ name: "test", workflow: ".github/workflows/ci.yml" }],
+      expected_sources_confirmed: true,
+      required_policy_sha256: requiredPolicyDigest,
+    },
     review_evidence_sha256: evidenceDigest,
     zone: "green",
   },
@@ -137,7 +156,7 @@ const review = {
         result: "passes",
       },
     ],
-    substantive_verdict: "APPROVE",
+    substantive_verdict: "PASS",
     summary:
       "The empty-input boundary is covered and preserves existing behavior.",
     tests: {
@@ -166,7 +185,758 @@ const reply = {
 } as const;
 const receipt = createReviewPublicationReceipt(review);
 
+function approvedBody(
+  approval: ReviewPublicationReceipt,
+  state: "pending" | "green" | "red",
+): string {
+  const payload = approval.ci_variants?.[state].payload_utf8_base64;
+  if (!payload) throw new Error(`missing approved ${state} CI variant`);
+  return JSON.parse(Buffer.from(payload, "base64").toString("utf8")).body;
+}
+
+function reviewStructure(body: string): {
+  summary: string | null;
+  alert: string | null;
+} {
+  return {
+    summary: /^(✅|❌|⚠️|⏳)/u.exec(body.split("\n")[2] ?? "")?.[1] ?? null,
+    alert:
+      [...body.matchAll(/^> \[!(WARNING|CAUTION|NOTE|TIP)\]$/gm)].at(-1)?.[1] ??
+      null,
+  };
+}
+
 describe("cmd:review-publication", () => {
+  it.each(["head", "base"])(
+    "should refuse initial publication when %s changes during CI lookup",
+    (revision) => {
+      const result = runCommand(receipt, {
+        metadataAfterCi: JSON.stringify({
+          head: { sha: revision === "head" ? changedOid : headOid },
+          base: {
+            sha: revision === "base" ? changedOid : baseOid,
+            ref: "main",
+          },
+          user: { login: "author" },
+        }),
+      });
+      expect(result.status).not.toBe(0);
+      expect(
+        result.records.some((record) => record.arguments.includes("checks")),
+      ).toBe(true);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
+  it.each(["publish", "update"] as const)(
+    "should refuse %s when live required-check policy differs from approval",
+    (action) => {
+      const result = runCommand(receipt, {
+        action,
+        policyRules: [
+          {
+            type: "required_status_checks",
+            parameters: {
+              required_status_checks: [
+                { context: "new-required-check", integration_id: 7 },
+              ],
+            },
+          },
+        ],
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: approvedBody(receipt, "pending"),
+          state: "COMMENTED",
+        },
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
+  it.each(["publish", "update"] as const)(
+    "should refuse %s when required policy changes while CI is queried",
+    (action) => {
+      const result = runCommand(receipt, {
+        action,
+        policyRulesAfterCi: [
+          {
+            type: "required_status_checks",
+            parameters: {
+              required_status_checks: [
+                { context: "new-required-check", integration_id: 7 },
+              ],
+            },
+          },
+        ],
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: approvedBody(receipt, "pending"),
+          state: "COMMENTED",
+        },
+      });
+      expect(result.status).not.toBe(0);
+      expect(
+        result.records.some((record) => record.arguments.includes("checks")),
+      ).toBe(true);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
+  it("should bind an update lookup to the receipt PR rather than another PR owning the review", () => {
+    const differentPr = createReviewPublicationReceipt({
+      ...review,
+      target: { ...common.target, pull_number: 36 },
+    });
+    const result = runCommand(differentPr, {
+      action: "update",
+      existingReview: {
+        id: 91,
+        user: { login: "publisher" },
+        commit_id: headOid,
+        body: approvedBody(receipt, "pending"),
+        state: "COMMENTED",
+      },
+    });
+    expect(result.status).not.toBe(0);
+    expect(
+      result.records.some((record) =>
+        record.arguments.includes("repos/example/project/pulls/36/reviews/91"),
+      ),
+    ).toBe(true);
+    expect(result.writes).toEqual([]);
+  });
+
+  it.each(["publish", "update"] as const)(
+    "should refuse %s when a later required-policy page differs",
+    (action) => {
+      const result = runCommand(receipt, {
+        action,
+        policyRulePages: [
+          [],
+          [
+            {
+              type: "required_status_checks",
+              parameters: {
+                required_status_checks: [
+                  { context: "page-two-check", integration_id: 7 },
+                ],
+              },
+            },
+          ],
+        ],
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: approvedBody(receipt, "pending"),
+          state: "COMMENTED",
+        },
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
+  it("should reject a tampered approved CI variant before accessing GitHub", () => {
+    const changed = {
+      ...receipt,
+      ci_variants: {
+        ...receipt.ci_variants!,
+        red: { ...receipt.ci_variants!.red, payload_sha256: "0".repeat(64) },
+      },
+    };
+    const result = runCommand(changed);
+    expect(result.status).not.toBe(0);
+    expect(result.records).toEqual([]);
+  });
+
+  it("should preserve a known review failure while CI is pending", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: {
+        ...review.assessment,
+        substantive_verdict: "REQUEST_CHANGES",
+        alerts: {
+          must_change: "Fix the failure.",
+          worth_considering: null,
+          unanchored: null,
+        },
+        findings: [{ ...finding, kind: null, priority: "P1" }],
+      },
+    });
+    const result = runCommand(approval, {
+      ci: JSON.stringify([
+        {
+          name: "test",
+          workflow: "CI",
+          link: "https://github.com/example/project/actions/runs/12/job/34",
+          bucket: "pending",
+          state: "IN_PROGRESS",
+        },
+      ]),
+      ciExit: 8,
+    });
+    expect(result.status).toBe(0);
+    const published = JSON.parse(result.writes[0]!.body).body;
+    expect(published).toBe(approvedBody(approval, "pending"));
+    expect(reviewStructure(published).summary).toBe("❌");
+  });
+
+  it("should check live CI and publish a waiting summary while checks run", () => {
+    const result = runCommand(receipt, {
+      ci: JSON.stringify([
+        {
+          name: "test",
+          workflow: "CI",
+          link: "https://github.com/example/project/actions/runs/12/job/34",
+          bucket: "pending",
+          state: "IN_PROGRESS",
+        },
+      ]),
+      ciExit: 8,
+    });
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.writes[0]!.body);
+    expect(payload.body).toBe(approvedBody(receipt, "pending"));
+    expect(reviewStructure(payload.body).summary).toBe("⏳");
+    expect(payload.event).toBe("COMMENT");
+    expect(payload.comments).toHaveLength(1);
+  });
+
+  it("should warn when human sign-off remains after AI review and CI pass", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: {
+        ...review.review_context,
+        human_signoff_required: true,
+      },
+    });
+    const result = runCommand(approval);
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.writes[0]!.body);
+    expect(payload.body).toBe(approvedBody(approval, "green"));
+    expect(reviewStructure(payload.body)).toEqual({
+      summary: "⚠️",
+      alert: "WARNING",
+    });
+  });
+
+  it("should warn about a retained CI-red trust cap after live CI passes", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: { ...review.assessment, trust_caps: ["ci-red"] },
+    });
+    const result = runCommand(approval);
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).event).toBe("COMMENT");
+    expect(reviewStructure(JSON.parse(result.writes[0]!.body).body)).toEqual({
+      summary: "⚠️",
+      alert: "WARNING",
+    });
+  });
+
+  it.each([
+    { appId: 7, runs: [], state: "pending" },
+    {
+      appId: 7,
+      runs: [
+        {
+          name: "test",
+          head_sha: headOid,
+          app: { id: 7 },
+          status: "completed",
+          conclusion: "neutral",
+          completed_at: "2026-09-28T10:00:00Z",
+        },
+      ],
+      state: "pending",
+    },
+    {
+      appId: 7,
+      runs: [
+        {
+          name: "test",
+          head_sha: headOid,
+          app: { id: 8 },
+          status: "completed",
+          conclusion: "success",
+          completed_at: "2026-09-28T10:00:00Z",
+        },
+      ],
+      state: "pending",
+    },
+    {
+      appId: 7,
+      runs: [
+        {
+          name: "test",
+          head_sha: headOid,
+          app: { id: 7 },
+          status: "completed",
+          conclusion: "success",
+          completed_at: "2026-09-28T10:00:00Z",
+        },
+      ],
+      state: "green",
+    },
+    {
+      appId: -1,
+      runs: [
+        {
+          name: "test",
+          head_sha: headOid,
+          app: { id: 8 },
+          status: "completed",
+          conclusion: "success",
+          completed_at: "2026-09-28T10:00:00Z",
+        },
+      ],
+      state: "green",
+    },
+    {
+      appId: 7,
+      runs: [
+        {
+          name: "test",
+          head_sha: changedOid,
+          app: { id: 7 },
+          status: "completed",
+          conclusion: "success",
+          completed_at: "2026-09-28T10:00:00Z",
+        },
+      ],
+      state: "pending",
+    },
+    {
+      appId: 7,
+      runs: [
+        {
+          name: "test",
+          head_sha: headOid,
+          app: { id: 7 },
+          status: "in_progress",
+          conclusion: null,
+          completed_at: null,
+        },
+      ],
+      state: "pending",
+    },
+  ] as const)(
+    "should require observed matching app-backed evidence %#",
+    ({ appId, runs, state }) => {
+      const approval = createReviewPublicationReceipt({
+        ...review,
+        review_context: {
+          ...review.review_context,
+          ci: {
+            expected_sources_confirmed: true,
+            required_policy_sha256: requiredPolicyDigest,
+            expected_checks: [{ name: "test", app_id: appId }],
+          },
+        },
+      });
+      const result = runCommand(approval, {
+        checkRuns: JSON.stringify([{ check_runs: runs }]),
+      });
+      expect(result.status).toBe(0);
+      expect(JSON.parse(result.writes[0]!.body).body).toBe(
+        approvedBody(approval, state),
+      );
+    },
+  );
+
+  it("should reject malformed app-provider evidence without publishing", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: {
+        ...review.review_context,
+        ci: {
+          expected_sources_confirmed: true,
+          required_policy_sha256: requiredPolicyDigest,
+          expected_checks: [{ name: "test", app_id: 7 }],
+        },
+      },
+    });
+    const result = runCommand(approval, {
+      checkRuns: JSON.stringify([{ check_runs: "unavailable" }]),
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.writes).toEqual([]);
+  });
+
+  it.each([0, -2, "7", 1.5])(
+    "should reject malformed expected app identity %s",
+    (app_id) => {
+      expect(() =>
+        createReviewPublicationReceipt({
+          ...review,
+          review_context: {
+            ...review.review_context,
+            ci: {
+              expected_sources_confirmed: true,
+              required_policy_sha256: requiredPolicyDigest,
+              expected_checks: [{ name: "test", app_id }],
+            },
+          },
+        }),
+      ).toThrow();
+    },
+  );
+
+  it("should refuse an update when the body changes during CI lookup", () => {
+    const existingReview = {
+      id: 91,
+      user: { login: "publisher" },
+      commit_id: headOid,
+      body: approvedBody(receipt, "pending"),
+      state: "COMMENTED",
+    };
+    const result = runCommand(receipt, {
+      action: "update",
+      existingReview,
+      reviewAfterCi: {
+        ...existingReview,
+        body: "Edited by the publisher while CI was queried.",
+      },
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.writes).toEqual([]);
+  });
+
+  it("should keep an unapproved neutral CI result pending", () => {
+    const result = runCommand(receipt, {
+      ci: JSON.stringify([
+        {
+          name: "test",
+          workflow: "CI",
+          link: "https://github.com/example/project/actions/runs/12/job/34",
+          bucket: "neutral",
+          state: "NEUTRAL",
+          completedAt: "2026-09-28T10:00:00Z",
+        },
+      ]),
+    });
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "pending"),
+    );
+  });
+
+  it("should keep CI pending when workflows share a display name but have different paths", () => {
+    const result = runCommand(receipt, {
+      workflowRun: {
+        id: 12,
+        head_sha: headOid,
+        path: ".github/workflows/optional.yml",
+        name: "CI",
+      },
+      ci: JSON.stringify([
+        {
+          name: "test",
+          workflow: "CI",
+          link: "https://github.com/example/project/actions/runs/12/job/34",
+          bucket: "pass",
+          state: "SUCCESS",
+          completedAt: "2026-09-28T10:00:00Z",
+        },
+      ]),
+    });
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "pending"),
+    );
+  });
+
+  it("should keep a workflow run from another revision pending", () => {
+    const result = runCommand(receipt, {
+      workflowRun: {
+        id: 12,
+        head_sha: changedOid,
+        path: ".github/workflows/ci.yml",
+        name: "CI",
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "pending"),
+    );
+  });
+
+  it.each([
+    ["https://ci.example.com/jobs/10", "pending"],
+    ["https://ci.example.com/jobs/1", "green"],
+    ["https://ci.example.com/jobs/1/artifacts", "green"],
+    ["https://ci.example.com/jobs/1?attempt=2", "green"],
+    ["https://ci.example.com/jobs/1#summary", "green"],
+  ] as const)(
+    "should enforce provider path boundaries for %s",
+    (link, expectedState) => {
+      const approval = createReviewPublicationReceipt({
+        ...review,
+        review_context: {
+          ...review.review_context,
+          ci: {
+            expected_checks: [
+              { name: "test", link_prefix: "https://ci.example.com/jobs/1" },
+            ],
+            expected_sources_confirmed: true,
+            required_policy_sha256: requiredPolicyDigest,
+          },
+        },
+      });
+      const result = runCommand(approval, {
+        ci: JSON.stringify([
+          {
+            name: "test",
+            link,
+            bucket: "pass",
+            state: "SUCCESS",
+            completedAt: "2026-09-28T10:00:00Z",
+          },
+        ]),
+      });
+      expect(result.status).toBe(0);
+      expect(JSON.parse(result.writes[0]!.body).body).toBe(
+        approvedBody(approval, expectedState),
+      );
+    },
+  );
+
+  it("should bind provider checks to the exact URL origin and path prefix", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: {
+        ...review.review_context,
+        ci: {
+          expected_checks: [
+            { name: "test", link_prefix: "https://ci.example.com/jobs/" },
+          ],
+          expected_sources_confirmed: true,
+          required_policy_sha256: requiredPolicyDigest,
+        },
+      },
+    });
+    for (const [link, expectedState] of [
+      ["https://ci.example.com.evil.invalid/jobs/1", "pending"],
+      ["https://ci.example.com/other/1", "pending"],
+      ["https://ci.example.com/jobs/1", "green"],
+    ] as const) {
+      const result = runCommand(approval, {
+        ci: JSON.stringify([
+          {
+            name: "test",
+            link,
+            bucket: "pass",
+            state: "SUCCESS",
+            completedAt: "2026-09-28T10:00:00Z",
+          },
+        ]),
+      });
+      expect(result.status).toBe(0);
+      expect(JSON.parse(result.writes[0]!.body).body).toBe(
+        approvedBody(approval, expectedState),
+      );
+    }
+  });
+
+  it("should show CI failure ahead of another pending check", () => {
+    const result = runCommand(receipt, {
+      ci: JSON.stringify([
+        {
+          name: "test",
+          workflow: "CI",
+          link: "https://github.com/example/project/actions/runs/12/job/34",
+          bucket: "fail",
+          state: "FAILURE",
+        },
+        { name: "build", bucket: "pending", state: "IN_PROGRESS" },
+      ]),
+      ciExit: 1,
+    });
+    expect(result.status).toBe(0);
+    const published = JSON.parse(result.writes[0]!.body).body;
+    expect(published).toBe(approvedBody(receipt, "red"));
+    expect(reviewStructure(published).summary).toBe("❌");
+  });
+
+  it.each(["pass", "fail"])(
+    "should replace only the same pending review body after CI becomes %s",
+    (bucket) => {
+      const pending = runCommand(receipt, {
+        ci: JSON.stringify([
+          {
+            name: "test",
+            workflow: "CI",
+            link: "https://github.com/example/project/actions/runs/12/job/34",
+            bucket: "pending",
+            state: "IN_PROGRESS",
+          },
+        ]),
+        ciExit: 8,
+      });
+      expect(pending.status, pending.stderr).toBe(0);
+      const original = JSON.parse(pending.writes[0]!.body);
+      const result = runCommand(receipt, {
+        action: "update",
+        ci: JSON.stringify([
+          {
+            name: "test",
+            workflow: "CI",
+            link: "https://github.com/example/project/actions/runs/12/job/34",
+            bucket,
+            state: bucket === "pass" ? "SUCCESS" : "FAILURE",
+            completedAt: "2026-09-28T10:00:00Z",
+          },
+        ]),
+        ciExit: bucket === "pass" ? 0 : 1,
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: original.body,
+          state: "COMMENTED",
+        },
+      });
+      expect(result.status).toBe(0);
+      expect(result.writes).toHaveLength(1);
+      expect(JSON.parse(result.stdout)).toEqual({
+        ci_state: bucket === "pass" ? "green" : "red",
+        review_id: 91,
+        review: { id: 91 },
+      });
+      expect(result.writes[0]!.arguments).toContain("PUT");
+      expect(result.writes[0]!.arguments).toContain(
+        "repos/example/project/pulls/35/reviews/91",
+      );
+      const updated = JSON.parse(result.writes[0]!.body);
+      expect(Object.keys(updated)).toEqual(["body"]);
+      expect(updated.body).toBe(
+        approvedBody(receipt, bucket === "pass" ? "green" : "red"),
+      );
+      expect(reviewStructure(updated.body).summary).toBe(
+        bucket === "pass" ? "✅" : "❌",
+      );
+    },
+  );
+
+  it("should leave the existing review untouched while CI still runs", () => {
+    const result = runCommand(receipt, {
+      action: "update",
+      ci: JSON.stringify([
+        {
+          name: "test",
+          workflow: "CI",
+          link: "https://github.com/example/project/actions/runs/12/job/34",
+          bucket: "pending",
+          state: "IN_PROGRESS",
+        },
+      ]),
+      ciExit: 8,
+      existingReview: {
+        id: 91,
+        user: { login: "publisher" },
+        commit_id: headOid,
+        body: JSON.parse(
+          Buffer.from(
+            receipt.ci_variants!.pending.payload_utf8_base64,
+            "base64",
+          ).toString("utf8"),
+        ).body,
+        state: "COMMENTED",
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ ci_state: "pending" });
+    expect(result.writes).toEqual([]);
+  });
+
+  it("should not republish an already completed review update", () => {
+    const result = runCommand(receipt, {
+      action: "update",
+      existingReview: {
+        id: 91,
+        user: { login: "publisher" },
+        commit_id: headOid,
+        body: JSON.parse(
+          Buffer.from(
+            receipt.ci_variants!.green.payload_utf8_base64,
+            "base64",
+          ).toString("utf8"),
+        ).body,
+        state: "COMMENTED",
+      },
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.writes).toEqual([]);
+  });
+
+  it.each([{ ci: "not authorized", ciExit: 4 }, { ci: "{}" }])(
+    "should block publication without usable expected CI evidence %#",
+    (options) => {
+      const result = runCommand(receipt, options);
+      expect(result.status).not.toBe(0);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
+  it.each([
+    { id: 92 },
+    { user: { login: "other" } },
+    { body: "edited externally" },
+    { commit_id: changedOid },
+  ])(
+    "should refuse a review update whose existing identity or body differs %#",
+    (difference) => {
+      const result = runCommand(receipt, {
+        action: "update",
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: JSON.parse(
+            Buffer.from(
+              receipt.ci_variants!.pending.payload_utf8_base64,
+              "base64",
+            ).toString("utf8"),
+          ).body,
+          state: "COMMENTED",
+          ...difference,
+        },
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
+  it.each([{ headOid: changedOid }, { baseOid: changedOid }])(
+    "should refuse review updates after revision drift %#",
+    (difference) => {
+      const result = runCommand(receipt, {
+        action: "update",
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: JSON.parse(
+            Buffer.from(
+              receipt.ci_variants!.pending.payload_utf8_base64,
+              "base64",
+            ).toString("utf8"),
+          ).body,
+          state: "COMMENTED",
+        },
+        ...difference,
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.writes).toEqual([]);
+    },
+  );
+
   it.each(["inline-review.md", "overall-review.md"] as const)(
     "should reject publication when installed %s is missing",
     (name) => {
@@ -367,7 +1137,7 @@ describe("cmd:review-publication", () => {
         "### 🧾 Verdict",
         "",
         "> [!NOTE]",
-        "> The change is ready to merge.",
+        "> The change is ready to merge. Hosted CI passed.",
         "",
       ].join("\n"),
     );
@@ -463,9 +1233,10 @@ describe("cmd:review-publication", () => {
     );
     expect(payload.body).toContain("vendor/generated.ts");
     expect(payload.body).toContain("Generated dependency output excluded.");
-    expect(payload.body).toContain(
-      "> [!WARNING]\n> Add the missing release note before merging.",
-    );
+    expect(reviewStructure(payload.body)).toEqual({
+      summary: "⚠️",
+      alert: "WARNING",
+    });
   });
 
   it.each([
@@ -482,7 +1253,7 @@ describe("cmd:review-publication", () => {
         ...review,
         assessment: {
           ...review.assessment,
-          substantive_verdict: isBlocker ? "REQUEST_CHANGES" : "APPROVE",
+          substantive_verdict: isBlocker ? "REQUEST_CHANGES" : "PASS",
           findings: [{ ...finding, priority, kind: null }],
           alerts: {
             must_change: isBlocker ? "Fix the boundary." : null,
@@ -557,7 +1328,7 @@ describe("cmd:review-publication", () => {
     ]);
     expect(JSON.parse(body)).toMatchObject({
       commit_id: headOid,
-      event: "APPROVE",
+      event: "COMMENT",
       comments: [
         {
           line: 12,
@@ -982,7 +1753,7 @@ describe("cmd:review-publication", () => {
     { ...receipt, binding: { ...receipt.binding, head_oid: changedOid } },
     { ...receipt, binding: { ...receipt.binding, base_oid: changedOid } },
     { ...receipt, binding: { ...receipt.binding, publisher_login: "other" } },
-    { ...receipt, binding: { ...receipt.binding, submitted_event: "COMMENT" } },
+    { ...receipt, binding: { ...receipt.binding, submitted_event: "APPROVE" } },
     { ...receipt, binding: { ...receipt.binding, trust_caps: ["ci-red"] } },
     { ...receipt, parent_approval: receipt },
     {},
@@ -1049,7 +1820,26 @@ describe("cmd:review-publication", () => {
     ]);
   });
 
-  it("should derive the GitHub event from the publishing account rather than reviewer metadata", () => {
+  it("should keep passing review content independent of whether its publisher authored the PR", () => {
+    const selfReview = createReviewPublicationReceipt({
+      ...review,
+      target: { ...common.target, pr_author_login: "publisher" },
+    });
+    expect(approvedBody(selfReview, "green")).toBe(
+      approvedBody(receipt, "green"),
+    );
+  });
+
+  it("should reject the retired APPROVE AI outcome", () => {
+    expect(() =>
+      createReviewPublicationReceipt({
+        ...review,
+        assessment: { ...review.assessment, substantive_verdict: "APPROVE" },
+      }),
+    ).toThrow();
+  });
+
+  it("should publish a passing AI review as COMMENT when another account authored the PR", () => {
     const approval = createReviewPublicationReceipt({
       ...review,
       target: { ...common.target, pr_author_login: "reviewer" },
@@ -1057,16 +1847,16 @@ describe("cmd:review-publication", () => {
     const result = runCommand(approval, { author: "reviewer" });
 
     expect(approval.binding).toMatchObject({
-      substantive_verdict: "APPROVE",
-      submitted_event: "APPROVE",
+      substantive_verdict: "PASS",
+      submitted_event: "COMMENT",
     });
     expect(result.status).toBe(0);
     expect(result.writes.map((write) => JSON.parse(write.body).event)).toEqual([
-      "APPROVE",
+      "COMMENT",
     ]);
   });
 
-  it("should downgrade the GitHub event when the publishing account is the PR author", () => {
+  it("should publish a passing AI review as COMMENT when its publisher authored the PR", () => {
     const approval = createReviewPublicationReceipt({
       ...review,
       target: { ...common.target, pr_author_login: "publisher" },
@@ -1074,7 +1864,7 @@ describe("cmd:review-publication", () => {
     const result = runCommand(approval, { author: "publisher" });
 
     expect(approval.binding).toMatchObject({
-      substantive_verdict: "APPROVE",
+      substantive_verdict: "PASS",
       submitted_event: "COMMENT",
     });
     expect(result.status).toBe(0);
@@ -1087,39 +1877,74 @@ describe("cmd:review-publication", () => {
     expect(payload.body).not.toContain("> [!WARNING]");
   });
 
-  it("should preserve a blocker verdict while a trust cap submits COMMENT", () => {
-    const approval = createReviewPublicationReceipt({
-      ...review,
-      assessment: {
-        ...review.assessment,
-        findings: [{ ...finding, kind: null, priority: "P1" }],
-        substantive_verdict: "REQUEST_CHANGES",
-        tests: { ...review.assessment.tests, confidence: "unconvincing" },
-        trust_caps: ["tests-unconvincing"],
-        alerts: {
-          must_change: null,
-          worth_considering: null,
-          unanchored: null,
+  it.each(["green", "red", "pending"] as const)(
+    "should retain capped blocker context while CI is %s",
+    (ciState) => {
+      const approval = createReviewPublicationReceipt({
+        ...review,
+        assessment: {
+          ...review.assessment,
+          findings: [{ ...finding, kind: null, priority: "P1" }],
+          substantive_verdict: "REQUEST_CHANGES",
+          tests: { ...review.assessment.tests, confidence: "unconvincing" },
+          trust_caps: ["tests-unconvincing"],
+          alerts: {
+            must_change: null,
+            worth_considering: null,
+            unanchored: null,
+          },
         },
-      },
-    });
-    const result = runCommand(approval);
+      });
+      const result = runCommand(
+        approval,
+        ciState === "red"
+          ? {
+              ci: JSON.stringify([
+                {
+                  name: "test",
+                  workflow: "CI",
+                  link: "https://github.com/example/project/actions/runs/12/job/34",
+                  bucket: "fail",
+                  state: "FAILURE",
+                },
+              ]),
+              ciExit: 1,
+            }
+          : ciState === "pending"
+            ? {
+                ci: JSON.stringify([
+                  {
+                    name: "test",
+                    workflow: "CI",
+                    link: "https://github.com/example/project/actions/runs/12/job/34",
+                    bucket: "pending",
+                    state: "IN_PROGRESS",
+                  },
+                ]),
+                ciExit: 8,
+              }
+            : {},
+      );
 
-    expect(approval.binding).toMatchObject({
-      substantive_verdict: "REQUEST_CHANGES",
-      submitted_event: "COMMENT",
-      trust_caps: ["tests-unconvincing"],
-    });
-    expect(result.status).toBe(0);
-    expect(result.writes.map((write) => JSON.parse(write.body).event)).toEqual([
-      "COMMENT",
-    ]);
-    const payload = JSON.parse(result.writes[0]!.body);
-    expect(payload.body).toMatch(/^📌\n\n⚠️/);
-    expect(payload.body).toContain("### 🚨 Must Change");
-    expect(payload.body).toContain("> [!WARNING]");
-    expect(payload.body).not.toContain("> [!CAUTION]");
-  });
+      expect(approval.binding).toMatchObject({
+        substantive_verdict: "REQUEST_CHANGES",
+        submitted_event: "COMMENT",
+        trust_caps: ["tests-unconvincing"],
+      });
+      expect(result.status).toBe(0);
+      expect(
+        result.writes.map((write) => JSON.parse(write.body).event),
+      ).toEqual(["COMMENT"]);
+      const payload = JSON.parse(result.writes[0]!.body);
+      expect(reviewStructure(payload.body)).toEqual(
+        ciState === "red"
+          ? { summary: "❌", alert: "CAUTION" }
+          : ciState === "pending"
+            ? { summary: "⏳", alert: "WARNING" }
+            : { summary: "⚠️", alert: "WARNING" },
+      );
+    },
+  );
 
   it.each(["author", "publisher"])(
     "should preserve blocker presentation when the PR author is %s",
@@ -1138,6 +1963,13 @@ describe("cmd:review-publication", () => {
           substantive_verdict: "REQUEST_CHANGES",
         },
       });
+      const independentReview = createReviewPublicationReceipt({
+        ...approval.approved_assessment,
+        target: { ...common.target, pr_author_login: "author" },
+      });
+      expect(approvedBody(approval, "green")).toBe(
+        approvedBody(independentReview, "green"),
+      );
       const result = runCommand(approval, { author });
 
       expect(approval.binding).toMatchObject({
@@ -1178,10 +2010,17 @@ const body = isWrite ? readFileSync(0, "utf8") : "";
 appendFileSync(process.env.PUBLICATION_RECORD, JSON.stringify({arguments: args, body, operation: isWrite ? "write" : "read"}) + "\\n");
 if (isWrite) { process.stdout.write('{"id":91}\\n'); process.exit(0); }
 if (Number(process.env.PUBLICATION_METADATA_EXIT)) process.exit(Number(process.env.PUBLICATION_METADATA_EXIT));
-if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
+if (args.some(arg => arg.endsWith("/branches/main/protection"))) { process.stderr.write("Branch not protected (HTTP 404)"); process.exit(1); }
+else if (args.some(arg => arg.includes("/rules/branches/main?"))) { const pages = JSON.parse(process.env.PUBLICATION_POLICY_RULES_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('"checks"') ? process.env.PUBLICATION_POLICY_RULES_AFTER_CI : process.env.PUBLICATION_POLICY_RULES); process.stdout.write(JSON.stringify(args.includes("--paginate") && args.includes("--slurp") ? pages : pages[0])); }
+else if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
+else if (args.includes("checks")) { process.stdout.write(process.env.PUBLICATION_CI); process.exit(Number(process.env.PUBLICATION_CI_EXIT)); }
+else if (args.some(arg => /actions\\/runs\\/12$/.test(arg))) process.stdout.write(process.env.PUBLICATION_WORKFLOW_RUN);
+else if (args.some(arg => arg.includes("/check-runs?"))) process.stdout.write(process.env.PUBLICATION_CHECK_RUNS);
+else if (args.some(arg => /pulls\\/36\\/reviews\\/91$/.test(arg))) { process.stderr.write("Not Found (HTTP 404)"); process.exit(1); }
+else if (args.some(arg => /reviews\\/91$/.test(arg))) process.stdout.write(process.env.PUBLICATION_REVIEW_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('"checks"') ? process.env.PUBLICATION_REVIEW_AFTER_CI : process.env.PUBLICATION_REVIEW);
 else if (args.includes("graphql")) process.stdout.write(process.env.PUBLICATION_THREAD_METADATA);
 else if (args.some(arg => /comments\\/81$/.test(arg))) process.stdout.write(JSON.stringify({pull_request_url: "https://api.github.com/repos/example/project/pulls/" + process.env.PUBLICATION_RELATION, issue_url: "https://api.github.com/repos/example/project/issues/" + process.env.PUBLICATION_RELATION}));
-else process.stdout.write(process.env.PUBLICATION_METADATA);
+else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('"checks"') ? process.env.PUBLICATION_METADATA_AFTER_CI : process.env.PUBLICATION_METADATA);
 `,
       { mode: 0o755 },
     );
@@ -1224,13 +2063,46 @@ else process.stdout.write(process.env.PUBLICATION_METADATA);
               ? []
               : ["--parent-approval", parentPath]),
           ]
-        : [executableScript, "publish", "--approval", approvalPath];
+        : [
+            executableScript,
+            options.action ?? "publish",
+            "--approval",
+            approvalPath,
+            ...(options.action === "update" ? ["--review-id", "91"] : []),
+          ];
     const result = spawnSync("bun", arguments_, {
       encoding: "utf8",
       env: {
         ...process.env,
         REVIEW_PUBLICATION_GH_BIN: executable,
         PUBLICATION_RECORD: recordPath,
+        PUBLICATION_CI:
+          options.ci ??
+          JSON.stringify([
+            {
+              name: "test",
+              bucket: "pass",
+              state: "SUCCESS",
+              workflow: "CI",
+              link: "https://github.com/example/project/actions/runs/12/job/34",
+              completedAt: "2026-09-28T10:00:00Z",
+            },
+          ]),
+        PUBLICATION_WORKFLOW_RUN: JSON.stringify(
+          options.workflowRun ?? {
+            id: 12,
+            head_sha: headOid,
+            path: ".github/workflows/ci.yml",
+            name: "CI",
+          },
+        ),
+        PUBLICATION_CI_EXIT: String(options.ciExit ?? 0),
+        PUBLICATION_REVIEW: JSON.stringify(options.existingReview ?? {}),
+        PUBLICATION_REVIEW_AFTER_CI: options.reviewAfterCi
+          ? JSON.stringify(options.reviewAfterCi)
+          : "",
+        PUBLICATION_CHECK_RUNS:
+          options.checkRuns ?? JSON.stringify([{ check_runs: [] }]),
         PUBLICATION_USER: options.publisher ?? "publisher",
         PUBLICATION_RELATION: String(options.relationPullNumber ?? 35),
         PUBLICATION_THREAD_METADATA:
@@ -1246,7 +2118,14 @@ else process.stdout.write(process.env.PUBLICATION_METADATA);
               },
             },
           }),
+        PUBLICATION_POLICY_RULES: JSON.stringify(
+          options.policyRulePages ?? [options.policyRules ?? []],
+        ),
+        PUBLICATION_POLICY_RULES_AFTER_CI: options.policyRulesAfterCi
+          ? JSON.stringify([options.policyRulesAfterCi])
+          : "",
         PUBLICATION_METADATA_EXIT: String(options.metadataExit ?? 0),
+        PUBLICATION_METADATA_AFTER_CI: options.metadataAfterCi ?? "",
         PUBLICATION_METADATA:
           options.metadata ??
           JSON.stringify({

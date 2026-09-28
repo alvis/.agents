@@ -127,9 +127,13 @@ function runBlock(
       options.metadata ?? JSON.stringify({ ...surface, ...options.surface }),
     );
     const checks = join(root, "checks.json");
-    writeFileSync(checks, options.checks ?? JSON.stringify([
-      { bucket: "pass", completedAt: "2026-09-28T13:00:00Z" },
-    ]));
+    writeFileSync(
+      checks,
+      options.checks ??
+        JSON.stringify([
+          { bucket: "pass", completedAt: "2026-09-28T13:00:00Z" },
+        ]),
+    );
     writeFileSync(
       join(root, "gh"),
       `#!/bin/bash
@@ -165,7 +169,7 @@ esac
           REVIEWED_HEAD_OID: options.reviewedHead ?? headOid,
           REVIEWED_BASE_OID: options.reviewedBase ?? baseOid,
           REVIEWED_BASE_REF: "master",
-          SUBSTANTIVE_VERDICT: options.verdict ?? "APPROVE",
+          SUBSTANTIVE_VERDICT: options.verdict ?? "PASS",
         },
       },
     );

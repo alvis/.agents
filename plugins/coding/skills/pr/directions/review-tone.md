@@ -46,7 +46,7 @@ Alerts belong in the overall body, never in an inline comment. At most one per s
 | `> [!WARNING]` | The review is incomplete or untrustworthy in a named way — whatever capped the event in [review.md](review.md), which owns that list |
 | `> [!IMPORTANT]` | A boundary: paths not reviewed, findings that could not anchor to a line |
 | `> [!NOTE]` | Verdict context needing no action |
-| `> [!TIP]` | One line on the highest-value optional improvement, when the verdict is `APPROVE` |
+| `> [!TIP]` | One line on the highest-value optional improvement, when the verdict is `PASS` |
 
 A malformed alert degrades silently into an ordinary blockquote, so the marker line carries no trailing text and the body sits on the following `>` line.
 

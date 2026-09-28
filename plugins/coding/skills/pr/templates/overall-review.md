@@ -91,11 +91,11 @@ Fill this and submit it as the review `body`, in the voice from [review-tone.md]
 
 Notes for the sections where the guidance is not self-evident:
 
-- **Opening marker** — render `📌` on its own line, then a blank line and the review facts prefixed by the verdict glyph — `✅` approve, `❌` request changes, or `⚠️` capped at comment — resolved from the substantive verdict in [review.md](../directions/review.md), exactly as `{{verdict_alert}}` is. Preserve one space between `{{zone}}` and `zone`.
+- **Opening marker** — render `📌` on its own line, then a blank line and the review facts prefixed by `❌` for a failed review or CI, `⏳` while CI runs, `⚠️` for green CI awaiting required human sign-off or a review trust cap, or `✅` after the recorded gates pass. A known failure takes precedence over a pending state. Preserve one space between `{{zone}}` and `zone`.
 - **Section headings** — every `###` heading starts with its template emoji; use Title Case exactly as shown, preserving conjunctions and prepositions such as “and” and “to”; never emit an unprefixed review section.
 - **Opening paragraph** — lead with the judgement, not a summary of the diff the author already knows: "This gets the retry logic right and the shape is good; two things need to change before it merges." Name the zone when it is not green, and lead with it when it is black.
 - **Markers** — every bullet opens with the same marker its inline comment carries, per [review-tone.md](../directions/review-tone.md): a P0–P4 badge when the finding claims a consequence, a tag when it demands a process step, an emoji when it demands nothing. The body and the inline comment must not disagree about a finding's level.
-- **Alerts** — at most one per section, and only where it changes what the author does next; [review-tone.md](../directions/review-tone.md) owns which alert means what. `> [!CAUTION]` opens *Must Change* under a substantive `REQUEST_CHANGES` that was not capped — a self-review downgrade does not clear it, because the blockers are still there, but a cap does, because a review that cannot stand behind its own evidence cannot declare merge blocked on it. `> [!TIP]` opens *Worth Considering* only under a substantive `APPROVE`, and carries the single highest-value optional improvement. An alert whose section is dropped is dropped with it.
+- **Alerts** — at most one per section, and only where it changes what the author does next; [review-tone.md](../directions/review-tone.md) owns which alert means what. `> [!CAUTION]` opens *Must Change* under a substantive `REQUEST_CHANGES` that was not capped — a self-authored review still reports the blockers, while a cap prevents a merge-blocking assertion from evidence the review cannot trust. `> [!TIP]` opens *Worth Considering* only under a substantive `PASS`, and carries the single highest-value optional improvement. An alert whose section is dropped is dropped with it.
 - **Goal and Requirements** — state whether the change matches its stated goal and spec and whether the implementation actually delivers each behavioral requirement. Say *skipped — goal/spec unknown* only for external goal/spec alignment. Render a deviation from the specification that Additional Notes fails to capture as an unanchored chore; an outstanding chore drives the verdict to request changes exactly as any other does.
 - **Tests** — answer whether these tests would fail if the implementation broke. "Coverage is fine" is not a verdict.
 - **Standards** — name each applicable standard checked and its result; list violations with the exact rule, affected location, evidence, and correction. Cover file structure, testing, documentation, universal code, function/API, and every applicable language-specific standard.
@@ -107,12 +107,13 @@ Notes for the sections where the guidance is not self-evident:
 
 *Verdict* is the one section that is never dropped, and it carries its own heading so the closing alert is never read as part of the exclusion list above it. Close it with the verdict in one sentence.
 
-`{{verdict_alert}}` is not a free choice. Resolve it from the **substantive verdict** and never from the submitted event, so a review that cannot be trusted never closes as if it needed no action. First matching row wins:
+`{{verdict_alert}}` is not a free choice. Resolve it from the **substantive verdict**, live CI, and declared human sign-off requirement, never from the submitted event. First matching row wins:
 
 | Substantive verdict, and what happened to it | `{{verdict_alert}}` |
 |---|---|
-| Capped at `COMMENT` because the review is incomplete or untrustworthy | `WARNING` — name which part could not be trusted |
-| `REQUEST_CHANGES`, submitted as-is or downgraded on your own PR | `CAUTION` — name what clears the blockers; where the event was downgraded, say that GitHub weakened the event and not the finding |
-| `APPROVE`, submitted as-is or downgraded on your own PR | `NOTE` — say so plainly and name anything to watch after merge |
+| `REQUEST_CHANGES` or red CI, regardless of pending evidence elsewhere | `CAUTION` — name what failed and what clears it |
+| Pending CI without a known failure | `WARNING` — explicitly say the review is waiting for CI |
+| Green CI with required human sign-off or a review trust cap | `WARNING` — name the outstanding sign-off or evidence gap |
+| Green CI and `PASS` without an outstanding sign-off or cap | `NOTE` — say so plainly and name anything to watch after merge |
 
-A cap and a downgrade are different. A cap says the review could not be trusted, so it outranks the findings reached with it. A downgrade says only that GitHub refused the event, which changes nothing about what the review found, so the substantive presentation remains intact.
+A trust cap makes the review evidence incomplete; report the limitation in the verdict while retaining any concrete findings.
