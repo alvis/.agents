@@ -2,7 +2,8 @@
 name: install
 description: "Install or refresh Essential's specialist agents for Claude Code, Codex, or Grok Build, and attach startup guidance in Grok's user configuration. Use when setting up this marketplace, installing its agent team, refreshing installed definitions, or restoring Grok's plugin instructions."
 requirements:
-  intelligence: medium
+  model: routine
+  effort: deliberate
 ---
 
 # Install

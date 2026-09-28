@@ -39,6 +39,18 @@ describe("Essential installation ownership", () => {
       const installed = runInstaller(sandbox, "install", harness);
       expect(installed.status, installed.stderr).toBe(0);
       expect(existsSync(join(sandbox.destination, ".essential/installation.json"))).toBe(true);
+      const installedAgent = readFileSync(
+        join(sandbox.destination, `first-agent${harness === "codex" ? ".toml" : ".md"}`),
+        "utf8",
+      );
+      if (harness === "codex") {
+        expect(installedAgent).not.toMatch(/^(?:model|model_reasoning_effort) = /m);
+      } else {
+        const frontmatter = JSON.parse(installedAgent.split("---\n", 3)[1]!) as Record<string, unknown>;
+        expect(frontmatter).not.toHaveProperty("model");
+        expect(frontmatter).not.toHaveProperty("effort");
+        if (harness === "claude") expect(frontmatter.memory).toBe("project");
+      }
 
       const removed = runInstaller(sandbox, "uninstall", harness);
 
@@ -460,7 +472,7 @@ function writeTemplate(pluginRoot: string, name: string): void {
   writeFileSync(join(template, "frontmatter/meta.json"), JSON.stringify({
     name,
     description: "Test role. Preferably named Ava, Kit, or June when the main agent spawns this role.",
-    intelligence: "inherit",
+    requirements: { model: "capable", effort: "deliberate" },
   }));
   writeFileSync(join(template, "frontmatter/claude.json"), '{"memory":"project"}');
   writeFileSync(join(template, "frontmatter/codex.json"), "{}");

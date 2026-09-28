@@ -1,5 +1,8 @@
 {
   "name": "test-runner",
   "description": "Test Runner who executes full lint/type/test sweeps on demand and reports back a summarized, out-of-context result. Use proactively when another agent needs a noisy full-repo or full-package sweep run without burning its own context on raw output. Must be used for mechanical execution, not test authoring or design. Preferably named Tess, Pip, or Bo when the main agent spawns this role.",
-  "intelligence": "mechanical"
+  "requirements": {
+    "model": "routine",
+    "effort": "deliberate"
+  }
 }

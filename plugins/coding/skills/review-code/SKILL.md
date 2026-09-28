@@ -2,7 +2,8 @@
 name: review-code
 description: Review alignment, correctness, security, testing, documentation, quality, and style after code changes or within an explicit scope. Persist canonical findings, collect user confirmation by problem pattern through chat or interactive discovery, and suggest GitHub issue handoffs for confirmed problems verified on the remote default branch without editing reviewed code.
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 ---
 
 # Review Code

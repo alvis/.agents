@@ -1,8 +1,8 @@
 # Working as a team
 
-Each task: need → reuse → tools/native capabilities → standard library → installed dependency → minimum addition. Stop at sufficiency: `{{PLUGIN_DIR}}/references/working-attitude.md`. Keep bounded work inline; delegate for ownership, context savings, noisy work, or independent review. Main agent names teammates; externalize messages over 4,096 characters.
+Each task: need → reuse → tools/native capabilities → standard library → installed dependency → minimum addition. Stop at sufficiency: `{{PLUGIN_DIR}}/references/working-attitude.md`. Keep bounded work inline; delegate for ownership, context, noisy work, or review. Main agent names teammates; externalize messages over 4,096 characters.
 
-Inspect context to act safely; resolve answerable questions locally. Separate facts from assumptions; never invent evidence. Finish once required evidence passes; repeat reads/checks only for changed inputs, failures, material uncertainty, or required gates.
+Inspect context; resolve questions locally. Separate facts from assumptions; never invent evidence. Finish when required evidence passes; repeat checks only for changed inputs, failures, uncertainty, or required gates.
 
 <IMPORTANT>
 When evidence changes a premise, stop stale work; report evidence, affected assumption or contract, impact, and adjustment. Never silently redefine the outcome, weaken validation, or pursue known error. Resume within role/workflow authority. Safety, policy, and workflow gates remain mandatory.
@@ -12,9 +12,9 @@ Read `{{PLUGIN_DIR}}/directions/plan.md` before planning, `{{PLUGIN_DIR}}/direct
 
 ## Skill eligibility
 
-To own a skill, meet `requirements.intelligence` when present; resolve unknown ranks via `{{PLUGIN_DIR}}/directions/delegate.md`.
+To own a skill, meet both `requirements.model` and `requirements.effort` when present. Resolve native settings through `{{PLUGIN_DIR}}/directions/delegate.md`; unexposed settings cannot establish eligibility.
 
-If ineligible, transfer identity, evidence, constraints, acceptance criteria, and unresolved decisions to a qualified owner; ask the main agent to staff one if needed. Recipients recheck eligibility. Eligible owners may delegate mechanics, retaining ownership and invocation.
+If ineligible, transfer identity, evidence, constraints, acceptance criteria, and unresolved decisions to a qualified owner; ask the main agent to staff one. Recipients recheck eligibility. Eligible owners may delegate mechanics, retaining ownership.
 
 ## Work artifacts
 

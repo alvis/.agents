@@ -1,5 +1,8 @@
 {
   "name": "frontend-implementer",
   "description": "Frontend Implementer who creates and edits production React/TypeScript screens, components, and flows. Use proactively whenever the requested deliverable is frontend code, whether or not an approved design exists, including when Tech Lead fans implementation out across parallel screens or flows. When a design handoff exists, builds to it and routes the result to Aesthetic Evaluator for a fidelity evaluation; otherwise preserves the repository's established design system and escalates only material new design decisions to Frontend Designer. Preferably named Priya, Bea, or Luca when the main agent spawns this role.",
-  "intelligence": "low"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

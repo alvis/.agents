@@ -34,6 +34,13 @@ import {
   resolve,
 } from "node:path";
 
+import {
+  injectRequirementsLine,
+  loadAgentSources,
+  readAgentRequirements,
+} from "../plugins/essential/skills/install/scripts/stitch_agent.ts";
+import type { AgentSources } from "../plugins/essential/skills/install/scripts/stitch_agent.ts";
+
 import { resolveHookReceipts } from "./opencode_hook_receipts.ts";
 
 import type { HookReceipt } from "./opencode_hook_receipts.ts";
@@ -857,8 +864,16 @@ function agentPermissions(name: string, claude: JsonObject): readonly string[] {
 }
 
 function writeAgent(agentRoot: string, destination: string): string {
-  const meta = readJsonObject(join(agentRoot, "frontmatter", "meta.json"));
-  const claude = readJsonObject(join(agentRoot, "frontmatter", "claude.json"));
+  let sources: AgentSources;
+  try {
+    sources = loadAgentSources(agentRoot);
+  } catch (error) {
+    throw new ProjectionError(
+      `invalid canonical metadata for agent ${basename(agentRoot)}: ${(error as Error).message}`,
+    );
+  }
+  const meta = sources.metadata;
+  const claude = sources.claude;
   const name = meta.name;
   const description = meta.description;
   if (
@@ -901,7 +916,10 @@ function writeAgent(agentRoot: string, destination: string): string {
     frontmatter.push("  bash: deny", "  external_directory: deny");
   }
   frontmatter.push("---", "");
-  const body = readFileSync(join(agentRoot, "base.md"), "utf8").trim();
+  const body = injectRequirementsLine(
+    readFileSync(join(agentRoot, "base.md"), "utf8").trim(),
+    readAgentRequirements(meta),
+  );
   writeFileSync(
     destination,
     [...frontmatter, initialPrompt.trim(), "", body, ""].join("\n"),

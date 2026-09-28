@@ -2,7 +2,8 @@
 name: issue
 description: "Create, update, find, and triage GitHub issues with repository templates, relevant metadata, bounded title/body retrieval, and evidence-backed investigation. Use for issue reporting, duplicate discovery, backlog triage, or refreshing issue information. Pull-request publication remains owned by coding:pr; implementation fixes remain owned by coding:fix."
 requirements:
-  intelligence: high
+  model: routine
+  effort: instinctive
 ---
 
 # GitHub Issues

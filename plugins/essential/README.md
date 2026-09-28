@@ -28,7 +28,8 @@ Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLA
 | `./directions/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
 | `./directions/subagent.md` | At the start of an assigned subagent task | The whole worker contract: stable reference, report shape and ceiling, read-only state and resolver gate, escalation, ineligibility transfer |
 | `references/output-manifest.md` | When returning a `generated_files` manifest, or writing Markdown into `.state/` | Manifest shape, the 16,384-byte work-Markdown rule the writer observes, the general length rule |
-| `./directions/delegate.md` | Before dispatching a subagent or composing a first task handover | Specialist routing, required prompt fields, extensible Context, message ceiling, teammate naming, nesting, intelligence resolution |
+| `./directions/delegate.md` | Before dispatching a subagent or composing a first task handover | Specialist routing, required prompt fields, extensible Context, message ceiling, teammate naming, nesting, model and effort selection |
+| `references/models.md` | When interpreting portable minimums or native profiles | Model Tier, Effort, task shapes, provider mapping |
 
 Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` (shared durable directory entrypoints), and `./templates/initiative.md` (Essential's initiative-domain semantic authority). Domain plugins own their own semantic templates.
 

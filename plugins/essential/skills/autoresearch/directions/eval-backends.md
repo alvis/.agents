@@ -13,7 +13,7 @@ All three backends share one contract:
 
 ## Programmatic backend
 
-One mechanical-intelligence agent per candidate runs `eval.programmatic.command` and parses the result. In code mode the command runs inside the candidate's own worktree (after the brief's `setup_command` has run once per worktree, before any eval); in artifact mode it runs in the run dir with the candidate's artifact path substituted in.
+One agent whose observed profile meets the Routine + Deliberate task minimum per candidate runs `eval.programmatic.command` and parses the result. In code mode the command runs inside the candidate's own worktree (after the brief's `setup_command` has run once per worktree, before any eval); in artifact mode it runs in the run dir with the candidate's artifact path substituted in.
 
 Its first task handover follows [delegate.md](../../../directions/delegate.md) and uses this payload:
 
@@ -55,7 +55,7 @@ Inputs:
 
 ## Judge panel backend
 
-Per candidate, spawn `eval.judges.count` independent high-intelligence judge agents (minimum 3, must be odd).
+Per candidate, spawn `eval.judges.count` independent judges selected for the full scoring task under `essential:directions/delegate.md` (minimum 3, must be odd).
 
 **INDEPENDENCE IS ABSOLUTE.** Each judge's payload contains ONLY: the brief's rubric, the scale with its anchors, the brief's constraints, and the candidate artifact. It NEVER contains generator reasoning, sibling candidates, sibling scores, round history, or the baseline. Judges are fresh spawns with no shared context with generators or with each other — a judge that knows what round it is, what the last winner scored, or what its co-judges think is not an independent judge, and its score is worthless as evidence.
 

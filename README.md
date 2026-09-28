@@ -183,30 +183,32 @@ Use [essential:install](plugins/essential/skills/install/SKILL.md) to install or
 
 ### Roster
 
-| Agent | Role | Intelligence |
-| --- | --- | --- |
-| `tech-lead` | Tech Lead — decomposes projects, decides the approach, and routes milestones | high |
-| `design-lead` | Design Lead — decomposes and directs design initiatives across platforms | medium |
-| `ai-research-lead` | AI Research Lead — decomposes and directs ML/RL/AI research initiatives | high |
-| `principal-engineer` | Principal Engineer — escalation sink for hard debugging/perf/algorithms | high |
-| `generalist-engineer` | Generalist Engineer — libraries, data pipelines, CLIs, glue code | low |
-| `data-architect` | Data Architect — schemas, data models, pipelines | medium |
-| `frontend-designer` | Frontend Designer — designs all app screens (web/mobile/desktop), never builds | high |
-| `frontend-implementer` | Frontend Implementer — creates and edits production React/TS UI, with or without a design handoff | low |
-| `desktop-implementer` | Desktop Implementer — builds approved designs as Electron/desktop apps | low |
-| `mobile-implementer` | Mobile Implementer — builds approved designs as mobile apps in React Native | low |
-| `ml-engineer` | ML Engineer — full ML lifecycle: data analysis and ML/AI features | medium |
-| `devops` | DevOps — CI/CD and infra automation, background passes | low |
-| `harness-eval-engineer` | Harness & Eval Engineer — eval suites, benchmarks, and prototypes as code | medium |
-| `testing-evangelist` | Testing Evangelist — authors test suites via TDD | low |
-| `test-runner` | Test Runner — mechanical lint/type/test sweeps, summarized | mechanical |
-| `code-quality-critic` | Code Quality Critic — the independent quality gate, day-to-day quality and security review | medium |
-| `security-champion` | Security Champion — deep security review, explicit request only | high |
-| `adversarial-red-team` | Adversarial Red-Team — PoC exploits in an isolated worktree | medium |
-| `aesthetic-evaluator` | Aesthetic Evaluator — design and build-vs-design judgment | high |
-| `specification-expert` | Specification Expert — DESIGN.md, requirements, user docs, Notion | low |
-| `project-initializer` | Project Initializer — run-once bootstrap | low |
-| `workflow-optimizer` | Workflow Optimizer — meta-review of agents/skills, proposes diffs only | medium |
+Each role and skill declares independent minimums in `requirements.model` and `requirements.effort`. The [delegation procedure](plugins/essential/directions/delegate.md) selects launch settings for the anticipated assignment using the [model and effort reference](plugins/essential/references/models.md); role definitions do not pin native settings.
+
+| Agent | Role |
+| --- | --- |
+| `tech-lead` | Tech Lead — decomposes projects, decides the approach, and routes milestones |
+| `design-lead` | Design Lead — decomposes and directs design initiatives across platforms |
+| `ai-research-lead` | AI Research Lead — decomposes and directs ML/RL/AI research initiatives |
+| `principal-engineer` | Principal Engineer — escalation sink for hard debugging/perf/algorithms |
+| `generalist-engineer` | Generalist Engineer — libraries, data pipelines, CLIs, glue code |
+| `data-architect` | Data Architect — schemas, data models, pipelines |
+| `frontend-designer` | Frontend Designer — designs all app screens (web/mobile/desktop), never builds |
+| `frontend-implementer` | Frontend Implementer — creates and edits production React/TS UI, with or without a design handoff |
+| `desktop-implementer` | Desktop Implementer — builds approved designs as Electron/desktop apps |
+| `mobile-implementer` | Mobile Implementer — builds approved designs as mobile apps in React Native |
+| `ml-engineer` | ML Engineer — full ML lifecycle: data analysis and ML/AI features |
+| `devops` | DevOps — CI/CD and infra automation, background passes |
+| `harness-eval-engineer` | Harness & Eval Engineer — eval suites, benchmarks, and prototypes as code |
+| `testing-evangelist` | Testing Evangelist — authors test suites via TDD |
+| `test-runner` | Test Runner — mechanical lint/type/test sweeps, summarized |
+| `code-quality-critic` | Code Quality Critic — the independent quality gate, day-to-day quality and security review |
+| `security-champion` | Security Champion — deep security review, explicit request only |
+| `adversarial-red-team` | Adversarial Red-Team — PoC exploits in an isolated worktree |
+| `aesthetic-evaluator` | Aesthetic Evaluator — design and build-vs-design judgment |
+| `specification-expert` | Specification Expert — DESIGN.md, requirements, user docs, Notion |
+| `project-initializer` | Project Initializer — run-once bootstrap |
+| `workflow-optimizer` | Workflow Optimizer — meta-review of agents/skills, proposes diffs only |
 
 Each agent's `## Collaboration` section records proven role-level collaborators and delegation targets using role-only definition names. These are runtime defaults, not an allowlist; naming, `agent_id` messaging, main-agent brokering, and nested-spawn policy live in `plugins/essential/hooks/ALLAGENT.md`.
 

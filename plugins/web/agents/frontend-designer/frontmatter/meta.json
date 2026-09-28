@@ -1,5 +1,8 @@
 {
   "name": "frontend-designer",
   "description": "Frontend Designer who produces UI/UX designs for app screens across web, mobile, and desktop, turning product intent into polished, on-brand layouts. Use proactively only when the requested deliverable is a design or redesign, visual or interaction decisions, layouts, palettes, typography, or a design critique before Aesthetic Evaluator's aesthetic sign-off. Never use Frontend Designer to create or edit production React/TypeScript, React Native, or Electron code; implementation belongs to Frontend Implementer (web), Mobile Implementer (mobile), or Desktop Implementer (desktop), even when the request mentions a screen, component, or flow. Preferably named Coco, Iris, or Emi when the main agent spawns this role.",
-  "intelligence": "high"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

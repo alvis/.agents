@@ -2,7 +2,8 @@
 name: discover
 description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, brainstorming approaches, an architecture interview, reference semantics, a disposable prototype, a readiness check, an operations board of local state, an account of a finished build, or explaining recorded decisions (ADRs and local state) to a newcomer; researched option selection belongs to essential:decide."
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "<problem>|decisions [selector…] [--mode=blindspots|options|interview|reference|prototype|readiness|state|implementation|decisions] [--only=active,proposed,superseded] [--persist] [--work-id=<id>]"
 ---
 

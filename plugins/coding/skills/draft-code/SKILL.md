@@ -2,7 +2,8 @@
 name: draft-code
 description: Draft TypeScript-compliant code skeletons with canonical TODO(implementation) placeholders. Use when starting an already-specified implementation or preparing typed production structure for later completion; do not implement business logic or create ambiguous plain TODO markers.
 requirements:
-  intelligence: low
+  model: capable
+  effort: deliberate
 context: fork
 argument-hint: "<instruction>"
 ---

@@ -8,13 +8,12 @@ import {
 import { basename, dirname, relative, resolve, sep } from "node:path";
 
 type JsonObject = Record<string, unknown>;
-type HarnessProjection = Record<string, string>;
-interface IntelligenceProjection {
-  readonly rank: number | null;
-  readonly best_for: readonly string[];
-  readonly claude: HarnessProjection;
-  readonly codex: HarnessProjection;
-  readonly grok: HarnessProjection;
+type ModelTier = "routine" | "capable" | "expert";
+type Effort = "instinctive" | "deliberate" | "exhaustive";
+/** records portable minimums for one agent role */
+export interface AgentRequirements {
+  readonly model: ModelTier;
+  readonly effort: Effort;
 }
 
 /** Frontmatter and body split sources of one agent template directory. */
@@ -27,12 +26,9 @@ export interface AgentSources {
 
 const scriptDirectory = import.meta.dirname;
 
-/** Absolute path of the intelligence-level matrix shipped with the plugin. */
-export const intelligenceLevelsPath = resolve(
-  scriptDirectory,
-  "../references/intelligence-levels.json",
-);
 const agentName = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const modelTiers = new Set<ModelTier>(["routine", "capable", "expert"]);
+const efforts = new Set<Effort>(["instinctive", "deliberate", "exhaustive"]);
 const preferredNames =
   /(?:^| )Preferably named ([A-Z][a-z]{1,15}), ([A-Z][a-z]{1,15}), or ([A-Z][a-z]{1,15}) when the main agent spawns this role\.$/;
 const fixedRoutingLanguage =
@@ -77,32 +73,36 @@ export const stateSystemsReferenceAlias =
   "@essential:references/state-systems.md";
 /** Plugin-relative path of the injected state-system authority. */
 export const stateSystemsReferencePath = "references/state-systems.md";
-const metadataFields = new Set(["name", "description", "intelligence"]);
+const metadataFields = new Set(["name", "description", "requirements"]);
+const requirementFields = new Set(["model", "effort"]);
+const obsoleteSelectionFields = [
+  "intelligence",
+  "intelligenceLevel",
+  "modelTier",
+  "reasoningLevel",
+  "model",
+  "effort",
+  "model_reasoning_effort",
+] as const;
 const claudeDerivedFields = new Set([
   "name",
   "description",
-  "intelligence",
-  "intelligenceLevel",
-  "model",
-  "effort",
+  "requirements",
+  ...obsoleteSelectionFields,
 ]);
 const codexDerivedFields = new Set([
   "name",
   "description",
   "nickname_candidates",
-  "intelligence",
-  "intelligenceLevel",
-  "model",
-  "model_reasoning_effort",
+  "requirements",
+  ...obsoleteSelectionFields,
   "developer_instructions",
 ]);
 const grokDerivedFields = new Set([
   "name",
   "description",
-  "intelligence",
-  "intelligenceLevel",
-  "model",
-  "effort",
+  "requirements",
+  ...obsoleteSelectionFields,
 ]);
 
 /** Error thrown when an agent template violates the split-source contract. */
@@ -156,105 +156,6 @@ function readJsonObject(path: string): JsonObject {
 }
 
 /**
- * reads and validates the intelligence-level matrix from disk.
- * @param path matrix file to read, defaulting to the shipped reference
- * @returns level name to harness projection mapping
- */
-export function loadIntelligenceLevels(
-  path = intelligenceLevelsPath,
-): Record<string, IntelligenceProjection> {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    throw new AgentTemplateError(
-      `invalid intelligence-level matrix ${path}: ${(error as Error).message}`,
-    );
-  }
-  if (!object(raw) || Object.keys(raw).length === 0)
-    throw new AgentTemplateError(
-      "intelligence-level matrix must be a non-empty object",
-    );
-  const matrix = raw as Record<string, IntelligenceProjection>;
-  const ranks: number[] = [];
-  const examples = new Set<string>();
-  for (const [level, projection] of Object.entries(matrix)) {
-    if (!object(projection))
-      throw new AgentTemplateError("invalid intelligence-level matrix entry");
-    if (
-      !sameKeys(
-        projection,
-        new Set(["rank", "best_for", "claude", "codex", "grok"]),
-      )
-    )
-      throw new AgentTemplateError(
-        `intelligence level ${quote(level)} must define rank, best_for, claude, codex, and grok`,
-      );
-    const rank = projection.rank;
-    if (level === "inherit") {
-      if (rank !== null)
-        throw new AgentTemplateError("inherit intelligence rank must be null");
-    } else if (!Number.isInteger(rank) || (rank as number) < 0)
-      throw new AgentTemplateError(
-        `intelligence level ${quote(level)} must have a non-negative integer rank`,
-      );
-    else ranks.push(rank as number);
-    if (
-      !Array.isArray(projection.best_for) ||
-      projection.best_for.length === 0 ||
-      !projection.best_for.every(
-        (example) => typeof example === "string" && example.trim() !== "",
-      )
-    )
-      throw new AgentTemplateError(
-        `intelligence level ${quote(level)} best_for must contain task examples`,
-      );
-    for (const example of projection.best_for) {
-      if (examples.has(example))
-        throw new AgentTemplateError(
-          "intelligence task examples must be unique across levels",
-        );
-      examples.add(example);
-    }
-    for (const [harness, allowed] of [
-      ["claude", new Set(["model", "effort"])],
-      ["codex", new Set(["model", "model_reasoning_effort"])],
-      ["grok", new Set(["model", "effort"])],
-    ] as const) {
-      const fields = projection[harness];
-      if (
-        !object(fields) ||
-        Object.keys(fields).some((field) => !allowed.has(field))
-      )
-        throw new AgentTemplateError(
-          `invalid ${harness} projection for intelligence level ${quote(level)}`,
-        );
-      if (Object.values(fields).some((value) => typeof value !== "string"))
-        throw new AgentTemplateError(
-          `${harness} projection values must be strings for ${quote(level)}`,
-        );
-    }
-  }
-  if (!("inherit" in matrix))
-    throw new AgentTemplateError(
-      "intelligence-level matrix must define inherit",
-    );
-  if (new Set(ranks).size !== ranks.length)
-    throw new AgentTemplateError("concrete intelligence ranks must be unique");
-  const sorted = [...ranks].sort((left, right) => left - right);
-  if (sorted.some((rank, index) => rank !== index))
-    throw new AgentTemplateError(
-      "concrete intelligence ranks must be contiguous from zero",
-    );
-  return matrix;
-}
-
-/** Validated intelligence-level matrix loaded once at module start. */
-export const intelligenceLevels = loadIntelligenceLevels();
-/** Level names accepted in agent metadata, in matrix declaration order. */
-export const validIntelligenceLevels = Object.keys(intelligenceLevels);
-
-/**
  * extracts the three distinct preferred short names from a role description.
  * @param description metadata description ending in the preferred-names sentence
  * @returns the three capitalized nickname candidates in order
@@ -274,52 +175,13 @@ export function preferredNameCandidates(
   return names;
 }
 
-function legacyAgentSources(path: string): AgentSources {
-  const legacy = readJsonObject(path);
-  const take = (name: string): unknown => {
-    const value = legacy[name];
-    delete legacy[name];
-    return value;
-  };
-  const name = take("name");
-  const description = take("description");
-  let intelligence = take("intelligence");
-  const previous = take("intelligenceLevel");
-  if (intelligence !== undefined && previous !== undefined)
-    throw new AgentTemplateError(
-      "legacy frontmatter must not define both intelligence keys",
-    );
-  intelligence ??= previous;
-  if (intelligence === undefined) {
-    const projection: JsonObject = {};
-    for (const field of ["model", "effort"])
-      if (field in legacy) projection[field] = take(field);
-    intelligence = Object.entries(intelligenceLevels).find(
-      ([, value]) =>
-        JSON.stringify(value.claude) === JSON.stringify(projection),
-    )?.[0];
-    if (intelligence === undefined)
-      throw new AgentTemplateError(
-        "legacy model/effort pair is not represented by the intelligence matrix",
-      );
-  }
-  return {
-    metadata: { name, description, intelligence },
-    claude: legacy,
-    codex: {},
-    grok: {},
-  };
-}
-
 /**
  * reads and validates the split frontmatter sources of one agent template.
  * @param templateDirectory directory holding base.md and frontmatter/
- * @param options allowLegacy accepts a single legacy claude.json frontmatter
  * @returns validated metadata and per-harness overlay objects
  */
 export function loadAgentSources(
   templateDirectory: string,
-  options: { readonly allowLegacy?: boolean } = {},
 ): AgentSources {
   const frontmatter = resolve(templateDirectory, "frontmatter");
   const paths = Object.fromEntries(
@@ -337,13 +199,7 @@ export function loadAgentSources(
       existsSync(path) && statSync(path).isFile(),
     ]),
   );
-  const legacy =
-    options.allowLegacy === true &&
-    present["claude.json"] &&
-    !present["meta.json"] &&
-    !present["codex.json"] &&
-    !present["grok.json"];
-  if (!Object.values(present).every(Boolean) && !legacy) {
+  if (!Object.values(present).every(Boolean)) {
     const missing = Object.keys(present).find((name) => !present[name]);
     throw new AgentTemplateError(
       `missing frontmatter/${missing} in ${templateDirectory}`,
@@ -351,25 +207,31 @@ export function loadAgentSources(
   }
   const root = realpathSync(templateDirectory);
   for (const path of [
-    ...(legacy ? [paths["claude.json"]!] : Object.values(paths)),
+    ...Object.values(paths),
     base,
   ])
     if (!inside(root, realpathSync(path)))
       throw new AgentTemplateError(
         `template symlink or path escapes agent directory: ${path}`,
       );
-  const sources = legacy
-    ? legacyAgentSources(paths["claude.json"]!)
-    : {
-        metadata: readJsonObject(paths["meta.json"]!),
-        claude: readJsonObject(paths["claude.json"]!),
-        codex: readJsonObject(paths["codex.json"]!),
-        grok: readJsonObject(paths["grok.json"]!),
-      };
+  const sources = {
+    metadata: readJsonObject(paths["meta.json"]!),
+    claude: readJsonObject(paths["claude.json"]!),
+    codex: readJsonObject(paths["codex.json"]!),
+    grok: readJsonObject(paths["grok.json"]!),
+  };
+  const obsolete = Object.keys(sources.metadata).find((field) =>
+    obsoleteSelectionFields.some((obsoleteField) => obsoleteField === field),
+  );
+  if (obsolete !== undefined)
+    throw new AgentTemplateError(
+      `obsolete frontmatter/meta.json field ${quote(obsolete)}`,
+    );
   if (!sameKeys(sources.metadata, metadataFields))
     throw new AgentTemplateError(
-      "frontmatter/meta.json must contain exactly name, description, and intelligence",
+      "frontmatter/meta.json must contain exactly name, description, and requirements",
     );
+  readAgentRequirements(sources.metadata);
   for (const [harness, overlay, reserved] of [
     ["claude", sources.claude, claudeDerivedFields],
     ["codex", sources.codex, codexDerivedFields],
@@ -404,9 +266,42 @@ export function loadAgentSources(
 }
 
 /**
+ * validates the independent portable minimums of an agent definition.
+ * @param metadata shared frontmatter metadata
+ * @returns validated model and effort minimums
+ */
+export function readAgentRequirements(metadata: JsonObject): AgentRequirements {
+  const requirements = metadata.requirements;
+  if (!object(requirements))
+    throw new AgentTemplateError(
+      "frontmatter/meta.json requirements must be an object with model and effort",
+    );
+  const unsupported = Object.keys(requirements).find(
+    (key) => !requirementFields.has(key),
+  );
+  if (unsupported !== undefined)
+    throw new AgentTemplateError(`unsupported requirements.${unsupported}`);
+  if (!("model" in requirements))
+    throw new AgentTemplateError("missing requirements.model");
+  if (!("effort" in requirements))
+    throw new AgentTemplateError("missing requirements.effort");
+  const model = requirements.model;
+  if (typeof model !== "string" || !modelTiers.has(model as ModelTier))
+    throw new AgentTemplateError(
+      `invalid requirements.model ${quote(model)}: expected routine, capable, or expert`,
+    );
+  const effort = requirements.effort;
+  if (typeof effort !== "string" || !efforts.has(effort as Effort))
+    throw new AgentTemplateError(
+      `invalid requirements.effort ${quote(effort)}: expected instinctive, deliberate, or exhaustive`,
+    );
+  return { model: model as ModelTier, effort: effort as Effort };
+}
+
+/**
  * validates one agent's metadata and body against the shared agent contract.
  * @param sources validated split frontmatter of the template
- * @param body base.md contents before intelligence injection
+ * @param body base.md contents before minimum injection
  */
 export function validateAgentContract(
   sources: AgentSources,
@@ -422,11 +317,7 @@ export function validateAgentContract(
     throw new AgentTemplateError(
       `invalid permissionMode ${quote(permission)}: expected one of ${[...validPermissionModes].join(", ")}`,
     );
-  const intelligence = sources.metadata.intelligence;
-  if (typeof intelligence !== "string" || !(intelligence in intelligenceLevels))
-    throw new AgentTemplateError(
-      `invalid intelligence ${quote(intelligence)}: expected one of ${validIntelligenceLevels.join(", ")}`,
-    );
+  readAgentRequirements(sources.metadata);
   if ("tools" in sources.claude || "tools" in sources.codex)
     throw new AgentTemplateError(
       "agent definitions must omit tools to inherit runtime capabilities",
@@ -521,21 +412,40 @@ function resolveEssentialReferences(
   );
 }
 
-function injectIntelligenceLine(body: string, intelligence: string): string {
-  if (body.includes("Intelligence level:"))
+/**
+ * formats portable role minimums for native and adapted agent bodies.
+ * @param requirements validated independent minimums
+ * @returns one harness-neutral statement
+ */
+function minimumRequirementsLine(requirements: AgentRequirements): string {
+  const model =
+    requirements.model[0]!.toUpperCase() + requirements.model.slice(1);
+  const effort =
+    requirements.effort[0]!.toUpperCase() + requirements.effort.slice(1);
+  return `Minimum: ${model} Model Tier, ${effort} Effort.`;
+}
+
+/**
+ * inserts portable minima immediately after an agent title.
+ * @param body base agent body
+ * @param requirements validated independent minimums
+ * @returns agent body with a single minimum statement
+ */
+export function injectRequirementsLine(
+  body: string,
+  requirements: AgentRequirements,
+): string {
+  if (body.includes("Intelligence level:") || body.includes("Minimum:"))
     throw new AgentTemplateError(
-      "base.md must not duplicate the derived intelligence line",
+      "base.md must not duplicate the derived minimum statement",
     );
   const newline = body.indexOf("\n");
   const title = newline < 0 ? body : body.slice(0, newline);
   if (!title.startsWith("# "))
     throw new AgentTemplateError(
-      "base.md must start with an H1 title for intelligence injection",
+      "base.md must start with an H1 title for minimum injection",
     );
-  const statement =
-    intelligence === "inherit"
-      ? "Intelligence level: inherit; resolve the effective harness level before accepting a skill."
-      : `Intelligence level: ${intelligence}.`;
+  const statement = minimumRequirementsLine(requirements);
   const remainder = newline < 0 ? "" : body.slice(newline + 1);
   return `${title}\n\n${statement}\n${remainder}`;
 }
@@ -564,18 +474,15 @@ function template(
   options: {
     readonly essentialRoot?: string;
     readonly referenceRoot?: string;
-    readonly allowLegacy?: boolean;
   },
 ): { sources: AgentSources; body: string } {
-  const sources = loadAgentSources(templateDirectory, {
-    allowLegacy: options.allowLegacy,
-  });
+  const sources = loadAgentSources(templateDirectory);
   let body = readFileSync(
     resolve(templateDirectory, "base.md"),
     "utf8",
   ).replace(/^\n+/, "");
   validateAgentContract(sources, body);
-  body = injectIntelligenceLine(body, String(sources.metadata.intelligence));
+  body = injectRequirementsLine(body, readAgentRequirements(sources.metadata));
   body = injectStateSystemAccess(body);
   return { sources, body };
 }
@@ -583,8 +490,7 @@ function template(
 /**
  * stitches one split template into the Claude Markdown agent file.
  * @param templateDirectory directory holding base.md and frontmatter/
- * @param options essentialRoot and referenceRoot resolve @essential aliases;
- *   allowLegacy accepts legacy single-file frontmatter
+ * @param options essentialRoot and referenceRoot resolve @essential aliases
  * @returns full Claude agent file including frontmatter
  */
 export function stitchAgentDefinition(
@@ -592,18 +498,14 @@ export function stitchAgentDefinition(
   options: {
     readonly essentialRoot?: string;
     readonly referenceRoot?: string;
-    readonly allowLegacy?: boolean;
   } = {},
 ): string {
   const { sources, body } = template(templateDirectory, options);
-  const intelligence =
-    intelligenceLevels[String(sources.metadata.intelligence)]!;
   const projected: JsonObject = {
     name: sources.metadata.name,
     description: sources.metadata.description,
   };
   if ("color" in sources.claude) projected.color = sources.claude.color;
-  Object.assign(projected, intelligence.claude);
   for (const [field, value] of Object.entries(sources.claude))
     if (field !== "color") projected[field] = value;
   const yaml = JSON.stringify(projected, undefined, 2);
@@ -664,8 +566,7 @@ function tomlValue(value: unknown): string {
 /**
  * stitches one split template into the Codex TOML agent file.
  * @param templateDirectory directory holding base.md and frontmatter/
- * @param options essentialRoot and referenceRoot resolve @essential aliases;
- *   allowLegacy accepts legacy single-file frontmatter
+ * @param options essentialRoot and referenceRoot resolve @essential aliases
  * @returns full Codex agent file as scalar TOML fields
  */
 export function stitchCodexAgentDefinition(
@@ -673,7 +574,6 @@ export function stitchCodexAgentDefinition(
   options: {
     readonly essentialRoot?: string;
     readonly referenceRoot?: string;
-    readonly allowLegacy?: boolean;
   } = {},
 ): string {
   const { sources, body } = template(templateDirectory, options);
@@ -687,9 +587,6 @@ export function stitchCodexAgentDefinition(
       "nickname_candidates",
       preferredNameCandidates(sources.metadata.description),
     ],
-    ...Object.entries(
-      intelligenceLevels[String(sources.metadata.intelligence)]!.codex,
-    ),
     ...Object.entries(sources.codex),
     [
       "developer_instructions",
@@ -708,8 +605,7 @@ export function stitchCodexAgentDefinition(
 /**
  * stitches one split template into the Grok Build Markdown agent file
  * @param templateDirectory directory holding base.md and frontmatter/
- * @param options essentialRoot and referenceRoot resolve @essential aliases;
- *   allowLegacy accepts legacy single-file frontmatter
+ * @param options essentialRoot and referenceRoot resolve @essential aliases
  * @returns full Grok agent file including frontmatter
  */
 export function stitchGrokAgentDefinition(
@@ -717,16 +613,12 @@ export function stitchGrokAgentDefinition(
   options: {
     readonly essentialRoot?: string;
     readonly referenceRoot?: string;
-    readonly allowLegacy?: boolean;
   } = {},
 ): string {
   const { sources, body } = template(templateDirectory, options);
-  const intelligence =
-    intelligenceLevels[String(sources.metadata.intelligence)]!;
   const projected: JsonObject = {
     name: sources.metadata.name,
     description: harnessNeutralText(String(sources.metadata.description)),
-    ...intelligence.grok,
     ...sources.grok,
   };
   const yaml = JSON.stringify(projected, undefined, 2);

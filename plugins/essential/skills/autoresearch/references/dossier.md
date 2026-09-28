@@ -30,7 +30,7 @@ round: 2
 parent_ids: ['r01-c01']          # [] for round-1 / wildcard candidates
 framing_direction: '<the direction this lineage descends from>'
 mutation: ''                     # the mutation/recombination directive; '' for round 1
-generator_intelligence: high|low
+generator_profile: { model: routine|capable|expert, effort: instinctive|deliberate|exhaustive }
 artifact_path: 'rounds/round-02/candidates/r02-c03/artifact.md'
 summary: '<one line: what this candidate tries>'
 ```
@@ -72,7 +72,7 @@ The header is scaffolded once in Step 4 (with the baseline row); the file is ful
 
 ## dossier.md format
 
-The Step 7 synthesis, written by an xhigh-intelligence agent from the round logs (it reads `rounds/`, not the orchestrator's memory). Sections, in order:
+The Step 7 synthesis, written by an agent selected for the full synthesis under `essential:directions/delegate.md` from the round logs (it reads `rounds/`, not the orchestrator's memory). Sections, in order:
 
 1. **Executive Summary** — goal, outcome, best score vs baseline vs target, stop reason.
 2. **Best Artifact** — path (`best/`) and how to use it (apply the diff, deploy the prompt, ...).

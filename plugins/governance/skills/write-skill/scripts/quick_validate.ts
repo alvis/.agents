@@ -58,13 +58,15 @@ const MODEL_SELECTION_FIELDS = new Set([
   "effort",
   "intelligence",
   "intelligencelevel",
+  "modeltier",
   "model",
   "modelreasoningeffort",
   "reasoningeffort",
+  "reasoninglevel",
 ]);
+const MODEL_TIERS = new Set(["routine", "capable", "expert"]);
+const EFFORTS = new Set(["instinctive", "deliberate", "exhaustive"]);
 const CLAUDE_TIMEOUT_MILLISECONDS = 30_000;
-const INTELLIGENCE_MAPPING =
-  "essential/skills/install/references/intelligence-levels.json";
 const GOVERNANCE_ROOT = resolve(import.meta.dirname, "../../..");
 
 /** One policy problem found in a skill file, optionally bound to a body line. */
@@ -552,49 +554,26 @@ function unsupportedMappingValueReferences(
   return references;
 }
 
-function intelligenceLevels(): Set<string> {
-  const script = resolve(import.meta.dirname, "quick_validate.ts");
-  const ancestors: string[] = [];
-  let current = dirname(script);
-  while (true) {
-    ancestors.push(current);
-    const parent = dirname(current);
-    if (parent === current) break;
-    current = parent;
-  }
-  const versions = new Set(
-    ancestors
-      .map((ancestor) => basename(ancestor))
-      .filter((name) => /^\d+\.\d+\.\d+$/.test(name)),
-  );
-  const candidates: string[] = [];
-  for (const ancestor of ancestors) {
-    const direct = resolve(ancestor, INTELLIGENCE_MAPPING);
-    if (existsSync(direct)) candidates.push(direct);
-    for (const version of versions) {
-      const versioned = resolve(
-        ancestor,
-        "essential",
-        version,
-        "skills/install/references/intelligence-levels.json",
-      );
-      if (existsSync(versioned)) candidates.push(versioned);
-    }
-  }
-  const unique = [...new Set(candidates)];
-  if (unique.length !== 1)
-    throw new Error(
-      `Expected exactly one Essential intelligence mapping beside the installed marketplace; found ${unique.length}.`,
-    );
-  const mapping = JSON.parse(readFileSync(unique[0], "utf8")) as Record<
-    string,
-    { rank?: unknown }
-  >;
-  return new Set(
-    Object.entries(mapping)
-      .filter(([, entry]) => entry.rank !== null && entry.rank !== undefined)
-      .map(([name]) => name),
-  );
+function unsupportedMappingScalarParents(
+  frontmatter: string[],
+  parentKeys: ReadonlySet<string>,
+): Array<[string, number]> {
+  const source = withoutYamlComments(frontmatter.join("\n"));
+  const root = rootFlowMapping(source);
+  const entries = root
+    ? root.spans.map(([start, end]) => [source.slice(start, end), 2 + countNewlines(source, start)] as const)
+    : splitLines(source)
+        .map((line, index) => [line, index + 2] as const)
+        .filter(([line]) => line !== "" && !/^\s/.test(line));
+  return entries.flatMap(([entry, line]) => {
+    const separator = mappingSeparator(entry, root !== null);
+    if (separator === null) return [];
+    const key = yamlScalar(entry.slice(0, separator));
+    const value = entry.slice(separator + 1).trim();
+    return key !== null && parentKeys.has(key) && value !== "" && !value.startsWith("{") && !/^[&!*]/.test(value)
+      ? [[key, line] as [string, number]]
+      : [];
+  });
 }
 
 function isLocalFileDestination(destination: string): boolean {
@@ -671,7 +650,7 @@ export function validatePolicy(
       else if (MODEL_SELECTION_FIELDS.has(normalizedSelectionField(key)))
         errors.push(
           issue(
-            "Shared skills must not declare model or effort fields; use requirements.intelligence.",
+            `Shared skills must not declare root ${key}; use requirements.model and requirements.effort.`,
             line,
           ),
         );
@@ -692,6 +671,18 @@ export function validatePolicy(
         break;
       }
     }
+  }
+  if (errors.length === 0) {
+    const requirementsParents = mappingKeys.filter(
+      ([key]) => key === "requirements",
+    );
+    if (requirementsParents.length > 1)
+      errors.push(
+        issue(
+          "Shared skills must declare exactly one requirements mapping.",
+          requirementsParents[1][1],
+        ),
+      );
   }
   if (errors.length === 0) {
     for (const mapping of ["metadata", "requirements"]) {
@@ -721,52 +712,65 @@ export function validatePolicy(
       );
   }
   if (errors.length === 0) {
-    const legacy = nestedMappingEntries(
+    const scalars = unsupportedMappingScalarParents(
       frontmatter,
-      "metadata",
-      "intelligence",
+      new Set(["metadata", "requirements"]),
     );
-    if (legacy.length > 0)
+    if (scalars.length > 0)
       errors.push(
         issue(
-          "Shared skills must not declare metadata.intelligence; use requirements.intelligence.",
-          legacy[0][1],
+          `Shared skill ${scalars[0][0]} must be a mapping.`,
+          scalars[0][1],
         ),
       );
   }
   if (errors.length === 0) {
-    const entries = nestedMappingEntries(
-      frontmatter,
-      "requirements",
-      "intelligence",
+    const legacy = nestedMappingItems(frontmatter, "metadata").filter(
+      ([key]) =>
+        key !== null &&
+        MODEL_SELECTION_FIELDS.has(normalizedSelectionField(key)),
     );
-    if (entries.length === 0)
+    if (legacy.length > 0)
       errors.push(
         issue(
-          "Shared skills must declare exactly one requirements.intelligence.",
+          `Shared skills must not declare metadata.${legacy[0][0]}; use requirements.model and requirements.effort.`,
+          legacy[0][2],
         ),
       );
-    else if (entries.length > 1)
+  }
+  if (errors.length === 0) {
+    const items = nestedMappingItems(frontmatter, "requirements");
+    const unsupported = items.find(
+      ([key]) => key !== "model" && key !== "effort",
+    );
+    if (unsupported !== undefined)
       errors.push(
         issue(
-          "Shared skills must declare exactly one requirements.intelligence.",
-          entries[1][1],
+          `Unsupported requirements.${unsupported[0]}; declare only model and effort.`,
+          unsupported[2],
         ),
       );
-    else if (entries[0][0] === "inherit")
-      errors.push(
-        issue(
-          "Shared skills must declare a concrete requirements.intelligence; inherit is agent-only.",
-          entries[0][1],
-        ),
-      );
-    else if (entries[0][0] === null || !intelligenceLevels().has(entries[0][0]))
-      errors.push(
-        issue(
-          "Shared skill requirements.intelligence must name a concrete level from Essential's intelligence mapping.",
-          entries[0][1],
-        ),
-      );
+    for (const [field, accepted] of [
+      ["model", MODEL_TIERS],
+      ["effort", EFFORTS],
+    ] as const) {
+      if (errors.length > 0) break;
+      const entries = nestedMappingEntries(frontmatter, "requirements", field);
+      if (entries.length !== 1)
+        errors.push(
+          issue(
+            `Shared skills must declare exactly one requirements.${field}.`,
+            entries[1]?.[1],
+          ),
+        );
+      else if (entries[0][0] === null || !accepted.has(entries[0][0]))
+        errors.push(
+          issue(
+            `Invalid requirements.${field}; expected ${[...accepted].join(", ")}.`,
+            entries[0][1],
+          ),
+        );
+    }
   }
   if (body.length > MAX_BODY_LINES)
     errors.push(

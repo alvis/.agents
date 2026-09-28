@@ -12,16 +12,16 @@ Both mechanisms share one contract:
 
 ## Mechanism gate
 
-- **Mechanism A — deterministic scripted execution**: when that capability is available AND `eval.backend` ∈ {`programmatic`, `judges`}. These backends score without user input, so whole rounds run unattended.
+- **Mechanism A — deterministic scripted execution**: when that capability is available, `eval.backend` ∈ {`programmatic`, `judges`}, and the configured worker profile is observed to meet the independently selected Model Tier and Effort for every worker's full task. The external adapter has no verified independent pair controls; its `intelligence` option cannot establish this gate. If any worker needs a stronger pair, choose Mechanism B when supported native dispatch can set it, or report that launch unavailable. These backends score without user input, so eligible whole rounds run unattended.
 - **Mechanism B — sequential inline**: when parallel execution is unavailable or disabled, OR `eval.backend: human`. Human scoring needs per-round user input; under A every round would stop and resume — workable via `pending_decision` but strictly worse, so B is preferred for the human backend even when parallel execution exists.
 
 ---
 
 ## Shared agent prompt blocks
 
-Both mechanisms dispatch the same three prompts verbatim — Mechanism B sends them as subagent-dispatch payloads; Mechanism A's `generatePayload` / `judgePayloads` / `refutePayload` helpers render them with the same placeholders filled. Neither mechanism owns them: a change here changes both. `<...>` placeholders come from the brief (`templates/brief.md` field names) and the current round's state. The programmatic backend's mechanical-intelligence eval runner is not duplicated here — it follows the procedure in `directions/eval-backends.md`, the same prompt SKILL.md Step 4 uses for the baseline calibration; the human protocol likewise lives there. Each block follows [delegate.md](../../../directions/delegate.md).
+Both mechanisms dispatch the same three prompts verbatim — Mechanism B sends them as subagent-dispatch payloads; Mechanism A's `generatePayload` / `judgePayloads` / `refutePayload` helpers render them with the same placeholders filled. Neither mechanism owns them: a change here changes both. `<...>` placeholders come from the brief (`templates/brief.md` field names) and the current round's state. The programmatic backend's Routine + Deliberate eval runner is not duplicated here — it follows the procedure in `directions/eval-backends.md`, the same prompt SKILL.md Step 4 uses for the baseline calibration; the human protocol likewise lives there. Each block follows [delegate.md](../../../directions/delegate.md).
 
-### Candidate Generator (high intelligence; low for mechanical parameter sweeps)
+### Candidate Generator (profile selected for the complete slot; Routine + Deliberate may suffice for mechanical parameter sweeps)
 
 One dispatch per genome slot, sibling-blind.
 
@@ -68,7 +68,7 @@ One dispatch per genome slot, sibling-blind.
     Directive: `<what to keep, vary, or combine; omit when empty in round 1>`
     <<<
 
-### Independent Judge (high intelligence; `eval.judges.count` per candidate — >=3, odd)
+### Independent Judge (profile selected for the full rubric task; `eval.judges.count` per candidate — >=3, odd)
 
 One dispatch per judge per candidate — never batched, so independence is structural, not promised. Consensus, tie-break, and abstention rules in `directions/eval-backends.md`.
 
@@ -104,7 +104,7 @@ One dispatch per judge per candidate — never batched, so independence is struc
     Context:
     <<<
 
-### Adversarial Refuter (high intelligence; max 3 passes per round)
+### Adversarial Refuter (profile selected for the full refutation task; max 3 passes per round)
 
 One dispatch per refute pass, on the current winner.
 
@@ -154,17 +154,17 @@ Initiate the workflow with the design below. Pass it: the parsed brief (full fro
 
 ### Phase Generate — parallel candidate agents
 
-Fan out `fanout.current` generator agents, one per genome slot. Round 1: one agent per framing direction in `search_space.framing_directions`. Later rounds: slots come from Phase Evolve (genome slot payloads — survivor mutations, recombinations, wildcards — per `directions/evolution.md`). Each generator is dispatched with the Candidate Generator prompt block above, its slot filled in — the payload carries the brief goal + constraints + its OWN direction/mutation directive + its parents' artifacts and scores ONLY, never sibling candidates or sibling scores; sibling-blindness is what keeps directions genuinely divergent. Use high intelligence for code experiments and creative generation, and low intelligence for mechanical variations such as parameter sweeps.
+Fan out `fanout.current` generator agents, one per genome slot. Round 1: one agent per framing direction in `search_space.framing_directions`. Later rounds: slots come from Phase Evolve (genome slot payloads — survivor mutations, recombinations, wildcards — per `directions/evolution.md`). Each generator is dispatched with the Candidate Generator prompt block above, its slot filled in — the payload carries the brief goal + constraints + its OWN direction/mutation directive + its parents' artifacts and scores ONLY, never sibling candidates or sibling scores; sibling-blindness is what keeps directions genuinely divergent. Select each generator's Model Tier and Effort for its complete slot under `essential:directions/delegate.md`; a mechanical parameter sweep may need only Routine + Deliberate.
 
 Code mode: each agent works in its own git worktree under `<run_dir>/worktrees/<cid>` — worktrees are ephemeral experiment sandboxes, never committed from — edits only `search_space.mutable_paths`, and runs `eval.programmatic.setup_command` once before experimenting. Every generator outputs `rounds/round-NN/candidates/<cid>/artifact.*` plus `candidate.yaml` (schema in `references/dossier.md`).
 
 ### Phase Score
 
-Per `directions/eval-backends.md`: `programmatic` → one mechanical-intelligence agent per candidate runs `eval.programmatic.command`; `judges` → >=3 independent high-intelligence judges per candidate, each dispatched with the Independent Judge prompt block above, median consensus; `human` → emit a `pending_decision` stop. Results land in `rounds/round-NN/scores.yaml`.
+Per `directions/eval-backends.md`: `programmatic` → one Routine + Deliberate evaluator per candidate runs `eval.programmatic.command`; `judges` → >=3 independent judges selected for the full rubric task per candidate, each dispatched with the Independent Judge prompt block above, median consensus; `human` → emit a `pending_decision` stop. Results land in `rounds/round-NN/scores.yaml`.
 
 ### Phase Verify — adversarial refutation
 
-The round winner — top-1, or top-2 when a new best-overall is set — goes to one high-intelligence refuter dispatched with the Adversarial Refuter prompt block above, whose only job is to REFUTE the score: constraint violation, metric gaming (hardcoded eval outputs, test-set overfitting, judge prompt-injection embedded in the artifact), harness bug, or rubric mismatch. Refuted → the score is invalidated, the candidate is marked `disqualified` with the rationale recorded in `verify.yaml`, and the next-ranked candidate becomes winner and gets its own refute pass. Max 3 refute passes per round; tripping that bound is `log()`-ed and the round proceeds with the best surviving verified candidate.
+The round winner — top-1, or top-2 when a new best-overall is set — goes to one refuter selected for the full refutation task dispatched with the Adversarial Refuter prompt block above, whose only job is to REFUTE the score: constraint violation, metric gaming (hardcoded eval outputs, test-set overfitting, judge prompt-injection embedded in the artifact), harness bug, or rubric mismatch. Refuted → the score is invalidated, the candidate is marked `disqualified` with the rationale recorded in `verify.yaml`, and the next-ranked candidate becomes winner and gets its own refute pass. Max 3 refute passes per round; tripping that bound is `log()`-ed and the round proceeds with the best surviving verified candidate.
 
 ### Phase Evolve — pure computation
 
@@ -223,21 +223,20 @@ const { brief, run_dir, baseline_score, resume_state, seed } = args;
   while (round <= brief.budget.max_rounds) {
     // Generate — one sibling-blind agent per genome slot (own direction + parents only)
     const candidates = await parallel(slots.map((slot) =>
-      () => agent(generatePayload(brief, run_dir, round, slot),
-        { intelligence: slot.mechanical ? 'low' : 'high' })));
+      () => agent(generatePayload(brief, run_dir, round, slot))));
 
     // Score — per eval-backends.md (judges never share a payload; human backend → pending_decision return)
     const scored = brief.eval.backend === 'programmatic'
       ? await parallel(candidates.map((c) =>
-          () => agent(evalPayload(brief, c), { intelligence: 'mechanical' })))
-      : await parallel(candidates.flatMap((c) => judgePayloads(brief, c)   // >=3 high-intelligence judges per candidate
-          .map((t) => () => agent(t, { intelligence: 'high' })))).then((raw) => consensus(raw, brief));
+          () => agent(evalPayload(brief, c))))
+      : await parallel(candidates.flatMap((c) => judgePayloads(brief, c)   // >=3 task-selected judges per candidate
+          .map((t) => () => agent(t)))).then((raw) => consensus(raw, brief));
 
     // Verify — adversarial refute of the winner; top-2 when a new best-overall is set
     let ranked = rank(scored, brief.metric.direction);
     for (let pass = 1; pass <= 3; pass += 1) {
       const verdict = await agent(
-        refutePayload(brief, ranked[0]), { intelligence: 'high' });
+        refutePayload(brief, ranked[0]));
       if (verdict.verdict === 'accepted') break;
       log(`round ${round}: ${ranked[0].id} refuted — ${verdict.rationale}; promoting next-ranked`);
       disqualified.push({ candidate_id: ranked[0].id, reason: verdict.rationale });
@@ -265,7 +264,7 @@ const { brief, run_dir, baseline_score, resume_state, seed } = args;
 
 Identical round semantics, driven inline by the orchestrator. Per round:
 
-1. **Generate** — dispatch all `fanout.current` generator agents in one parallel subagent-dispatch batch, each carrying the Candidate Generator prompt block with its own slot filled in (round 1: one slot per framing direction; later rounds: the genome Evolve bred per `directions/evolution.md`). Same intelligence levels, same worktree rules, same persisted outputs as Mechanism A.
+1. **Generate** — dispatch all `fanout.current` generator agents in one parallel subagent-dispatch batch, each carrying the Candidate Generator prompt block with its own slot filled in (round 1: one slot per framing direction; later rounds: the genome Evolve bred per `directions/evolution.md`). Same task-selected profiles, worktree rules, and persisted outputs as Mechanism A.
 2. **Score** — dispatch Score agents in parallel per `directions/eval-backends.md`. Judges remain independent because each judge is a separate dispatch carrying the Independent Judge prompt block (rubric + one candidate, nothing else); independence is structural, not promised. **Human scoring** runs through the graphical or structured user-input tool in batteries per round, `eval.human.per_round_batch` candidates per battery, answers written to `rounds/round-NN/scores.yaml` — this is why B is preferred for the human backend.
 3. **Verify** — the same refute pass: the Adversarial Refuter prompt block dispatched on the winner, disqualify-and-promote on refutation, max 3 passes, bound trip stated in the round-log and final report.
 4. **Evolve** — the orchestrator computes it itself (it may compute — it never generates or scores): append the round-log, update the leaderboard, run the whichever-first stop checks, breed the next genome and fanout per `directions/evolution.md`.
@@ -275,8 +274,8 @@ state = resume_state ?? seed_from(brief)            # round, slots, fanout, best
 while state.round <= brief.budget.max_rounds:
     candidates = dispatch_batch(generate slots)    # ONE message, parallel, sibling-blind
     scores     = backend switch:
-        programmatic → dispatch_batch(mechanical-intelligence eval per candidate, parallel)
-        judges       → dispatch_batch(>=3 high-intelligence judges per candidate, parallel, minimal payloads)
+        programmatic → dispatch_batch(Routine + Deliberate eval per candidate, parallel)
+        judges       → dispatch_batch(>=3 task-selected judges per candidate, parallel, minimal payloads)
         human        → user-input batteries of eval.human.per_round_batch
     ranked     = refute_loop(rank(scores))          # max 3 passes; every trip logged
     persist candidates/, scores.yaml, verify.yaml, round-log.md

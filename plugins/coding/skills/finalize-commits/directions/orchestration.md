@@ -4,7 +4,7 @@ Referenced from SKILL.md Step 2. Defines how the atomic per-commit walk runs thr
 
 ## Shape
 
-Strictly sequential walk, oldest-first, one commit at a time. One mechanical-intelligence agent per commit executes the FULL atomic seven-sub-step operation from `qa-loop.md` — replay, isolate, marker-check, gate, fold, reword, mark — inside a single dispatch; nothing is split across execution steps or batched across commits. **The coordinator governs** — it owns every `pending_decision` and resumes the run. Sequential (not fanout) because each commit replays onto the previous commit's folded result and history rewrites must not race; N isolated installs of wall-clock is the accepted price of atomicity.
+Strictly sequential walk, oldest-first, one commit at a time. One agent selected for the complete atomic QA task per commit executes the FULL atomic seven-sub-step operation from `qa-loop.md` — replay, isolate, marker-check, gate, fold, reword, mark — inside a single dispatch; nothing is split across execution steps or batched across commits. **The coordinator governs** — it owns every `pending_decision` and resumes the run. Sequential (not fanout) because each commit replays onto the previous commit's folded result and history rewrites must not race; N isolated installs of wall-clock is the accepted price of atomicity.
 
 The walk chains the rebuilt head forward:
 
@@ -26,7 +26,9 @@ When the run includes order changes or hunk folds — Step 2's recommendation, a
 
 ## Mechanism A — deterministic scripted execution
 
-1. Build one step per target commit, each dispatching one mechanical-intelligence agent that runs the full `qa-loop.md` operation for that `<rev/sha>`, receiving `cur` and returning `newSha`.
+Use this mechanism only when the external adapter's configured worker profile is observed to meet both independently selected minimums for every commit's full QA task. Its `intelligence` option cannot encode this selection. If the profile cannot be established, use Mechanism B through supported native dispatch or report the launch unavailable; never infer a pair from a legacy rank.
+
+1. Build one step per target commit, each dispatching one agent selected for the complete atomic QA task that runs the full `qa-loop.md` operation for that `<rev/sha>`, receiving `cur` and returning `newSha`.
 2. A step returning `status: green` chains `cur = newSha` and advances the walk.
 3. A step returning `status: pending_decision` **stops** the execution and surfaces the `pending_decision` block to the coordinator.
 4. The coordinator resolves it:
@@ -43,11 +45,11 @@ Drive the identical loop inline, with identical atomic semantics:
 ```
 cur = stackBase
 for rev in targets (oldest-first):
-    report = dispatch(intelligence='mechanical', task=qa-loop.md for rev onto cur)
+    report = dispatch(task=qa-loop.md for rev onto cur)  # select and verify native model and effort before launch
     while report.status == 'pending_decision':
         decision = get_structured_user_input(report.pending_decision)
         apply(decision)            # coding:fix for code; confirmed rewords via coding:commit
-        report = dispatch(intelligence='mechanical', task=qa-loop.md for rev onto cur)   # reassess evidence; rerun affected legs
+        report = dispatch(task=qa-loop.md for rev onto cur)  # select and verify native model and effort before launch   # reassess evidence; rerun affected legs
     assert report.status == 'green'
     cur = report.newSha
 ```

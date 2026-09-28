@@ -3,7 +3,8 @@ name: design
 version: 5.0.0
 description: "Design or redesign web interfaces, including landing pages, blogs, dashboards, documentation, onboarding, and component interactions. Select purpose-specific guidance while preserving brand, responsive layout, typography, motion, and accessible interaction. Own the visual contract, ranked variants, authorized implementation handoff, and independent evaluation. Use for page design, component polish, state changes, mockups, and facelifts."
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "[page/component/site | transition target/pattern] [--facelift] [--style=<style>] [--variants=<N>] [--skip-directions] [--quick]"
 ---
 

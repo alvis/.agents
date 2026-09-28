@@ -1,6 +1,7 @@
 import { execFile, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  cpSync,
   copyFileSync,
   existsSync,
   lstatSync,
@@ -113,6 +114,9 @@ async function createFixtureRepository(sandbox: Sandbox): Promise<FixtureReposit
   ]) {
     copyFileSync(resolve(import.meta.dirname, name), join(repository, "scripts", name));
   }
+  const stitcher = "plugins/essential/skills/install/scripts/stitch_agent.ts";
+  mkdirSync(dirname(join(repository, stitcher)), { recursive: true });
+  copyFileSync(resolve(repositoryRoot, stitcher), join(repository, stitcher));
   execFileSync("git", ["init", "--quiet"], { cwd: repository });
   execFileSync("git", ["add", "."], { cwd: repository });
   return { repository, scriptPath: join(repository, "scripts", "install_opencode.ts") };
@@ -377,6 +381,76 @@ describe("command surface", () => {
 });
 
 describe("projection inventory", () => {
+  it("should retain a supported reviewer permission boundary in an agent projection", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      const role = "code-quality-critic";
+      cpSync(
+        join(repositoryRoot, "plugins/coding/agents", role),
+        join(fixture.repository, "plugins/fixture/agents", role),
+        { recursive: true },
+      );
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode, result.stderr).toBe(0);
+      const projected = readFileSync(join(targetOf(sandbox), `agents/${role}.md`), "utf8");
+      const frontmatter = projected.split("---\n", 3)[1]!;
+      expect(frontmatter).toMatch(/^mode: subagent$/m);
+      expect(frontmatter).toMatch(/^permission:$/m);
+      expect(frontmatter).toMatch(/^  edit:$/m);
+      expect(frontmatter).toMatch(/^    "\*": deny$/m);
+      expect(frontmatter).toMatch(/^  bash: deny$/m);
+      expect(frontmatter).not.toMatch(/^(?:model|effort|model_reasoning_effort): /m);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
+  it("should project agent minimums without fixed provider settings", async () => {
+    const sandbox = await createSandbox();
+    try {
+      const fixture = await createFixtureRepository(sandbox);
+      const agentRoot = join(fixture.repository, "plugins/fixture/agents/probe-agent");
+      await writeFixture(agentRoot, "frontmatter/meta.json", JSON.stringify({
+        name: "probe-agent",
+        description: "Fixture role. Preferably named Ava, Kit, or June when the main agent spawns this role.",
+        requirements: { model: "expert", effort: "instinctive" },
+      }));
+      await writeFixture(agentRoot, "frontmatter/claude.json", JSON.stringify({
+        memory: "project",
+        maxTurns: 4,
+        initialPrompt: "Handle the fixture task.",
+        color: "blue",
+      }));
+      await writeFixture(agentRoot, "frontmatter/codex.json", "{}");
+      await writeFixture(agentRoot, "frontmatter/grok.json", "{}");
+      await writeFixture(agentRoot, "base.md", "# Probe agent\n\n## Memory\n\nDurable memory belongs to this role.\n");
+
+      const result = await runInstaller(
+        ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+        sandbox,
+        { scriptPath: fixture.scriptPath },
+      );
+
+      expect(result.exitCode, result.stderr).toBe(0);
+      const projected = readFileSync(join(targetOf(sandbox), "agents/probe-agent.md"), "utf8");
+      const frontmatter = projected.split("---\n", 3)[1]!;
+      expect(frontmatter).toMatch(/^description: /m);
+      expect(frontmatter).toMatch(/^mode: subagent$/m);
+      expect(frontmatter).toMatch(/^steps: 4$/m);
+      expect(frontmatter).toMatch(/^color: /m);
+      expect(frontmatter).not.toMatch(/^(?:model|effort|model_reasoning_effort): /m);
+    } finally {
+      await removeTemporaryDirectory(sandbox.root);
+    }
+  }, spawnTimeout);
+
   it("should project modified tracked and non-ignored untracked files only", async () => {
     const sandbox = await createSandbox();
     try {
@@ -558,6 +632,7 @@ describe("projection inventory", () => {
         ".gitignore",
         "plugins/fixture/.claude-plugin/plugin.json",
         "plugins/fixture/skills/probe/SKILL.md",
+        "plugins/essential/skills/install/scripts/stitch_agent.ts",
         "scripts/harness_contract.ts",
         "scripts/install_opencode.ts",
         "scripts/opencode_adapter.js",
@@ -1147,6 +1222,9 @@ describe("runtime path rewriting", () => {
     ]) {
       copyFileSync(resolve(import.meta.dirname, name), join(repository, "scripts", name));
     }
+    const stitcher = "plugins/essential/skills/install/scripts/stitch_agent.ts";
+    mkdirSync(dirname(join(repository, stitcher)), { recursive: true });
+    copyFileSync(resolve(repositoryRoot, stitcher), join(repository, stitcher));
     execFileSync("git", ["init", "--quiet"], { cwd: repository });
     execFileSync("git", ["add", "."], { cwd: repository });
     scriptPathInFixture = join(repository, "scripts", "install_opencode.ts");

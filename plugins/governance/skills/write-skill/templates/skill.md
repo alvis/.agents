@@ -2,7 +2,8 @@
 name: skill-name
 description: "[Description] — third person, what the skill does plus a 'Use when...' clause with concrete natural-language requests that express the activating intent; 25-60 words; lead with the key use case."
 requirements:
-  intelligence: medium
+  model: capable
+  effort: deliberate
 ---
 
 <!-- AUTHOR GUIDE — delete every comment before shipping. Policy lives in plugins/governance/skills/write-skill/references/authoring.md. This template is a seed, not a heading contract: adapt headings to the capability.
@@ -10,7 +11,7 @@ requirements:
 Frontmatter
 - name: kebab-case, identical to the skill directory name.
 - description: third person, what + when, key use case first. Repository budget is 25-60 words; Agent Skills allows up to 1024 characters. Name a neighboring exclusion only when it prevents a real trigger collision.
-- requirements.intelligence: choose one concrete level from Essential's intelligence mapping. Skills never use `inherit`, model, or effort fields.
+- requirements.model and requirements.effort: choose independent portable minimums from `essential:references/models.md`, defaulting to capable and deliberate. Do not write provider settings here.
 - For a shared Claude Code, Codex, and Grok Build skill, follow the authoring contract's portable fields and never depend on experimental or harness-only metadata. -->
 
 # [Skill Name]

@@ -2,7 +2,8 @@
 name: spec-code
 description: Design, update, or retrospectively document a technical specification from a user-selected local, inline, or Notion source through an active work stream. Keep approved specification content in the active work's spec/; keep Notion transport in sync-notion and implementation planning in plan-code.
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "<instruction> --capability=<slug> [--work-id=<id>] [--source=<path-or-ref>] [--source-direction=<direction>] [--transport-root=<dir>] [--transport-profile=<absolute-file>] [--body-author=<plugin:skill>] [--template=<path-or-ref>] [--local-mdc=<path>] [--parent=<ref>] [--type=api|web-app|mobile|library|fullstack]"
 ---
 

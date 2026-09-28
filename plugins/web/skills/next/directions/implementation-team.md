@@ -6,8 +6,8 @@ Bounds for delegating multi-file code fixes discovered during a `next` debugging
 
 Estimate scope by counting the components, hooks, and files implied by the task, then create a persistent team through the agent-lifecycle capability:
 
-- low-intelligence implementer teammates — `ceil(files / 10)`, minimum 1; the 10-file bound keeps each slice reviewable and a failed slice cheap to retry
-- 1 medium-intelligence reviewer teammate
+- implementer teammates selected for their complete slices under `essential:directions/delegate.md` — `ceil(files / 10)`, minimum 1; the 10-file bound keeps each slice reviewable and a failed slice cheap to retry
+- 1 reviewer teammate selected for the complete review task under `essential:directions/delegate.md`
 
 Only the main agent assigns the configured teammate names. Capture each returned `agent_id` beside its role and slice; all direct messages and hand-offs target that ID, never a role or configured name.
 
