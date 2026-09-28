@@ -281,10 +281,6 @@ describe("coding scanner fixture reports", () => {
     },
   );
 
-  // This test rescans the full fixture tree once per loaded rule through real
-  // subprocess captures. It is the one in this file observed exceeding the
-  // default budget on hosted macOS, so the raise lives on this test alone and
-  // genuine hangs elsewhere still fail fast.
   it("exposes every rule as a category", async () => {
     for (const rule of await loadRules())
       expect(
@@ -436,6 +432,29 @@ describe("coding scanner fixture reports", () => {
 });
 
 describe("rule module loading", () => {
+  it("should reuse rule modules across repeated loads", async () => {
+    const directory = temporaryRoot();
+    const evaluations = resolve(directory, "evaluations.txt");
+    writeFileSync(
+      resolve(directory, "count.ts"),
+      [
+        'import { appendFileSync } from "node:fs";',
+        `appendFileSync(${JSON.stringify(evaluations)}, "loaded\\n");`,
+        'export const RULE = { id: "count", label: "Count", order: 0, scan: () => undefined };',
+        "",
+      ].join("\n"),
+    );
+
+    expect((await loadRules(directory)).map((rule) => rule.id)).toEqual([
+      "count",
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect((await loadRules(directory)).map((rule) => rule.id)).toEqual([
+      "count",
+    ]);
+    expect(readFileSync(evaluations, "utf8")).toBe("loaded\n");
+  });
+
   it("loads unique rules sorted by order then id", async () => {
     const rules = await loadRules();
     expect(new Set(rules.map((rule) => rule.id)).size).toBe(rules.length);

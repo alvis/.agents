@@ -36,7 +36,7 @@ export async function loadRules(
   for (const entry of modules) {
     try {
       const module = (await import(
-        `${pathToFileURL(resolve(directory, entry.name)).href}?scanner=${Date.now()}-${entry.name}`
+        pathToFileURL(resolve(directory, entry.name)).href
       )) as RuleModule;
       if (module.RULES !== undefined) rules.push(...module.RULES);
       else if (module.RULE !== undefined) rules.push(module.RULE);
