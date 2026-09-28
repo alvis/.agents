@@ -2,9 +2,12 @@
 
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import {
+  inspectReviewerTaskBlock,
+  upsertReviewerTaskBlock,
+} from "./generate-reviewer-tasks";
 
 const DEFAULT_TEMPLATE = join(import.meta.dirname, "../templates/message.md");
-const SIZE_POLICY = join(import.meta.dirname, "../assets/size-thresholds.json");
 const STRICT_UTF8 = new TextDecoder("utf-8", { fatal: true });
 
 /** archetype choices the scanner accepts for its --archetype option */
@@ -24,16 +27,13 @@ export const ARCHETYPES = [
 ] as const;
 const ZONES = ["green", "yellow", "red", "black"] as const;
 const COMMENT = /<!--.*?-->/gs;
+const REVIEWER_TASK_MARKER = /^<!-- coding:reviewer-tasks:(?:start|end) -->$/;
 const PLACEHOLDER = /\{\{[^{}]+\}\}/g;
 const FULL_OID = /^[0-9a-f]{40}$/;
 const HEADING = /^ {0,3}(## .+?)\s*$/;
 const CHECKBOX = /^\s*[-*]\s+\[[ xX]\]\s+\S/m;
 const LIST_MARKER = /^\s*(?:[-*+]|\d+[.)])\s+/;
 const KEYCAP_EMOJI = /^[#*0-9]\ufe0f?\u20e3$/;
-const REVIEWER_ASSIGNED =
-  /^\s*[-*]\s+\[([ xX])\]\s+Reviewer (slot [1-9]\d*|@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?) assigned\s*$/gm;
-const REVIEWER_EVIDENCE =
-  /^\s*[-*]\s+\[([ xX])\]\s+Reviewer (slot [1-9]\d*|@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?) (reviewed|approved) `([0-9a-f]{40})` against `([0-9a-f]{40})`\s*$/gm;
 const CODE_SPAN = /`([^`]+)`/g;
 const GENERIC = new Set([
   "n/a",
@@ -226,7 +226,6 @@ interface ScanOptions {
   forbidComments: boolean;
   headOid: string;
   baseOid: string;
-  allowPendingReviewers: boolean;
 }
 
 function splitLines(value: string): string[] {
@@ -586,47 +585,6 @@ function generatedPathIsNamed(path: string, evidence: string): boolean {
   ].some((pattern) => wildcardPattern(pattern).test(path));
 }
 
-function requiredReviewerCount(zone: string): number {
-  const zones = (
-    JSON.parse(readUtf8(SIZE_POLICY)) as {
-      zones: Array<{ name: string; required_reviewers: number }>;
-    }
-  ).zones;
-  return (
-    zones.find((item) => item.name === zone)?.required_reviewers ??
-    zones.at(-1)!.required_reviewers
-  );
-}
-
-function reviewerTripletCount(
-  verification: string,
-  headOid: string,
-  baseOid: string,
-  allowPending: boolean,
-): number {
-  const assigned = new Set<string>();
-  for (const match of verification.matchAll(REVIEWER_ASSIGNED))
-    if (allowPending || match[1]!.toLowerCase() === "x")
-      assigned.add(match[2]!);
-  const evidence = new Map<string, Map<string, string>>();
-  for (const match of verification.matchAll(REVIEWER_EVIDENCE)) {
-    if (
-      (!allowPending && match[1]!.toLowerCase() !== "x") ||
-      match[4] !== headOid ||
-      match[5] !== baseOid
-    )
-      continue;
-    if (!evidence.has(match[2]!)) evidence.set(match[2]!, new Map());
-    evidence.get(match[2]!)!.set(match[3]!, `${match[4]}:${match[5]}`);
-  }
-  return [...evidence].filter(
-    ([reviewer, tasks]) =>
-      assigned.has(reviewer) &&
-      tasks.has("reviewed") &&
-      tasks.get("reviewed") === tasks.get("approved"),
-  ).length;
-}
-
 function addRequiredSection(
   violations: Violation[],
   parsed: ParsedMessage,
@@ -647,7 +605,7 @@ function addRequiredSection(
 
 /**
  * scans a rendered PR message against its selected template and zone policy
- * @param options - body, template, zone, archetype, generated paths, and reviewer settings
+ * @param options - body, template, zone, archetype, and generated paths
  * @returns deduplicated violations sorted by rule id and message
  */
 export function scan(options: ScanOptions): Violation[] {
@@ -660,9 +618,14 @@ export function scan(options: ScanOptions): Violation[] {
     forbidComments,
     headOid,
     baseOid,
-    allowPendingReviewers,
   } = options;
   const violations: Violation[] = [];
+  try {
+    const managed = inspectReviewerTaskBlock(body, headOid, baseOid);
+    if (managed) upsertReviewerTaskBlock(body, managed.block);
+  } catch (cause) {
+    violations.push({ rule_id: "GIT-PR-02", message: (cause as Error).message });
+  }
   const parsed = parseMessage(body);
   const parsedTemplate = parseMessage(template);
   const bundledTemplate = parseMessage(readUtf8(DEFAULT_TEMPLATE));
@@ -685,7 +648,9 @@ export function scan(options: ScanOptions): Violation[] {
     if (!required.includes(heading)) required.push(heading);
   }
   addHeadingContractViolations(violations, parsedTemplate);
-  const bodyComments = [...body.matchAll(COMMENT)].map((match) => match[0]);
+  const bodyComments = [...body.matchAll(COMMENT)]
+    .map((match) => match[0])
+    .filter((comment) => !REVIEWER_TASK_MARKER.test(comment));
   const templateComments = [...template.matchAll(COMMENT)].map(
     (match) => match[0],
   );
@@ -794,19 +759,6 @@ export function scan(options: ScanOptions): Violation[] {
       rule_id: "GIT-PR-02",
       message: "Verification contains no checklist item",
     });
-  const reviewerCount = requiredReviewerCount(zone);
-  if (
-    reviewerTripletCount(
-      verification,
-      headOid,
-      baseOid,
-      allowPendingReviewers,
-    ) < reviewerCount
-  )
-    violations.push({
-      rule_id: zone === "yellow" ? "GIT-PR-SIZE-02" : "GIT-PR-SIZE-03",
-      message: `Verification requires ${reviewerCount} confirmed reviewer evidence triplet(s) for the ${zone} zone bound to the active revision`,
-    });
   const risk = selected("Risk"),
     testPlan = selected("Test Plan"),
     whySize = selected("Why This Size");
@@ -860,11 +812,10 @@ interface Arguments {
   archetype: string;
   headOid: string;
   baseOid: string;
-  allowPendingReviewers: boolean;
   generatedFiles: string[];
 }
 const USAGE =
-  "usage: scan-pr-message.ts [-h] --body-file BODY_FILE [--template TEMPLATE]\n                          --zone {green,yellow,red,black}\n                          --archetype {rfc,code-spec,contract,domain-model,implementation,integration,feature-flag,migration,ui,mechanical-refactor,cleanup,observability}\n                          --head-oid HEAD_OID --base-oid BASE_OID\n                          [--allow-pending-reviewers]\n                          [--generated-file GENERATED_FILE]";
+  "usage: scan-pr-message.ts [-h] --body-file BODY_FILE [--template TEMPLATE]\n                          --zone {green,yellow,red,black}\n                          --archetype {rfc,code-spec,contract,domain-model,implementation,integration,feature-flag,migration,ui,mechanical-refactor,cleanup,observability}\n                          --head-oid HEAD_OID --base-oid BASE_OID\n                          [--generated-file GENERATED_FILE]";
 const SCANNER_OPTIONS = [
   "--help",
   "--body-file",
@@ -873,7 +824,6 @@ const SCANNER_OPTIONS = [
   "--archetype",
   "--head-oid",
   "--base-oid",
-  "--allow-pending-reviewers",
   "--generated-file",
 ];
 const ARGPARSE_NEGATIVE_NUMBER = /^-\p{Nd}+$|^-\p{Nd}*\.\p{Nd}+$/u;
@@ -905,7 +855,6 @@ function parseArguments(argv: string[]): Arguments | null {
   const values = new Map<string, string>();
   const generatedFiles: string[] = [];
   const unknown: string[] = [];
-  let allowPendingReviewers = false;
   for (let index = 0; index < argv.length; index += 1) {
     const rawArgument = argv[index]!;
     const equals = rawArgument.indexOf("=");
@@ -915,7 +864,7 @@ function parseArguments(argv: string[]): Arguments | null {
           `argument -h/--help: ignored explicit argument '${rawArgument.slice(3)}'`,
         );
       process.stdout.write(
-        `${USAGE}\n\nScan a rendered PR message for template conformance.\n\noptions:\n  -h, --help            show this help message and exit\n  --body-file BODY_FILE\n                        Rendered PR body path, or - for stdin.\n  --template TEMPLATE   Selected PR template; defaults to the bundled\n                        message.md.\n  --zone {green,yellow,red,black}\n  --archetype {${ARCHETYPES.join(",")}}\n  --head-oid HEAD_OID\n  --base-oid BASE_OID\n  --allow-pending-reviewers\n                        Allow unchecked reviewer triplets during authoring\n                        only.\n  --generated-file GENERATED_FILE\n                        Changed generated path; repeat for every generated\n                        path.\n`,
+        `${USAGE}\n\nScan a rendered PR message for template conformance.\n\noptions:\n  -h, --help            show this help message and exit\n  --body-file BODY_FILE\n                        Rendered PR body path, or - for stdin.\n  --template TEMPLATE   Selected PR template; defaults to the bundled\n                        message.md.\n  --zone {green,yellow,red,black}\n  --archetype {${ARCHETYPES.join(",")}}\n  --head-oid HEAD_OID\n  --base-oid BASE_OID\n  --generated-file GENERATED_FILE\n                        Changed generated path; repeat for every generated\n                        path.\n`,
       );
       return null;
     }
@@ -929,17 +878,9 @@ function parseArguments(argv: string[]): Arguments | null {
           `argument -h/--help: ignored explicit argument '${rawArgument.slice(equals + 1)}'`,
         );
       process.stdout.write(
-        `${USAGE}\n\nScan a rendered PR message for template conformance.\n\noptions:\n  -h, --help            show this help message and exit\n  --body-file BODY_FILE\n                        Rendered PR body path, or - for stdin.\n  --template TEMPLATE   Selected PR template; defaults to the bundled\n                        message.md.\n  --zone {green,yellow,red,black}\n  --archetype {${ARCHETYPES.join(",")}}\n  --head-oid HEAD_OID\n  --base-oid BASE_OID\n  --allow-pending-reviewers\n                        Allow unchecked reviewer triplets during authoring\n                        only.\n  --generated-file GENERATED_FILE\n                        Changed generated path; repeat for every generated\n                        path.\n`,
+        `${USAGE}\n\nScan a rendered PR message for template conformance.\n\noptions:\n  -h, --help            show this help message and exit\n  --body-file BODY_FILE\n                        Rendered PR body path, or - for stdin.\n  --template TEMPLATE   Selected PR template; defaults to the bundled\n                        message.md.\n  --zone {green,yellow,red,black}\n  --archetype {${ARCHETYPES.join(",")}}\n  --head-oid HEAD_OID\n  --base-oid BASE_OID\n  --generated-file GENERATED_FILE\n                        Changed generated path; repeat for every generated\n                        path.\n`,
       );
       return null;
-    }
-    if (argument === "--allow-pending-reviewers") {
-      if (equals >= 0)
-        return argumentError(
-          `argument --allow-pending-reviewers: ignored explicit argument '${rawArgument.slice(equals + 1)}'`,
-        );
-      allowPendingReviewers = true;
-      continue;
     }
     if (
       [
@@ -1007,7 +948,6 @@ function parseArguments(argv: string[]): Arguments | null {
     archetype: values.get("--archetype")!,
     headOid: values.get("--head-oid")!,
     baseOid: values.get("--base-oid")!,
-    allowPendingReviewers,
     generatedFiles,
   };
 }
@@ -1057,7 +997,6 @@ export function main(argv = process.argv.slice(2)): number {
     forbidComments: resolve(args.template) === resolve(DEFAULT_TEMPLATE),
     headOid: args.headOid,
     baseOid: args.baseOid,
-    allowPendingReviewers: args.allowPendingReviewers,
   });
   process.stdout.write(
     `${pythonJson({ template: resolve(args.template), valid: violations.length === 0, violations })}\n`,

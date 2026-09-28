@@ -14,12 +14,13 @@ interface Surface {
 }
 interface RunOptions {
   surface?: Partial<Surface>;
-  afterReady?: Partial<Surface>;
+  ciState?: string;
   verdict?: string;
   reviewedHead?: string;
   reviewedBase?: string;
   isMissing?: boolean;
   metadata?: string;
+  checks?: string;
 }
 const headOid = "1".repeat(40);
 const baseOid = "2".repeat(40);
@@ -38,6 +39,15 @@ const blocks = Array.from(
   direction.matchAll(/```bash\n([\s\S]*?)```/g),
   (match) => match[1]!,
 );
+
+const createUpdate = readFileSync(
+  join(import.meta.dirname, "../directions/create-update.md"),
+  "utf8",
+);
+const readyGate = Array.from(
+  createUpdate.matchAll(/```bash\n([\s\S]*?)```/g),
+  (match) => match[1]!,
+).find((block) => block.includes('"$CI_STATE"'))!;
 
 describe("PR review lifecycle commands", () => {
   it.each([
@@ -61,6 +71,9 @@ describe("PR review lifecycle commands", () => {
   });
   it.each([
     { verdict: "COMMENT" },
+    { ciState: "pending" },
+    { ciState: "red" },
+    { ciState: "" },
     { isMissing: true },
     { metadata: "null" },
     { metadata: "{}" },
@@ -83,24 +96,22 @@ describe("PR review lifecycle commands", () => {
       );
     },
   );
-  it("should promote a substantively approved pinned draft", () => {
-    const result = runBlock("ready");
-    expect(result).toMatchObject({
+  it("should admit an approved pinned draft with green CI without mutating it", () => {
+    expect(runBlock("ready")).toMatchObject({
       status: 0,
-      surface: { ...surface, isDraft: false },
+      surface,
     });
   });
-  it("should accept an already ready approved surface", () => {
+  it("should accept an already ready approved surface with green CI", () => {
     expect(runBlock("ready", { surface: { isDraft: false } }).status).toBe(0);
   });
   it.each([
-    { isDraft: true },
-    { baseRefName: "other" },
-    { state: "CLOSED" },
-    { headRefOid: "3".repeat(40) },
-    { baseRefOid: "3".repeat(40) },
-  ])("should reject failed readiness readback %j", (afterReady) => {
-    expect(runBlock("ready", { afterReady }).status).not.toBe(0);
+    "not JSON",
+    JSON.stringify([{ bucket: "pending", completedAt: null }]),
+    JSON.stringify([{ bucket: "fail", completedAt: "2026-09-28T13:00:00Z" }]),
+    JSON.stringify([{ bucket: "pass", completedAt: null }]),
+  ])("should reject a non-green refreshed check rollup", (checks) => {
+    expect(runBlock("ready", { checks }).status).not.toBe(0);
   });
 });
 
@@ -115,17 +126,17 @@ function runBlock(
       metadata,
       options.metadata ?? JSON.stringify({ ...surface, ...options.surface }),
     );
-    writeFileSync(
-      join(root, "after.json"),
-      JSON.stringify({ ...surface, isDraft: false, ...options.afterReady }),
-    );
+    const checks = join(root, "checks.json");
+    writeFileSync(checks, options.checks ?? JSON.stringify([
+      { bucket: "pass", completedAt: "2026-09-28T13:00:00Z" },
+    ]));
     writeFileSync(
       join(root, "gh"),
       `#!/bin/bash
 set -eu
 case "$1 $2" in
   "pr view") [ "$IS_MISSING" = false ] || exit 1; cat "$METADATA" ;;
-  "pr ready") cp "$AFTER_READY" "$METADATA" ;;
+  "pr checks") cat "$CHECKS_FILE" ;;
   *) exit 2 ;;
 esac
 `,
@@ -133,14 +144,16 @@ esac
     );
     const completed = spawnSync(
       "bash",
-      ["-eu", "-c", phase === "dispatch" ? blocks[0]! : blocks.at(-1)!],
+      ["-eu", "-c", phase === "dispatch" ? blocks[0]! : readyGate],
       {
         encoding: "utf8",
         env: {
           ...process.env,
           PATH: `${root}:${process.env.PATH}`,
           METADATA: metadata,
-          AFTER_READY: join(root, "after.json"),
+          CHECKS_FILE: checks,
+          CI_STATE: options.ciState ?? "green",
+          REPOSITORY: "example/repo",
           IS_MISSING: String(options.isMissing ?? false),
           PR_URL: "https://github.com/example/repo/pull/1",
           HOST: "github.com",

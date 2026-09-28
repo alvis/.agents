@@ -10,9 +10,9 @@ Review a remote GitHub pull request and publish the result where the author will
 
 ## Review directions
 
-Apply `coding:directions/review-evidence.md` to supplied independent source evidence before analysis. Read uncovered or invalidated implementation and every applicable standard; verified coverage may be reused. Always check the current publication surface, discussion, authorization, and CI. A standard violation or predicted defect is an implementation finding and requires a fix. An unmet operation, such as a stale base or pending rebase, is a process chore rather than a code-priority claim.
+Apply `coding:directions/review-evidence.md` to supplied independent source evidence before analysis. Read uncovered or invalidated implementation and every applicable standard; verified coverage may be reused. Always check the current publication surface, discussion, and CI. A standard violation or predicted defect is an implementation finding and requires a fix. An unmet operation, such as a stale base or pending rebase, is a process chore rather than a code-priority claim.
 
-Read [inline-review.md](../templates/inline-review.md) and [overall-review.md](../templates/overall-review.md) before preparing the assessment. Follow their presentation and authoring instructions when recording findings, review reasoning, limitations, trust caps, authorization evidence, and the substantive verdict in the structured assessment accepted by [review-publication.ts](../scripts/review-publication.ts). The executable renders those templates and enforces the publication contract. Use the size standard to choose reading order and reviewer slots, never to suppress a finding.
+Read [inline-review.md](../templates/inline-review.md) and [overall-review.md](../templates/overall-review.md) before preparing the assessment. Follow their presentation and authoring instructions when recording findings, review reasoning, limitations, trust caps, and the substantive verdict in the structured assessment accepted by [review-publication.ts](../scripts/review-publication.ts). The executable renders those templates and enforces the publication contract. Use the size standard to choose reading order, never to suppress a finding.
 
 <IMPORTANT>
 Without valid independent source evidence, the first pass is exhaustive discovery over the complete pinned review unit: identify every independently actionable issue it can reveal. Do not stage a known concern for a later pass; later passes follow the impact mission in `coding:directions/review-evidence.md`, verifying affected fixes, dispositions, and regressions. Reuse the original independent reviewer; start fresh broad analysis only for recorded risk or unbounded impact.
@@ -222,11 +222,11 @@ Every zone requires Summary, `## 🎯 Goal`, `## ✅ Requirements`, `## 🧵 Con
 | Zone | Additional PR-body evidence |
 |---|---|
 | green | None |
-| yellow | `## ⚠️ Risk`, `## 🧭 Test Plan`, and the policy-required reviewer evidence |
-| red | Yellow evidence plus `## 📐 Why This Size` and the policy-required reviewer evidence |
-| black | Red evidence plus full review of the self-contained unit; exact-revision code-owner authorization is required only for `APPROVE` |
+| yellow | `## ⚠️ Risk`, `## 🧭 Test Plan` |
+| red | Yellow evidence plus `## 📐 Why This Size` |
+| black | Red evidence plus full review of the self-contained unit |
 
-A black-zone review first judges whether the surface is genuinely one self-contained unit, then reviews it completely. Missing authorization does not suppress findings or stop a `REQUEST_CHANGES` verdict. It caps only a substantive `APPROVE` at `COMMENT`. Before approval, verify that the canonical body supplies specific Risk, Test plan, and Why this size evidence. Then judge only the live authorization helper receipt's `authorization_body` and `rationale`: its atomic subject, coupling, and split consequence must be specific. A generic or tautological indivisibility rationale blocks approval despite structural helper acceptance. An earlier fetched comment or body cannot authorize approval. Deleted, binary, generated, and vendored paths carry no reviewable lines; list them as not reviewed.
+A black-zone review first judges whether the surface is genuinely one self-contained unit, then reviews it completely. Before AI approval, verify specific Risk, Test plan, and Why this size evidence in the canonical body. The human verification task is added only after AI review and CI pass. Deleted, binary, generated, and vendored paths carry no reviewable lines; list them as not reviewed.
 
 ### Run the mechanical candidate scan
 
@@ -294,9 +294,9 @@ A re-review after a push adds only newly evidenced findings. Revalidate affected
 
 Follow [review-publishing.md](review-publishing.md). The independent reviewer supplies every required semantic field and runs the contract's `approve` action; that action rejects missing static standards evidence, test-sensitivity reasoning, scoped execution evidence, limitations, inconsistent trust caps, findings, or a verdict inconsistent with those findings. A runtime-test waiver fills only `tests.execution`; it cannot remove any other assessment field.
 
-The contract deterministically renders one native review from the templates with its pinned `commit_id` and bound inline findings. Inspect that rendered output against the templates before handing off approval. It preserves the substantive verdict in the body and receipt while deriving a GitHub `COMMENT` event for trust-capped or self-authored reviews. Black-zone approval authorization is live-checked again immediately before the write. The publication agent receives only the approval artifact and runs the exact canonical publisher command; it may not compose, summarize, relabel, or repair the approved content.
+The contract deterministically renders one native review from the templates with its pinned `commit_id` and bound inline findings. Inspect that rendered output against the templates before handing off approval. It preserves the substantive verdict in the body and receipt while deriving a GitHub `COMMENT` event for trust-capped or self-authored reviews. The publication agent receives only the approval artifact and runs the exact canonical publisher command; it may not compose, summarize, relabel, or repair the approved content.
 
-The publisher revalidates every receipt relationship and exact payload byte, re-reads the PR head, base ref, base OID, author, publisher identity, discussion target when applicable, and live black-zone authorization, then sends those same bytes in one GitHub call. Missing, malformed, altered, stale, or unreadable evidence stops before the write. A 422 is not repaired by editing the artifact: the independent reviewer must update the structured assessment and issue a new receipt. `--dry-run` performs the live reads and prints the exact payload without the final write.
+The publisher revalidates every receipt relationship and exact payload byte, re-reads the PR head, base ref, base OID, author, publisher identity, discussion target when applicable, then sends those same bytes in one GitHub call. Missing, malformed, altered, stale, or unreadable evidence stops before the write. A 422 is not repaired by editing the artifact: the independent reviewer must update the structured assessment and issue a new receipt. `--dry-run` performs the live reads and prints the exact payload without the final write.
 
 ## Verification
 

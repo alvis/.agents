@@ -33,7 +33,6 @@ interface RunOptions {
   author?: string;
   baseOid?: string;
   baseRef?: string;
-  blackAuthorization?: "same" | "changed" | "missing";
   headOid?: string;
   isMissing?: boolean;
   metadata?: string;
@@ -61,27 +60,6 @@ const headOid = "1".repeat(40);
 const baseOid = "2".repeat(40);
 const changedOid = "3".repeat(40);
 const evidenceDigest = "a".repeat(64);
-const authorizationBody = [
-  "Black-zone authorization",
-  `Head OID: \`${headOid}\``,
-  `Base OID: \`${baseOid}\``,
-  "Authorization: I authorize this one-off black-zone publication.",
-  "Indivisibility: the review gate and its harness tests because they share a command contract; otherwise the gate can fail open",
-].join("\n");
-const blackZoneReceipt = {
-  author_login: "owner",
-  authorization_body: authorizationBody,
-  base_oid: baseOid,
-  comment_id: 91,
-  comment_node_id: "IC_91",
-  comment_url: "https://github.com/example/project/pull/35#issuecomment-91",
-  head_oid: headOid,
-  rationale: {
-    coupling: "they share a command contract",
-    consequence: "the gate can fail open",
-    subject: "the review gate and its harness tests",
-  },
-} as const;
 const scriptPath = join(import.meta.dirname, "review-publication.ts");
 const common = {
   contract_version: CONTRACT_VERSION,
@@ -129,8 +107,7 @@ const finding = {
 const review = {
   ...common,
   kind: "review",
-  authorization: {
-    black_zone_receipt: null,
+  review_context: {
     review_evidence_sha256: evidenceDigest,
     zone: "green",
   },
@@ -888,10 +865,16 @@ describe("cmd:review-publication", () => {
       ...review,
       assessment: {
         ...review.assessment,
+        trust_caps: ["authorization-required"],
+      },
+    },
+    {
+      ...review,
+      assessment: {
+        ...review.assessment,
         findings: [{ ...finding, kind: null, priority: "P1" }],
       },
     },
-    { ...review, authorization: { ...review.authorization, zone: "black" } },
   ])(
     "should reject incomplete or inconsistent semantic evidence before transport %#",
     (assessment) => {
@@ -1053,32 +1036,18 @@ describe("cmd:review-publication", () => {
     expect(result.writes).toEqual([]);
   });
 
-  it.each([
-    { state: "same", accepted: true },
-    { state: "changed", accepted: false },
-    { state: "missing", accepted: false },
-  ] as const)(
-    "should recheck black-zone authorization before publication: $state",
-    ({ state, accepted }) => {
-      const approval = createReviewPublicationReceipt({
-        ...review,
-        authorization: {
-          ...review.authorization,
-          black_zone_receipt: blackZoneReceipt,
-          zone: "black",
-        },
-      });
-      const result = runCommand(approval, { blackAuthorization: state });
+  it("should publish a black-zone review without a separate authorization receipt", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: { ...review.review_context, zone: "black" },
+    });
+    const result = runCommand(approval);
 
-      expect(result.status === 0).toBe(accepted);
-      expect(result.writes).toHaveLength(accepted ? 1 : 0);
-      if (accepted) {
-        expect(result.writes[0]?.body).toBe(
-          Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
-        );
-      }
-    },
-  );
+    expect(result.status).toBe(0);
+    expect(result.writes.map((write) => write.body)).toEqual([
+      Buffer.from(approval.payload_utf8_base64, "base64").toString("utf8"),
+    ]);
+  });
 
   it("should derive the GitHub event from the publishing account rather than reviewer metadata", () => {
     const approval = createReviewPublicationReceipt({
@@ -1210,10 +1179,7 @@ appendFileSync(process.env.PUBLICATION_RECORD, JSON.stringify({arguments: args, 
 if (isWrite) { process.stdout.write('{"id":91}\\n'); process.exit(0); }
 if (Number(process.env.PUBLICATION_METADATA_EXIT)) process.exit(Number(process.env.PUBLICATION_METADATA_EXIT));
 if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
-else if (args.includes("--paginate")) process.stdout.write(process.env.PUBLICATION_AUTHORIZATION_COMMENTS);
 else if (args.includes("graphql")) process.stdout.write(process.env.PUBLICATION_THREAD_METADATA);
-else if (args.includes("repos/example/project")) process.stdout.write(JSON.stringify({name: "project", owner: {login: "example", type: "Organization"}, default_branch: "main"}));
-else if (args.includes("orgs/example/memberships/owner")) process.stdout.write(JSON.stringify({state: "active", role: "admin"}));
 else if (args.some(arg => /comments\\/81$/.test(arg))) process.stdout.write(JSON.stringify({pull_request_url: "https://api.github.com/repos/example/project/pulls/" + process.env.PUBLICATION_RELATION, issue_url: "https://api.github.com/repos/example/project/issues/" + process.env.PUBLICATION_RELATION}));
 else process.stdout.write(process.env.PUBLICATION_METADATA);
 `,
@@ -1266,20 +1232,6 @@ else process.stdout.write(process.env.PUBLICATION_METADATA);
         REVIEW_PUBLICATION_GH_BIN: executable,
         PUBLICATION_RECORD: recordPath,
         PUBLICATION_USER: options.publisher ?? "publisher",
-        PUBLICATION_AUTHORIZATION_COMMENTS: JSON.stringify([
-          options.blackAuthorization === "missing"
-            ? []
-            : [
-                {
-                  author_association: "OWNER",
-                  body: authorizationBody,
-                  html_url: blackZoneReceipt.comment_url,
-                  id: options.blackAuthorization === "changed" ? 92 : 91,
-                  node_id: blackZoneReceipt.comment_node_id,
-                  user: { login: "owner", type: "User" },
-                },
-              ],
-        ]),
         PUBLICATION_RELATION: String(options.relationPullNumber ?? 35),
         PUBLICATION_THREAD_METADATA:
           options.threadMetadata ??

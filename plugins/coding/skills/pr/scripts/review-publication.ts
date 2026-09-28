@@ -11,7 +11,6 @@ type PublicationKind =
   "discussion-reply" | "review" | "review-supplement" | "status";
 type ReviewEvent = "APPROVE" | "COMMENT" | "REQUEST_CHANGES";
 type TrustCap =
-  | "authorization-required"
   | "ci-red"
   | "partial-review"
   | "spec-unreadable"
@@ -149,8 +148,7 @@ interface CommonAssessment {
 
 interface ReviewPublicationAssessment extends CommonAssessment {
   readonly assessment: ReviewAssessment;
-  readonly authorization: {
-    readonly black_zone_receipt: JsonObject | null;
+  readonly review_context: {
     readonly review_evidence_sha256: string;
     readonly zone: "black" | "green" | "red" | "yellow";
   };
@@ -196,7 +194,6 @@ export interface ReviewPublicationReceipt {
   readonly approved_assessment: PublicationAssessment;
   readonly assessment_sha256: string;
   readonly binding: {
-    readonly authorization_sha256: string;
     readonly base_oid: string;
     readonly base_ref: string;
     readonly head_oid: string;
@@ -253,7 +250,6 @@ const OWNER_PATTERN = /^[A-Za-z0-9_.-]+$/;
 const REPO_PATTERN = /^[A-Za-z0-9_.-]+$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9_.:-]+$/;
 const TRUST_CAPS = new Set<TrustCap>([
-  "authorization-required",
   "ci-red",
   "partial-review",
   "spec-unreadable",
@@ -308,18 +304,10 @@ export function createReviewPublicationReceipt(
     "utf8",
   );
   const review = assessment.kind === "review" ? assessment : null;
-  const authorizationSha256 =
-    review === null
-      ? assessment.semantic_approval.evidence_sha256
-      : hashJson({
-          black_zone_receipt: review.authorization.black_zone_receipt,
-          review_evidence_sha256: review.authorization.review_evidence_sha256,
-        });
   return {
     approved_assessment: assessment,
     assessment_sha256: hashJson(assessment),
     binding: {
-      authorization_sha256: authorizationSha256,
       base_oid: assessment.target.base_oid,
       base_ref: assessment.target.base_ref,
       head_oid: assessment.target.head_oid,
@@ -493,7 +481,6 @@ export function publishReviewPublication(
   }
   validateLiveSelfReview(validated, liveAuthor);
   validateLiveDiscussionTarget(validated, executable);
-  validateLiveBlackAuthorization(validated, executable);
   const request = publicationRequest(validated);
   if (options.dryRun === true) return request.bytes.toString("utf8");
   const completed = spawnSync(executable, request.arguments_, {
@@ -580,32 +567,24 @@ function parseReviewAssessment(
       "reviewer and publication agent must be independent identities",
     );
   }
-  const authorization = objectValue(
-    input.authorization,
-    "review authorization",
+  const reviewContext = objectValue(
+    input.review_context,
+    "review context",
   );
   const zone = enumValue(
-    authorization.zone,
+    reviewContext.zone,
     ["black", "green", "red", "yellow"] as const,
     "review zone",
   );
-  const blackZoneReceipt =
-    authorization.black_zone_receipt === null
-      ? null
-      : objectValue(
-          authorization.black_zone_receipt,
-          "black-zone authorization receipt",
-        );
   const assessment = parseReviewJudgment(input.assessment);
   validateVerdict(assessment);
-  validateTrustCaps(assessment, zone, blackZoneReceipt);
+  validateTrustCaps(assessment);
   return {
     ...common,
     assessment,
-    authorization: {
-      black_zone_receipt: blackZoneReceipt,
+    review_context: {
       review_evidence_sha256: sha256Value(
-        authorization.review_evidence_sha256,
+        reviewContext.review_evidence_sha256,
         "review evidence digest",
       ),
       zone,
@@ -1019,11 +998,7 @@ function validateVerdict(assessment: ReviewAssessment): void {
   }
 }
 
-function validateTrustCaps(
-  assessment: ReviewAssessment,
-  zone: ReviewPublicationAssessment["authorization"]["zone"],
-  blackZoneReceipt: JsonObject | null,
-): void {
+function validateTrustCaps(assessment: ReviewAssessment): void {
   const caps = new Set(assessment.trust_caps);
   if (
     caps.has("tests-unconvincing") !==
@@ -1036,23 +1011,6 @@ function validateTrustCaps(
   if (caps.has("partial-review") !== !assessment.limitations.review_complete) {
     throw new Error(
       "partial-review cap must exactly match review completeness",
-    );
-  }
-  if (
-    blackZoneReceipt !== null &&
-    (zone !== "black" || assessment.substantive_verdict !== "APPROVE")
-  ) {
-    throw new Error(
-      "black-zone authorization evidence applies only to black-zone approval",
-    );
-  }
-  const authorizationRequired =
-    zone === "black" &&
-    assessment.substantive_verdict === "APPROVE" &&
-    blackZoneReceipt === null;
-  if (caps.has("authorization-required") !== authorizationRequired) {
-    throw new Error(
-      "authorization-required cap must exactly match black-zone approval authorization",
     );
   }
 }
@@ -1412,7 +1370,7 @@ function renderOverallReview(
           ? "✅"
           : "❌",
       verdict_sentence: renderVerdictSentence(input),
-      zone: input.authorization.zone,
+      zone: input.review_context.zone,
     },
     {
       excluded_paths: {
@@ -1748,60 +1706,6 @@ function validateLiveDiscussionTarget(
   if (!relation.endsWith(expectedSuffix)) {
     throw new Error(
       "discussion reply target does not belong to the approved pull request",
-    );
-  }
-}
-
-function validateLiveBlackAuthorization(
-  receipt: ReviewPublicationReceipt,
-  executable: string,
-): void {
-  if (receipt.kind !== "review") return;
-  const assessment = receipt.approved_assessment as ReviewPublicationAssessment;
-  if (
-    assessment.authorization.zone !== "black" ||
-    assessment.assessment.substantive_verdict !== "APPROVE" ||
-    assessment.authorization.black_zone_receipt === null
-  ) {
-    return;
-  }
-  const helper = resolve(
-    dirname(modulePath),
-    "verify-black-zone-authorization.ts",
-  );
-  const executableDirectory = dirname(resolve(executable));
-  const completed = spawnSync(
-    "bun",
-    [
-      "run",
-      helper,
-      assessment.target.host,
-      `${assessment.target.owner}/${assessment.target.repo}`,
-      String(assessment.target.pull_number),
-      assessment.target.head_oid,
-      assessment.target.base_oid,
-    ],
-    {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PATH: `${executableDirectory}:${process.env.PATH ?? ""}`,
-      },
-    },
-  );
-  if (completed.status !== 0) {
-    throw new Error("black-zone authorization changed before publication");
-  }
-  const liveReceipt = objectValue(
-    JSON.parse(completed.stdout) as unknown,
-    "live black-zone authorization",
-  );
-  if (
-    canonicalJson(liveReceipt) !==
-    canonicalJson(assessment.authorization.black_zone_receipt)
-  ) {
-    throw new Error(
-      "black-zone authorization receipt changed before publication",
     );
   }
 }

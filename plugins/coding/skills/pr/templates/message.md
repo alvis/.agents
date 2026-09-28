@@ -114,11 +114,7 @@ Substitution rules:
 
 ## 🧪 Verification
 
-<!-- checks that must pass before sign-off, specific to this change, ticked as each one is confirmed, with its result and supporting evidence. Name every applicable standard, its green scan/review result, exact head/base OIDs, and the command or semantic evidence supporting it. Standards checks must be green before submission; reviewer slots may remain pending until the published draft is reviewed. Change-specific checks are required; these standard checks supplement rather than replace them: tests added or updated · docs updated where user-visible · CI green locally · no new lint or type errors. Add one reviewer triplet for each reviewer required by the standard-owned active size-zone policy, in slot order. Do not duplicate reviewer counts here; derive them from the active size-zone policy in `coding:standards/git/`:
-       - [ ] Reviewer slot N assigned
-       - [ ] Reviewer slot N reviewed `<head-oid>` against `<base-oid>`
-       - [ ] Reviewer slot N approved `<head-oid>` against `<base-oid>`
-     Text-only authoring keeps the identity-free slot label. Publication replaces it with the assigned `@login` when known. Compare the PR's pre-publication and verified post-publication head/base OID pairs. When either differs, replace both OID placeholders and reset that reviewer's reviewed and approved tasks until that reviewer acts on the new surface; a no-op publication preserves evidence bound to the unchanged pair. Authoring may publish these tasks pending; review conformance requires all three tasks checked for the active pair. When Additional Notes records deviations from the specification or original request, append `- [ ] Specification deviations approved: <what changed and why>`. -->
+<!-- Record change-specific checks and revision-bound evidence. The published draft contains no reviewer tasks. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked reviewer block for the exact head/base. Record any specification deviation as an unchecked task. -->
 {{verification_body}}
 
 ## 🚫 Boundary [ Optional ]

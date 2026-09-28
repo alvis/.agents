@@ -2,7 +2,7 @@
 
 Load this reference after `coding:pr create` or `coding:pr update` has pushed every selected head and verified each PR's draft state and head/base pair. Independent source evidence may come from the integrated delivery owner through `coding:directions/review-evidence.md`; PR publication review starts only after the hosted draft exists.
 
-Dispatch review without a prior authorization receipt, including for a self-contained black-zone draft. The review workflow performs the full review and owns the fail-closed authorization check only when its substantive verdict would submit `APPROVE`. Missing authorization caps that event at `COMMENT` and returns `authorization_required`; it never suppresses findings or prevents a `REQUEST_CHANGES` verdict. The reviewer parses the helper's live structured receipt and uses its `authorization_body` and `rationale` as the sole semantic authorization-review input; stale earlier bodies cannot authorize approval.
+Review the published draft against its exact head and base. Black-zone Risk, Test plan, and Why this size evidence remains reviewable; a human verification task is added to the PR description after AI review and CI pass. Do not seek or verify a separate authorization comment.
 
 Follow the repository delegation contract at `governance:standards/delegation/`. Partition independent stacks into sequential bottom-to-top batches of at most ten stack review units. A singleton PR is a one-PR stack. One independent reviewer handles each batch. For the initial pass, prefer its already assigned delivery reviewer with verified source evidence; otherwise start a fresh critic. Do not share a session across unrelated batches.
 
@@ -77,7 +77,6 @@ When a pass requires replies but no code change, post them, then have the indepe
 
 When the only remaining trust cap is red CI, do not spend another review attempt on the same hosted state. Return `action: repair_ci_then_review` with the capped PR, head/base map, check evidence, and every non-CI disposition already completed. The create/update caller enters its polling/repair phase, republishes any repair with the internal `--publish-only` continuation context, then resumes review convergence with the retained independent reviewer and an impact-bounded mission. This preserves the existing `retry count unchanged` contract: the CI-only return leaves `REVIEW_ITERATION` unchanged, and the targeted verification after repair increments it under the guard above. A CI-only status transition requires verification of that check evidence, not another source pass. A cap for unconvincing tests, a moved head/base, or incomplete review is not CI-only and follows the ordinary blocker path.
 
-When the only remaining cap is `authorization_required`, do not spend another review attempt or hold back draft publication and CI. Return `action: await_code_owner_authorization` with an `authorization_required` list that contains every blocked PR surface, each with its `pr_url`, `head_oid`, and `base_oid`. The create/update caller reports the green published drafts with that complete list; a later update reruns review after the required code-owner comments exist.
 
 ## Exit gate
 
@@ -93,41 +92,6 @@ Review convergence passes only when all of these hold for every current head:
 - every acted-on comment has a reply tied to remote evidence;
 - each PR head/base target and OID still equal the reviewed surface.
 
-After the exit gate passes, end review convergence without another speculative pass and promote each approved draft surface to ready for review. Publication's required CI checks still apply. Bind `SUBSTANTIVE_VERDICT` and `REVIEWED_HEAD_OID`, `REVIEWED_BASE_REF`, and `REVIEWED_BASE_OID` from that surface's latest independent publication review evidence, not its submitted GitHub event. Retain the expected surface map from publication; never replace it with observed values to clear a mismatch.
-
-```bash
-[ "$SUBSTANTIVE_VERDICT" = APPROVE ] &&
-  [ "$REVIEWED_HEAD_OID" = "$EXPECTED_HEAD_OID" ] &&
-  [ "$REVIEWED_BASE_REF" = "$EXPECTED_BASE_REF" ] &&
-  [ "$REVIEWED_BASE_OID" = "$EXPECTED_BASE_OID" ] || {
-  printf '%s\n' 'No approval for the current head/base surface; keep the PR draft.' >&2
-  exit 1
-}
-PR_METADATA=$(gh pr view "$PR_URL" --repo "$HOST/$OWNER/$REPO" \
-  --json state,headRefOid,baseRefName,baseRefOid,isDraft) || exit 1
-jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
-  --arg base_oid "$EXPECTED_BASE_OID" '
-  .state == "OPEN" and (.isDraft | type) == "boolean" and
-  .headRefOid == $head and .baseRefName == $base and .baseRefOid == $base_oid
-' >/dev/null <<<"$PR_METADATA" || {
-  printf '%s\n' 'PR changed after review; stop before readiness promotion.' >&2
-  exit 1
-}
-if jq -e '.isDraft' >/dev/null <<<"$PR_METADATA"; then
-  gh pr ready "$PR_URL" --repo "$HOST/$OWNER/$REPO" || exit 1
-fi
-PR_METADATA=$(gh pr view "$PR_URL" --repo "$HOST/$OWNER/$REPO" \
-  --json state,headRefOid,baseRefName,baseRefOid,isDraft) || exit 1
-jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
-  --arg base_oid "$EXPECTED_BASE_OID" '
-  .state == "OPEN" and .isDraft == false and
-  .headRefOid == $head and .baseRefName == $base and .baseRefOid == $base_oid
-' >/dev/null <<<"$PR_METADATA" || {
-  printf '%s\n' 'Ready transition is unverified or the reviewed surface changed.' >&2
-  exit 1
-}
-```
-
-If the final read fails or differs, do not report readiness as verified. Record the observed partial outcome and stop for publication-owner reconciliation; never mutate a concurrently changed surface to hide the failure.
+After the exit gate passes, end review convergence without another speculative pass. Keep the surface draft until hosted CI passes. Bind `SUBSTANTIVE_VERDICT` and `REVIEWED_HEAD_OID`, `REVIEWED_BASE_REF`, and `REVIEWED_BASE_OID` from that surface's latest independent publication review evidence, not its submitted GitHub event. Retain the expected surface map from publication; never replace it with observed values to clear a mismatch.
 
 Return the converged head map and review evidence to the caller. The initial publication caller continues to its initial CI poll; a red-CI repair caller continues to its repair-specific schedule. Do not start either poll here.

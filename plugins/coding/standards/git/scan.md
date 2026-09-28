@@ -11,6 +11,7 @@ Any violation is an issue that requires a fix. Use `write.md` for compliant outc
 
 Syntax alone cannot establish these findings.
 
+- `GIT-PR-SIZE-04` — On a ready black-zone PR, inspect the managed Verification block for a scope-and-risk task bound to the current head/base OIDs; either check state is valid after publication. Drafts must have no reviewer tasks.
 - `GIT-PR-TYPE-02`…`GIT-PR-TYPE-05` — Inspect the implementation diff for public shape or feature prerequisite scaffolding stranded without its first implementation, migrations coupled to logic, mechanical changes hiding behavior, and files without a durable purpose or prohibited generated artifacts retained in the head. Deletions of prohibited artifacts are compliant. A declaration that is itself a complete type-level implementation and a standalone initialization whose requested result is the runnable or buildable baseline are complete rather than stranded.
 - `GIT-PR-STACK-04` — First verify implemented feature-flag support in the target project. Then inspect changed flags and project-required rollout controls against [the rule](rules/GIT-PR-STACK-04.md); never require new flag infrastructure.
 
@@ -22,7 +23,7 @@ Do not report commit messages, branch names, PR titles, draft state, labels, sta
 - DO NOT misclassify generated paths or authored net LOC [`GIT-PR-SIZE-01`]
 - DO NOT omit required Risk or Test plan evidence outside green [`GIT-PR-SIZE-02`]
 - DO NOT omit a specific indivisibility rationale in red [`GIT-PR-SIZE-03`]
-- DO NOT publish a black draft without its required message evidence or approve it without exact-revision code-owner authorization [`GIT-PR-SIZE-04`]
+- DO NOT publish a black draft without its required message evidence or omit its ready-state exact-revision verification task [`GIT-PR-SIZE-04`]
 - DO NOT publish public shape or feature prerequisite scaffolding without the first implementation that fulfills or consumes it [`GIT-PR-TYPE-02`]
 - DO NOT mix migrations with logic or omit migration rollback evidence [`GIT-PR-TYPE-03`]
 - DO NOT mix mechanical refactors with behavior changes [`GIT-PR-TYPE-04`]
@@ -37,7 +38,7 @@ Do not report commit messages, branch names, PR titles, draft state, labels, sta
 | `GIT-PR-SIZE-01` | Wrong size inputs or zone | Generated path omitted from file count |
 | `GIT-PR-SIZE-02` | Missing non-green evidence | Yellow PR without Risk |
 | `GIT-PR-SIZE-03` | Missing red rationale | Generic or absent Why this size |
-| `GIT-PR-SIZE-04` | Missing black evidence or approval gate | Approval without live code-owner authorization |
+| `GIT-PR-SIZE-04` | Missing black evidence or ready verification task | Ready black PR without a verification task |
 | `GIT-PR-TYPE-02` | Public shape stranded from first implementation | `ArchiveOrderInput` now; `archiveOrder()` later |
 | `GIT-PR-TYPE-03` | Migration mixed with logic or missing rollback | Schema and business rule together |
 | `GIT-PR-TYPE-04` | Mechanical and behavioral changes mixed | Rename plus new method |

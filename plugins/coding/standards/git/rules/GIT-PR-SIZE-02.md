@@ -8,13 +8,13 @@ warning
 
 A yellow-zone PR changes **≤ 30 files** AND has **≤ 1200 authored net LOC** while exceeding green thresholds. File count includes generated paths; LOC excludes their additions and deletions under `GIT-PR-SIZE-01`.
 
-The canonical PR template owns the additional evidence required for this zone. Yellow requires one confirmed independent-reviewer evidence triplet bound to the exact head/base OIDs.
+The canonical PR template owns the additional Risk and Test plan evidence required for this zone. Human verification tasks are generated after AI review and hosted CI pass.
 
 The limits above are a human-readable projection of `../../../skills/pr/assets/size-thresholds.json`, the sole numeric threshold authority, and contract verification checks them against that asset.
 
 ## Fix
 
-Author the PR body through the canonical template and supply its yellow-zone evidence from the change plus one reviewer triplet; do not publish size counts or zone bookkeeping.
+Author the PR body through the canonical template and supply its yellow-zone evidence from the change; do not publish size counts or zone bookkeeping.
 
 ### Why this matters
 

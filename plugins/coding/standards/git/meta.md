@@ -29,11 +29,11 @@ Required exception note fields:
 - `temporary_mitigation`
 - `follow_up_action`
 
-Record the note in the PR discussion against the exact head and base OIDs. Repository files cannot change the fixed PR-size thresholds. `GIT-PR-SIZE-04` uses its separate exact-revision code-owner authorization gate, not this exception policy.
+Record the note in the PR discussion against the exact head and base OIDs. Repository files cannot change the fixed PR-size thresholds. `GIT-PR-SIZE-04` adds a human verification task to the ready PR description; that task is outside this exception policy.
 
 ## Rule Groups
 
 - `GIT-PR-02`: Rendered PR-message conformance.
-- `GIT-PR-SIZE-*`: Diff-size inputs, zones, evidence, and approval gates.
+- `GIT-PR-SIZE-*`: Diff-size inputs, zones, evidence, and ready-state verification tasks.
 - `GIT-PR-TYPE-02..05`: Atomic feature composition, migration and mechanical separation, and generated-output marking.
 - `GIT-PR-STACK-04`: Existing feature-flag support and changed-flag evidence.

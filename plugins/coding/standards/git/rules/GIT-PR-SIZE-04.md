@@ -6,42 +6,23 @@ warning
 
 ## Intent
 
-A black-zone PR changes **> 60 files** OR **> 2000 authored net LOC**. Every changed path contributes to the file threshold; generated-file additions and deletions do not contribute to LOC under `GIT-PR-SIZE-01`. It remains black: repository configuration cannot change these thresholds. A genuinely self-contained unit may be pushed as a draft and tested without prior authorization only when its canonical PR body supplies specific Risk, Test plan, and Why this size evidence. Review approval blocks until its exact surface receives the red-zone policy's two reviewer evidence triplets and one-off code-owner authorization in the PR discussion.
+A black-zone PR changes **> 60 files** OR **> 2000 authored net LOC**. Every changed path contributes to the file threshold; generated-file additions and deletions do not contribute to LOC under `GIT-PR-SIZE-01`. Repository configuration cannot change these thresholds. A genuinely self-contained unit may be published as a draft only when its canonical body gives specific Risk, Test plan, and Why this size evidence. After AI review and hosted CI pass, the ready PR description receives an unchecked exact-revision human verification task.
 
-The limits above are the open-ended projection of the highest bounds in `../../../skills/pr/assets/size-thresholds.json`, the sole numeric threshold authority, and contract verification checks them against that asset.
+The limits above project the highest bounds in `../../../skills/pr/assets/size-thresholds.json`, the sole numeric threshold authority.
 
 ## Fix
 
-Report this finding once; do not auto-post a canned PR comment:
-
-```text
-Black-zone PR: keep one self-contained review unit; exact-revision code-owner authorization is required before approval.
-```
-
-If splitting is genuinely impossible, a [code owner](../../../references/code-owner.md) must author a PR discussion comment as a human GitHub user in this form:
-
-```text
-Black-zone authorization
-Head OID: `<full-oid>`
-Base OID: `<full-oid>`
-Authorization: I authorize this one-off black-zone publication.
-Indivisibility: <atomic subject> because <coupling>; otherwise <consequence>
-```
-
-The comment has exactly these five ordered nonempty lines, with no extra or duplicate marker lines. The helper verifies this structure and the author's code-owner status, then returns the live matched comment as one structured receipt. Full review uses only that receipt's `authorization_body` and `rationale` to judge whether the named subject, coupling, and consequence are specific to the change; a generic or tautological rationale is a blocking finding. An earlier fetched comment or body cannot authorize approval.
-
-The authoring workflow may push the exact draft head/base pair, run CI, and dispatch review without prior authorization. Immediately before a black-zone review would submit `APPROVE`, it verifies the live comment mechanically with [verify-black-zone-authorization.ts](../../../skills/pr/scripts/verify-black-zone-authorization.ts). Failure caps that event at `COMMENT` and returns `authorization_required` with the exact blocked head/base OIDs; it does not suppress review findings or a `REQUEST_CHANGES` verdict. The workflow never creates or edits an exception/configuration file and never posts the authorization itself. PR bodies, reviews, bot or non-code-owner comments, stale OIDs, structurally invalid comments, and generic or tautological rationales never count. Any head or base OID change invalidates the comment.
+Explain the concrete coupling that makes this unit indivisible in Why this size, and name the risks and tests. Keep the draft free of reviewer tasks. The ready transition runs `../../../skills/pr/scripts/generate-reviewer-tasks.ts` to add an unchecked black-zone verification task for its exact head and base. Human task completion is visible in the PR description; no comment or programmatic approval check authorizes AI review.
 
 ### Why this matters
 
-- Reviewer recall drops sharply past ~60 files; bugs hide in the long tail of the diff.
-- Exact-revision code-owner authorization preserves engineering judgment for a legitimate atomic change without weakening the canonical thresholds.
+- A large review surface can hide defects in the long tail of the diff; specific rationale and test evidence help a human verify it.
+- An exact-revision task keeps the requested human verification visible when the PR changes.
 
 ## Edge Cases
 
-- A PR with more than 60 generated paths (for example, SDK regeneration) remains black through the unchanged file-count threshold even though those paths contribute no LOC. It may justify authorization, but receives a full review.
-- A black PR opened for "speed of review" contradicts the rule — speed is exactly what the zone threshold protects.
-- Authorization is one-off and revision-bound; it cannot establish a repository-wide exception.
+- More than 60 generated paths remain black through the unchanged file threshold even when they contribute no authored LOC.
+- A changed head or base invalidates the task and requires a new AI review, hosted CI pass, and task generation.
 
 ## Related
 
