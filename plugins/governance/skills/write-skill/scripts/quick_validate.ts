@@ -1,11 +1,23 @@
 #!/usr/bin/env bun
 
-import { existsSync, readFileSync, statSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import {
   basename,
   dirname,
   extname,
   isAbsolute,
+  join,
   relative,
   resolve,
 } from "node:path";
@@ -53,6 +65,7 @@ const MODEL_SELECTION_FIELDS = new Set([
 const CLAUDE_TIMEOUT_MILLISECONDS = 30_000;
 const INTELLIGENCE_MAPPING =
   "essential/skills/install/references/intelligence-levels.json";
+const GOVERNANCE_ROOT = resolve(import.meta.dirname, "../../..");
 
 /** One policy problem found in a skill file, optionally bound to a body line. */
 export type PolicyIssue = { message: string; line?: number };
@@ -872,8 +885,95 @@ export function runClaudeValidation(
   const results: Array<Record<string, unknown>> = [];
   let failed = false;
   for (const target of targets) {
-    const command = ["claude", "plugin", "validate", "--strict", target];
+    let temporaryRoot: string | undefined;
     try {
+      const pluginRoots = existsSync(
+        resolve(target, ".claude-plugin/plugin.json"),
+      )
+        ? [target]
+        : existsSync(resolve(target, "plugins"))
+          ? readdirSync(resolve(target, "plugins"), { withFileTypes: true })
+              .filter(
+                (entry) =>
+                  entry.isDirectory() &&
+                  existsSync(
+                    resolve(
+                      target,
+                      "plugins",
+                      entry.name,
+                      ".claude-plugin/plugin.json",
+                    ),
+                  ),
+              )
+              .map((entry) => resolve(target, "plugins", entry.name))
+          : [];
+      const templates = pluginRoots.flatMap((pluginRoot) => {
+        const agents = resolve(pluginRoot, "agents");
+        return existsSync(agents)
+          ? readdirSync(agents, { withFileTypes: true })
+              .filter((entry) => entry.isDirectory())
+              .map((entry) => resolve(agents, entry.name))
+          : [];
+      });
+      let validationTarget = target;
+      if (templates.length > 0) {
+        const resolver = Bun.spawnSync(
+          [resolve(GOVERNANCE_ROOT, "scripts/plugin-root"), "essential"],
+          {
+            stdout: "pipe",
+            stderr: "pipe",
+            env: { ...process.env, CLAUDE_PLUGIN_ROOT: GOVERNANCE_ROOT },
+          },
+        );
+        if (resolver.exitCode !== 0)
+          throw new Error(
+            `Cannot resolve Essential plugin: ${resolver.stderr.toString().trim()}`,
+          );
+        const essentialRoot = resolver.stdout.toString().trim();
+        temporaryRoot = mkdtempSync(
+          join(tmpdir(), "claude-plugin-validation-"),
+        );
+        validationTarget = join(temporaryRoot, "source");
+        cpSync(target, validationTarget, { recursive: true });
+        for (const template of templates) {
+          const stagedAgents = resolve(
+            validationTarget,
+            relative(target, dirname(template)),
+          );
+          const stitched = Bun.spawnSync(
+            [
+              "bun",
+              "run",
+              resolve(essentialRoot, "skills/install/scripts/stitch_agent.ts"),
+              "--harness",
+              "claude",
+              "--essential-root",
+              essentialRoot,
+              template,
+            ],
+            { stdout: "pipe", stderr: "pipe" },
+          );
+          if (stitched.exitCode !== 0)
+            throw new Error(
+              `Cannot stitch ${template}: ${stitched.stderr.toString().trim()}`,
+            );
+          rmSync(resolve(stagedAgents, basename(template)), {
+            recursive: true,
+          });
+          mkdirSync(stagedAgents, { recursive: true });
+          writeFileSync(
+            resolve(stagedAgents, `${basename(template)}.md`),
+            stitched.stdout,
+          );
+        }
+      }
+      const command = [
+        "claude",
+        "plugin",
+        "validate",
+        "--strict",
+        validationTarget,
+      ];
       const completed = Bun.spawnSync(command, {
         stdout: "pipe",
         stderr: "pipe",
@@ -905,6 +1005,9 @@ export function runClaudeValidation(
         status: "fail",
         output: `Unable to launch Claude validator: ${(error as Error).message}`,
       });
+    } finally {
+      if (temporaryRoot !== undefined)
+        rmSync(temporaryRoot, { recursive: true, force: true });
     }
   }
   return [failed ? 1 : 0, results];

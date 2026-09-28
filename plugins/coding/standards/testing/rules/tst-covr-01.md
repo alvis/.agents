@@ -2,7 +2,7 @@
 
 ## Intent
 
-Statements, branches, functions, and lines must each reach 100% for target code, excluding approved ignore-file exceptions (barrel/type-only files).
+Statements, branches, functions, and lines must each reach 100% for target code, excluding approved ignore-file exceptions (barrel/type-only files). Each exported runtime function must also have at least one permanent test that asserts its observable behavior, giving each public runtime entry point an explicit oracle even when incidental execution reaches 100% coverage. An existing consumer test counts when it explicitly exercises the function and asserts its observable effect; re-exports do not create another function or require another test. This minimum does not justify a duplicate test under `TST-CORE-04`; remove a no-value exported wrapper rather than manufacturing a call-only test for it.
 
 ## Fix
 
@@ -20,8 +20,9 @@ global: { lines: 100, statements: 100 }
 
 <IMPORTANT>
 - **100% statements, branches, functions, and lines** (excluding barrel and type files)
+- **At least one behavioral test per exported runtime function**; an existing consumer test may satisfy this minimum
 - Write tests ONE AT A TIME with coverage verification after each
-- If a test adds zero coverage improvement, keep it only when it provides distinct behavioral evidence; otherwise delete it immediately
+- Apply `TST-CORE-04` to every permanent test: retain tests for different behavior paths, distinct supported behavior, or meaningful edge cases, and remove unnecessary tests
 - Remove dead code BEFORE measuring coverage — the 100% threshold applies to living code only. Never keep an unused symbol, no-value wrapper, or change-detector test to satisfy the threshold; delete the dead subject (`GEN-DESN-04`, `FUNC-ARCH-03`) and the threshold applies to what remains.
 </IMPORTANT>
 

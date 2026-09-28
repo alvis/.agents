@@ -34,11 +34,10 @@ For mock typing patterns (`satisfies`, class type disambiguation, triple pattern
 ## Minimal Testing Principle
 
 <IMPORTANT>
-**Every test must add unique value. Redundant tests are maintenance debt.**
+Apply `TST-CORE-04` when deciding which tests belong permanently in the suite; remove unnecessary tests.
 
-- **100% coverage with ABSOLUTE MINIMUM tests** - One test per unique behavior path
+- **100% coverage with the minimum valuable tests** - Each retained test verifies a different behavior path, distinct supported behavior, or meaningful edge case under `TST-CORE-04`; each exported runtime function has a behavioral test under `TST-COVR-01`
 - Exclude barrel files (`index.ts`) and pure type files (`types.ts`) by placing `/* v8 ignore file */` at the top of the file
-- Every test must verify: different code path, different behavior, OR real edge case
 </IMPORTANT>
 
 For detailed guidance on test uniqueness, see `TST-CORE-04` and `TST-CORE-05`. For coverage thresholds and workflow, see `TST-COVR-01` through `TST-COVR-04`.

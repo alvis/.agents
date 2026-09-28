@@ -7,9 +7,9 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 ## Quick Scan
 
 - DO NOT bypass TypeScript safety requirements in tests [`TST-CORE-01`]
-- DO NOT implement behavior before its failing test; when an initially passing regression test covers already-correct behavior, temporarily mutate the implementation to prove the test fails for the named regression, then restore the implementation and rerun the test green before retaining it [`TST-CORE-02`](rules/tst-core-02.md)
+- DO NOT implement new supported behavior before its failing test; when an initially passing regression test covers already-correct behavior, temporarily mutate the implementation to prove the test fails for the named regression, then restore the implementation and rerun the test green before retaining it. A performance-only improvement may instead use a one-off local before/after measurement under `TST-CORE-04` [`TST-CORE-02`](rules/tst-core-02.md)
 - DO NOT use non-compliant test naming: `it(...)` must start with `should`; `describe(...)` titles scoped to a symbol must use the correct approved prefix: `fn:` function, `op:` operation, `sv:` service, `cl:` class, `mt:` method, `gt:` getter, `st:` setter, `re:` regex, `ty:` allowed compiler-observable type subject, `rc:` React component, `hk:` hook, `cmd:` CLI command; the `ty:` suffix is the symbol name only, with scenarios in nested suites or test names — DO NOT change an existing valid prefix to a different prefix; IMPORTANT: general-purpose `describe(...)` titles (e.g. grouping by scenario or context) must **NOT** use prefixes [`TST-CORE-03`]
-- DO NOT add tests that provide no unique path or behavior (including a test whose name claims a path its input never reaches) [`TST-CORE-04`]
+- DO NOT add or retain a permanent test unless it exercises a different behavior path, distinct supported behavior, or meaningful edge case; remove unnecessary tests, including tests whose names claim paths their inputs never reach [`TST-CORE-04`](rules/tst-core-04.md)
 - DO NOT add artificial variation-only tests [`TST-CORE-05`]
 - DO NOT write tests that only check wrapper/dependency calls [`TST-CORE-06`]
 - DO NOT assert implementation details in tests [`TST-CORE-07`]
@@ -17,10 +17,10 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT assert log output via scattered `toHaveBeenCalledWith(...)` or count-only checks; capture the logger as `vi.fn<LogFn>()` / `satisfies Partial<Logger>` and assert the full call sequence with `expect(log.mock.calls).toEqual([...])` [`TST-CORE-09`]
 - DO NOT pin static declaration inventories or checked-in repository content: exact type/interface members, generic parameters or defaults, function signatures or overload sets, export or symbol inventories, schema declaration inventories, barrel/re-export layout, file existence or content, committed snapshots, or parity between checked-in files. `TST-CORE-10` is the sole whitelist for compiler-observable type-test subjects; a declaration's existence alone never requires a test [`TST-CORE-10`]
 - DO NOT silently skip tests on missing env/config; `describe.runIf(...)`, `it.skipIf(process.env.X)`, or `if (!env.X) return` at suite/test level are forbidden — gate with a file-level `throw` so missing config hard-fails [`TST-CORE-11`]
-- DO NOT merge with statements, branches, functions, or lines below 100% [`TST-COVR-01`]
+- DO NOT merge with statements, branches, functions, or lines below 100%, or without at least one behavioral test for each exported runtime function [`TST-COVR-01`]
 - DO NOT leave critical branch paths untested [`TST-COVR-02`]
 - DO NOT batch multiple tests before checking coverage [`TST-COVR-03`]
-- DO NOT keep zero-coverage-gain tests unless they provide distinct behavioral evidence [`TST-COVR-04`]
+- DO NOT keep zero-coverage-gain tests unless they exercise a different behavior path, distinct supported behavior, or meaningful edge case [`TST-COVR-04`](rules/tst-covr-04.md)
 - DO NOT use mutable shared fixtures [`TST-DATA-01`]
 - DO NOT assert object/array fields one-by-one [`TST-DATA-02`]
 - DO NOT create factories without real variation needs [`TST-DATA-03`]
@@ -55,9 +55,9 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | Rule ID | Violation | Bad Examples |
 |---|---|--- |
 | `TST-CORE-01` | Test code bypasses TypeScript safety requirements | `const svc: any = {}`; `const mockRepo: any = {` |
-| `TST-CORE-02` | Behavior is implemented before its failing test, or an initially passing regression test is retained without a temporary sensitivity mutation followed by restored green behavior | Implement, then add the test; retain an initially passing regression test without proving it fails when the named behavior is temporarily broken |
+| `TST-CORE-02` | New supported behavior is implemented before its failing test, or an initially passing regression test is retained without sensitivity proof and restored green behavior | Implement a new behavior, then add its test; retain an initially passing regression test without proving it fails when the named behavior is temporarily broken |
 | `TST-CORE-03` | Test naming format is non-compliant (`it`/`describe`) | `it("returns user", fn)`; `describe("processUser", () => { ... })`; `describe("fn:edge cases", () => { ... })` |
-| `TST-CORE-04` | Test adds no unique path or behavior | `it("same case #2", fn)`; `it("should return user again with same input", fn)` |
+| `TST-CORE-04` | Permanent test exercises no different behavior path, distinct supported behavior, or meaningful edge case | Duplicate assertion on the same input; a performance-only measurement committed without a lasting behavioral purpose |
 | `TST-CORE-05` | Artificial variation tests are added | `tax(10); tax(20); tax(30)`; `it("should apply 10% discount for $101", fn)` when behavior is identical |
 | `TST-CORE-06` | Test only checks wrapper/dependency calls | `expect(dep).toHaveBeenCalled()` |
 | `TST-CORE-07` | Test asserts implementation details | `expect(useState).toHaveBeenCalled()` |
@@ -65,10 +65,10 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `TST-CORE-09` | Log output asserted with scattered calls / count-only / untyped mock | `expect(log).toHaveBeenCalledWith('x')` + `expect(log).toHaveBeenCalledTimes(2)`; `const log = vi.fn()` without generic |
 | `TST-CORE-10` | Test pins an exact declaration inventory/layout or checked-in content | `expectTypeOf<Api>().toEqualTypeOf<{ id: string; run(): void }>()` mirroring `Api`; `expect(Object.keys(exports)).toEqual([...])`; `expect(readFileSync(repoFile, 'utf8')).toContain('literal')` |
 | `TST-CORE-11` | Test silently skips on missing env/config | `describe.runIf(process.env.TEST_DATABASE_URL)("fn:fetchUser", ...)`; `it.skipIf(!process.env.TEST_DATABASE_URL)("should ...", ...)`; `if (!process.env.TEST_DATABASE_URL) return` inside `describe("fn:fetchUser", ...)` |
-| `TST-COVR-01` | Statements, branches, functions, or lines are below 100% | `branches: 98 // required: 100` |
+| `TST-COVR-01` | Statements, branches, functions, or lines are below 100%, or an exported runtime function lacks a behavioral test | `branches: 98 // required: 100`; exported `parse()` has no behavior assertion |
 | `TST-COVR-02` | Critical branch path is untested | `if (err) throw err // untested` |
 | `TST-COVR-03` | Multiple tests written before coverage check | `it.each(cases)(...)` |
-| `TST-COVR-04` | Zero-coverage-gain test without distinct behavioral evidence is kept | `coverageDelta === 0 // duplicate behavior` |
+| `TST-COVR-04` | Zero-coverage-gain test without a different behavior path, distinct supported behavior, or meaningful edge case is kept | `coverageDelta === 0 // duplicate behavior` |
 | `TST-DATA-01` | Shared fixture is mutable | `let user = { id: "u1" }`; `let service: UserService;` |
 | `TST-DATA-02` | Object/array assertion is field-by-field | `expect(result.id).toBe("1")`; `expect(result.mime).toBe('application/octet-stream');` |
 | `TST-DATA-03` | Factory exists without real variation need | `const mk = () => new Service()`; `const createDefaultUser = () => ({ id: "u1", role: "user" })` used once |

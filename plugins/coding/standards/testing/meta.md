@@ -17,10 +17,10 @@ This standard enforces requirements beyond typical Vitest practices:
 
 | Standard Practice                     | Our Stricter Requirement                       |
 |---------------------------------------|------------------------------------------------|
-| Broad test sets encouraged            | **Minimal tests with unique value only**       |
+| Broad test sets encouraged            | **Each permanent test must exercise a different behavior path, distinct supported behavior, or meaningful edge case; remove tests that do none (`TST-CORE-04`)** |
 | Initially passing regression cases accepted on assertion strength | **Already-correct behavior requires sensitivity proof and restored green evidence under `TST-CORE-02`** |
 | Declaration inventories pinned in tests | **Only compiler-observable behavior permitted by `TST-CORE-10`; diagnostics and consumer builds cover ordinary declarations** |
-| Coverage thresholds tuned per project | **100% statements, branches, functions, and lines** |
+| Coverage thresholds tuned per project | **100% statements, branches, functions, and lines, with at least one behavioral test per exported runtime function (`TST-COVR-01`)** |
 | Hoisted mocks used broadly            | **`vi.hoisted` only for spy/error scenarios**  |
 | Mock typing treated as optional       | **`satisfies`-based mock typing is mandatory** |
 | Per-test setup as default             | **File/describe instances by default**         |

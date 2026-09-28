@@ -41,7 +41,7 @@ Create exactly one new directory at `plugins/<plugin>/standards/<standard-name>/
 - The workflow row exists and links to this standard's scan.
 - Walk a clean candidate from workflow through scan: mandatory checks must be reached without an exception or violation. Walk a violating candidate to its guide using the actual filename case, or to write when no guide exists.
 - Resolve every local Markdown link from its containing file. Verify dependent-standard targets exist and no dependency cycle is introduced.
-- Run `claude plugin validate --strict plugins/<plugin>` and `bun run "${GOVERNANCE_CREATE_STANDARD_SKILL_DIR}/../write-skill/scripts/quick_validate.ts" plugins/<plugin>` for repository policy checks.
+- Run `bun run "${GOVERNANCE_CREATE_STANDARD_SKILL_DIR}/../write-skill/scripts/quick_validate.ts" plugins/<plugin>` for strict Claude validation of projected agents and repository policy checks.
 - Exercise at least one violating and one compliant example per rule group against the scan/write guidance.
 
 ## Completion

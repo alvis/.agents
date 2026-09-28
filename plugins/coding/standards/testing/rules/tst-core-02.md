@@ -2,7 +2,7 @@
 
 ## Intent
 
-Write failing tests before implementation, then implement, then refactor. When already-correct behavior lacks a regression oracle, prove that an initially passing case detects the named regression before retaining it.
+Write failing tests before implementing new supported behavior, then implement and refactor. When already-correct behavior lacks a regression oracle, prove that an initially passing case detects the named regression before retaining it. A performance-only improvement may use a one-off local before/after measurement without retaining a test when `TST-CORE-04` finds no lasting value.
 
 ## Fix
 
@@ -12,7 +12,7 @@ it("should fail first", () => expect(run()).toThrow());
 
 ## Test-Driven Development (TDD)
 
-- **Test Before Code** - Write type-safe tests before implementing code
+- **Test Before Code** - Write type-safe tests before implementing new supported behavior
 - **Follow TDD cycle** - Red → Green → Refactor with TypeScript checking at each step
 - **Prove after-the-fact sensitivity** - For already-correct behavior, keep an initially passing regression case only after a temporary implementation mutation or equivalent controlled proof makes that case fail for the named behavior; restore the implementation, rerun the case green, and report the proof and restoration
 - **BDD style descriptions** - Use 'should [expected behavior]' format
