@@ -117,7 +117,7 @@ A work stream is born, executes, and retires through one continuous discipline:
 5. **Execute.** Every status change is journaled first, then reconciled into the tables ("append first, reconcile second"). Workers return evidence with their `capability_id`; only the lease holder writes state.
 6. **Decide.** Decisions record what they supersede, affect, invalidate, and preserve. Acceptance triggers a blast-radius sweep that marks stale work and spawns remediation, journaled as one sweep.
 7. **Review and approve.** Seven canonical review areas; every approval carries the full binding tuple. Spec freshness is re-checked at named moments (before planning, each dispatch batch, review, completion).
-8. **Pause and resume.** `essential:handover` persists everything into `.state/` and refreshes the cross-tree overview; `essential:takeover` resumes from those on-disk files, checks the lease, and drives streams to their success criteria (`essential:doctor` owns structural audits).
+8. **Pause and resume.** `essential:handover` persists everything into `.state/` and refreshes the cross-tree overview; `essential:takeover` resumes from those on-disk files, checks the lease, and drives streams to their success criteria. [Essential's doctor skill](plugins/essential/skills/doctor/SKILL.md) owns structural diagnosis.
 9. **Promote and retire.** Stable knowledge promotes to versioned `docs/` with provenance; every accepted decision gets an explicit disposition (promote to ADR / product / production record, retain in receipt, or archive); only then is it removed from the live index and permanently archived.
 
 ### Golden development lifecycle
@@ -171,7 +171,7 @@ This path avoids Notion and remote publication entirely. It leaves verified code
 - `working.md` is the short current-focus pointer; `state.md` is the complete lifecycle, plan, task graph, and evidence index; `state/journal.md` is the append-only causal record the tables are views over.
 - Tasks use stable IDs (`LFE`, `LFE01`) that are never renamed or reused. [Essential's task contract](plugins/essential/references/state-format.md#task-identity-and-tables) defines statuses, validity, and how approved revisions retain replaced or removed work.
 - To pause, run `/essential:handover`; to resume, `/essential:takeover`. The pause writes nothing but state, so it always completes — a stream whose code is still an uncommitted working copy is paused and resumed like any other.
-- `.state/` is ignored, so one reflexive `git clean -fdx` deletes it. Active state is not byte-reconstructible: keep a copy outside the repository until durable promotion and closure; `essential:doctor` checks a restored tree's structural integrity before it is resumed.
+- `.state/` is ignored, so one reflexive `git clean -fdx` deletes it. Active state is not byte-reconstructible: keep a copy outside the repository until durable promotion and closure.
 - Handover and takeover write only under the default source tree's `.state/` (and the active tree's `docs/` at promotion). A continuation file anywhere else — `/tmp`, `.local/`, the repo root — is a bug, including when output is too large for a response.
 - Full detail, including the lease and doctor tools: [plugins/essential/README.md](plugins/essential/README.md).
 
@@ -285,7 +285,7 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 
 - The work ID, repository, and authoritative specification source are unambiguous.
 - Specification approval names the exact specification content; plan and review track task definitions directly from `state.md`, with reapproval on any change.
-- Every stable task ID and edge in `state.md` is accounted for, with no cycle or contradictory parent roll-up (`state-doctor` confirms), and every required executable leaf is `✓ done` with current validity.
+- Every stable task ID and edge in `state.md` is accounted for, with no cycle or contradictory parent roll-up, and every required executable leaf is `✓ done` with current validity.
 - Target-native tests, lint, type checks, and builds pass where applicable.
 - Canonical review artifacts have no outstanding findings; approvals carry their full binding tuples.
 - Notion reconciliation and verification completed when the specification is Notion-backed.
