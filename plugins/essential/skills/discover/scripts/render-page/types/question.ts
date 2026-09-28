@@ -58,6 +58,17 @@ export type QuestionBlock =
       label: string;
       ask: string;
       placeholder?: string;
+      /**
+       * the words on the approve button, the change button, and the note the
+       * change button reveals, each defaulting to Approve, Change, and What to
+       * change; the answer and the reply print the same words
+       */
+      labels?: { approve?: string; change?: string; note?: string };
+      /**
+       * on a follow-up only: the button a reader gets by leaving the question
+       * alone, which then asks for nothing
+       */
+      default?: "approve";
     }
   /** a free-text question; `id` becomes the textarea's document id */
   | {

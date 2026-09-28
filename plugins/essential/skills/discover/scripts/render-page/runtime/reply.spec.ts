@@ -57,7 +57,15 @@ describe("fn:fillTemplate", () => {
  * @returns the line
  */
 function line(label: string, value: string): AnswerLine {
-  return { label, value, response: "decision", recommended: [], touched: true };
+  return {
+    ref: "D1",
+    label,
+    value,
+    response: "decision",
+    recommended: [],
+    touched: true,
+    defaults: false,
+  };
 }
 
 describe("fn:decisionAnswer", () => {
@@ -81,11 +89,29 @@ describe("fn:decisionAnswer", () => {
     expect(decisionAnswer("change", "")).toBe("Change");
     expect(decisionAnswer("change", "   \n  ")).toBe("Change");
   });
+
+  it("should print the words a board put on its buttons", () => {
+    const words = { approve: "I'm good with it", change: "Tell me more about it" };
+
+    expect(decisionAnswer("approve", "", words)).toBe("I'm good with it");
+    expect(decisionAnswer("change", "", words)).toBe("Tell me more about it");
+    expect(decisionAnswer("change", " why not relative paths? ", words)).toBe(
+      "Tell me more about it — why not relative paths?",
+    );
+  });
 });
 
 describe("fn:countUnanswered", () => {
   it("should count only the empty answers", () => {
     expect(countUnanswered([line("a", "x"), line("b", ""), line("c", "")])).toBe(2);
+  });
+
+  it("should not count a question its default already answers", () => {
+    // an untouched follow-up with a default says what the reader would have
+    // pressed; counting it tells a newcomer they have work left that they do not
+    expect(
+      countUnanswered([line("a", ""), { ...line("b", ""), defaults: true }]),
+    ).toBe(1);
   });
 
   it("should count nothing on a page with no questions", () => {

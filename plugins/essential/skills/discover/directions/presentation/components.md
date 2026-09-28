@@ -27,7 +27,7 @@ Nothing here is markup. There is no HTML pass-through anywhere in the format —
 
 | Field | Required | What it is |
 | --- | --- | --- |
-| `kind` | yes | one of the nineteen presentation kinds in `PAGE_KINDS` |
+| `kind` | yes | one of the twenty presentation kinds in `PAGE_KINDS` |
 | `id` | yes | stable identifier, emitted as `data-page-id` and used as the key the reader's answers are saved under |
 | `action` | yes | the label the collapsed drawer carries |
 | `title` | yes | the document title |
@@ -322,7 +322,7 @@ An ordered scale; its answer carries the chosen ordinal position. Takes `points`
 
 #### `decision`
 
-A yes/no question, answered by pressing Approve or Change, with an optional `placeholder` for the note beneath.
+A yes/no question, answered by pressing Approve or Change, with an optional `placeholder` for the note beneath. Optional `labels` of `{ approve?, change?, note? }` rename the two buttons and the note's label; the answer and the reply print the same words. The two buttons must read differently, because the reply tells them apart by their words. A `follow-up` may set `"default": "approve"`; its approve button then carries a **Default** badge, pressing it or leaving the question alone files it under _Not requested_ as `<approve label> (default)`, and it counts as neither unanswered nor pending for the bulk approve. Without `default`, approving a follow-up requests it. A `decision` asked as a decision cannot declare a default, because leaving it alone settles nothing.
 
 #### `note`
 

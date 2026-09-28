@@ -45,8 +45,9 @@ export const QUESTION_CSS = `
    One hue per tag, in the order questions.md lists them: three of the six used
    to share the accent and two more the amber, so the pill told a reader that a
    tag was present without telling them which. The base rule is neutral rather
-   than accented — the vocabulary is closed and refused at build time, so it is
-   reached by nothing, and a word it cannot colour should not be endorsed. */
+   than accented — the vocabulary is closed and refused at build time, so all it
+   reaches is a follow-up's Default mark, which states a default rather than
+   endorsing one, and a word it cannot colour should not be endorsed. */
 .badges{display:flex; flex-wrap:wrap; gap:.35rem; margin-left:auto; align-items:flex-start}
 .badge{padding:.22rem .6rem; border:1px solid var(--ui-border-strong); border-radius:9999px; font:700 .72rem/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ui-muted)}
 .badge[data-tag="Architectural"]{border-color:var(--tag-architectural); background:var(--tag-architectural-soft); color:var(--tag-architectural-ink)}

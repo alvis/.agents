@@ -3,7 +3,8 @@ import { renderTags } from "./tag.ts";
 import { renderTradeoff } from "./tradeoff.ts";
 import { escapeHtml } from "../escape.ts";
 import { requireFreshId, requireFreshRef } from "../id.ts";
-import { responseAttribute } from "../question.ts";
+import { defaultsOf, labelsOf, responseAttribute } from "../question.ts";
+import { VERDICT_WORDS } from "../runtime/reply.ts";
 import {
   optionalString,
   requireFilledArray,
@@ -82,6 +83,33 @@ export function openQuestion(
         : `<label class="q-label" for="q-${escapeHtml(id)}">${title}</label>`) +
       `<p class="ask">${escapeHtml(ask)}</p>`,
   };
+}
+
+/**
+ * draws one of a decision's two verdict buttons
+ * @param verdict the verdict the button stores when pressed
+ * @param word the text on the button
+ * @param preset whether the button is what the reader gets by pressing nothing
+ * @returns the button
+ */
+function verdictButton(
+  verdict: keyof typeof VERDICT_WORDS,
+  word: string,
+  preset: boolean,
+): string {
+  // named for the runtime only when relabelled, because the runtime falls back
+  // on the same default word and an unlabelled board must render unchanged
+  const named =
+    word === VERDICT_WORDS[verdict]
+      ? ""
+      : ` data-verdict-label="${escapeHtml(word)}"`;
+  // the badge says so on the page; the attribute tells the runtime, which must
+  // neither count the question as outstanding nor offer to answer it
+  const [flag, badge] = preset
+    ? [" data-default", '<span class="badge">Default</span>']
+    : ["", ""];
+
+  return `<button type="button" class="verdict" data-verdict="${verdict}" aria-pressed="false"${named}${flag}>${escapeHtml(word)}${badge}</button>`;
 }
 
 /**
@@ -171,10 +199,15 @@ export function renderQuestion(
       const { id, head } = openQuestion(block, path, ids, "fieldset");
       const placeholder =
         optionalString(block.placeholder, `${path}.placeholder`) ?? "";
+      const labels = labelsOf(block, path);
+      // a follow-up that declares a default asks for nothing when left alone,
+      // so its approve button is what the reader gets without pressing
+      // anything, and it says so
+      const preset = defaultsOf(block, path);
 
       // a fieldset, because the two buttons are one grouped control; the note
       // starts hidden so a page opened without JavaScript shows the ask alone
-      return `${head}<div class="verdicts"><button type="button" class="verdict" data-verdict="approve" aria-pressed="false">Approve</button><button type="button" class="verdict" data-verdict="change" aria-pressed="false">Change</button></div><div class="verdict-note" data-verdict-note hidden><label class="q-label" for="q-${escapeHtml(id)}">What to change</label><textarea id="q-${escapeHtml(id)}" placeholder="${escapeHtml(placeholder)}"></textarea></div></fieldset>`;
+      return `${head}<div class="verdicts">${verdictButton("approve", labels.approve, preset)}${verdictButton("change", labels.change, false)}</div><div class="verdict-note" data-verdict-note hidden><label class="q-label" for="q-${escapeHtml(id)}">${escapeHtml(labels.note)}</label><textarea id="q-${escapeHtml(id)}" placeholder="${escapeHtml(placeholder)}"></textarea></div></fieldset>`;
     }
     case "note": {
       const { id, head } = openQuestion(block, path, ids, "div");

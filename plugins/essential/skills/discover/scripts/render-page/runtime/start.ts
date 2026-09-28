@@ -1,4 +1,11 @@
-import { answerText, readField, recommendedOf, writeField } from "./answer.ts";
+import {
+  answerText,
+  defaultsOf,
+  readField,
+  recommendedOf,
+  verdictWordsOf,
+  writeField,
+} from "./answer.ts";
 import { installBulkApprove } from "./bulk.ts";
 import { installChips } from "./chips.ts";
 import { installCopy } from "./copy.ts";
@@ -126,10 +133,11 @@ export function start(): void {
       return {
         ref: field.dataset.questionRef ?? "",
         label: field.dataset.questionLabel ?? "",
-        value: answerText(state),
+        value: answerText(state, verdictWordsOf(field)),
         response: field.dataset.responseKind === "follow-up" ? "follow-up" : "decision",
         recommended: recommendedOf(field),
         touched: touched.has(ids[index]),
+        defaults: defaultsOf(field),
       } as const;
     });
 
