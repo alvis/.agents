@@ -1156,7 +1156,8 @@ describe("PR message scanner", () => {
       [
         "- [x] Run the PR message scanner.",
         "<!-- coding:reviewer-tasks:start -->",
-        `- [ ] @reviewer review \`${headOid}\` against \`${baseOid}\`.`,
+        `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
+        `- [ ] @reviewer review ${headOid.slice(0, 7)}`,
         "<!-- coding:reviewer-tasks:end -->",
       ].join("\n"),
     ]);
@@ -1166,6 +1167,16 @@ describe("PR message scanner", () => {
       result: { valid: true, violations: [] },
     });
     expect(await run(`${body}\n<!-- author guidance -->\n`)).toMatchObject({
+      code: 1,
+      result: {
+        valid: false,
+        violations: [{
+          rule_id: "GIT-PR-02",
+          message: "rendered body contains template guidance comments",
+        }],
+      },
+    });
+    expect(await run(`${body}\n<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->\n`)).toMatchObject({
       code: 1,
       result: {
         valid: false,
@@ -1185,7 +1196,8 @@ describe("PR message scanner", () => {
         "## Example",
         "```",
         "<!-- coding:reviewer-tasks:start -->",
-        `- [ ] @reviewer review \`${headOid}\` against \`${baseOid}\`.`,
+        `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
+        `- [ ] @reviewer review ${headOid.slice(0, 7)}`,
         "<!-- coding:reviewer-tasks:end -->",
       ].join("\n"),
     ]);
@@ -1202,14 +1214,16 @@ describe("PR message scanner", () => {
       [
         "- [x] Run the PR message scanner.",
         "<!-- coding:reviewer-tasks:start -->",
-        `- [ ] @reviewer review \`${headOid}\` against \`${baseOid}\`.`,
+        `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
+        `- [ ] @reviewer review ${headOid.slice(0, 7)}`,
         "<!-- coding:reviewer-tasks:end -->",
       ].join("\n"),
     ]);
     for (const corrupt of [
       valid.replace("<!-- coding:reviewer-tasks:end -->", ""),
       valid.replace("@reviewer review", "@reviewer approve"),
-      valid.replace(`review \`${headOid}\``, `review \`${"f".repeat(40)}\``),
+      valid.replace(`review ${headOid.slice(0, 7)}`, `review ${"f".repeat(7)}`),
+      valid.replace(`base=${baseOid}`, `base=${"f".repeat(40)}`),
     ]) {
       const scanned = await run(corrupt);
       expect(scanned.code).toBe(1);
