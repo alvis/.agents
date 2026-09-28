@@ -17,6 +17,7 @@ export const PAGE_KINDS = [
   "build-journal",
   "change-walkthrough",
   "concept-primer",
+  "decision-explainer",
   "domain-explainer",
   "guided-interview",
   "implementation-notes",

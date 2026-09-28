@@ -1,5 +1,5 @@
 import { collectClaims, formatCaveats, formatClaims } from "./claim.ts";
-import { recommendedOf, responseOf } from "./question.ts";
+import { defaultsOf, recommendedOf, responseOf } from "./question.ts";
 import { formatAnswers, summarise } from "./runtime/disposition.ts";
 import { fillReply, fillTemplate } from "./runtime/reply.ts";
 import { requireString } from "./validate.ts";
@@ -60,8 +60,10 @@ export function renderReply(data: PageData): string {
     label: block.label,
     value: "",
     response: responseOf(block, `question[${index}]`),
-    recommended: recommendedOf(block),
+    recommended: recommendedOf(block, `question[${index}]`),
     touched: false,
+    defaults:
+      block.type === "decision" && defaultsOf(block, `question[${index}]`),
   }));
 
   // a fresh page holds no notes, and leaving the marker unfilled would print

@@ -1,0 +1,380 @@
+{
+  "kind": "decision-explainer",
+  "id": "decision-explainer-agents-v1",
+  "action": "Decision explainer",
+  "title": "Decision explainer — plugin resolution and the working-attitude mandate",
+  "theme": { "accent": 200 },
+  "masthead": {
+    "eyebrow": "Decision explainer · /discover decisions --only=active,proposed,superseded ADR-1 plugin-context-slimming",
+    "headline": "Three decisions this repository already rests on, explained for someone who was not there when they were made.",
+    "lede": "Each section tells the story a decision answered, what was chosen in plain words, what else was on the table, and what it changes about your own work. Nothing here asks you to agree: leave a decision on “I'm good with it”, or press “Tell me more about it” and say what is still unclear.",
+    "meta": [
+      { "label": "ADRs", "value": "1" },
+      { "label": "Local decisions", "value": "2" },
+      { "label": "Active", "value": "2" },
+      { "label": "Proposed", "value": "0" },
+      { "label": "Superseded", "value": "1" },
+      { "label": "Set aside", "value": "2" }
+    ]
+  },
+  "sections": [
+    {
+      "id": "start",
+      "label": "Before you start",
+      "eyebrow": "Orientation",
+      "title": "Two kinds of record explain why this repository looks the way it does.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "title": "What you will know by the end",
+          "points": [
+            {
+              "lead": "How one plugin finds another.",
+              "text": "Every plugin carries a small lookup command, and hooks ask it rather than guessing a folder."
+            },
+            {
+              "lead": "Why every agent reads the working-attitude file.",
+              "text": "A proposal to show it only to coding sessions was turned down, and the reason is worth knowing before you propose it again."
+            },
+            {
+              "lead": "What a superseded record is for.",
+              "text": "It stays on disk as history, and the record that replaced it is the one to follow."
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "An ",
+            { "kind": "term", "text": "ADR", "definition": "architecture decision record: a decision a human approved, kept under docs/architecture/decisions/" },
+            " is a decision a person reviewed and approved; it lives in the repository and every contributor follows it. A ",
+            { "kind": "term", "text": "local decision", "definition": "a decision an agent recorded while working, kept in the local state tree under .state/works/<stream>/decisions/" },
+            " is one an agent recorded while doing a piece of work; it lives outside the repository, in the state tree on the machine that did the work, and it binds that ",
+            { "kind": "term", "text": "work stream", "definition": "one unit of work with its own folder of state under .state/works/<stream>/" },
+            " until someone promotes it or it is replaced."
+          ]
+        },
+        {
+          "type": "glossary",
+          "entries": [
+            { "term": "plugin", "detail": "A folder of skills, hooks and scripts that an AI coding app installs as one unit. This repository ships several: essential, coding, web, and others." },
+            { "term": "harness", "detail": "The app that loads plugins and runs their hooks: Claude Code, Codex, or Grok Build. Each one installs plugins in its own place and its own way." },
+            { "term": "hook", "detail": "A command a harness runs by itself when something happens, such as a session starting or a prompt being sent." },
+            { "term": "marketplace", "detail": "The set of plugins distributed together. This repository is one marketplace." },
+            { "term": "resolver", "detail": ["The command ", { "kind": "code", "text": "scripts/plugin-root" }, " that prints where a named plugin is installed, or prints nothing and fails."] },
+            { "term": "payload", "detail": ["Text a plugin injects into every agent's instructions when a session starts. ", { "kind": "code", "text": "hooks/ALLAGENT.md" }, " reaches every agent, main or delegated."] },
+            { "term": "superseded", "detail": "Replaced by a later record. The old record is kept, marked with a header naming its successor, and moved into a superseded/ folder." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adr-1",
+      "label": "ADR-1 · Plugin resolution",
+      "eyebrow": "ADR · human-approved · active",
+      "title": "A hook finds the plugins it depends on by asking, never by guessing a folder.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "points": [
+            {
+              "lead": "Every plugin carries an identical copy of one lookup command.",
+              "text": [
+                "A hook runs its own ",
+                { "kind": "code", "text": "scripts/plugin-root essential" },
+                " and gets back the folder Essential is installed in, or a failure."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "Picture the moment a session starts in the Coding plugin. Its ",
+            { "kind": "term", "text": "hook", "definition": "a command a harness runs by itself when something happens" },
+            " has to run a script that belongs to a different plugin, Essential. Coding knows where it is installed itself — the harness tells it — but nobody tells it where Essential is. Claude Code keeps a registry of install locations, Codex keeps versioned caches, and Grok Build may run a copy laid out like this repository. A hook that assumed “Essential sits next door, at ",
+            { "kind": "code", "text": "../essential" },
+            "” would work on one machine, miss on the next, and on a third quietly run an old copy from somewhere else."
+          ]
+        },
+        {
+          "type": "mermaid",
+          "title": "What happens when Coding's session-start hook needs Essential",
+          "source": "flowchart TD\n  H[Coding hook starts] --> R[Run Coding's own scripts/plugin-root essential]\n  R --> D{Which harness set its root variable?}\n  D -->|PLUGIN_ROOT| X[Codex: same marketplace cache, same version preferred]\n  D -->|GROK_PLUGIN_ROOT| G[Grok Build: marketplace laid out like the source]\n  D -->|CLAUDE_PLUGIN_ROOT| C[Claude Code: installed_plugins.json registry]\n  X --> M{Candidate's manifest names essential?}\n  G --> M\n  C --> M\n  M -->|yes| P[Print the folder and exit 0]\n  M -->|no, missing, or ambiguous| F[Print nothing and exit 1]\n  P --> S[Hook runs essential/scripts/...]\n  F --> E[Hook stops with an error instead of guessing]",
+          "alt": "Coding's hook runs its own copy of scripts/plugin-root with the name essential. The resolver checks which harness variable is set — PLUGIN_ROOT for Codex, GROK_PLUGIN_ROOT for Grok Build, CLAUDE_PLUGIN_ROOT for Claude Code — and looks in that harness's own install records. A candidate is accepted only if its manifest names essential; then the folder is printed and the hook runs Essential's script. Otherwise nothing is printed, the resolver exits 1, and the hook stops with an error."
+        },
+        {
+          "type": "prose",
+          "text": "The choice, in plain words: one lookup command is written once, at the root of the repository, and copied unchanged into every plugin. A hook only ever runs the copy inside its own plugin, so it never reaches outside its own folder to find the tool that finds everything else. This command is the one file the repository allows to exist in more than one plugin; everything else shared has a single owner."
+        },
+        {
+          "type": "tree",
+          "title": "One source, one identical copy per plugin",
+          "root": ".agents",
+          "items": [
+            {
+              "name": "scripts/",
+              "children": [
+                { "name": "plugin-root", "note": "the only copy anyone edits" },
+                { "name": "plugin-root-projection.ts", "note": "copies it byte for byte into every plugin" }
+              ]
+            },
+            {
+              "name": "plugins/",
+              "children": [
+                { "name": "essential/scripts/plugin-root", "note": "generated copy" },
+                { "name": "coding/scripts/plugin-root", "note": "generated copy — the one Coding's hooks run" },
+                { "name": "web/scripts/plugin-root", "note": "generated copy" },
+                { "name": "…", "note": "one per plugin in the marketplace" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "label": "plugins/coding/hooks/hooks.json · SessionStart",
+          "caption": "The hook command as it ships, broken onto one line per step so it can be read",
+          "code": "plugin_root=\"${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}\"\nplugin_resolver=\"$plugin_root/scripts/plugin-root\"\n[ -x \"$plugin_resolver\" ] || { echo \"installed plugin resolver unavailable\" >&2; exit 1; }\nessential_root=\"$(\"$plugin_resolver\" essential)\" || { echo \"essential plugin unavailable\" >&2; exit 1; }\ndomain_runtime=\"$essential_root/scripts/domain-context.ts\"",
+          "highlight": [4],
+          "comments": [
+            { "line": 4, "text": "The whole decision is this line: ask the plugin's own resolver, and stop loudly if it cannot answer." }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "The one alternative the record weighs is the guess itself: work out Essential's folder from Coding's own. It was rejected because the three harnesses lay plugins out differently, so a guessed path either misses Essential or finds an unrelated copy. The price of the chosen design is small and stated: every plugin carries the same short file, and the copy step has to be kept current. ",
+            { "kind": "source", "text": "ADR-1, Alternatives and Consequences", "ref": "docs/architecture/decisions/harness/adr-1-installed-plugin-resolution.md" }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            { "lead": "What this means for you:", "text": ["in a hook, find another plugin with ", { "kind": "code", "text": "\"$plugin_root/scripts/plugin-root\" <name>" }, ", never with a relative path such as ", { "kind": "code", "text": "../essential" }, "."] },
+            { "lead": "Edit the source, not a copy.", "text": ["Change ", { "kind": "code", "text": "scripts/plugin-root" }, " at the repository root; the copies under ", { "kind": "code", "text": "plugins/*/scripts/" }, " are regenerated from it."] },
+            { "lead": "A new harness starts in the resolver.", "text": "Supporting another app means extending the resolver and its behaviour tests before any hook can rely on it." }
+          ]
+        },
+        {
+          "type": "decision",
+          "response": "follow-up",
+          "default": "approve",
+          "id": "adr-1-more",
+          "ref": "ADR-1",
+          "label": "Installed plugin resolution",
+          "ask": "Want this explained further?",
+          "labels": {
+            "approve": "I'm good with it",
+            "change": "Tell me more about it",
+            "note": "What would you like to know? (optional)"
+          },
+          "placeholder": "e.g. why copy the file into every plugin instead of keeping it in Essential?"
+        }
+      ]
+    },
+    {
+      "id": "l1",
+      "label": "L1 · Working attitude stays global",
+      "eyebrow": "Local decision · AI-recorded · active · plugin-context-slimming/do-not-rebind-working-attitude",
+      "title": "Every agent is still told to read the working-attitude file, even when it is not writing code.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "points": [
+            {
+              "lead": "A proposal to save one file read was turned down.",
+              "text": "The file's guidance applies to all work, not only code, so hiding it from non-coding sessions would cost more than the read it saves."
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "Every agent session starts with the Essential ",
+            { "kind": "term", "text": "payload", "definition": "text a plugin injects into every agent's instructions when a session starts" },
+            ", and one line of it tells the agent to read ",
+            { "kind": "code", "text": "references/working-attitude.md" },
+            ": choose the smallest sufficient piece of work, and understand a flow before changing it. The work stream ",
+            { "kind": "code", "text": "plugin-context-slimming" },
+            " was shrinking what every session has to read. A review in that stream proposed moving the instruction out of the payload and into the Coding plugin's workflow, so that only coding sessions would read the file."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "markdown",
+          "label": "plugins/essential/hooks/ALLAGENT.md:3",
+          "caption": "The line as it reads at 1c6a74a0, not as it read when the proposal was made",
+          "code": "Each task: need → reuse → tools/native capabilities → standard library → installed dependency → minimum addition. Stop at sufficiency: `{{PLUGIN_DIR}}/references/working-attitude.md`. Keep bounded work inline; delegate for ownership, context savings, noisy work, or independent review. Main agent names teammates; externalize messages over 4,096 characters."
+        },
+        {
+          "type": "table",
+          "columns": [
+            { "label": "Modeled scenario", "width": "34%" },
+            "What rebinding would change",
+            "Why"
+          ],
+          "rows": [
+            [
+              { "text": "S5 · delegate one task" },
+              { "text": "−1 file read, −1,828 bytes", "verdict": "good" },
+              { "text": "The only scenario that never reaches the Coding workflow." }
+            ],
+            [
+              { "text": "S1, S2, S4, S9" },
+              { "text": "nothing", "verdict": "mixed" },
+              { "text": "They reach the Coding workflow anyway, so the read moves rather than disappears." }
+            ],
+            [
+              { "text": "Any non-coding session" },
+              { "text": "loses the guidance", "verdict": "bad" },
+              { "text": "No scenario in the fixture models one, so this cost would never show up in a measurement." }
+            ]
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "The decision, in plain words: keep the instruction where every agent sees it. The saving is one read in one measured scenario, while the cost falls on writing standards, specifications and designs — work the measurement never looked at. The record calls that ",
+            { "kind": "mark", "text": "optimizing the metric against the goal" },
+            ". ",
+            { "kind": "source", "text": "Decision and Measurement", "ref": ".state/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" }
+          ]
+        },
+        {
+          "type": "callout",
+          "title": "Since the record was written",
+          "tone": "neutral",
+          "text": [
+            "The record left the file's first sentence — “Apply this attitude to any coding work” — unrepaired on purpose. Today the file opens “For every task, choose the minimum sufficient work…”, so the wording that invited the proposal has since been fixed. ",
+            { "kind": "dim", "text": "Observed in references/working-attitude.md at 1c6a74a0; when and why it changed is not in this record." }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            { "lead": "What this means for you:", "text": "do not propose moving working-attitude.md out of ALLAGENT.md to save bytes; the record asks anyone tempted to read it first." },
+            { "lead": "The wider lesson, which is inference:", "text": "a saving is only real for the kinds of session your measurement actually models." }
+          ]
+        },
+        {
+          "type": "decision",
+          "response": "follow-up",
+          "default": "approve",
+          "id": "l1-more",
+          "ref": "L1",
+          "label": "Working attitude stays global",
+          "ask": "Want this explained further?",
+          "labels": {
+            "approve": "I'm good with it",
+            "change": "Tell me more about it",
+            "note": "What would you like to know? (optional)"
+          },
+          "placeholder": "e.g. what are the S1–S9 scenarios, and who wrote them?"
+        }
+      ]
+    },
+    {
+      "id": "l2",
+      "label": "L2 · The first version of L1",
+      "eyebrow": "Local decision · AI-recorded · superseded · plugin-context-slimming/working-attitude-binding",
+      "title": "The first record reached the same answer from a wrong measurement, so it was replaced.",
+      "blocks": [
+        {
+          "type": "callout",
+          "title": "Superseded on 2026-09-03",
+          "tone": "bad",
+          "text": [
+            "Read this as history. The decision to follow is ",
+            { "kind": "link", "text": "L1 · Working attitude stays global", "href": "#s-l1" },
+            ", which keeps the same conclusion and corrects the numbers."
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "The first record measured the working-attitude file at 4,150 bytes and dismissed the reviewer's figure of 1,828 bytes as not reproducible. The measurement was taken at a revision that had ",
+            { "kind": "mark", "text": "copied" },
+            " the file's lines into another file instead of moving them, so the file looked bigger than the finished work left it. A later review found the copy; once it was fixed, the reviewer's number was right."
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Measured", "Superseded record (L2)", "Successor (L1)"],
+          "rows": [
+            [{ "text": "File size measured" }, { "text": "4,150 bytes", "verdict": "bad" }, { "text": "1,828 bytes", "verdict": "good" }],
+            [{ "text": "Saving in S5" }, { "text": "−4,205 bytes, −1 call" }, { "text": "−1,828 bytes, −1 call" }],
+            [{ "text": "Reviewer's estimate" }, { "text": "“not reproducible”", "verdict": "bad" }, { "text": "correct for the delivered work", "verdict": "good" }],
+            [{ "text": "Decision" }, { "text": "rejected" }, { "text": "rejected, on the scope argument alone" }]
+          ]
+        },
+        {
+          "type": "tree",
+          "title": "Where a replaced record goes",
+          "root": ".state/works/plugin-context-slimming/decisions",
+          "items": [
+            { "name": "do-not-rebind-working-attitude.md", "note": "L1 · Supersedes: decisions/superseded/working-attitude-binding.md" },
+            {
+              "name": "superseded/",
+              "children": [
+                { "name": "working-attitude-binding.md", "note": "L2 · opens with a Superseded header; its own Status line still says accepted" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            { "lead": "What this means for you:", "text": "when a record sits under superseded/ or opens with a Superseded header, it is history whatever its own Status line says; follow the successor it names." },
+            { "lead": "Why it is kept at all:", "text": "the correction is part of the reasoning. A reader who finds the 4,150-byte figure elsewhere can see why it was wrong." }
+          ]
+        },
+        {
+          "type": "decision",
+          "response": "follow-up",
+          "default": "approve",
+          "id": "l2-more",
+          "ref": "L2",
+          "label": "The first version of L1",
+          "ask": "Want this explained further?",
+          "labels": {
+            "approve": "I'm good with it",
+            "change": "Tell me more about it",
+            "note": "What would you like to know? (optional)"
+          },
+          "placeholder": "e.g. why keep a wrong record instead of deleting it?"
+        }
+      ]
+    },
+    {
+      "id": "scope",
+      "label": "Scope note",
+      "eyebrow": "What this board left out",
+      "title": "Two records were set aside, and nothing proposed matched.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [{ "label": "Selector or record", "width": "40%" }, "Outcome", "Why"],
+          "rows": [
+            [{ "text": [{ "kind": "code", "text": "ADR-1" }] }, { "text": "shown", "verdict": "good" }, { "text": "Effective, and listed in the index at docs/architecture/README.md with the same title." }],
+            [{ "text": [{ "kind": "code", "text": "plugin-context-slimming" }] }, { "text": "2 of 4 shown", "verdict": "mixed" }, { "text": "The stream holds four decision files; two carry a Status line." }],
+            [{ "text": [{ "kind": "code", "text": "plugin-context-slimming/round-2-remediation" }] }, { "text": "set aside", "verdict": "bad" }, { "text": "No Status line, so it cannot be classified as active, proposed or superseded." }],
+            [{ "text": [{ "kind": "code", "text": "plugin-context-slimming/script-retirements" }] }, { "text": "set aside", "verdict": "bad" }, { "text": "No Status line, for the same reason." }],
+            [{ "text": "proposed records" }, { "text": "none" }, { "text": "Neither selector matched a record with status proposed." }]
+          ]
+        }
+      ]
+    }
+  ],
+  "sources": [
+    { "label": "ADR-1: Resolve installed plugins through a projected harness adapter", "ref": "docs/architecture/decisions/harness/adr-1-installed-plugin-resolution.md" },
+    { "label": "L1 · do not rebind working-attitude.md", "ref": ".state/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" },
+    { "label": "L2 · the superseded first version", "ref": ".state/works/plugin-context-slimming/decisions/superseded/working-attitude-binding.md" },
+    { "label": "The resolver each plugin carries", "ref": "scripts/plugin-root" },
+    { "label": "One hook that calls it", "ref": "plugins/coding/hooks/hooks.json" }
+  ],
+  "reply": {
+    "heading": "Generated reply",
+    "template": "Decision explainer — ADR-1 and plugin-context-slimming\n\n{{summary}}\n\n{{answers}}\n\n{{notes}}\n\nFor each decision under Requested, explain it again for someone new to this repository: quote my question, answer in plain words, define every term you use, and say which illustration would help if one would. Do not propose changing any record from here."
+  }
+}

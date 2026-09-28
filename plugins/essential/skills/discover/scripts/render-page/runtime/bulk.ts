@@ -1,20 +1,29 @@
+import { defaultsOf } from "./answer.ts";
+
 /**
  * finds the control that would answer a question the way the board recommends.
  *
  * a question already carrying an answer returns nothing: bulk approval fills
  * the gaps a reader left, and must never overwrite a judgement they made. A
  * question the board recommends nothing for also returns nothing, because there
- * is no answer to give it that the page could claim the reader agreed to.
+ * is no answer to give it that the page could claim the reader agreed to; nor
+ * does one whose default already answers it, because pressing it changes
+ * nothing the reply says.
  * @param field the question
  * @returns the control to press, or null where there is nothing to press
  */
 function pending(field: HTMLElement): HTMLElement | null {
   const kind = field.dataset.questionKind;
 
-  if (kind === "decision")
-    return field.querySelector('[data-verdict][aria-pressed="true"]')
+  if (kind === "decision") {
+    const settled =
+      defaultsOf(field) ||
+      field.querySelector('[data-verdict][aria-pressed="true"]') !== null;
+
+    return settled
       ? null
       : field.querySelector<HTMLElement>('[data-verdict="approve"]');
+  }
 
   if (kind !== "choice" || field.querySelector("input:checked")) return null;
 

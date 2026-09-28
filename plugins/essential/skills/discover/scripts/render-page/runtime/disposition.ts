@@ -23,47 +23,72 @@ export type Disposition =
  */
 export function dispositionOf(line: AnswerLine): Disposition {
   // an untouched question is unresolved however the controls happen to sit: a
-  // restored page and a page the reader has never scrolled to look identical
-  if (!line.touched || !line.value)
+  // restored page and a page the reader has never scrolled to look identical.
+  // A declared default is the exception, because it is itself the answer
+  if (!line.touched || !line.value) {
+    if (line.defaults) return "confirmed";
+
     return line.recommended.length ? "suggested" : "unanswered";
+  }
 
   if (!line.recommended.length) return "answered";
 
   return line.recommended.includes(line.value) ? "confirmed" : "changed";
 }
 
-/** the heading each disposition is collected under, in the order they print. */
-const DECISION_GROUPS: [Disposition, string][] = [
-  ["changed", "Changed"],
-  ["confirmed", "Confirmed"],
-  ["answered", "Answered"],
-  ["suggested", "Not yet marked"],
-  ["unanswered", "Not yet marked"],
-];
+/** the heading each disposition of a decision is collected under, in print order. */
+const DECISION_HEADING: Record<Disposition, string> = {
+  changed: "Changed",
+  confirmed: "Confirmed",
+  answered: "Answered",
+  suggested: "Not yet marked",
+  unanswered: "Not yet marked",
+};
 
-/** the heading each disposition is collected under for a follow-up. */
-const FOLLOW_UP_GROUPS: [Disposition, string][] = [
-  ["changed", "Requested"],
-  ["confirmed", "Requested"],
-  ["answered", "Requested"],
-  ["suggested", "Not yet requested"],
-  ["unanswered", "Not yet requested"],
-];
+/** the follow-up headings, in the order they print. */
+const FOLLOW_UP_HEADINGS = ["Requested", "Not requested", "Not yet requested"];
+
+/**
+ * names the heading a follow-up is collected under.
+ *
+ * a follow-up with a default recommends needing nothing more, so agreeing with
+ * it, or leaving it alone, requests nothing; any other recommendation agreed
+ * with is still a request.
+ * @param line the follow-up
+ * @param disposition where its answer stands
+ * @returns the heading
+ */
+function followUpHeading(line: AnswerLine, disposition: Disposition): string {
+  if (disposition === "changed" || disposition === "answered") return "Requested";
+  if (disposition === "suggested" || disposition === "unanswered")
+    return "Not yet requested";
+
+  return line.defaults ? "Not requested" : "Requested";
+}
 
 /**
  * writes one answered question's line
  * @param line the question
  * @param disposition where its answer stands
- * @returns the line, with the recommendation it went against where it went
- *   against one
+ * @returns the line, with the recommendation it went against where a decision
+ *   went against one; a follow-up asking for more went against nothing
  */
 function answered(line: AnswerLine, disposition: Disposition): string {
   const against =
-    disposition === "changed"
+    disposition === "changed" && !line.defaults
       ? ` _(recommended: ${line.recommended.join(", ")})_`
       : "";
 
   return `- **${line.ref} · ${line.label}:** ${line.value}${against}`;
+}
+
+/**
+ * names the answer a follow-up gives by standing at its default
+ * @param line the follow-up, approved or left alone
+ * @returns the default, marked as one rather than as the reader's own words
+ */
+export function defaultAnswer(line: AnswerLine): string {
+  return `${line.recommended.join(", ")} (default)`;
 }
 
 /**
@@ -80,15 +105,33 @@ function unresolved(line: AnswerLine): string {
 }
 
 /**
+ * writes one question's line in the form its disposition calls for
+ * @param line the question
+ * @param disposition where its answer stands
+ * @returns the line
+ */
+function lineOf(line: AnswerLine, disposition: Disposition): string {
+  // a follow-up at its default names the default rather than an unmet suggestion
+  if (line.defaults && disposition === "confirmed")
+    return `- **${line.ref} · ${line.label}:** ${defaultAnswer(line)}`;
+
+  return disposition === "suggested" || disposition === "unanswered"
+    ? unresolved(line)
+    : answered(line, disposition);
+}
+
+/**
  * groups a set of questions under their disposition headings
  * @param lines the questions in this section, in reading order
- * @param groups the heading each disposition prints under
+ * @param headingOf the heading a question prints under
+ * @param headings every heading, in the order they print
  * @param empty what to print when the section holds nothing
  * @returns the section's body
  */
 function group(
   lines: AnswerLine[],
-  groups: [Disposition, string][],
+  headingOf: (line: AnswerLine, disposition: Disposition) => string,
+  headings: string[],
   empty: string,
 ): string {
   const marked = lines.map(
@@ -96,20 +139,15 @@ function group(
   );
   const out: string[] = [];
 
-  for (const heading of [...new Set(groups.map(([, name]) => name))]) {
-    const wanted = new Set(
-      groups.filter(([, name]) => name === heading).map(([which]) => which),
+  for (const heading of headings) {
+    const held = marked.filter(
+      ([line, disposition]) => headingOf(line, disposition) === heading,
     );
-    const held = marked.filter(([, disposition]) => wanted.has(disposition));
     if (!held.length) continue;
 
     out.push(
       `### ${heading}`,
-      ...held.map(([line, disposition]) =>
-        disposition === "suggested" || disposition === "unanswered"
-          ? unresolved(line)
-          : answered(line, disposition),
-      ),
+      ...held.map(([line, disposition]) => lineOf(line, disposition)),
       "",
     );
   }
@@ -140,7 +178,12 @@ export function formatAnswers(
     out.push(
       "## Decisions",
       "",
-      group(decisions, DECISION_GROUPS, "- No decision has been marked yet."),
+      group(
+        decisions,
+        (_, disposition) => DECISION_HEADING[disposition],
+        [...new Set(Object.values(DECISION_HEADING))],
+        "- No decision has been marked yet.",
+      ),
     );
 
   if (followUps.length)
@@ -148,7 +191,12 @@ export function formatAnswers(
       ...(out.length ? [""] : []),
       "## Follow-ups",
       "",
-      group(followUps, FOLLOW_UP_GROUPS, "- No follow-up has been requested yet."),
+      group(
+        followUps,
+        followUpHeading,
+        FOLLOW_UP_HEADINGS,
+        "- No follow-up has been requested yet.",
+      ),
     );
 
   // only the orderings the reader changed: a list left exactly as the page drew
@@ -235,11 +283,10 @@ export function summarise(
   }
 
   if (followUps.length) {
-    const open = tally(followUps);
-    const waiting = open.suggested + open.unanswered;
-    said.push(
-      `${plural(followUps.length, "follow-up")}, ${followUps.length - waiting} requested`,
-    );
+    const requested = followUps.filter(
+      (line) => followUpHeading(line, dispositionOf(line)) === "Requested",
+    ).length;
+    said.push(`${plural(followUps.length, "follow-up")}, ${requested} requested`);
   }
 
   said.push(notes ? plural(notes, "note") : "no notes");

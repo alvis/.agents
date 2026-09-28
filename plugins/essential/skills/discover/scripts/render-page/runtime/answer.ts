@@ -1,5 +1,6 @@
-import { decisionAnswer } from "./reply.ts";
+import { decisionAnswer, VERDICT_WORDS } from "./reply.ts";
 
+import type { VerdictWords } from "./reply.ts";
 import type { SavedAnswer } from "./store.ts";
 
 /**
@@ -53,13 +54,43 @@ export function readField(field: HTMLElement): SavedAnswer {
 }
 
 /**
+ * reads the words a decision's buttons carry.
+ *
+ * the renderer names a button only where the board relabelled it, so an
+ * unlabelled board's markup is unchanged; everything else is the default word.
+ * @param field the question's `[data-question]` element
+ * @returns the text on the approve and change buttons
+ */
+export function verdictWordsOf(field: HTMLElement): VerdictWords {
+  const wordOf = (verdict: keyof VerdictWords): string =>
+    field.querySelector<HTMLElement>(`[data-verdict="${verdict}"]`)?.dataset
+      .verdictLabel ?? VERDICT_WORDS[verdict];
+
+  return { approve: wordOf("approve"), change: wordOf("change") };
+}
+
+/**
+ * reads whether a question's recommendation is what it answers untouched
+ * @param field the question's `[data-question]` element
+ * @returns whether the renderer marked its approve button as the default
+ */
+export function defaultsOf(field: HTMLElement): boolean {
+  return field.querySelector("[data-verdict][data-default]") !== null;
+}
+
+/**
  * renders a saved state as the sentence the reply prints
  * @param saved the control state a question holds
+ * @param words the text on a decision's buttons, ignored by every other kind
  * @returns the answer as text, empty when the question is unanswered
  */
-export function answerText(saved: SavedAnswer): string {
+export function answerText(
+  saved: SavedAnswer,
+  words: VerdictWords = VERDICT_WORDS,
+): string {
   if (saved.kind === "checklist") return saved.values.join(", ");
-  if (saved.kind === "decision") return decisionAnswer(saved.verdict, saved.note);
+  if (saved.kind === "decision")
+    return decisionAnswer(saved.verdict, saved.note, words);
 
   return saved.value.trim();
 }
@@ -118,12 +149,15 @@ export function writeField(field: HTMLElement, saved: SavedAnswer): void {
  *
  * a decision recommends approval by construction — the page put a proposal in
  * front of the reader and asked them to approve it — so nothing is marked on
- * its buttons; every other kind carries the mark on the option itself.
+ * its buttons, and the recommendation is the approve button's own words, which
+ * are what the answer prints; every other kind carries the mark on the option
+ * itself.
  * @param field the question's `[data-question]` element
  * @returns the recommended answers, empty where the page recommends none
  */
 export function recommendedOf(field: HTMLElement): string[] {
-  if (field.dataset.questionKind === "decision") return ["Approve"];
+  if (field.dataset.questionKind === "decision")
+    return [verdictWordsOf(field).approve];
 
   return [
     ...field.querySelectorAll<HTMLInputElement>("input[data-recommended]"),

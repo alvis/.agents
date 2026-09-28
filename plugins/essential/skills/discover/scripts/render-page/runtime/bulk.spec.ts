@@ -27,9 +27,10 @@ afterEach(() => {
 /**
  * builds a decision question
  * @param pressed which verdict is already pressed, if any
+ * @param preset whether the renderer marked its approve button as the default
  * @returns the question
  */
-function decision(pressed = ""): StubElement {
+function decision(pressed = "", preset = false): StubElement {
   return new StubElement(
     "fieldset",
     { "data-question": "", "data-question-kind": "decision" },
@@ -38,6 +39,7 @@ function decision(pressed = ""): StubElement {
         new StubElement("button", {
           "data-verdict": verdict,
           "aria-pressed": String(verdict === pressed),
+          ...(preset && verdict === "approve" ? { "data-default": "" } : {}),
         }),
     ),
   );
@@ -101,6 +103,15 @@ describe("fn:installBulkApprove", () => {
 
   it("should offer nothing when every question is answered", () => {
     expect(install([decision("approve"), choice("keep")]).button.hidden).toBe(true);
+  });
+
+  it("should not offer to answer a follow-up its default already answers", () => {
+    // pressing it would change nothing the reply says, so counting it would
+    // only tell the reader they have work left that they do not
+    expect(install([decision("", true), decision()]).button.textContent).toBe(
+      "Approve 1 recommended answer",
+    );
+    expect(install([decision("", true)]).button.hidden).toBe(true);
   });
 
   it("should approve every unmarked decision", () => {

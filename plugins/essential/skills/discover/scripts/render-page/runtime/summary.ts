@@ -1,4 +1,4 @@
-import { formatAnswers, summarise } from "./disposition.ts";
+import { defaultAnswer, formatAnswers, summarise } from "./disposition.ts";
 import { countUnanswered, fillReply } from "./reply.ts";
 
 import type { NoteRow } from "./note-view.ts";
@@ -40,9 +40,13 @@ export function paintSummary(
   probes: ProbeOrder[] = [],
 ): void {
   targets.list.replaceChildren(
-    ...lines.map(({ ref, label, value }, index) => {
+    ...lines.map((line, index) => {
+      const { ref, label, value, defaults } = line;
+      // an untouched follow-up with a default is answered by that default,
+      // exactly as the reply files it
+      const answer = value || (defaults ? defaultAnswer(line) : "");
       const row = document.createElement("li");
-      row.dataset.answered = String(Boolean(value));
+      row.dataset.answered = String(Boolean(answer));
       row.dataset.touched = String(touched.has(ids[index]));
 
       // the row is an anchor to the card it summarises, so a reader who has
@@ -64,7 +68,7 @@ export function paintSummary(
 
       const shown = document.createElement("span");
       shown.className = "value";
-      shown.textContent = value || "—";
+      shown.textContent = answer || "—";
 
       jump.append(code, name, shown);
       row.append(jump);

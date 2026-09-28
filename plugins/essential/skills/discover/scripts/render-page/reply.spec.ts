@@ -103,6 +103,42 @@ describe("fn:renderReply", () => {
     );
   });
 
+  it("should open a defaulted follow-up at its default, in the board's own words", () => {
+    // the pre-fill is what a reader with scripting off copies; it has to read
+    // exactly as the runtime's first paint does
+    const drawn = renderReply(
+      page("{{answers}}", {
+        sections: [
+          {
+            id: "s",
+            title: "T",
+            blocks: [
+              {
+                type: "decision",
+                response: "follow-up",
+                id: "adr-1-more",
+                ref: "ADR-1",
+                label: "Plugin resolution",
+                ask: "Want this explained further?",
+                default: "approve",
+                labels: { approve: "I'm good with it", change: "Tell me more about it" },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(drawn).toBe(
+      [
+        "## Follow-ups",
+        "",
+        "### Not requested",
+        "- **ADR-1 · Plugin resolution:** I'm good with it (default)",
+      ].join("\n"),
+    );
+  });
+
   it("should carry the caveat a reader without JavaScript would otherwise miss", () => {
     // the pre-fill is the whole reply for a reader with scripting off, so an
     // invented figure has to be flagged here and not only by the runtime

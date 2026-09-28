@@ -1,9 +1,9 @@
 ---
 name: discover
-description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, to brainstorm approaches from cheapest to ambitious, interview about architecture, extract reference implementation semantics, make a disposable prototype before touching the real app, check whether discovery is ready for a decision, read the local state tree into an operations board, or account for a finished build against the plan it departed from; researched option selection belongs to essential:decide."
+description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, brainstorming approaches, an architecture interview, reference semantics, a disposable prototype, a readiness check, an operations board of local state, an account of a finished build, or explaining recorded decisions (ADRs and local state) to a newcomer; researched option selection belongs to essential:decide."
 requirements:
   intelligence: high
-argument-hint: "<problem> [--mode=blindspots|options|interview|reference|prototype|readiness|state|implementation] [--persist] [--work-id=<id>]"
+argument-hint: "<problem>|decisions [selector…] [--mode=blindspots|options|interview|reference|prototype|readiness|state|implementation|decisions] [--only=active,proposed,superseded] [--persist] [--work-id=<id>]"
 ---
 
 # Discover
@@ -12,14 +12,14 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 
 ## Boundaries
 
-- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, and an account of a finished build for whoever has to merge it.
+- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
 - Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), choosing among already-grounded options (`essential:decide`), production UI design (`web:design`), or clear bounded implementation.
 - Never claim an unknown unknown has been found merely because it is plausible; record it as a hypothesis until evidence supports it.
 
 ## Inputs and output
 
-- **Required**: the problem, goal, or artifact to explore.
-- **Optional**: `--mode`; `--persist`; explicit `--work-id`; the user's experience, confidence, references, hard constraints, and known unanswered questions.
+- **Required**: the problem, goal, or artifact to explore; `decisions` takes optional record selectors instead.
+- **Optional**: `--mode`; `--only`, for `decisions` alone; `--persist`; explicit `--work-id`; the user's experience, confidence, references, hard constraints, and known unanswered questions.
 
 Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work directory from that contract. Run the resolver normally, or with `--work-id` for an explicit user override or the identifier selected by Essential's work-stream lifecycle. Treat an existing match as a candidate and reuse it only when its charter owns the requested outcome. On `work_id_required`, a main-agent run follows that lifecycle to select an identifier and reruns without asking the user to approve it; a subagent returns the resolver payload unless it already received the resolved work ID and root. The main agent performs the contract's ignore gate and no-clobber bootstrap before the first persistent artifact.
 
@@ -46,7 +46,7 @@ The evidence ledger uses these fields:
 ## Workflow
 
 1. **Capture the starting map.** State the goal, requested deliverable, why it matters, what the user already knows, their familiarity with the codebase or domain, known questions, hard constraints, and supplied references. Ask only when a missing answer changes which discovery mode is appropriate.
-2. **Resolve exactly one mode.** An explicit valid `--mode` wins; otherwise use:
+2. **Resolve exactly one mode.** An explicit valid `--mode`, or `decisions` as the first word, wins; otherwise use:
    - `blindspots`: missing constraints, failure modes, history, or integration surfaces may change the problem;
    - `options`: the problem is understood but the solution space is too narrow or too broad;
    - `interview`: the user holds material intent or preferences not yet stated;
@@ -54,7 +54,8 @@ The evidence ledger uses these fields:
    - `prototype`: the cheapest way to learn is a disposable artifact and the user has authorized creating it;
    - `readiness`: existing evidence needs a plan/implementation go-no-go check;
    - `state`: the unknown is where work already in flight actually stands, and the local state tree is the only honest source for it;
-   - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it.
+   - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it;
+   - `decisions`: someone new to the repository needs the decisions it already rests on — human-approved ADRs and agent-recorded local decisions — explained.
 3. **Load only the selected mode reference** and execute it:
    - [blindspots](directions/blindspots.md)
    - [options](directions/options.md)
@@ -64,6 +65,7 @@ The evidence ledger uses these fields:
    - [readiness](directions/readiness.md)
    - [state](directions/state.md)
    - [implementation](directions/implementation.md)
+   - [decisions](directions/decisions.md)
 4. **Update the ledger.** Preserve provenance. Move an item between kinds only when evidence or a user decision justifies it; do not collapse inference into observed fact. Record rejected alternatives and why they were rejected when they would otherwise be rediscovered.
 5. **Choose the next probe or stop.** Continue only when another cheap probe can resolve a material unknown. Stop when all material items are resolved, explicitly deferred with an owner, or blocking; remaining assumptions must be low-impact and reversible.
 6. **Route the result.** Recommend exactly one next owner: another discovery mode, `essential:decide`, `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.

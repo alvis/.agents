@@ -86,7 +86,31 @@ export interface AnswerLine {
   recommended: string[];
   /** whether the reader answered it themselves, as against a restore */
   touched: boolean;
+  /**
+   * whether its recommendation is what the reader gets by leaving it alone.
+   *
+   * such a question is never outstanding: untouched, it already says what the
+   * reader would have pressed, so no count or bulk press treats it as open.
+   */
+  defaults: boolean;
 }
+
+/** the words a decision's two buttons carry, and so the words its answer prints. */
+export interface VerdictWords {
+  /** the approve button's text */
+  approve: string;
+  /** the change button's text */
+  change: string;
+}
+
+/**
+ * the words a decision carries when its board names none.
+ *
+ * held here rather than beside the renderer because the runtime prints them
+ * too, and a board that relabels one button must still fall back to the same
+ * word for the other on both sides of the page.
+ */
+export const VERDICT_WORDS: VerdictWords = { approve: "Approve", change: "Change" };
 
 /**
  * reads the answer a decision question carries.
@@ -96,24 +120,31 @@ export interface AnswerLine {
  * nothing checked, so no verdict state is stored anywhere but the buttons.
  * @param verdict the pressed verdict, or the empty string when unmarked
  * @param note the change note, which only a `change` verdict carries
+ * @param words the text on the two buttons, so the reply repeats what the
+ *   reader pressed rather than the verdict it is stored as
  * @returns the answer as it reaches the reply
  */
-export function decisionAnswer(verdict: string, note: string): string {
+export function decisionAnswer(
+  verdict: string,
+  note: string,
+  words: VerdictWords = VERDICT_WORDS,
+): string {
   if (!verdict) return "";
-  if (verdict !== "change") return "Approve";
+  if (verdict !== "change") return words.approve;
 
   const asked = note.trim();
 
-  return asked ? `Change — ${asked}` : "Change";
+  return asked ? `${words.change} — ${asked}` : words.change;
 }
 
 /**
  * counts how many of the answers are still empty
  * @param lines every question's label and answer
- * @returns the number of unanswered questions
+ * @returns the number of unanswered questions, leaving out any question whose
+ *   default already answers it
  */
 export function countUnanswered(lines: AnswerLine[]): number {
-  return lines.filter(({ value }) => !value).length;
+  return lines.filter(({ value, defaults }) => !value && !defaults).length;
 }
 
 /**

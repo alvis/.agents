@@ -133,6 +133,13 @@
       "data": "implementation-notes.json",
       "out": "implementation-notes.html",
       "blurb": "What was built against what was planned, the departures each one owes an account of, and a quiz on what a merger has to understand first."
+    },
+    {
+      "id": "decision-explainer-agents-v1",
+      "label": "Decision explainer",
+      "data": "decision-explainer.json",
+      "out": "decision-explainer.html",
+      "blurb": "The decisions a repository already rests on, explained to someone who was not there, with a Tell me more on each."
     }
   ]
 }

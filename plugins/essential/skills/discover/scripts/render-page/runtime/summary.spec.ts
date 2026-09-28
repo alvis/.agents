@@ -168,6 +168,18 @@ describe("fn:paintSummary", () => {
     expect(list.children[0]?.dataset.answered).toBe("true");
   });
 
+  it("should show an untouched follow-up's default as its answer", () => {
+    // the default is the answer the reply files, so the row must not read as
+    // an open question beside a tally that no longer counts it
+    const { targets, list } = drawer();
+    const good = line({ value: "", response: "follow-up", recommended: ["I'm good with it"], defaults: true });
+
+    paintSummary(targets, [good], new Set(), ["a"]);
+
+    expect(texts(list)).toContain("I'm good with it (default)");
+    expect(list.children[0]?.dataset.answered).toBe("true");
+  });
+
   it("should mark which rows the reader answered themselves", () => {
     // a restore writes controls exactly as a reader would, so the drawer has
     // to say which answers are the reader's own rather than the page's

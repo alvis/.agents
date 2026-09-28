@@ -17,6 +17,7 @@ function line(over: Partial<AnswerLine> = {}): AnswerLine {
     response: "decision",
     recommended: [],
     touched: false,
+    defaults: false,
     ...over,
   };
 }
@@ -35,6 +36,16 @@ describe("fn:dispositionOf", () => {
     expect(dispositionOf(line({ value: "Approve", recommended: ["Approve"] }))).toBe(
       "suggested",
     );
+  });
+
+  it("should read an untouched follow-up as confirmed where its default answers it", () => {
+    // the default is an answer, so the strip and the unanswered count must not
+    // disagree about whether anything is still open
+    expect(
+      dispositionOf(
+        line({ response: "follow-up", recommended: ["I'm good with it"], defaults: true }),
+      ),
+    ).toBe("confirmed");
   });
 
   it("should read an answer matching the recommendation as confirmed", () => {
@@ -107,6 +118,74 @@ describe("fn:formatAnswers", () => {
     expect(out.split("## Follow-ups")[0]).not.toContain("Chase");
   });
 
+  it("should file a follow-up left at its default as not requested", () => {
+    // a newcomer who never presses anything, or presses "I'm good with it",
+    // is asking for nothing; listing either under Requested would send the
+    // coder off to explain what nobody asked about
+    const good = ["I'm good with it"];
+    const out = formatAnswers([
+      line({ ref: "A1", label: "Ask", value: "Tell me more about it — why?", response: "follow-up", recommended: good, defaults: true, touched: true }),
+      line({ ref: "A2", label: "Pressed", value: "I'm good with it", response: "follow-up", recommended: good, defaults: true, touched: true }),
+      line({ ref: "A3", label: "Untouched", response: "follow-up", recommended: good, defaults: true }),
+    ]);
+
+    expect(out).toBe(
+      [
+        "## Follow-ups",
+        "",
+        "### Requested",
+        "- **A1 · Ask:** Tell me more about it — why?",
+        "",
+        "### Not requested",
+        "- **A2 · Pressed:** I'm good with it (default)",
+        "- **A3 · Untouched:** I'm good with it (default)",
+      ].join("\n"),
+    );
+  });
+
+  it("should leave a follow-up that recommends nothing as it always read", () => {
+    // every follow-up before labels existed was an observations block with no
+    // recommendation; its reply must not move
+    const out = formatAnswers([
+      line({ ref: "O1", label: "Seen", value: "1, 3", response: "follow-up", touched: true }),
+      line({ ref: "O2", label: "Unseen", response: "follow-up" }),
+    ]);
+
+    expect(out).toBe(
+      [
+        "## Follow-ups",
+        "",
+        "### Requested",
+        "- **O1 · Seen:** 1, 3",
+        "",
+        "### Not yet requested",
+        "- **O2 · Unseen:** unanswered",
+      ].join("\n"),
+    );
+  });
+
+  it("should keep a recommended follow-up without a default as it always read", () => {
+    // a choice follow-up recommending an option is still a request when the
+    // reader picks it; only a follow-up the page marked as its default may be
+    // filed as asking for nothing
+    const out = formatAnswers([
+      line({ ref: "C1", label: "Dig", value: "Security", response: "follow-up", recommended: ["Security"], touched: true }),
+      line({ ref: "C2", label: "Next", response: "follow-up", recommended: ["Security"] }),
+    ]);
+
+    expect(out).toBe(
+      [
+        "## Follow-ups",
+        "",
+        "### Requested",
+        "- **C1 · Dig:** Security",
+        "",
+        "### Not yet requested",
+        "- **C2 · Next:** recommended Security; not yet confirmed",
+      ].join("\n"),
+    );
+  });
+
   it("should not promise a section the page asks nothing for", () => {
     const out = formatAnswers([line({ label: "Keep", value: "Approve", touched: true })]);
 
@@ -158,6 +237,29 @@ describe("fn:summarise", () => {
 
     expect(out).toContain("2 follow-ups, 1 requested");
     expect(out).toContain("1 decision — 1 confirmed");
+  });
+
+  it("should not count a follow-up left at its default as requested", () => {
+    const good = ["I'm good with it"];
+    const out = summarise(
+      [
+        line({ response: "follow-up", value: "Tell me more about it", recommended: good, defaults: true, touched: true }),
+        line({ response: "follow-up", value: "I'm good with it", recommended: good, defaults: true, touched: true }),
+        line({ response: "follow-up", recommended: good, defaults: true }),
+      ],
+      0,
+    );
+
+    expect(out).toBe("This reply carries 3 follow-ups, 1 requested; and no notes.");
+  });
+
+  it("should count a confirmed follow-up without a default as requested", () => {
+    const out = summarise(
+      [line({ response: "follow-up", value: "Security", recommended: ["Security"], touched: true })],
+      0,
+    );
+
+    expect(out).toBe("This reply carries 1 follow-up, 1 requested; and no notes.");
   });
 
   it("should count the notes the reader left", () => {

@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { StubElement } from "../../dom-support.ts";
-import { answerText, readField, writeField } from "./answer.ts";
+import {
+  answerText,
+  defaultsOf,
+  readField,
+  recommendedOf,
+  verdictWordsOf,
+  writeField,
+} from "./answer.ts";
 
 import type { SavedAnswer } from "./store.ts";
 
@@ -41,12 +48,14 @@ function input(value: string, checked = false, answer?: string): StubElement {
  * builds a verdict button
  * @param verdict the verdict it carries
  * @param pressed whether it starts pressed
+ * @param label the `data-verdict-label` a board naming its buttons emits
  * @returns the button
  */
-function verdict(verdict: string, pressed = false): StubElement {
+function verdict(verdict: string, pressed = false, label?: string): StubElement {
   return new StubElement("button", {
     "data-verdict": verdict,
     "aria-pressed": String(pressed),
+    ...(label === undefined ? {} : { "data-verdict-label": label }),
   });
 }
 
@@ -133,6 +142,14 @@ describe("fn:answerText", () => {
       "Approve",
     );
     expect(answerText({ kind: "decision", verdict: "", note: "x" })).toBe("");
+  });
+
+  it("should render a decision in the words its buttons carry", () => {
+    const words = { approve: "I'm good with it", change: "Tell me more about it" };
+
+    expect(
+      answerText({ kind: "decision", verdict: "change", note: "why?" }, words),
+    ).toBe("Tell me more about it — why?");
   });
 
   it("should trim a typed answer, so whitespace never counts as one", () => {
@@ -229,5 +246,51 @@ describe("fn:writeField", () => {
 
     expect(question.querySelectorAll("input").map(({ checked }) => checked))
       .toStrictEqual([false, false]);
+  });
+});
+
+describe("fn:verdictWordsOf", () => {
+  it("should read the words a labelled board put on its buttons", () => {
+    expect(
+      verdictWordsOf(
+        field("decision", [
+          verdict("approve", false, "I'm good with it"),
+          verdict("change", false, "Tell me more about it"),
+        ]),
+      ),
+    ).toStrictEqual({ approve: "I'm good with it", change: "Tell me more about it" });
+  });
+
+  it("should fall back to Approve and Change where a board named neither", () => {
+    expect(
+      verdictWordsOf(field("decision", [verdict("approve"), verdict("change")])),
+    ).toStrictEqual({ approve: "Approve", change: "Change" });
+  });
+});
+
+describe("fn:defaultsOf", () => {
+  it("should read a question as defaulted only where its approve button says so", () => {
+    const preset = verdict("approve", false, "I'm good with it");
+    preset.setAttribute("data-default", "");
+
+    expect(defaultsOf(field("decision", [preset, verdict("change")]))).toBe(true);
+    expect(
+      defaultsOf(field("decision", [verdict("approve"), verdict("change")])),
+    ).toBe(false);
+  });
+});
+
+describe("fn:recommendedOf", () => {
+  it("should recommend a decision's approve button in its own words", () => {
+    // the reply prints the recommendation beside the answer, so the two have
+    // to be the same words or a confirmed answer reads as a changed one
+    expect(
+      recommendedOf(
+        field("decision", [verdict("approve", false, "I'm good with it")]),
+      ),
+    ).toStrictEqual(["I'm good with it"]);
+    expect(recommendedOf(field("decision", [verdict("approve")]))).toStrictEqual([
+      "Approve",
+    ]);
   });
 });
