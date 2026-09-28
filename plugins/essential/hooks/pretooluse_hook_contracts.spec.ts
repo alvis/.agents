@@ -269,6 +269,28 @@ describe("PreToolUse hook wiring", () => {
   });
 });
 
+describe("portable rejection guidance", () => {
+  const cases = [
+    ["malformed question", questions, {}, "questions"],
+    ["untagged option", questions, question({ label: "Ship now" }), "questions"],
+    ["unknown option tag", questions, question({ label: "Ship now [Fast]" }), "questions"],
+    ["incomplete plan", plans, { plan: "## Context\nIncomplete." }, "plan"],
+  ] as const;
+
+  it.each(cases.flatMap(([name, matcher, input, guide]) =>
+    HARNESS_ROOT_VARIABLES.map((variable) => ({ name, matcher, input, guide, variable })),
+  ))("should name one portable guide for $name under $variable", ({ matcher, input, guide, variable }) => {
+    const output = runHook(matcher, input, variable);
+    const reason = variable === "GROK_PLUGIN_ROOT"
+      ? grokDenialReason(output)
+      : denialReason(output);
+
+    expect(reason.split(`essential:directions/${guide}.md`)).toHaveLength(2);
+    expect(reason.split(`directions/${guide}.md`)).toHaveLength(2);
+    expect(reason).not.toContain(plugin);
+  });
+});
+
 describe("question validator", () => {
   function runAsyncQuestion(toolInput: Record<string, unknown>): Envelope {
     const entry = hooks.hooks.PreToolUse.find(({ matcher }) =>

@@ -9,14 +9,12 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=/dev/null
 source "$SCRIPTS_DIR/context.sh"
-DIRECTIONS_DIR="$(cd "$SCRIPTS_DIR/../../directions" && pwd)"
-
 plan_feedback_reason() {
   local reason="$1"
-  if [[ "$reason" == *"$DIRECTIONS_DIR/plan.md"* ]]; then
+  if [[ "$reason" == *"essential:directions/plan.md"* ]]; then
     printf '%s' "$reason"
   else
-    printf '%s Read %s/plan.md before correcting the plan.' "$reason" "$DIRECTIONS_DIR"
+    printf '%s Read essential:directions/plan.md before correcting the plan.' "$reason"
   fi
 }
 
@@ -116,7 +114,7 @@ opening_count="$(jq '.opening | length' <<<"$candidate")"
 closing_count="$(jq '.closing | length' <<<"$candidate")"
 if [[ "$opening_count" == "0" && "$closing_count" == "0" ]]; then
   if [[ -e "$retry_flag" ]]; then
-    stop_with_feedback "The rejected plan is still pending. Read $DIRECTIONS_DIR/plan.md and re-emit one corrected <proposed_plan> block." "$active" "$retry_flag"
+    stop_with_feedback "The rejected plan is still pending. Re-emit one corrected <proposed_plan> block." "$active" "$retry_flag"
   fi
   exit 0
 fi
