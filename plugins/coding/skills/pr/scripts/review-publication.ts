@@ -9,12 +9,10 @@ import { fileURLToPath } from "node:url";
 type JsonObject = Record<string, unknown>;
 type PublicationKind =
   "discussion-reply" | "review" | "review-supplement" | "status";
-type ReviewEvent = "APPROVE" | "COMMENT" | "REQUEST_CHANGES";
+type ReviewEvent = "COMMENT" | "REQUEST_CHANGES";
+type CiState = "pending" | "green" | "red";
 type TrustCap =
-  | "ci-red"
-  | "partial-review"
-  | "spec-unreadable"
-  | "tests-unconvincing";
+  "ci-red" | "partial-review" | "spec-unreadable" | "tests-unconvincing";
 
 interface PublicationTarget {
   readonly base_oid: string;
@@ -85,7 +83,7 @@ interface ReviewAssessment {
     readonly result: "not-applicable" | "passes" | "violates";
     readonly standard: string;
   }[];
-  readonly substantive_verdict: "APPROVE" | "REQUEST_CHANGES";
+  readonly substantive_verdict: "PASS" | "REQUEST_CHANGES";
   readonly statistics: {
     readonly additions: number;
     readonly deletions: number;
@@ -149,10 +147,23 @@ interface CommonAssessment {
 interface ReviewPublicationAssessment extends CommonAssessment {
   readonly assessment: ReviewAssessment;
   readonly review_context: {
+    readonly ci: {
+      readonly expected_checks: readonly ExpectedCiCheck[];
+      readonly expected_sources_confirmed: boolean;
+      readonly required_policy_sha256: string;
+    };
+    readonly human_signoff_required: boolean;
     readonly review_evidence_sha256: string;
     readonly zone: "black" | "green" | "red" | "yellow";
   };
   readonly kind: "review";
+}
+
+interface ExpectedCiCheck {
+  readonly name: string;
+  readonly workflow?: string;
+  readonly link_prefix?: string;
+  readonly app_id?: number;
 }
 
 interface ReviewSupplementAssessment extends CommonAssessment {
@@ -210,11 +221,20 @@ export interface ReviewPublicationReceipt {
     readonly reviewer_capability: string;
     readonly reviewer_login: string;
     readonly submitted_event: ReviewEvent | null;
-    readonly substantive_verdict: "APPROVE" | "REQUEST_CHANGES" | null;
+    readonly substantive_verdict: "PASS" | "REQUEST_CHANGES" | null;
     readonly template_sha256: ReviewTemplates["sha256"] | null;
     readonly trust_caps: readonly TrustCap[];
   };
   readonly contract_version: typeof CONTRACT_VERSION;
+  readonly ci_variants: Readonly<
+    Record<
+      CiState,
+      {
+        readonly payload_sha256: string;
+        readonly payload_utf8_base64: string;
+      }
+    >
+  > | null;
   readonly kind: PublicationKind;
   readonly parent_approval: ReviewPublicationReceipt | null;
   readonly payload_sha256: string;
@@ -239,8 +259,8 @@ interface PublishOptions {
   readonly executable?: string;
 }
 
-export const CONTRACT_VERSION = "coding-pr-review-publication/v2" as const;
-export const RECEIPT_VERSION = 2 as const;
+export const CONTRACT_VERSION = "coding-pr-review-publication/v3" as const;
+export const RECEIPT_VERSION = 3 as const;
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const OID_PATTERN = /^[0-9a-f]{40}$/;
@@ -304,6 +324,25 @@ export function createReviewPublicationReceipt(
     "utf8",
   );
   const review = assessment.kind === "review" ? assessment : null;
+  const ciVariants =
+    review === null
+      ? null
+      : (Object.fromEntries(
+          (["pending", "green", "red"] as const).map((state) => {
+            const variant = renderReview(review, templates!, state);
+            const bytes = Buffer.from(
+              `${JSON.stringify(variant.body)}\n`,
+              "utf8",
+            );
+            return [
+              state,
+              {
+                payload_sha256: hashBytes(bytes),
+                payload_utf8_base64: bytes.toString("base64"),
+              },
+            ];
+          }),
+        ) as ReviewPublicationReceipt["ci_variants"]);
   return {
     approved_assessment: assessment,
     assessment_sha256: hashJson(assessment),
@@ -337,6 +376,7 @@ export function createReviewPublicationReceipt(
       trust_caps: publication.trustCaps,
     },
     contract_version: CONTRACT_VERSION,
+    ci_variants: ciVariants,
     kind: assessment.kind,
     parent_approval: parent,
     payload_sha256: hashBytes(payloadBytes),
@@ -481,7 +521,25 @@ export function publishReviewPublication(
   }
   validateLiveSelfReview(validated, liveAuthor);
   validateLiveDiscussionTarget(validated, executable);
-  const request = publicationRequest(validated);
+  const ciState =
+    validated.kind === "review" ? readLiveCiState(validated, executable) : null;
+  if (ciState !== null) {
+    assertLiveReviewTarget(validated, executable);
+    assertLiveRequiredPolicy(validated, executable);
+  }
+  const variant = ciState === null ? null : validated.ci_variants?.[ciState];
+  if (ciState !== null && variant === undefined) {
+    throw new Error("approved CI review variant is missing");
+  }
+  const request = publicationRequest(
+    variant === null
+      ? validated
+      : {
+          ...validated,
+          payload_sha256: variant!.payload_sha256,
+          payload_utf8_base64: variant!.payload_utf8_base64,
+        },
+  );
   if (options.dryRun === true) return request.bytes.toString("utf8");
   const completed = spawnSync(executable, request.arguments_, {
     encoding: "utf8",
@@ -492,7 +550,465 @@ export function publishReviewPublication(
       `review publication write failed: ${completed.stderr.trim() || completed.stdout.trim() || `exit ${completed.status}`}`,
     );
   }
+  if (ciState !== null) {
+    const response = objectValue(
+      JSON.parse(completed.stdout) as unknown,
+      "published review response",
+    );
+    return `${JSON.stringify({
+      ci_state: ciState,
+      review_id: positiveInteger(response.id, "published review ID"),
+      review: response,
+    })}\n`;
+  }
   return completed.stdout;
+}
+
+/** Updates only the body of a previously submitted, exact-revision review. */
+export function updateReviewPublication(
+  receipt: ReviewPublicationReceipt,
+  reviewId: number,
+  options: PublishOptions = {},
+): string {
+  const validated = validateReviewPublicationReceipt(receipt);
+  if (
+    validated.kind !== "review" ||
+    !Number.isSafeInteger(reviewId) ||
+    reviewId < 1
+  ) {
+    throw new Error("a positive review ID and review receipt are required");
+  }
+  const executable =
+    options.executable ?? process.env.REVIEW_PUBLICATION_GH_BIN ?? "gh";
+  const target = validated.approved_assessment.target;
+  const repository = `${target.owner}/${target.repo}`;
+  assertLiveReviewTarget(validated, executable);
+  const currentUser = runGitHubRead(executable, [
+    "api",
+    "--hostname",
+    target.host,
+    "user",
+  ]);
+  if (
+    loginValue(currentUser.login, "live publisher login").toLowerCase() !==
+    validated.binding.publisher_login.toLowerCase()
+  ) {
+    throw new Error("review update refused: publisher identity changed");
+  }
+  const endpoint = `repos/${repository}/pulls/${target.pull_number}/reviews/${reviewId}`;
+  const liveReview = runGitHubRead(executable, [
+    "api",
+    "--hostname",
+    target.host,
+    endpoint,
+  ]);
+  if (
+    positiveInteger(liveReview.id, "live review ID") !== reviewId ||
+    loginValue(
+      pathValue(liveReview, ["user", "login"]),
+      "live review author",
+    ).toLowerCase() !== validated.binding.publisher_login.toLowerCase() ||
+    oidValue(liveReview.commit_id, "live review commit") !== target.head_oid
+  ) {
+    throw new Error(
+      "review update refused: review ID, author, or revision differs",
+    );
+  }
+  const currentBody = stringValue(liveReview.body, "live review body");
+  const variants = validated.ci_variants!;
+  const bodies = Object.fromEntries(
+    (["pending", "green", "red"] as const).map((state) => [
+      state,
+      stringValue(
+        JSON.parse(
+          Buffer.from(variants[state].payload_utf8_base64, "base64").toString(
+            "utf8",
+          ),
+        ).body,
+        "approved review body",
+      ),
+    ]),
+  ) as Record<CiState, string>;
+  if (currentBody !== bodies.pending) {
+    throw new Error(
+      "review update refused: current body is not the approved pending variant",
+    );
+  }
+  const ciState = readLiveCiState(validated, executable);
+  if (ciState === "pending")
+    return `${JSON.stringify({
+      ci_state: "pending",
+      waiting: "Hosted CI is still running; waiting for its result.",
+    })}\n`;
+  assertLiveReviewTarget(validated, executable);
+  assertLiveRequiredPolicy(validated, executable);
+  const afterPollReview = runGitHubRead(executable, [
+    "api",
+    "--hostname",
+    target.host,
+    endpoint,
+  ]);
+  if (
+    positiveInteger(afterPollReview.id, "live review ID") !== reviewId ||
+    loginValue(
+      pathValue(afterPollReview, ["user", "login"]),
+      "live review author",
+    ).toLowerCase() !== validated.binding.publisher_login.toLowerCase() ||
+    oidValue(afterPollReview.commit_id, "live review commit") !== target.head_oid ||
+    stringValue(afterPollReview.body, "live review body") !== currentBody
+  ) {
+    throw new Error("review update refused: review identity or body changed after CI lookup");
+  }
+  const bytes = Buffer.from(
+    `${JSON.stringify({ body: bodies[ciState] })}\n`,
+    "utf8",
+  );
+  if (options.dryRun === true) return bytes.toString("utf8");
+  const completed = spawnSync(
+    executable,
+    [
+      "api",
+      "--hostname",
+      target.host,
+      "--method",
+      "PUT",
+      endpoint,
+      "--input",
+      "-",
+    ],
+    {
+      encoding: "utf8",
+      input: bytes,
+    },
+  );
+  if (completed.status !== 0) {
+    throw new Error(
+      `review update failed: ${completed.stderr.trim() || completed.stdout.trim() || `exit ${completed.status}`}`,
+    );
+  }
+  const response = objectValue(
+    JSON.parse(completed.stdout) as unknown,
+    "updated review response",
+  );
+  return `${JSON.stringify({
+    ci_state: ciState,
+    review_id: positiveInteger(response.id, "updated review ID"),
+    review: response,
+  })}\n`;
+}
+
+function assertLiveReviewTarget(
+  receipt: ReviewPublicationReceipt,
+  executable: string,
+): void {
+  const target = receipt.approved_assessment.target;
+  const live = runGitHubRead(executable, [
+    "api",
+    "--hostname",
+    target.host,
+    `repos/${target.owner}/${target.repo}/pulls/${target.pull_number}`,
+  ]);
+  if (
+    pathValue(live, ["head", "sha"]) !== target.head_oid ||
+    pathValue(live, ["base", "sha"]) !== target.base_oid ||
+    pathValue(live, ["base", "ref"]) !== target.base_ref ||
+    String(pathValue(live, ["user", "login"])).toLowerCase() !==
+      target.pr_author_login.toLowerCase()
+  ) {
+    throw new Error(
+      "review update refused: reviewed head/base or PR author changed",
+    );
+  }
+}
+
+function readLiveRequiredPolicyHash(
+  executable: string,
+  target: Pick<PublicationTarget, "host" | "owner" | "repo" | "base_ref">,
+): string {
+  const branch = encodeURIComponent(target.base_ref);
+  const root = `repos/${target.owner}/${target.repo}`;
+  const protection = runGitHubPolicyRead(
+    executable,
+    target.host,
+    `${root}/branches/${branch}/protection`,
+    true,
+  );
+  if (protection !== null) objectValue(protection, "branch protection policy");
+  const rulePages = arrayValue(
+    runGitHubPolicyRead(
+      executable,
+      target.host,
+      `${root}/rules/branches/${branch}?per_page=100`,
+      false,
+      true,
+    ),
+    "effective branch rule pages",
+  );
+  const rules = rulePages.flatMap((page) => arrayValue(page, "effective branch rules"));
+  return hashJson({
+    protection,
+    rules: [...rules].sort((left, right) =>
+      canonicalJson(left).localeCompare(canonicalJson(right))),
+  });
+}
+
+function assertLiveRequiredPolicy(
+  receipt: ReviewPublicationReceipt,
+  executable: string,
+): void {
+  const assessment = receipt.approved_assessment as ReviewPublicationAssessment;
+  if (readLiveRequiredPolicyHash(executable, assessment.target) !==
+      assessment.review_context.ci.required_policy_sha256)
+    throw new Error("CI lookup refused: required-check policy changed after review approval");
+}
+
+function runGitHubPolicyRead(
+  executable: string,
+  host: string,
+  endpoint: string,
+  allowUnprotected: boolean,
+  paginate = false,
+): unknown {
+  const arguments_ = paginate
+    ? ["api", "--hostname", host, "--method", "GET", "--paginate", "--slurp", endpoint]
+    : ["api", "--hostname", host, endpoint];
+  const completed = spawnSync(executable, arguments_, { encoding: "utf8" });
+  if (completed.status !== 0) {
+    if (allowUnprotected && completed.stderr.includes("Branch not protected (HTTP 404)"))
+      return null;
+    throw new Error(
+      `required-check policy lookup failed: ${completed.stderr.trim() || completed.stdout.trim() || `exit ${completed.status}`}`,
+    );
+  }
+  try {
+    return JSON.parse(completed.stdout) as unknown;
+  } catch {
+    throw new Error("required-check policy lookup returned malformed JSON");
+  }
+}
+
+function readLiveCiState(
+  receipt: ReviewPublicationReceipt,
+  executable: string,
+): CiState {
+  const target = receipt.approved_assessment.target;
+  const context = (receipt.approved_assessment as ReviewPublicationAssessment)
+    .review_context.ci;
+  assertLiveRequiredPolicy(receipt, executable);
+  const completed = spawnSync(
+    executable,
+    [
+      "pr",
+      "checks",
+      String(target.pull_number),
+      "--repo",
+      `${target.host}/${target.owner}/${target.repo}`,
+      "--json",
+      "bucket,completedAt,link,name,startedAt,state,workflow",
+    ],
+    { encoding: "utf8" },
+  );
+  if (
+    completed.status !== 0 &&
+    completed.status !== 1 &&
+    completed.status !== 8
+  ) {
+    throw new Error(
+      `CI lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
+    );
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(completed.stdout);
+  } catch {
+    throw new Error("CI lookup returned malformed JSON");
+  }
+  const checks = arrayValue(parsed, "live CI checks").map((item) =>
+    objectValue(item, "live CI check"),
+  );
+  let pending = false;
+  for (const check of checks) {
+    const bucket = stringValue(check.bucket, "CI bucket").toLowerCase();
+    const state = stringValue(check.state, "CI state").toLowerCase();
+    if (
+      [
+        "fail",
+        "failure",
+        "cancel",
+        "cancelled",
+        "timed_out",
+        "timed-out",
+      ].includes(bucket) ||
+      [
+        "fail",
+        "failure",
+        "cancel",
+        "cancelled",
+        "timed_out",
+        "timed-out",
+      ].includes(state)
+    )
+      return "red";
+    if (
+      !["pass", "success", "skipping", "skipped"].includes(bucket) ||
+      ![
+        "pass",
+        "success",
+        "skipping",
+        "skipped",
+        "completed",
+      ].includes(state) ||
+      !check.completedAt
+    )
+      pending = true;
+  }
+  const appRuns = context.expected_checks.some(
+    (check) => check.app_id !== undefined && check.app_id !== -1,
+  )
+    ? readLiveCheckRuns(executable, target)
+    : [];
+  for (const expected of context.expected_checks) {
+    if (expected.app_id !== undefined && expected.app_id !== -1) {
+      const matchingRuns = appRuns.filter((run) => {
+        const app = objectValue(run.app, "CI check app");
+        return (
+          matchesExpectedCheckName(
+            expected.name,
+            stringValue(run.name, "CI check run name"),
+          ) &&
+          run.head_sha === target.head_oid &&
+          app.id === expected.app_id
+        );
+      });
+      if (matchingRuns.length === 0) {
+        pending = true;
+        continue;
+      }
+      for (const run of matchingRuns) {
+        const status = stringValue(run.status, "CI check run status").toLowerCase();
+        const conclusion = run.conclusion === null
+          ? null
+          : stringValue(run.conclusion, "CI check run conclusion").toLowerCase();
+        if (
+          status === "completed" &&
+          conclusion !== null &&
+          ["failure", "cancelled", "timed_out", "action_required"].includes(conclusion)
+        ) return "red";
+        if (
+          status !== "completed" ||
+          !run.completed_at ||
+          conclusion === null ||
+          !["success", "skipped"].includes(conclusion)
+        ) pending = true;
+      }
+      continue;
+    }
+    if (
+      !checks.some((check) => {
+          const name = stringValue(check.name, "CI check name");
+          return (
+            matchesExpectedCheckName(expected.name, name) &&
+            (expected.workflow === undefined ||
+              checkMatchesWorkflowPath(check, expected.workflow, target, executable)) &&
+            (expected.link_prefix === undefined ||
+              (typeof check.link === "string" &&
+                matchesCiLinkSource(expected.link_prefix, check.link)))
+          );
+      })
+    ) pending = true;
+  }
+  return pending ? "pending" : "green";
+}
+
+function matchesExpectedCheckName(expected: string, observed: string): boolean {
+  return expected.endsWith("*")
+    ? observed.startsWith(expected.slice(0, -1))
+    : observed === expected;
+}
+
+function checkMatchesWorkflowPath(
+  check: JsonObject,
+  workflowPath: string,
+  target: PublicationTarget,
+  executable: string,
+): boolean {
+  if (typeof check.link !== "string") return false;
+  let link: URL;
+  try {
+    link = new URL(check.link);
+  } catch {
+    return false;
+  }
+  const segments = link.pathname.split("/").filter(Boolean);
+  const [owner, repo, actions, runs, runId, job, jobId] = segments;
+  if (
+    link.protocol !== "https:" ||
+    link.hostname !== target.host ||
+    owner?.toLowerCase() !== target.owner.toLowerCase() ||
+    repo?.toLowerCase() !== target.repo.toLowerCase() ||
+    actions !== "actions" ||
+    runs !== "runs" ||
+    !/^[1-9][0-9]*$/.test(runId ?? "") ||
+    (segments.length !== 5 &&
+      !(segments.length === 7 && job === "job" && /^[1-9][0-9]*$/.test(jobId ?? "")))
+  )
+    return false;
+  const run = runGitHubRead(executable, [
+    "api",
+    "--hostname",
+    target.host,
+    `repos/${target.owner}/${target.repo}/actions/runs/${runId}`,
+  ]);
+  const path = stringValue(run.path, "CI workflow path").split("@")[0];
+  return path === workflowPath &&
+    oidValue(run.head_sha, "CI workflow head") === target.head_oid;
+}
+
+function readLiveCheckRuns(
+  executable: string,
+  target: PublicationTarget,
+): JsonObject[] {
+  const completed = spawnSync(
+    executable,
+    [
+      "api",
+      "--hostname",
+      target.host,
+      "--paginate",
+      "--slurp",
+      `repos/${target.owner}/${target.repo}/commits/${target.head_oid}/check-runs?per_page=100`,
+    ],
+    { encoding: "utf8" },
+  );
+  if (completed.status !== 0)
+    throw new Error(
+      `CI check-run lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
+    );
+  let pages: unknown;
+  try {
+    pages = JSON.parse(completed.stdout);
+  } catch {
+    throw new Error("CI check-run lookup returned malformed JSON");
+  }
+  return arrayValue(pages, "CI check-run pages").flatMap((page, index) =>
+    arrayValue(
+      objectValue(page, `CI check-run page ${index + 1}`).check_runs,
+      "CI check runs",
+    ).map((run) => objectValue(run, "CI check run")),
+  );
+}
+
+function matchesCiLinkSource(prefix: string, link: string): boolean {
+  try {
+    const expected = new URL(prefix);
+    const observed = new URL(link);
+    if (observed.origin !== expected.origin || !observed.href.startsWith(expected.href))
+      return false;
+    const next = observed.href[expected.href.length];
+    return next === undefined || "/?#".includes(next) || "/?#".includes(expected.href.at(-1)!);
+  } catch {
+    return false;
+  }
 }
 
 function parseAssessment(input: unknown): PublicationAssessment {
@@ -567,22 +1083,85 @@ function parseReviewAssessment(
       "reviewer and publication agent must be independent identities",
     );
   }
-  const reviewContext = objectValue(
-    input.review_context,
-    "review context",
-  );
+  const reviewContext = objectValue(input.review_context, "review context");
   const zone = enumValue(
     reviewContext.zone,
     ["black", "green", "red", "yellow"] as const,
     "review zone",
   );
   const assessment = parseReviewJudgment(input.assessment);
+  const ci = objectValue(reviewContext.ci, "review CI context");
+  const expectedChecks = arrayValue(ci.expected_checks, "expected CI checks").map(
+    (entry): ExpectedCiCheck => {
+      const check = objectValue(entry, "expected CI check");
+      const name = nonemptyString(check.name, "expected CI check name");
+      if (!/^[^*\r\n]+\*?$/.test(name))
+        throw new Error("expected CI check must be an exact name or trailing-* prefix");
+      const workflow = check.workflow === undefined
+        ? undefined
+        : nonemptyString(check.workflow, "expected CI workflow");
+      if (workflow !== undefined && !/^\.github\/workflows\/[^/\r\n]+\.ya?ml$/.test(workflow))
+        throw new Error("expected CI workflow must be a workflow file path");
+      const link_prefix = check.link_prefix === undefined
+        ? undefined
+        : nonemptyString(check.link_prefix, "expected CI link prefix");
+      const app_id = check.app_id;
+      if (
+        app_id !== undefined &&
+        (!Number.isSafeInteger(app_id) || (Number(app_id) < 1 && app_id !== -1))
+      )
+        throw new Error("expected CI app ID must be positive or -1");
+      if (link_prefix) {
+        let parsed: URL;
+        try {
+          parsed = new URL(link_prefix);
+        } catch {
+          throw new Error("expected CI link prefix must be an absolute HTTPS URL");
+        }
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password)
+          throw new Error("expected CI link prefix must be an absolute HTTPS URL");
+      }
+      if ([workflow, link_prefix, app_id].filter((source) => source !== undefined).length !== 1)
+        throw new Error("expected CI check requires exactly one workflow, link prefix, or app ID");
+      return {
+        name,
+        ...(workflow ? { workflow } : {}),
+        ...(link_prefix ? { link_prefix } : {}),
+        ...(app_id !== undefined ? { app_id: Number(app_id) } : {}),
+      };
+    },
+  );
+  if (new Set(expectedChecks.map((check) => JSON.stringify(check))).size !== expectedChecks.length)
+    throw new Error("expected CI checks must be unique");
+  if (
+    booleanValue(
+      ci.expected_sources_confirmed,
+      "expected CI source confirmation",
+    ) !== true
+  ) {
+    throw new Error(
+      "expected CI sources must be confirmed before review approval",
+    );
+  }
+  const requiredPolicySha256 = sha256Value(
+    ci.required_policy_sha256,
+    "required-check policy digest",
+  );
   validateVerdict(assessment);
   validateTrustCaps(assessment);
   return {
     ...common,
     assessment,
     review_context: {
+      ci: {
+        expected_checks: expectedChecks,
+        expected_sources_confirmed: true,
+        required_policy_sha256: requiredPolicySha256,
+      },
+      human_signoff_required: booleanValue(
+        reviewContext.human_signoff_required,
+        "human sign-off requirement",
+      ),
       review_evidence_sha256: sha256Value(
         reviewContext.review_evidence_sha256,
         "review evidence digest",
@@ -667,7 +1246,7 @@ function parseReviewJudgment(input: unknown): ReviewAssessment {
   uniqueArray(findings.map((finding) => finding.id));
   const substantiveVerdict = enumValue(
     value.substantive_verdict,
-    ["APPROVE", "REQUEST_CHANGES"] as const,
+    ["PASS", "REQUEST_CHANGES"] as const,
     "substantive verdict",
   );
   const alerts = objectValue(value.alerts, "review alerts");
@@ -761,8 +1340,7 @@ function validateReviewAlerts(
     substantiveVerdict === "REQUEST_CHANGES" &&
     blocking &&
     trustCaps.length === 0;
-  const expectsWorthConsidering =
-    substantiveVerdict === "APPROVE" && optional;
+  const expectsWorthConsidering = substantiveVerdict === "PASS" && optional;
   const expectations: readonly [string, boolean, string | null][] = [
     ["must_change", expectsMustChange, alerts.must_change],
     ["worth_considering", expectsWorthConsidering, alerts.worth_considering],
@@ -990,7 +1568,7 @@ function validateVerdict(assessment: ReviewAssessment): void {
       finding.priority === "P1" ||
       finding.kind === "chore",
   );
-  const expected = hasBlocker ? "REQUEST_CHANGES" : "APPROVE";
+  const expected = hasBlocker ? "REQUEST_CHANGES" : "PASS";
   if (assessment.substantive_verdict !== expected) {
     throw new Error(
       `substantive verdict must be ${expected} for the recorded findings`,
@@ -1117,13 +1695,10 @@ function renderTemplate(
   blocks: Readonly<Record<string, TemplateBlock>>,
   name: string,
 ): string {
-  const withoutTokens = template.replace(
-    /{{(?:[#/]?[a-z][a-z0-9_]*)}}/g,
-    "",
+  const withoutTokens = template.replace(/{{(?:[#/]?[a-z][a-z0-9_]*)}}/g, "");
+  const placeholderNames = [...template.matchAll(/{{([a-z][a-z0-9_]*)}}/g)].map(
+    (match) => match[1]!,
   );
-  const placeholderNames = [
-    ...template.matchAll(/{{([a-z][a-z0-9_]*)}}/g),
-  ].map((match) => match[1]!);
   const conditionOpenNames = [
     ...template.matchAll(/{{#([a-z][a-z0-9_]*)}}/g),
   ].map((match) => match[1]!);
@@ -1160,16 +1735,13 @@ function renderTemplateSegment(
     if (/{{\/[^}]+}}/.test(template)) {
       throw new Error(`${name} template condition blocks are malformed`);
     }
-    return template.replace(
-      /{{([a-z][a-z0-9_]*)}}/g,
-      (_token, key: string) => {
-        const value = values[key];
-        if (value === undefined) {
-          throw new Error(`${name} template placeholder ${key} is unavailable`);
-        }
-        return value;
-      },
-    );
+    return template.replace(/{{([a-z][a-z0-9_]*)}}/g, (_token, key: string) => {
+      const value = values[key];
+      if (value === undefined) {
+        throw new Error(`${name} template placeholder ${key} is unavailable`);
+      }
+      return value;
+    });
   }
   const blockName = opening[1]!;
   const bodyStart = opening.index + opening[0].length;
@@ -1238,7 +1810,7 @@ function renderPublication(
   templates: ReviewTemplates | null,
 ): {
   readonly body: JsonObject;
-  readonly substantiveVerdict: "APPROVE" | "REQUEST_CHANGES" | null;
+  readonly substantiveVerdict: "PASS" | "REQUEST_CHANGES" | null;
   readonly submittedEvent: ReviewEvent | null;
   readonly trustCaps: readonly TrustCap[];
 } {
@@ -1250,7 +1822,9 @@ function renderPublication(
       return renderReview(assessment, templates);
     case "review-supplement":
       if (templates === null) {
-        throw new Error("review templates are required for supplement rendering");
+        throw new Error(
+          "review templates are required for supplement rendering",
+        );
       }
       return renderReviewSupplement(
         assessment,
@@ -1277,9 +1851,10 @@ function renderPublication(
 function renderReview(
   assessment: ReviewPublicationAssessment,
   templates: ReviewTemplates,
+  ciState: CiState = "green",
 ): {
   readonly body: JsonObject;
-  readonly substantiveVerdict: "APPROVE" | "REQUEST_CHANGES";
+  readonly substantiveVerdict: "PASS" | "REQUEST_CHANGES";
   readonly submittedEvent: ReviewEvent;
   readonly trustCaps: readonly TrustCap[];
 } {
@@ -1288,9 +1863,11 @@ function renderReview(
     assessment.publisher.login.toLowerCase() ===
     assessment.target.pr_author_login.toLowerCase();
   const submittedEvent: ReviewEvent =
-    judgment.trust_caps.length > 0 || isSelfReview
-      ? "COMMENT"
-      : judgment.substantive_verdict;
+    judgment.substantive_verdict === "REQUEST_CHANGES" &&
+    judgment.trust_caps.length === 0 &&
+    !isSelfReview
+      ? "REQUEST_CHANGES"
+      : "COMMENT";
   const comments = judgment.findings
     .filter((finding) => finding.path !== null)
     .map((finding) => ({
@@ -1304,7 +1881,7 @@ function renderReview(
   return {
     body: {
       commit_id: assessment.target.head_oid,
-      body: renderOverallReview(assessment, templates),
+      body: renderOverallReview(assessment, templates, ciState),
       event: submittedEvent,
       comments,
     },
@@ -1317,6 +1894,7 @@ function renderReview(
 function renderOverallReview(
   input: ReviewPublicationAssessment,
   templates: ReviewTemplates,
+  ciState: CiState,
 ): string {
   const { assessment, target } = input;
   const blocking = assessment.findings.filter(
@@ -1338,6 +1916,23 @@ function renderOverallReview(
       ? `Runtime execution waived by ${assessment.tests.execution.waiver.authorized_by} for ${assessment.tests.execution.waiver.scope}: ${assessment.tests.execution.waiver.reason}`
       : `${assessment.tests.execution.status}: ${assessment.tests.execution.evidence}`;
   const hasCap = assessment.trust_caps.length > 0;
+  const failed =
+    (assessment.substantive_verdict === "REQUEST_CHANGES" && !hasCap) ||
+    ciState === "red";
+  const pending = !failed && ciState === "pending";
+  const warning =
+    !failed &&
+    !pending &&
+    (hasCap || input.review_context.human_signoff_required);
+  const ciSentence =
+    ciState === "pending"
+      ? "Hosted CI is still running; waiting for its result."
+      : ciState === "red"
+        ? "Hosted CI failed."
+        : "Hosted CI passed.";
+  const humanSentence = input.review_context.human_signoff_required
+    ? " Human reviewer sign-off is still required."
+    : "";
   return renderTemplate(
     templates.overall,
     {
@@ -1359,17 +1954,13 @@ function renderOverallReview(
         `${testExecution}. Confidence: ${assessment.tests.confidence}.`,
       ].join("\n\n"),
       unanchored_alert: assessment.alerts.unanchored ?? "",
-      verdict_alert: hasCap
-        ? "WARNING"
-        : assessment.substantive_verdict === "REQUEST_CHANGES"
-          ? "CAUTION"
+      verdict_alert: failed
+        ? "CAUTION"
+        : pending || warning
+          ? "WARNING"
           : "NOTE",
-      verdict_glyph: hasCap
-        ? "⚠️"
-        : assessment.substantive_verdict === "APPROVE"
-          ? "✅"
-          : "❌",
-      verdict_sentence: renderVerdictSentence(input),
+      verdict_glyph: failed ? "❌" : pending ? "⏳" : warning ? "⚠️" : "✅",
+      verdict_sentence: `${assessment.verdict_sentence} ${ciSentence}${humanSentence}`,
       zone: input.review_context.zone,
     },
     {
@@ -1389,9 +1980,7 @@ function renderOverallReview(
       unanchored: conditionBlock(unanchored.length > 0),
       unanchored_findings: findingBlocks(unanchored, templates),
       worth_considering: conditionBlock(optional.length > 0),
-      worth_considering_alert: textBlock(
-        assessment.alerts.worth_considering,
-      ),
+      worth_considering_alert: textBlock(assessment.alerts.worth_considering),
       worth_considering_findings: findingBlocks(optional, templates),
     },
     "overall-review",
@@ -1429,17 +2018,6 @@ function textBlock(value: string | null): TemplateBlock {
     fields: ["text"],
     rows: value === null ? [] : [{ text: value }],
   };
-}
-
-function renderVerdictSentence(input: ReviewPublicationAssessment): string {
-  const { assessment, publisher, target } = input;
-  if (assessment.trust_caps.length > 0) {
-    return `${assessment.verdict_sentence} GitHub received COMMENT because the review is capped (${assessment.trust_caps.join(", ")}); the substantive verdict is ${assessment.substantive_verdict}.`;
-  }
-  if (publisher.login.toLowerCase() === target.pr_author_login.toLowerCase()) {
-    return `${assessment.verdict_sentence} GitHub weakened the event to COMMENT because the publisher is the PR author; the substantive ${assessment.substantive_verdict} finding is unchanged.`;
-  }
-  return assessment.verdict_sentence;
 }
 
 function renderInlineFinding(
@@ -1916,13 +2494,20 @@ function isCanonicalPublisher(
   const invocation = words.slice(1);
   const scriptIndex = invocation[0] === "run" ? 1 : 0;
   const script = invocation[scriptIndex];
+  if (
+    script === undefined ||
+    normalize(resolve(script)) !== expectedScript ||
+    invocation[scriptIndex + 2] !== "--approval" ||
+    typeof invocation[scriptIndex + 3] !== "string"
+  )
+    return false;
+  const action = invocation[scriptIndex + 1];
+  if (action === "publish") return invocation.length === scriptIndex + 4;
   return (
-    script !== undefined &&
-    normalize(resolve(script)) === expectedScript &&
-    invocation[scriptIndex + 1] === "publish" &&
-    invocation[scriptIndex + 2] === "--approval" &&
-    typeof invocation[scriptIndex + 3] === "string" &&
-    invocation.length === scriptIndex + 4
+    action === "update" &&
+    invocation[scriptIndex + 4] === "--review-id" &&
+    /^[1-9][0-9]*$/.test(invocation[scriptIndex + 5] ?? "") &&
+    invocation.length === scriptIndex + 6
   );
 }
 
@@ -2265,6 +2850,8 @@ function printUsage(): never {
       "  review-publication.ts approve --assessment FILE [--parent-approval FILE]",
       "  review-publication.ts validate --approval FILE",
       "  review-publication.ts publish --approval FILE [--dry-run]",
+      "  review-publication.ts update --approval FILE --review-id N [--dry-run]",
+      "  review-publication.ts policy-hash --host HOST --owner OWNER --repo REPO --base-ref REF",
       "  review-publication.ts guard",
       "",
     ].join("\n"),
@@ -2277,6 +2864,26 @@ function main(arguments_: readonly string[]): void {
   if (action === "guard") {
     if (options.length > 0) printUsage();
     runGuard();
+    return;
+  }
+  if (action === "policy-hash") {
+    const host = argumentValue(options, "--host");
+    const owner = argumentValue(options, "--owner");
+    const repo = argumentValue(options, "--repo");
+    const baseRef = argumentValue(options, "--base-ref");
+    if (!host || !owner || !repo || !baseRef) printUsage();
+    const target = {
+      host: patternString(host, HOST_PATTERN, "GitHub host"),
+      owner: patternString(owner, OWNER_PATTERN, "repository owner"),
+      repo: patternString(repo, REPO_PATTERN, "repository name"),
+      base_ref: nonemptyString(baseRef, "base ref"),
+    };
+    process.stdout.write(`${JSON.stringify({
+      required_policy_sha256: readLiveRequiredPolicyHash(
+        process.env.REVIEW_PUBLICATION_GH_BIN ?? "gh",
+        target,
+      ),
+    })}\n`);
     return;
   }
   const approvalPath = argumentValue(options, "--approval");
@@ -2294,7 +2901,7 @@ function main(arguments_: readonly string[]): void {
     return;
   }
   if (
-    (action === "publish" || action === "validate") &&
+    (action === "publish" || action === "validate" || action === "update") &&
     approvalPath !== undefined
   ) {
     const receipt = validateReviewPublicationReceipt(
@@ -2303,6 +2910,16 @@ function main(arguments_: readonly string[]): void {
     if (action === "validate") {
       process.stdout.write(
         `${JSON.stringify({ valid: true, payload_sha256: receipt.payload_sha256 })}\n`,
+      );
+      return;
+    }
+    if (action === "update") {
+      const id = argumentValue(options, "--review-id");
+      if (id === undefined || !/^[1-9][0-9]*$/.test(id)) printUsage();
+      process.stdout.write(
+        updateReviewPublication(receipt, Number(id), {
+          dryRun: options.includes("--dry-run"),
+        }),
       );
       return;
     }

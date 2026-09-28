@@ -8,7 +8,7 @@
 4. Perform mandatory PR review with the independent delivery reviewer or a fresh independent replacement, consuming valid source evidence under `coding:directions/review-evidence.md`, converging findings by repairing the owning change and restarting invalidated discovery and verification gates.
 5. Poll every published PR until hosted CI is green; diagnose the first red surface, fix its root cause, republish, and repeat without hiding blockers.
 
-Load the complete workflow from `coding:pr create` or `coding:pr update`; `coding:pr author` loads only [Author the PR text](#author-the-pr-text). Turn one saved change or stack into live draft PRs, then make each ready once AI review approves and hosted CI passes on its exact revision. This workflow composes deterministic Conventional Commits PR text, publishes bottom-up, and owns hosted CI until green or blocked. Repair obeys the **Coherence Mandate**: produce one continuous work; rewrite over restructure, restructure over integrate, never append. Dissolve new content into the existing structure. Visible seams, parallel paths, addenda, vestigial helpers, and tack-ons are forbidden.
+Load the complete workflow from `coding:pr create` or `coding:pr update`; `coding:pr author` loads only [Author the PR text](#author-the-pr-text). Turn one saved change or stack into live draft PRs, then make each ready once AI review and hosted CI pass on its exact revision. This workflow composes deterministic Conventional Commits PR text, publishes bottom-up, and owns hosted CI until green or blocked. Repair obeys the **Coherence Mandate**: produce one continuous work; rewrite over restructure, restructure over integrate, never append. Dissolve new content into the existing structure. Visible seams, parallel paths, addenda, vestigial helpers, and tack-ons are forbidden.
 
 Reviewers own size-standard findings and reviewability judgments. This workflow owns pull-request authoring and publication directions, deterministic zone calculation, and the gates below. Scan each implementation diff and rendered PR body against `coding:standards/git/`; [message.md](../templates/message.md) owns the bundled body shape.
 
@@ -21,7 +21,7 @@ Reviewers own size-standard findings and reviewability judgments. This workflow 
 - Before submission, inspect every changed file under `GIT-PR-TYPE-05` for a durable purpose and remove prohibited artifacts through the implementation/history owner. Select and apply every relevant standard through `essential:directions/standards.md`; fix violations and record green revision-bound evidence in Verification before publication.
 - Bind authoring and review evidence to the exact head and base OIDs. Verify reusable source evidence and any content-equivalent mapping under `coding:directions/review-evidence.md`; always bind publication checks to the actual head/base pair.
 - Make each PR independently valid and reviewable. Keep its tests and package lockfiles with the implementation that needs them.
-- Keep each PR draft through publication and review authoring. Promote a draft only after both the review loop reports substantive `APPROVE` for its exact head/base and hosted CI is green. Generate and attach reviewer tasks only after that transition. A materially expanded surface returns to draft; notify reviewers when they need the changed context.
+- Keep each PR draft through publication and review authoring. Promote a draft only after both the review loop reports substantive `PASS` for its exact head/base and hosted CI is green. Generate and attach reviewer tasks only after that transition. A materially expanded surface returns to draft; notify reviewers when they need the changed context.
 
 ### Select the PR archetype
 
@@ -366,17 +366,17 @@ With an accepted internal `--publish-only`, return the verified stack map plus r
 
 For a top-level create or update, the owning main agent retains `MAX_ITERATION` from `--max-iteration` or its default and starts `REVIEW_ITERATION` at zero in its working context. It keeps both values across nested publish-only and CI-repair calls without putting them on another CLI; only [review-loop.md](review-loop.md) increments the current iteration.
 
-After every selected PR is published or updated and its open draft state and exact head/base pair are verified, load and follow [review-loop.md](review-loop.md). A review-driven fix republishes the affected stack, resets the expected head OIDs, and resumes the loop with retained evidence and an impact-bounded independent recheck before CI monitoring. If the loop returns `action: repair_ci_then_review`, enter step 5 immediately without marking review convergence complete or attempting another review against unchanged CI. After the poller reports a red repair, the parent accepts the fix, saves it, and republishes through the owned workflow; if CI instead becomes green, no repair is needed. Then return to step 4 and verify the affected repair or changed CI evidence with the independent reviewer before completing the ordinary CI gate; unchanged valid source evidence is reused. Never retry a review against unchanged red-CI evidence.
+After every selected PR is published or updated and its open draft state and exact head/base pair are verified, load and follow [review-loop.md](review-loop.md). A review-driven fix republishes the affected stack, resets the expected head OIDs, and resumes the loop with retained evidence and an impact-bounded independent recheck before CI monitoring. If the loop returns `action: repair_ci_then_review`, enter step 5 immediately without marking review convergence complete or attempting another review against unchanged CI. After the poller reports red CI, the parent updates that red surface's pending review body and uses the updater's returned `ci_state` for the next action: confirmed red cancels the active schedule under step 5 before loading [repair.md](repair.md), while green returns to step 4 for an independent recheck of changed CI evidence. The updater may report pending when CI reruns; retain the schedule and wait for another poll. An unchanged red-CI result never triggers another review. Unchanged valid source evidence is reused.
 
 
-If the loop returns `action: review_exhausted`, record the unresolved findings and enter step 5. Converge hosted CI normally; once it is green, report green CI and missing substantive approval instead of dispatching another review.
+If the loop returns `action: review_exhausted`, record the unresolved findings and enter step 5. Converge hosted CI normally; once it is green, report green CI and missing passing AI review instead of dispatching another review.
 
 ### 5. Schedule and consume the initial poll
 
-Immediately after every initial publication, use the recurring scheduling capability at a five-minute interval with actual bottom-to-top PR URLs substituted into this payload:
+Immediately after every initial publication, start or reuse one recurring schedule at a five-minute interval with actual bottom-to-top PR URLs substituted into this payload. This requested cadence keeps the review reasonably current without repeated rapid GitHub queries. Carry each posted review's receipt path, review ID, pinned head/base, and initial CI state so the parent can update a pending review on the same schedule:
 
 ```text
-Dispatch ONE small read-oriented polling subagent for <stack PR URLs> in bottom-up order. Pass it the stack and discovered expected hosted checks, and require it to load and follow the Poll contract in coding:pr directions/create-update.md; only when it classifies a red check, require it to load directions/repair.md. Consume its bounded <report>, then take the parent action it requests. The scheduled parent MUST NOT run gh polling itself.
+Dispatch ONE small read-oriented polling subagent for <stack PR URLs> in bottom-up order. Pass it the stack and discovered expected hosted checks, and require it to load and follow the Poll contract in coding:pr directions/create-update.md. Consume its bounded <report>. For a pending review with terminal CI, invoke coding:pr's guarded review-publication update using its saved receipt and review ID before taking the remaining parent action. The update independently checks CI, exact head/base, review identity, and current body; use its returned `ci_state` for the next action because CI may rerun between the poll and update. The scheduled parent MUST NOT run gh polling itself.
 ```
 
 Capture the returned task/job ID as `active_schedule_id`. Cancel only that exact ID with the task-ID cancellation capability or the scheduler's natural cancellation keyed by the same ID; never cancel by cadence or description.
@@ -391,7 +391,7 @@ gh pr checks <pr> --json bucket,completedAt,link,name,startedAt,state,workflow
 
 Before consuming checks, query the current PR `headRefOid` and require it to equal the parent's recorded `expected_head_oid`. Treat a mismatch as pending with explicit stale-head evidence; never accept checks from an older or unexpected revision.
 
-It is read-oriented: it may inspect with `gh` and, only through the red reference, dispatch exactly one scoped fixer; it MUST NOT edit, commit, rebase, restack, or push. It returns under 1000 tokens:
+It is read-only: it may inspect with `gh` but MUST NOT dispatch a fixer, edit, commit, rebase, restack, or push. It returns under 1000 tokens:
 
 <report>
 
@@ -420,19 +420,20 @@ stack:
 schedule:
   task_id: <active_loop_id>
   action: keep | cancel | replace
-red_repair: <report from repair.md or null>
 blocker: <configuration/provider blocker or null>
 unresolved: [<remaining blocker>]
-action: notify_and_cancel | wait | parent_repair | blocked
+action: terminal_green | terminal_red | wait | blocked
 ```
 
 </report>
 
 Classify every returned check from both `bucket` and `state`, with precedence red, pending, green:
 
-- **Red**: any check has a fail/cancel bucket or failure, cancelled, or timed-out state. Cancel `active_loop_id`, process the earliest red PR, and load [repair.md](repair.md). The poller follows that conditional reference before returning its report.
+- **Red**: any check has a fail/cancel bucket or failure, cancelled, or timed-out state. Report the earliest red PR and return `action: terminal_red` without canceling the schedule or dispatching a fixer.
 - **Pending**: none are red and any check is pending, queued, expected, waiting, in progress, lacks `completedAt`, belongs to a mismatched head SHA, or is an expected check not yet observed. Match matrix jobs using the documented stable job-name prefix captured during discovery; otherwise require an exact name match. Zero observed with a confirmed nonempty expected list is pending. Keep `active_loop_id`, make no edits, dispatch no fixer, and return `action: wait` for the next wake.
-- **Green**: every observed check is pass/success, skipping/skipped, or an explicitly accepted neutral result, every expected check has a matched terminal accepted observation for `expected_head_oid`, and no observed check is red or pending. Zero observed is green only after refreshing the remote PR head, confirming current workflow/base required-status/ruleset configuration, and proving the expected list empty; retain expected/observed evidence. When every PR is green, cancel `active_loop_id`, notify, and stop.
+- **Green**: every observed check is pass/success or skipping/skipped, every expected check has a matched terminal accepted observation for `expected_head_oid`, and no observed check is red or pending. A neutral result remains pending because the review receipt has no neutral-acceptance evidence. Zero observed is green only after refreshing the remote PR head, confirming current workflow/base required-status/ruleset configuration, and proving the expected list empty; retain expected/observed evidence. When every PR is green, return `action: terminal_green` without canceling the schedule.
+
+For any terminal surface, the parent updates its review that was posted pending through [review-publishing.md](review-publishing.md). On a red poll, update the first red surface before repair; do not wait for unrelated pending PRs. If the updater returns pending because CI reran, keep `active_loop_id` and wait. If it confirms red, cancel `active_loop_id` before loading [repair.md](repair.md); only an owning `coding:pr create` or `coding:pr update` parent then dispatches one scoped fixer. Standalone `coding:pr review` reports red without repair. Retain unaffected pending surfaces' approval receipts for the replacement schedule. After repair republishes, invalidate reviews only on changed head/base surfaces and clean up their receipts under [the review artifact lifecycle](review.md#locate-or-create-the-review-tree); if repair blocks without republishing, restore monitoring for unchanged pending surfaces. If every PR is green, update all pending reviews and cancel `active_loop_id` only after every guarded updater confirms a terminal result; a newly red updater result follows the red path. A stale review, changed head/base, or concrete CI access failure stops the update and schedule with the reported blocker; never rewrite a review for a different revision. Keep the same task ID while any CI remains pending. The publisher itself checks live CI before its initial review submission, so a check that completed early is reflected in the first review body.
 
 For zero observed checks with inaccessible/unconfirmed expected sources, keep the PR pending, cancel the loop, and return top-level `action: blocked` with head/config/source/access evidence. Never use an arbitrary timeout to infer a state.
 
@@ -440,10 +441,10 @@ Scheduled tasks fire only while the session is open and idle. Unexpired tasks re
 
 ### 6. Promote verified surfaces and add human tasks
 
-After the review loop records a substantive `APPROVE` and the poller proves green hosted CI for the same head and base OIDs, refresh the check rollup and classify it against the discovered expected checks under step 5 immediately before readiness. A pending or red result stops promotion and resumes the CI loop. A changed surface starts a new review and CI pass. Preflight `bun run "${CODING_PR_SKILL_DIR}/scripts/generate-reviewer-tasks.ts" "$REPOSITORY#$PR_NUMBER" --hostname "$HOST" --head "$HEAD_OID" --base "$BASE_OID"` with `--black-zone` for a black PR. The draft preflight resolves assigned reviewers and GitHub-mapped code authors; an organization owner fallback is provisional until readiness lets GitHub request CODEOWNERS. The post-ready apply resolves assigned users and teams or the personal owner or every discoverable organization owner, then adds all GitHub-mapped code authors. An unresolved required account, inaccessible owner list, or empty result at apply blocks task attachment with the reported identity error.
+After the review loop records a substantive `PASS` and the poller proves green hosted CI for the same head and base OIDs, refresh the check rollup and classify it against the discovered expected checks under step 5 immediately before readiness. A pending or red result stops promotion and resumes the CI loop. A changed surface starts a new review and CI pass. Preflight `bun run "${CODING_PR_SKILL_DIR}/scripts/generate-reviewer-tasks.ts" "$REPOSITORY#$PR_NUMBER" --hostname "$HOST" --head "$HEAD_OID" --base "$BASE_OID"` with `--black-zone` for a black PR. The draft preflight resolves assigned reviewers and GitHub-mapped code authors; an organization owner fallback is provisional until readiness lets GitHub request CODEOWNERS. The post-ready apply resolves assigned users and teams or the personal owner or every discoverable organization owner, then adds all GitHub-mapped code authors. An unresolved required account, inaccessible owner list, or empty result at apply blocks task attachment with the reported identity error.
 
 ```bash
-[ "$SUBSTANTIVE_VERDICT" = APPROVE ] && [ "$CI_STATE" = green ] &&
+[ "$SUBSTANTIVE_VERDICT" = PASS ] && [ "$CI_STATE" = green ] &&
   [ "$REVIEWED_HEAD_OID" = "$EXPECTED_HEAD_OID" ] &&
   [ "$REVIEWED_BASE_REF" = "$EXPECTED_BASE_REF" ] &&
   [ "$REVIEWED_BASE_OID" = "$EXPECTED_BASE_OID" ] || exit 1
@@ -544,6 +545,6 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
 - The title matches the Conventional Commits regex and the rendered body passes [scan-pr-message.ts](../scripts/scan-pr-message.ts). Every emitted body has behavioral Goal and Requirements sections and emoji-prefixed headings with no `[ Optional ]` authoring markers; a repo template is verbatim, or the bundled default has no placeholder or dropped-section stub. The same head OID, base/empty-tree OID, template, thresholds, and placeholder map yield byte-identical `title\n\nbody` without timestamps or random IDs.
 - Unless `--no-verify` was explicitly recorded, the applicable `pull_request` test and lint tasks passed through read-only `jj run` first at the exact selected tip and then at every selected PR head bottom-up, with revision-bound sources and results. The sole per-surface exception records the user's explicit approval for that exact revision and the verifier's exact lexically sorted missing-secret names. A `--no-verify` run instead reports every skipped bookmark, PR, head, and base; hosted CI remains mandatory.
 - Every head was pushed under a lease — one explicit affected-bookmark `jj git push` on the jj path, `git push --force-with-lease` on the git path; each new PR started as a draft, uses the authored title/body, and has the intended stack base. The review loop verifies approved surfaces are ready for review.
-- Review convergence produced a substantive `APPROVE` on each final head, including required replies and repair heads; or the configured review maximum was exhausted and green CI plus missing substantive approval is reported.
+- Review convergence produced a substantive `PASS` on each final head, including required replies and repair heads; or the configured review maximum was exhausted and green CI plus missing passing AI review is reported.
 
 - Report success only after the final poll observes every PR green. Include the stack map, resolved commit refs, the template used per change (repo path or bundled default), local results, review passes, replies, repair commits, push/restack actions, per-PR check states, CI wall times, and any blocker (with its authoring exit code where relevant). Return every local project path created or materially rewritten during repair as `generated_files`. Keep any `.state` work Markdown within `essential:references/output-manifest.md`.

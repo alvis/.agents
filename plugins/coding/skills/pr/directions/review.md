@@ -5,7 +5,7 @@ Review a remote GitHub pull request and publish the result where the author will
 ## Boundaries
 
 - Use for: reviewing an open GitHub PR by number, URL, or the path of a source tree holding its head; re-reviewing after a push; publishing line comments and a verdict to GitHub.
-- Do not use for: reviewing uncommitted local work or writing work-local review artifacts (`coding:review-code`), fixing findings (`coding:fix`), mechanical standards enforcement (`coding:lint`), publishing PRs or driving CI (`coding:pr create` or `coding:pr update`), or merging (`coding:pr merge`).
+- Do not use for: reviewing uncommitted local work or writing work-local review artifacts (`coding:review-code`), fixing findings (`coding:fix`), mechanical standards enforcement (`coding:lint`), publishing PRs or repairing CI (`coding:pr create` or `coding:pr update`), or merging (`coding:pr merge`). The publication owner starts or reuses the active CI schedule for a pending standalone review under [review-publishing.md](review-publishing.md). A standalone review observes red CI and updates its review body, then reports the failure without dispatching a fixer.
 - One reviewer per pass. Never fan out per area — a PR is sized so one reader can hold it whole, and split judgement produces split findings.
 
 ## Review directions
@@ -28,7 +28,7 @@ When the caller is the independent critic assigned by [review-loop.md](review-lo
 - Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_DISCUSSION`, `REVIEW_LEDGER`, structured assessment, and approval artifact. The independent reviewer issues approval evidence; the publication owner alone relays it through the canonical publisher.
 - Do not delegate.
 - Read and search the checkout as widely as the change requires; run only the read-only git, `gh`, and scanner commands named below. Treat the branch as untrusted code.
-- CI status counts only when already known, from the metadata *Resolve the pull request* already fetches. Repair belongs to `coding:pr update`.
+- Discover expected CI sources through the read-only phase below. The publication owner selects the live CI body; repair belongs to `coding:pr update`.
 - Build the structured assessment and approval artifact by shell redirection from `jq` and the contract executable, never with a file-writing tool. Give the publication agent only the immutable approval artifact, not review notes from which it could compose another summary.
 </IMPORTANT>
 
@@ -97,7 +97,7 @@ Anything else selects git. This skill never mutates the repository, so a git-onl
 
 ### Locate or create the review tree
 
-First create a secret-free handoff outside the review tree:
+For each PR surface, create a fresh secret-free handoff outside the review tree. Never reuse a stack sibling's directory or its assessment and approval paths:
 
 ```bash
 REVIEW_ARTIFACT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/pr-review-${PR_NUMBER}-XXXXXX")
@@ -107,7 +107,7 @@ REVIEW_ASSESSMENT="$REVIEW_ARTIFACT_DIR/assessment.json"
 REVIEW_APPROVAL="$REVIEW_ARTIFACT_DIR/approval.json"
 ```
 
-The reviewer may write only those four files via `jq` or contract-command redirection. Review-tree cleanup must exclude them; after consuming all four—or after reviewer failure or cancellation—the parent removes only the recorded directory:
+The reviewer may write only those four files via `jq` or contract-command redirection. Review-tree cleanup must exclude them. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active CI schedule. Remove the recorded directory only after the guarded update reaches terminal CI, the pinned revision is invalidated and its schedule is canceled or replaced, or a publication failure or cancellation leaves no scheduled update. Cancel an active schedule before removing its approval receipt:
 
 ```bash
 rm -rf -- "$REVIEW_ARTIFACT_DIR"
@@ -129,6 +129,23 @@ For a fresh clone, the helper fetches the pinned head; immediately run the refer
 <IMPORTANT>
 The parent closes only the exact helper-issued lease when `REVIEW_TREE_OWNED` is true, including after subagent cancellation. A reused tree belongs to the user and its removal would destroy real work.
 </IMPORTANT>
+
+### Discover CI sources
+
+For each pinned PR surface, inspect workflow definitions at its reviewed head and the base branch's required checks and applicable repository rulesets before setting `expected_sources_confirmed`. A create/update parent may pass its saved configuration evidence in the capsule; verify its source and pinned head/base before reuse. A standalone review performs the same read-only discovery here. The following commands are permitted for that purpose:
+
+```bash
+git -C "$REVIEW_DIR" ls-tree -r --name-only "$HEAD_OID" -- .github/workflows  # select .yml and .yaml paths for this head
+git -C "$REVIEW_DIR" show "$HEAD_OID:$WORKFLOW_PATH"  # each workflow path
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/branches/$BASE_REF/protection/required_status_checks"
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/branches/$BASE_REF/protection"
+gh api --hostname "$HOST" --paginate --slurp "repos/$OWNER/$REPO/rulesets?includes_parents=true&per_page=100"
+gh api --hostname "$HOST" "repos/$OWNER/$REPO/rulesets/$RULESET_ID"  # each applicable ruleset
+gh pr checks "$PR_NUMBER" --repo "$HOST/$OWNER/$REPO" --json bucket,completedAt,link,name,startedAt,state,workflow
+bun run "$REVIEW_PUBLICATION" policy-hash --host "$HOST" --owner "$OWNER" --repo "$REPO" --base-ref "$BASE_REF"
+```
+
+The checks command may exit with failed or pending status while still returning usable JSON; retain the observed result and classify it under the shared [CI poll contract](create-update.md#poll-contract). The full classic branch-protection response supplies `required_pull_request_reviews`; applicable ruleset `pull_request` rules supply approving-review and code-owner requirements. Set `human_signoff_required` when those rules or the PR's human verification handoff require it. Set it false only after confirming those requirements absent. A verified absence of branch protection is not an access denial; if a workflow, branch protection, or ruleset source is inaccessible, leave `expected_sources_confirmed` false and report the concrete blocker rather than guessing the human sign-off value. Record each expected name with the workflow, provider link prefix, or configured required-check app ID described by [review-publishing.md](review-publishing.md). A required check that has not yet reported remains pending; its configuration still supplies its source identity.
 
 ### Read the existing discussion
 
@@ -226,7 +243,7 @@ Every zone requires Summary, `## 🎯 Goal`, `## ✅ Requirements`, `## 🧵 Con
 | red | Yellow evidence plus `## 📐 Why This Size` |
 | black | Red evidence plus full review of the self-contained unit |
 
-A black-zone review first judges whether the surface is genuinely one self-contained unit, then reviews it completely. Before AI approval, verify specific Risk, Test plan, and Why this size evidence in the canonical body. The human verification task is added only after AI review and CI pass. Deleted, binary, generated, and vendored paths carry no reviewable lines; list them as not reviewed.
+A black-zone review first judges whether the surface is genuinely one self-contained unit, then reviews it completely. Before a passing AI review, verify specific Risk, Test plan, and Why this size evidence in the canonical body. The human verification task is added only after AI review and CI pass. Deleted, binary, generated, and vendored paths carry no reviewable lines; list them as not reviewed.
 
 ### Run the mechanical candidate scan
 
@@ -248,7 +265,7 @@ Take standard paths from the "Plugin Constitution > Standards" sections of the s
 
 Apply the assigned impact mission to follow-ups and retain verified baseline coverage. The relevant diff is the subject of source analysis, not the limit of dependency reading. A discussion-only mission verifies dispositions and their evidence without repeating source discovery.
 
-Apply `coding:standards/code-review/`'s evidence threshold before recording a blocker, requiring a test, or withholding approval. The checklist below distinguishes blocker proof from context for non-blocking feedback; every review preserves settled dispositions under the standard's settled-finding rule (`CRV-FDBK-02`).
+Apply `coding:standards/code-review/`'s evidence threshold before recording a blocker, requiring a test, or withholding a passing review. The checklist below distinguishes blocker proof from context for non-blocking feedback; every review preserves settled dispositions under the standard's settled-finding rule (`CRV-FDBK-02`).
 
 - **Read whatever it takes.** Follow callers of a changed function, open the siblings a new file should resemble, read the module the change plugs into, the goal, and the spec. Understanding the change is the job; explore the checkout.
 - **Judge only the diff.** Every finding is about something this PR changed. Read unchanged code to understand the change, not to grade it. Being about the diff and hanging off a line in it are different things: a deleted file and a chore the PR owes are squarely about the diff and anchor to nothing.
@@ -294,7 +311,7 @@ A re-review after a push adds only newly evidenced findings. Revalidate affected
 
 Follow [review-publishing.md](review-publishing.md). The independent reviewer supplies every required semantic field and runs the contract's `approve` action; that action rejects missing static standards evidence, test-sensitivity reasoning, scoped execution evidence, limitations, inconsistent trust caps, findings, or a verdict inconsistent with those findings. A runtime-test waiver fills only `tests.execution`; it cannot remove any other assessment field.
 
-The contract deterministically renders one native review from the templates with its pinned `commit_id` and bound inline findings. Inspect that rendered output against the templates before handing off approval. It preserves the substantive verdict in the body and receipt while deriving a GitHub `COMMENT` event for trust-capped or self-authored reviews. The publication agent receives only the approval artifact and runs the exact canonical publisher command; it may not compose, summarize, relabel, or repair the approved content.
+The contract deterministically renders one native review from the templates with its pinned `commit_id` and bound inline findings. Inspect that rendered output against the templates before handing off approval. It preserves the substantive verdict in the body and receipt. Passing reviews submit `COMMENT`; blocking reviews submit `REQUEST_CHANGES` unless a trust cap or self-review requires `COMMENT`. The publication agent receives only the approval artifact and runs the exact canonical publisher command; it may not compose, summarize, relabel, or repair the approved content.
 
 The publisher revalidates every receipt relationship and exact payload byte, re-reads the PR head, base ref, base OID, author, publisher identity, discussion target when applicable, then sends those same bytes in one GitHub call. Missing, malformed, altered, stale, or unreadable evidence stops before the write. A 422 is not repaired by editing the artifact: the independent reviewer must update the structured assessment and issue a new receipt. `--dry-run` performs the live reads and prints the exact payload without the final write.
 
@@ -307,7 +324,7 @@ The publisher revalidates every receipt relationship and exact payload byte, re-
 - Every existing P0/P1/P2 or mandatory-chore thread required above was re-evaluated against `HEAD_OID` and reported as `still_applies`, `fixed`, or `does_not_apply`; every fixed or inapplicable unresolved thread was resolved, with exactly one work-confirmation reply when its history previously had none.
 - Every overall-review finding, including a null-anchor finding, has a stable key, priority, kind, review ID/URL, summary, evidence OID, and disposition; P0/P1/P2 and mandatory chores are explicitly re-evaluated on later heads.
 - `BASE_REF` and `BASE_OID` still match the reviewed base before publication.
-- The submitted `event` matches the verdict table, or the self-review downgrade is stated in the body.
+- The submitted `event` matches the review outcome and never submits `APPROVE`.
 
 ## Completion
 

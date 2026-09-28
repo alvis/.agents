@@ -84,6 +84,7 @@ const protectedCommands = [
   "gh api repos/acme/app/pulls/35/reviews --input=-",
   "gh api --method POST repos/acme/app/pulls/35/comments -f body=issue",
   "gh api -X PATCH repos/acme/app/pulls/comments/12 -f body=changed",
+  "gh api -X PUT repos/acme/app/pulls/35/reviews/91 -f body=changed",
   "gh api -X POST repos/acme/app/pulls/35/comments/12/replies -f body=reply",
   "gh api -X POST repos/acme/app/pulls/35/reviews/12/events -f event=APPROVE",
   "gh api -X DELETE repos/acme/app/issues/comments/12",
@@ -154,6 +155,19 @@ describe("review publication shell guard", () => {
     expect(classifyReviewPublicationCommand(command, pluginRoot).decision).toBe(
       "ignore",
     );
+  });
+
+  it("should allow the guarded update and deny a chained direct write", () => {
+    const command = `bun '${contractPath}' update --approval '/tmp/approved review.json' --review-id 91`;
+    expect(classifyReviewPublicationCommand(command, pluginRoot).decision).toBe(
+      "allow",
+    );
+    expect(
+      classifyReviewPublicationCommand(
+        `${command}; gh api -X PUT repos/acme/app/pulls/35/reviews/91 -f body=changed`,
+        pluginRoot,
+      ).decision,
+    ).toBe("deny");
   });
 
   it("should allow only the canonical publisher invocation to bypass raw-write denial", () => {
@@ -339,6 +353,14 @@ describe("review publication shell guard", () => {
             pull_number: 35,
           },
           review_context: {
+            human_signoff_required: false,
+            ci: {
+              expected_checks: [
+                { name: "test", workflow: ".github/workflows/ci.yml" },
+              ],
+              expected_sources_confirmed: true,
+              required_policy_sha256: "a".repeat(64),
+            },
             review_evidence_sha256: "a".repeat(64),
             zone: "green",
           },
@@ -365,7 +387,7 @@ describe("review publication shell guard", () => {
                 evidence: "The entrypoint checks empty input.",
               },
             ],
-            substantive_verdict: "APPROVE",
+            substantive_verdict: "PASS",
             summary: "The guard fixes the empty-input boundary.",
             tests: {
               confidence: "convincing",

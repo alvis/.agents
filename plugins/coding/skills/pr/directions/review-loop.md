@@ -6,7 +6,7 @@ Review the published draft against its exact head and base. Black-zone Risk, Tes
 
 Follow the repository delegation contract at `governance:standards/delegation/`. Partition independent stacks into sequential bottom-to-top batches of at most ten stack review units. A singleton PR is a one-PR stack. One independent reviewer handles each batch. For the initial pass, prefer its already assigned delivery reviewer with verified source evidence; otherwise start a fresh critic. Do not share a session across unrelated batches.
 
-Read `MAX_ITERATION` and `REVIEW_ITERATION` from the owning main agent's working context. Before each attempted independent review or targeted verification pass, return `action: review_exhausted` when the current iteration already equals the maximum; otherwise increment it exactly once. A failed or cancelled dispatch still counts as an attempt, and every batch in that pass shares the incremented value. A no-op reuse decision or metadata readback alone is not another review attempt. This budget limits this loop, not child implementation work. Stop early when the exit gate approves every current head; exhaustion keeps unresolved surfaces draft and returns their blockers.
+Read `MAX_ITERATION` and `REVIEW_ITERATION` from the owning main agent's working context. Before each attempted independent review or targeted verification pass, return `action: review_exhausted` when the current iteration already equals the maximum; otherwise increment it exactly once. A failed or cancelled dispatch still counts as an attempt, and every batch in that pass shares the incremented value. A no-op reuse decision or metadata readback alone is not another review attempt. This budget limits this loop, not child implementation work. Stop early when every current head passes the exit gate; exhaustion keeps unresolved surfaces draft and returns their blockers.
 
 ## Select and assign the mission
 
@@ -47,7 +47,7 @@ source "${CODING_PR_SKILL_DIR}/scripts/fetch-review-loop-discussion.sh" "$PR_URL
 
 Retain the helper's canonical coordinates and metadata before the API calls. These commands illustrate the required fields; they are not a complete script. Page `reviewThreads` until `hasNextPage` is false. For every thread whose `comments.pageInfo.hasNextPage` is true, page that thread's `comments` connection by node ID until complete. Do not evaluate convergence from a partial page.
 
-Read every ledger in the returned stack-to-ledger map before acting. Reject a missing, duplicate, or cross-stack path. Once a stack's per-surface dispositions are incorporated and no later pass needs its files, the parent closes its one retained tree lease and removes only that stack's recorded `REVIEW_ARTIFACT_DIR`. On cancellation or failure it performs the same per-stack cleanup.
+Read every ledger in the returned stack-to-ledger map before acting. Reject a missing, duplicate, or cross-stack path. Once a stack's per-surface dispositions are incorporated and no later pass needs its review tree, the parent closes its one retained tree lease. Remove each recorded `REVIEW_ARTIFACT_DIR` only under [the receipt lifecycle in review.md](review.md#locate-or-create-the-review-tree); a pending CI update still needs its exact approval receipt after this review pass ends.
 
 If any stack surface head, base target, or base OID differs from its expected value, stop with a concurrency blocker. Do not adopt the unexpected surface. The publication owner must reconcile it and record a new stack head/base map before review restarts.
 
@@ -83,8 +83,8 @@ When the only remaining trust cap is red CI, do not spend another review attempt
 Review convergence passes only when all of these hold for every current head:
 
 - valid independent baseline coverage plus completed affected-scope rechecks cover each current stack from its bottom base to top tip and each independently published surface, with findings attributed to the owning PR;
-- the latest independent publication review reports a substantive `APPROVE` verdict;
-- the latest review is complete, has no blocker, and has no trust cap; a separately reported self-review event downgrade remains allowed. A red-CI-only cap exits through `repair_ci_then_review` rather than failing this gate;
+- the latest independent publication review reports a substantive `PASS` verdict;
+- the latest review is complete, has no blocker, and has no trust cap; A red-CI-only cap exits through `repair_ci_then_review` rather than failing this gate;
 - no live P0/P1 or mandatory-chore review thread is unresolved;
 - the latest review reports no live P0/P1 or mandatory-chore finding in the overall body, including findings with no inline anchor;
 - every prior unanchored P0/P1/P2 or mandatory-chore finding is present in the ledger and was revalidated when its evidence OID differs from the current head, preserving settled dispositions unless new evidence invalidates them, with a reply where the parent acted;
