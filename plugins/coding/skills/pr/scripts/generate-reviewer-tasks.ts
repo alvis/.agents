@@ -12,6 +12,7 @@ export interface GitHubApi {
 
 /** Inputs required to render an exact-revision reviewer task block. */
 export interface ReviewerTaskBlockInput {
+  authorMention: string;
   baseOid: string;
   hasBlackZoneVerification: boolean;
   headOid: string;
@@ -20,6 +21,7 @@ export interface ReviewerTaskBlockInput {
 
 /** Live PR data and resolved reviewer mentions. */
 export interface ReviewerTaskGeneration {
+  authorMention: string;
   baseOid: string;
   body: string;
   commitCount: number;
@@ -41,6 +43,7 @@ interface PullRequestTarget {
 }
 
 interface PullRequestSnapshot {
+  authorMention: string;
   baseOid: string;
   body: string;
   commitCount: number;
@@ -145,10 +148,16 @@ export function renderReviewerTaskBlock(input: ReviewerTaskBlockInput): string {
   for (const mention of input.mentions)
     if (!REVIEWER_MENTION.test(mention))
       throw new Error(`reviewer mention is invalid: ${mention}`);
+  if (
+    !REVIEWER_MENTION.test(input.authorMention) ||
+    input.authorMention.includes("/")
+  )
+    throw new Error(`author mention is invalid: ${input.authorMention}`);
   const revision = input.headOid.slice(0, SHORT_OID_LENGTH);
   const tasks = input.mentions.map(
-    (mention) => `- [ ] ${mention} review ${revision}`,
+    (mention) => `- [ ] ${mention} reviews ${revision}`,
   );
+  tasks.push(`- [ ] ${input.authorMention} approves ${revision}`);
   if (input.hasBlackZoneVerification)
     tasks.push(
       `- [ ] Verify the black-zone scope and risk controls for ${revision}.`,
@@ -244,6 +253,7 @@ export function inspectReviewerTaskBlock(
     throw new Error("managed reviewer task has invalid revision");
   const shortHead = revision[1]!.slice(0, SHORT_OID_LENGTH);
   const seen = new Set<string>();
+  let sawAuthorApproval = false;
   let sawBlackZone = false;
   for (const line of lines.slice(2, -1)) {
     const task = /^- \[[ xX]\] (.+)$/.exec(line)?.[1];
@@ -256,20 +266,36 @@ export function inspectReviewerTaskBlock(
       sawBlackZone = true;
       continue;
     }
-    const review = /^(@[^ ]+) review ([0-9a-f]+)$/.exec(task);
+    const approval = /^(@[^ ]+) approves ([0-9a-f]+)$/.exec(task);
+    if (approval) {
+      if (
+        sawAuthorApproval ||
+        sawBlackZone ||
+        !REVIEWER_MENTION.test(approval[1]!) ||
+        approval[1]!.includes("/") ||
+        approval[2] !== shortHead
+      )
+        throw new Error("managed reviewer task has invalid shape or revision");
+      sawAuthorApproval = true;
+      continue;
+    }
+    const review = /^(@[^ ]+) reviews ([0-9a-f]+)$/.exec(task);
     const mention = review?.[1];
     if (
       !review ||
       !mention ||
       !REVIEWER_MENTION.test(mention) ||
       review[2] !== shortHead ||
-      sawBlackZone
+      sawBlackZone ||
+      sawAuthorApproval
     )
       throw new Error("managed reviewer task has invalid shape or revision");
     if (seen.has(mention.toLowerCase())) throw new Error("managed reviewer task is duplicated");
     seen.add(mention.toLowerCase());
   }
   if (seen.size === 0) throw new Error("managed reviewer task has no reviewer");
+  if (!sawAuthorApproval)
+    throw new Error("managed reviewer task has no author approval");
   return { block, start, end };
 }
 
@@ -287,6 +313,7 @@ export async function runReviewerTasksCli(
   );
   assertPinnedRevision(generated, options);
   const block = renderReviewerTaskBlock({
+    authorMention: generated.authorMention,
     baseOid: generated.baseOid,
     hasBlackZoneVerification: options.hasBlackZoneVerification,
     headOid: generated.headOid,
@@ -302,7 +329,8 @@ export async function runReviewerTasksCli(
   if (
     latest.headOid !== options.expectedHeadOid ||
     latest.baseOid !== options.expectedBaseOid ||
-    latest.commitCount !== generated.commitCount
+    latest.commitCount !== generated.commitCount ||
+    latest.authorMention !== generated.authorMention
   )
     throw new Error("PR revision changed before reviewer task update");
   if (latest.draft)
@@ -416,6 +444,9 @@ function parsePullRequestSnapshot(value: unknown): PullRequestSnapshot {
     throw new Error("pull request must be open and unmerged");
   const head = expectRecord(pull.head, "pull request head");
   const base = expectRecord(pull.base, "pull request base");
+  const author = expectRecord(pull.user, "pull request author");
+  const authorLogin = readString(author, "login", "pull request author");
+  validateAccountLogin(authorLogin, "pull request author");
   if (typeof pull.draft !== "boolean")
     throw new Error("pull request draft state is missing");
   if (pull.body !== null && typeof pull.body !== "string")
@@ -427,6 +458,7 @@ function parsePullRequestSnapshot(value: unknown): PullRequestSnapshot {
   validateOid(baseOid, "pull request base");
   validateOid(headOid, "pull request head");
   return {
+    authorMention: mentionAccount(authorLogin),
     baseOid,
     body: pull.body ?? "",
     commitCount: Number(pull.commits),

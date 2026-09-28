@@ -1157,7 +1157,8 @@ describe("PR message scanner", () => {
         "- [x] Run the PR message scanner.",
         "<!-- coding:reviewer-tasks:start -->",
         `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
-        `- [ ] @reviewer review ${headOid.slice(0, 7)}`,
+        `- [ ] @reviewer reviews ${headOid.slice(0, 7)}`,
+        `- [ ] @author approves ${headOid.slice(0, 7)}`,
         "<!-- coding:reviewer-tasks:end -->",
       ].join("\n"),
     ]);
@@ -1197,7 +1198,8 @@ describe("PR message scanner", () => {
         "```",
         "<!-- coding:reviewer-tasks:start -->",
         `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
-        `- [ ] @reviewer review ${headOid.slice(0, 7)}`,
+        `- [ ] @reviewer reviews ${headOid.slice(0, 7)}`,
+        `- [ ] @author approves ${headOid.slice(0, 7)}`,
         "<!-- coding:reviewer-tasks:end -->",
       ].join("\n"),
     ]);
@@ -1215,14 +1217,15 @@ describe("PR message scanner", () => {
         "- [x] Run the PR message scanner.",
         "<!-- coding:reviewer-tasks:start -->",
         `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
-        `- [ ] @reviewer review ${headOid.slice(0, 7)}`,
+        `- [ ] @reviewer reviews ${headOid.slice(0, 7)}`,
+        `- [ ] @author approves ${headOid.slice(0, 7)}`,
         "<!-- coding:reviewer-tasks:end -->",
       ].join("\n"),
     ]);
     for (const corrupt of [
       valid.replace("<!-- coding:reviewer-tasks:end -->", ""),
-      valid.replace("@reviewer review", "@reviewer approve"),
-      valid.replace(`review ${headOid.slice(0, 7)}`, `review ${"f".repeat(7)}`),
+      valid.replace("@reviewer reviews", "@reviewer approve"),
+      valid.replace(`reviews ${headOid.slice(0, 7)}`, `reviews ${"f".repeat(7)}`),
       valid.replace(`base=${baseOid}`, `base=${"f".repeat(40)}`),
     ]) {
       const scanned = await run(corrupt);
