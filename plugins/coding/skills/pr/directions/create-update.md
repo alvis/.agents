@@ -8,7 +8,7 @@
 4. Perform mandatory PR review with the independent delivery reviewer or a fresh independent replacement, consuming valid source evidence under `coding:directions/review-evidence.md`, converging findings by repairing the owning change and restarting invalidated discovery and verification gates.
 5. Poll every published PR until hosted CI is green; diagnose the first red surface, fix its root cause, republish, and repeat without hiding blockers.
 
-Load the complete workflow from `coding:pr create` or `coding:pr update`; `coding:pr author` loads only [Author the PR text](#author-the-pr-text). Turn one saved change or stack into live PRs, initially draft and ready after review approval, then green through CI. This workflow composes deterministic Conventional Commits PR text, publishes bottom-up, and owns hosted CI until green or blocked. Repair obeys the **Coherence Mandate**: produce one continuous work; rewrite over restructure, restructure over integrate, never append. Dissolve new content into the existing structure. Visible seams, parallel paths, addenda, vestigial helpers, and tack-ons are forbidden.
+Load the complete workflow from `coding:pr create` or `coding:pr update`; `coding:pr author` loads only [Author the PR text](#author-the-pr-text). Turn one saved change or stack into live draft PRs, then make each ready once AI review approves and hosted CI passes on its exact revision. This workflow composes deterministic Conventional Commits PR text, publishes bottom-up, and owns hosted CI until green or blocked. Repair obeys the **Coherence Mandate**: produce one continuous work; rewrite over restructure, restructure over integrate, never append. Dissolve new content into the existing structure. Visible seams, parallel paths, addenda, vestigial helpers, and tack-ons are forbidden.
 
 Reviewers own size-standard findings and reviewability judgments. This workflow owns pull-request authoring and publication directions, deterministic zone calculation, and the gates below. Scan each implementation diff and rendered PR body against `coding:standards/git/`; [message.md](../templates/message.md) owns the bundled body shape.
 
@@ -21,7 +21,7 @@ Reviewers own size-standard findings and reviewability judgments. This workflow 
 - Before submission, inspect every changed file under `GIT-PR-TYPE-05` for a durable purpose and remove prohibited artifacts through the implementation/history owner. Select and apply every relevant standard through `essential:directions/standards.md`; fix violations and record green revision-bound evidence in Verification before publication.
 - Bind authoring and review evidence to the exact head and base OIDs. Verify reusable source evidence and any content-equivalent mapping under `coding:directions/review-evidence.md`; always bind publication checks to the actual head/base pair.
 - Make each PR independently valid and reviewable. Keep its tests and package lockfiles with the implementation that needs them.
-- Keep each PR draft through publication and review authoring. After the review loop's exit gate reports substantive `APPROVE`, it promotes that surface to ready for review and verifies the transition. A materially expanded surface returns to draft; notify reviewers when they need the changed context.
+- Keep each PR draft through publication and review authoring. Promote a draft only after both the review loop reports substantive `APPROVE` for its exact head/base and hosted CI is green. Generate and attach reviewer tasks only after that transition. A materially expanded surface returns to draft; notify reviewers when they need the changed context.
 
 ### Select the PR archetype
 
@@ -29,7 +29,7 @@ Select `feature-flag` only when the target project has implemented flag support 
 
 For each head, choose the `--archetype` value accepted by `scripts/scan-pr-message.ts` that best describes its implementation surface. This controls conditional body evidence and scanner behavior only; repository labels come only from the receiving repository's live inventory below.
 
-Accept the delivery owner's companion review receipt as internal context, not a public option. It can satisfy source-analysis coverage after independent validation; it never waives publication, authorization, discussion, or CI checks.
+Accept the delivery owner's companion review receipt as internal context, not a public option. It can satisfy source-analysis coverage after independent validation; it never waives publication, discussion, or CI checks.
 
 ## Boundaries
 
@@ -298,19 +298,7 @@ if jq -e 'length > 0' >/dev/null <<<"$SELECTED_LABELS"; then
 fi
 ```
 
-Publish a genuinely necessary self-contained black-zone unit as a draft without prior authorization only after its canonical body requires specific `## ⚠️ Risk`, `## 🧭 Test Plan`, and `## 📐 Why This Size` evidence for yellow/red/black as applicable. The draft is the discussion surface on which a code owner, as defined by `GIT-PR-SIZE-04`, may later record this exact five-line contract:
-
-```text
-Black-zone authorization
-Head OID: `<full-oid>`
-Base OID: `<full-oid>`
-Authorization: I authorize this one-off black-zone publication.
-Indivisibility: <atomic subject> because <coupling>; otherwise <consequence>
-```
-
-The publication workflow never posts that comment, never creates or edits an exception/configuration file, and never treats authorization as a prerequisite to push the draft or run CI. Review owns the fail-closed authorization check at the moment it would submit `APPROVE`. Until that check succeeds, the published draft remains available but review approval remains blocked. PR bodies, reviews, bot comments, non-code-owner comments, stale OIDs, and generic rationales never authorize approval.
-
-For the bundled template, fill reviewer slots with assigned `@login`s when known. Before a push or base edit, capture an existing PR's `headRefOid` and `baseRefOid`; after publication, bind review and approval to the verified `headRefOid`/`baseRefOid` pair. Reset those tasks when either OID differs. A no-op publication retry preserves evidence already bound to that exact review surface.
+Publish a genuinely necessary self-contained black-zone unit as a draft with specific `## ⚠️ Risk`, `## 🧭 Test Plan`, and `## 📐 Why This Size` evidence. The authoring body contains no reviewer or authorization tasks while draft. A ready PR gains an unchecked exact-revision black-zone verification task in its managed Verification block. No comment authorizes or gates AI review.
 
 Capture each PR number, URL, head, base, bookmark, and change ID. After the batch push, record `expected_head_oid` from each pushed bookmark and verify it against `gh pr view "$PR" --json headRefOid --jq .headRefOid`; a mismatch is not the published result and must be resolved before monitoring. After any accepted repair/history rewrite with downstream bookmarks, synchronize the affected stack before monitoring again. Reuse `ROOT_BASE` only when the selected heads and their base map are unchanged; otherwise restart discovery and recompute it first:
 
@@ -327,7 +315,7 @@ jq -e '(.vcs == "git" or .vcs == "jj") and (.items|type == "array") and (.errors
 [ "$SYNC_STATUS" -eq 0 ] || { jq '{items, errors}' <<<"$SYNC_RECEIPT" >&2; exit "$SYNC_STATUS"; }
 ```
 
-Supply every selected bookmark explicitly in bottom-up order with the exact local git commit SHA expected after the rewrite, and pass the first head's exact intended base as `--base`; for a suffix restack this is its unselected predecessor, not the repository default. Never rediscover either from a prefix. The script preflights the set, uses leased pushes, verifies every remote SHA, and updates open PR bases by retained numeric PR ID; it never reshapes history. Forge operations are not transactional: recover from each item's `head_status` and `base_status`, never infer success from process progress. `verified` heads may coexist with `failed`, `pending`, or `deferred` bases. Restart discovery whenever any bound remote or base identity changed. Verify the PR base chain and every `headRefOid`, then reauthor changed heads against verified bases and reset reviewer evidence only where the head or base OID changed.
+Supply every selected bookmark explicitly in bottom-up order with the exact local git commit SHA expected after the rewrite, and pass the first head's exact intended base as `--base`; for a suffix restack this is its unselected predecessor, not the repository default. Never rediscover either from a prefix. The script preflights the set, uses leased pushes, verifies every remote SHA, and updates open PR bases by retained numeric PR ID; it never reshapes history. Forge operations are not transactional: recover from each item's `head_status` and `base_status`, never infer success from process progress. `verified` heads may coexist with `failed`, `pending`, or `deferred` bases. Restart discovery whenever any bound remote or base identity changed. Verify the PR base chain and every `headRefOid`, then reauthor changed heads against verified bases and discard managed reviewer tasks when the head or base OID changes; generate them again only after AI review and CI pass for the new surface.
 
 | Publication error | Recovery action |
 |---|---|
@@ -380,7 +368,6 @@ For a top-level create or update, the owning main agent retains `MAX_ITERATION` 
 
 After every selected PR is published or updated and its open draft state and exact head/base pair are verified, load and follow [review-loop.md](review-loop.md). A review-driven fix republishes the affected stack, resets the expected head OIDs, and resumes the loop with retained evidence and an impact-bounded independent recheck before CI monitoring. If the loop returns `action: repair_ci_then_review`, enter step 5 immediately without marking review convergence complete or attempting another review against unchanged CI. After the poller reports a red repair, the parent accepts the fix, saves it, and republishes through the owned workflow; if CI instead becomes green, no repair is needed. Then return to step 4 and verify the affected repair or changed CI evidence with the independent reviewer before completing the ordinary CI gate; unchanged valid source evidence is reused. Never retry a review against unchanged red-CI evidence.
 
-If the loop returns `action: await_code_owner_authorization`, record the approval blocker and its complete `authorization_required` list, including each PR URL and exact head/base OIDs, then enter step 5 without marking review convergence complete or retrying the review. After CI is green, report the published drafts with that list under `approval_blocked: authorization_required`. A later invocation reruns review against every then-current head and base; review alone verifies each authorization at the moment it would submit `APPROVE`.
 
 If the loop returns `action: review_exhausted`, record the unresolved findings and enter step 5. Converge hosted CI normally; once it is green, report green CI and missing substantive approval instead of dispatching another review.
 
@@ -451,6 +438,37 @@ For zero observed checks with inaccessible/unconfirmed expected sources, keep th
 
 Scheduled tasks fire only while the session is open and idle. Unexpired tasks restore on `--resume` or `--continue`; expired tasks are not replayed.
 
+### 6. Promote verified surfaces and add human tasks
+
+After the review loop records a substantive `APPROVE` and the poller proves green hosted CI for the same head and base OIDs, refresh the check rollup and classify it against the discovered expected checks under step 5 immediately before readiness. A pending or red result stops promotion and resumes the CI loop. A changed surface starts a new review and CI pass. Preflight `bun run "${CODING_PR_SKILL_DIR}/scripts/generate-reviewer-tasks.ts" "$REPOSITORY#$PR_NUMBER" --hostname "$HOST" --head "$HEAD_OID" --base "$BASE_OID"` with `--black-zone` for a black PR. The draft preflight resolves assigned reviewers and GitHub-mapped code authors; an organization owner fallback is provisional until readiness lets GitHub request CODEOWNERS. The post-ready apply resolves assigned users and teams or the personal owner or every discoverable organization owner, then adds all GitHub-mapped code authors. An unresolved required account, inaccessible owner list, or empty result at apply blocks task attachment with the reported identity error.
+
+```bash
+[ "$SUBSTANTIVE_VERDICT" = APPROVE ] && [ "$CI_STATE" = green ] &&
+  [ "$REVIEWED_HEAD_OID" = "$EXPECTED_HEAD_OID" ] &&
+  [ "$REVIEWED_BASE_REF" = "$EXPECTED_BASE_REF" ] &&
+  [ "$REVIEWED_BASE_OID" = "$EXPECTED_BASE_OID" ] || exit 1
+if PR_CHECKS=$(gh pr checks "$PR_URL" --repo "$HOST/$REPOSITORY" \
+  --json bucket,completedAt,link,name,startedAt,state,workflow); then
+  PR_CHECKS_EXIT=0
+else
+  PR_CHECKS_EXIT=$?
+fi
+case "$PR_CHECKS_EXIT" in 0|1|8) ;; *) exit 1 ;; esac
+jq -e 'type == "array" and all(.[]; (.bucket == "pass" or .bucket == "skipping") and .completedAt != null)' \
+  >/dev/null <<<"$PR_CHECKS" || exit 1
+PR_METADATA=$(gh pr view "$PR_URL" --repo "$HOST/$REPOSITORY" \
+  --json state,headRefOid,baseRefName,baseRefOid,isDraft) || exit 1
+jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
+  --arg base_oid "$EXPECTED_BASE_OID" '
+  .state == "OPEN" and (.isDraft | type) == "boolean" and
+  .headRefOid == $head and .baseRefName == $base and .baseRefOid == $base_oid
+' >/dev/null <<<"$PR_METADATA" || exit 1
+```
+
+Classify the fresh `PR_CHECKS` with the step 5 expected-check and source evidence for `EXPECTED_HEAD_OID`; require green. The following metadata read pins the head and base after the check fetch. If the check rollup is pending, red, incomplete, or inaccessible, return to CI convergence instead of calling `gh pr ready`.
+
+If the pinned PR metadata reports `isDraft: true`, run `gh pr ready "$PR_NUMBER" --repo "$HOST/$REPOSITORY"`; if it is already ready, skip that transition and continue task attachment. Then call the same generator with `--apply`. GitHub may assign CODEOWNERS during the ready transition, so the apply invocation resolves reviewers again and its returned block is authoritative. It rereads the live PR, refuses a draft or changed head/base, and replaces one managed task block under Verification. Read back the exact body and ready state; require the managed block to equal the apply invocation's returned block and the entire body to equal its returned `body` on the pinned revision. If attachment or readback fails, reread the pinned PR body before changing draft state. Undo readiness with `gh pr ready "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --undo` only when the managed block is confirmed absent; then verify the draft body still has no reviewer tasks. If the block is present or body state cannot be read, keep the PR ready, report the partial outcome, and reconcile the body before any later draft transition. No reviewer tasks are published in a draft. Do not check whether a human checked a task, approved a review, or left an authorization comment.
+
 ### Author the PR text
 
 Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 passes its base; text-only callers default to the first parent. Never invoke `gh`.
@@ -465,7 +483,7 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
      --repo "$REPO_ROOT" --base "$BASE_OID" --head "$HEAD_OID")
    ```
 
-   Read `zone`, `files_changed`, `net_loc`, and `required_reviewers` from `SIZE_JSON`. The classifier's file count includes every changed path and excludes generated-file additions and deletions only from authored net LOC. The canonical thresholds are fixed. Record the required sections for that zone. A black-zone change remains black and requires specific `## ⚠️ Risk`, `## 🧭 Test Plan`, and `## 📐 Why This Size` evidence. Author them for the exact draft head/base pair that may carry later code-owner discussion authorization. The draft may be pushed and tested without prior authorization; review verifies authorization only before submitting `APPROVE`.
+   Read `zone`, `files_changed`, and `net_loc` from `SIZE_JSON`. The classifier's file count includes every changed path and excludes generated-file additions and deletions only from authored net LOC. The canonical thresholds are fixed. Record the required sections for that zone. A black-zone change remains black and requires specific `## ⚠️ Risk`, `## 🧭 Test Plan`, and `## 📐 Why This Size` evidence. Author them for the exact draft head/base pair. The draft may be pushed and tested without a human authorization comment.
 5. Resolve the template — first hit wins, paths relative to the repo root:
 
    1. `.github/PULL_REQUEST_TEMPLATE.md`
@@ -499,7 +517,7 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
    - `{{test_plan_body}}` — exact content under `## Test plan` / `Test-Plan:`. Required for yellow/red/black; stop when absent.
    - `{{why_this_size_body}}` — exact content under `## Why this size`. Required for red and black. Require specific prose explaining why the surface is indivisible; stop when it is absent or generic. Do not render size counts, zone metadata, or reviewer-time estimates.
    - `{{related_issues_body}}` — plain issue references from `Refs:` trailers or normalized historical issue identities; "None." when absent. Publication may additionally supply its resolved issue-coverage context; text-only authoring never searches.
-   - `{{verification_body}}` — `Testing:` / `Manual-Test:` trailers, rendered as a checklist of the checks that must pass before sign-off, specific to this change and ticked as each one is confirmed. Keep each check with its result and revision-bound evidence. Name every applicable standard selected through `essential:directions/standards.md`, its green scan/review result, the exact head/base OIDs, and the command or semantic evidence supporting it. Resolve every standards violation before submission; pending reviewer slots do not stand in for standards verification. Change-specific checks remain mandatory. When Additional Notes records deviations from the specification or original request, append `- [ ] Specification deviations approved: <what changed and why>`. Append one assigned/reviewed/approved reviewer triplet per `required_reviewers`, in slot order, using the exact head/base OIDs recorded in step 4 and the template's Verification shape.
+   - `{{verification_body}}` — `Testing:` / `Manual-Test:` trailers, rendered as a checklist of the checks that must pass before sign-off, specific to this change and ticked as each one is confirmed. Keep each check with its result and revision-bound evidence. Name every applicable standard selected through `essential:directions/standards.md`, its green scan/review result, the exact head/base OIDs, and the command or semantic evidence supporting it. Resolve every standards violation before submission. Change-specific checks remain mandatory. When Additional Notes records deviations from the specification or original request, append `- [ ] Specification deviations approved: <what changed and why>`. The draft contains no reviewer tasks; `generate-reviewer-tasks.ts` adds them only after the PR becomes ready.
    - `{{boundary_body}}` — bullets naming related work the instruction placed outside this change, so its edges are not read as gaps. It records the scope it was given, not the author's own judgment calls. "None." when absent.
    - `{{additional_notes_body}}` — deviations from the specification or original request (what changed and why), known limitations, and follow-ups; empty when absent. Preserve the template's visible separate-review instruction even when this placeholder is empty.
 
@@ -510,14 +528,14 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
    if ! MESSAGE_SCAN=$(bun run "${CODING_PR_SKILL_DIR}/scripts/scan-pr-message.ts" \
      --body-file - --template "$TEMPLATE" --zone "$ZONE" \
      --archetype "$ARCHETYPE" --head-oid "$HEAD_OID" \
-     --base-oid "$BASE_OID" --allow-pending-reviewers \
+     --base-oid "$BASE_OID" \
      "${GENERATED_ARGS[@]}" <<<"$BODY"); then
      printf '%s\n' "$MESSAGE_SCAN" >&2
      exit 5
    fi
    ```
 
-   Exit 5 with the scanner's JSON when it reports a violation. Do not publish or reinterpret the failure as advice; fix the owning standard rule and rerender. The scanner establishes structural conformance while semantic review establishes whether the evidence is specific and true. The authoring-only pending flag permits unchecked reviewer tasks before anyone can review; the review workflow omits it and requires confirmed triplets.
+   Exit 5 with the scanner's JSON when it reports a violation. Do not publish or reinterpret the failure as advice; fix the owning standard rule and rerender. The scanner establishes structural conformance while semantic review establishes whether the evidence is specific and true. The scanner checks structural conformance without evaluating human approval.
 8. Emit the title line, a single blank line, then the Markdown body to stdout. Exit codes: `0` success, `2` unknown ref or non-conventional subject, `3` no commit source available, `4` bundled default template missing, `5` rendered message violates `coding:standards/git/`.
 
 ## Verification and Completion
@@ -527,5 +545,5 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
 - Unless `--no-verify` was explicitly recorded, the applicable `pull_request` test and lint tasks passed through read-only `jj run` first at the exact selected tip and then at every selected PR head bottom-up, with revision-bound sources and results. The sole per-surface exception records the user's explicit approval for that exact revision and the verifier's exact lexically sorted missing-secret names. A `--no-verify` run instead reports every skipped bookmark, PR, head, and base; hosted CI remains mandatory.
 - Every head was pushed under a lease — one explicit affected-bookmark `jj git push` on the jj path, `git push --force-with-lease` on the git path; each new PR started as a draft, uses the authored title/body, and has the intended stack base. The review loop verifies approved surfaces are ready for review.
 - Review convergence produced a substantive `APPROVE` on each final head, including required replies and repair heads; or the configured review maximum was exhausted and green CI plus missing substantive approval is reported.
-- Self-contained black-zone drafts may be reported as published and green while carrying `approval_blocked: authorization_required` plus the complete list of blocked PR URLs and exact head/base OIDs. This is not review convergence or merge readiness. Only the review workflow may clear each blocker, by verifying a current code-owner comment immediately before it submits `APPROVE`.
+
 - Report success only after the final poll observes every PR green. Include the stack map, resolved commit refs, the template used per change (repo path or bundled default), local results, review passes, replies, repair commits, push/restack actions, per-PR check states, CI wall times, and any blocker (with its authoring exit code where relevant). Return every local project path created or materially rewritten during repair as `generated_files`. Keep any `.state` work Markdown within `essential:references/output-manifest.md`.

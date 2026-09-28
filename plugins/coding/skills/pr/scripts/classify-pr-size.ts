@@ -31,7 +31,6 @@ interface ZoneLimit {
   name: string;
   maxFilesChanged: number;
   maxAuthoredNetLoc: number;
-  requiredReviewers: number;
 }
 
 interface GitResult {
@@ -572,7 +571,6 @@ function parseZoneLimit(data: unknown): ZoneLimit {
     "max_authored_net_loc",
     "max_files_changed",
     "name",
-    "required_reviewers",
   ];
   if (
     !data ||
@@ -598,19 +596,10 @@ function parseZoneLimit(data: unknown): ZoneLimit {
         `PR-size zone '${zone.name}' ${field} must be positive: ${SIZE_THRESHOLDS}`,
       );
   }
-  if (!Number.isInteger(zone.required_reviewers))
-    throw new TypeError(
-      `PR-size zone '${zone.name}' required_reviewers must be an integer: ${SIZE_THRESHOLDS}`,
-    );
-  if ((zone.required_reviewers as number) < 0)
-    throw new Error(
-      `PR-size zone '${zone.name}' required_reviewers cannot be negative: ${SIZE_THRESHOLDS}`,
-    );
   return {
     name: zone.name,
     maxFilesChanged: zone.max_files_changed as number,
     maxAuthoredNetLoc: zone.max_authored_net_loc as number,
-    requiredReviewers: zone.required_reviewers as number,
   };
 }
 
@@ -633,7 +622,7 @@ function loadZoneLimits(): ZoneLimit[] {
     typeof metrics !== "object" ||
     Array.isArray(metrics) ||
     Object.keys(metrics).sort().join() !==
-      ["authored_net_loc", "files_changed", "required_reviewers"].join()
+      ["authored_net_loc", "files_changed"].join()
   ) {
     throw new Error(`invalid PR-size metrics: ${SIZE_THRESHOLDS}`);
   }
@@ -660,11 +649,10 @@ function loadZoneLimits(): ZoneLimit[] {
     const later = limits[index]!;
     if (
       earlier.maxFilesChanged >= later.maxFilesChanged ||
-      earlier.maxAuthoredNetLoc >= later.maxAuthoredNetLoc ||
-      earlier.requiredReviewers > later.requiredReviewers
+      earlier.maxAuthoredNetLoc >= later.maxAuthoredNetLoc
     ) {
       throw new Error(
-        `PR-size zone maxima must increase and required reviewers must not decrease (${earlier.name} -> ${later.name}): ${SIZE_THRESHOLDS}`,
+        `PR-size zone maxima must increase (${earlier.name} -> ${later.name}): ${SIZE_THRESHOLDS}`,
       );
     }
   }
@@ -806,9 +794,6 @@ export function classify(
   const netLoc = Math.abs(additions - deletions);
   const limits = loadZoneLimits();
   const zone = zoneFor(files.length, netLoc, limits);
-  const requiredReviewers =
-    limits.find((limit) => limit.name === zone)?.requiredReviewers ??
-    limits.at(-1)!.requiredReviewers;
   return {
     authored_additions: additions,
     authored_deletions: deletions,
@@ -818,7 +803,6 @@ export function classify(
     generated_files: [...generatedFiles].sort(comparePythonStrings),
     head_oid: head,
     net_loc: netLoc,
-    required_reviewers: requiredReviewers,
     zone,
   };
 }

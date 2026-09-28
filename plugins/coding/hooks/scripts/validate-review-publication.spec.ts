@@ -338,8 +338,7 @@ describe("review publication shell guard", () => {
             pr_author_login: "author",
             pull_number: 35,
           },
-          authorization: {
-            black_zone_receipt: null,
+          review_context: {
             review_evidence_sha256: "a".repeat(64),
             zone: "green",
           },

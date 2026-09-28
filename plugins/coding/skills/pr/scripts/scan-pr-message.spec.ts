@@ -13,7 +13,6 @@ const scannerUsage =
   "                          --zone {green,yellow,red,black}\n" +
   "                          --archetype {rfc,code-spec,contract,domain-model,implementation,integration,feature-flag,migration,ui,mechanical-refactor,cleanup,observability}\n" +
   "                          --head-oid HEAD_OID --base-oid BASE_OID\n" +
-  "                          [--allow-pending-reviewers]\n" +
   "                          [--generated-file GENERATED_FILE]";
 const archetypeChoices =
   "'rfc', 'code-spec', 'contract', 'domain-model', 'implementation', 'integration', 'feature-flag', 'migration', 'ui', 'mechanical-refactor', 'cleanup', 'observability'";
@@ -72,7 +71,6 @@ const verification = (): [string, string] => [
 async function run(
   body: string,
   options: {
-    allowPendingReviewers?: boolean;
     archetype?: string;
     generated?: string[];
     headOid?: string;
@@ -106,9 +104,6 @@ async function run(
         options.headOid ?? headOid,
         "--base-oid",
         baseOid,
-        ...(options.allowPendingReviewers === false
-          ? []
-          : ["--allow-pending-reviewers"]),
         ...templateArgs,
         ...(options.generated ?? []).flatMap((path) => [
           "--generated-file",
@@ -344,7 +339,6 @@ describe("PR message scanner", () => {
         "--arc=mechanical-refactor",
         `--head=${headOid}`,
         `--base=${baseOid}`,
-        "--allow",
       ],
       Buffer.from(message(verification())),
     );
@@ -355,10 +349,6 @@ describe("PR message scanner", () => {
 
   it.each([
     ["--b", "ambiguous option: --b could match --body-file, --base-oid"],
-    [
-      "--a",
-      "ambiguous option: --a could match --archetype, --allow-pending-reviewers",
-    ],
     ["--unknown", "unrecognized arguments: --unknown"],
   ])("rejects ambiguous or unknown abbreviation %s", (option, error) => {
     const completed = runScannerCli([
@@ -515,15 +505,7 @@ describe("PR message scanner", () => {
       "## ⚠️ RISK [ Optional ]\n\n{{risk}}\n\n## 🧭 Test Plan [ Optional ]\n\n{{test_plan}}\n\n## 🧪 Verification\n\n{{verification}}\n";
     const body =
       requiredBody +
-      "## ⚠️ RISK [ Optional ]\n\nA stale cache can survive deployment.\n\n## 🧭 Test Plan [ Optional ]\n\nExercise cache expiry.\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n- [ ] Reviewer slot 1 assigned\n- [ ] Reviewer slot 1 reviewed `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n- [ ] Reviewer slot 1 approved `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n";
+      "## ⚠️ RISK [ Optional ]\n\nA stale cache can survive deployment.\n\n## 🧭 Test Plan [ Optional ]\n\nExercise cache expiry.\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n";
     expect(
       await run(body, {
         templateBody: custom,
@@ -539,15 +521,7 @@ describe("PR message scanner", () => {
       "## ⚠️ Riſk [ Optional ]\n\n{{risk}}\n\n## 🧭 Test Plan [ Optional ]\n\n{{test_plan}}\n\n## 🧪 Verification\n\n{{verification}}\n";
     const body =
       requiredBody +
-      "## ⚠️ Riſk [ Optional ]\n\nA stale cache can survive deployment.\n\n## 🧭 Test Plan [ Optional ]\n\nExercise cache expiry.\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n- [ ] Reviewer slot 1 assigned\n- [ ] Reviewer slot 1 reviewed `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n- [ ] Reviewer slot 1 approved `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n";
+      "## ⚠️ Riſk [ Optional ]\n\nA stale cache can survive deployment.\n\n## 🧭 Test Plan [ Optional ]\n\nExercise cache expiry.\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n";
     expect(
       await run(body, { templateBody: custom, zone: "yellow" }),
     ).toMatchObject({ code: 0, result: { valid: true } });
@@ -906,15 +880,7 @@ describe("PR message scanner", () => {
     const body =
       "<!-- repository guidance remains verbatim -->\nRepository PR\n\n" +
       requiredBody +
-      "## ⚠️ Risk [ Optional ]\n\nA stale consumer can load the old authority.\n\n## 🧭 Test Plan [ Optional ]\n\nRun contract and path tests.\n\n## 🧪 Verification\n\n- [x] Run the selected-template scanner.\n- [ ] Reviewer slot 1 assigned\n- [ ] Reviewer slot 1 reviewed `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n- [ ] Reviewer slot 1 approved `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n";
+      "## ⚠️ Risk [ Optional ]\n\nA stale consumer can load the old authority.\n\n## 🧭 Test Plan [ Optional ]\n\nRun contract and path tests.\n\n## 🧪 Verification\n\n- [x] Run the selected-template scanner.\n";
     expect(
       await run(body, { templateBody: custom, zone: "yellow" }),
     ).toMatchObject({ code: 0, result: { valid: true } });
@@ -1162,15 +1128,7 @@ describe("PR message scanner", () => {
     const body =
       "Repository PR\n\n" +
       requiredBody +
-      "## ⚠️ Risk [ Optional ]\n\n{{risk}} remains until the downstream cache expires.\n\n## 🧭 Test Plan [ Optional ]\n\nExercise the cache boundary.\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n- [ ] Reviewer slot 1 assigned\n- [ ] Reviewer slot 1 reviewed `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n- [ ] Reviewer slot 1 approved `" +
-      headOid +
-      "` against `" +
-      baseOid +
-      "`\n";
+      "## ⚠️ Risk [ Optional ]\n\n{{risk}} remains until the downstream cache expires.\n\n## 🧭 Test Plan [ Optional ]\n\nExercise the cache boundary.\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n";
     expect(
       await run(body, { templateBody: custom, zone: "yellow" }),
     ).toMatchObject({ code: 0, result: { valid: true } });
@@ -1192,15 +1150,76 @@ describe("PR message scanner", () => {
       ),
     ).toBe(true);
   });
-  it("accepts a complete red-zone message", async () => {
-    const reviewerEvidence = [
-      "- [x] Run the PR message scanner.",
-      ...[1, 2].flatMap((slot) => [
-        `- [ ] Reviewer slot ${slot} assigned`,
-        `- [ ] Reviewer slot ${slot} reviewed \`${headOid}\` against \`${baseOid}\``,
-        `- [ ] Reviewer slot ${slot} approved \`${headOid}\` against \`${baseOid}\``,
-      ]),
-    ].join("\n");
+  it("should accept managed reviewer task markers and reject unrelated comments in a ready body", async () => {
+    const body = message([
+      "## 🧪 Verification",
+      [
+        "- [x] Run the PR message scanner.",
+        "<!-- coding:reviewer-tasks:start -->",
+        `- [ ] @reviewer review \`${headOid}\` against \`${baseOid}\`.`,
+        "<!-- coding:reviewer-tasks:end -->",
+      ].join("\n"),
+    ]);
+
+    expect(await run(body)).toMatchObject({
+      code: 0,
+      result: { valid: true, violations: [] },
+    });
+    expect(await run(`${body}\n<!-- author guidance -->\n`)).toMatchObject({
+      code: 1,
+      result: {
+        valid: false,
+        violations: [{
+          rule_id: "GIT-PR-02",
+          message: "rendered body contains template guidance comments",
+        }],
+      },
+    });
+  });
+  it("should accept managed tasks after a fenced heading within Verification", async () => {
+    const body = message([
+      "## 🧪 Verification",
+      [
+        "- [x] Run the PR message scanner.",
+        "```markdown",
+        "## Example",
+        "```",
+        "<!-- coding:reviewer-tasks:start -->",
+        `- [ ] @reviewer review \`${headOid}\` against \`${baseOid}\`.`,
+        "<!-- coding:reviewer-tasks:end -->",
+      ].join("\n"),
+    ]);
+
+    expect(await run(body)).toMatchObject({
+      code: 0,
+      result: { valid: true, violations: [] },
+    });
+  });
+
+  it("should reject malformed or stale managed reviewer tasks", async () => {
+    const valid = message([
+      "## 🧪 Verification",
+      [
+        "- [x] Run the PR message scanner.",
+        "<!-- coding:reviewer-tasks:start -->",
+        `- [ ] @reviewer review \`${headOid}\` against \`${baseOid}\`.`,
+        "<!-- coding:reviewer-tasks:end -->",
+      ].join("\n"),
+    ]);
+    for (const corrupt of [
+      valid.replace("<!-- coding:reviewer-tasks:end -->", ""),
+      valid.replace("@reviewer review", "@reviewer approve"),
+      valid.replace(`review \`${headOid}\``, `review \`${"f".repeat(40)}\``),
+    ]) {
+      const scanned = await run(corrupt);
+      expect(scanned.code).toBe(1);
+      expect(scanned.result.violations).toEqual(expect.arrayContaining([
+        expect.objectContaining({ rule_id: "GIT-PR-02" }),
+      ]));
+    }
+  });
+  it("should accept a draft red-zone message without reviewer tasks", async () => {
+    const verificationEvidence = "- [x] Run the PR message scanner.";
     const body = message(
       ["## Risk", "A stale consumer can retain the former authority."],
       ["## Test plan", "Run scanner, contract, and documentation tests."],
@@ -1208,91 +1227,13 @@ describe("PR message scanner", () => {
         "## 📐 Why This Size",
         "Rules, consumers, and tests move together because they share one authority.",
       ],
-      ["## 🧪 Verification", reviewerEvidence],
+      ["## 🧪 Verification", verificationEvidence],
     );
     const scanned = await run(body, { zone: "red" });
     expect(scanned, JSON.stringify(scanned.result.violations)).toMatchObject({
       code: 0,
       result: { valid: true },
     });
-  });
-  it("requires two reviewer triplets for a red-zone message", async () => {
-    const reviewerEvidence = [
-      "- [x] Run the PR message scanner.",
-      "- [ ] Reviewer slot 1 assigned",
-      `- [ ] Reviewer slot 1 reviewed \`${headOid}\` against \`${baseOid}\``,
-      `- [ ] Reviewer slot 1 approved \`${headOid}\` against \`${baseOid}\``,
-    ].join("\n");
-    const body = message(
-      ["## Risk", "A stale consumer can retain the former authority."],
-      ["## Test plan", "Run scanner, contract, and documentation tests."],
-      [
-        "## 📐 Why This Size",
-        "Rules, consumers, and tests move together because they share one authority.",
-      ],
-      ["## 🧪 Verification", reviewerEvidence],
-    );
-    const scanned = await run(body, { zone: "red" });
-    expect(scanned.code).toBe(1);
-    expect(
-      scanned.result.violations.some(({ message }) =>
-        message.includes("2 confirmed reviewer evidence triplet"),
-      ),
-    ).toBe(true);
-  });
-  it("binds reviewer evidence to the active revision", async () => {
-    const reviewerEvidence = [
-      "- [x] Run the PR message scanner.",
-      "- [ ] Reviewer slot 1 assigned",
-      `- [ ] Reviewer slot 1 reviewed \`${headOid}\` against \`${baseOid}\``,
-      `- [ ] Reviewer slot 1 approved \`${headOid}\` against \`${baseOid}\``,
-    ].join("\n");
-    const body = message(
-      ["## Risk", "A stale review could be credited to new code."],
-      ["## Test plan", "Scan against the active revision."],
-      ["## 🧪 Verification", reviewerEvidence],
-    );
-    const scanned = await run(body, {
-      headOid: "3".repeat(40),
-      zone: "yellow",
-    });
-    expect(scanned.code).toBe(1);
-    expect(
-      scanned.result.violations.some(({ message }) =>
-        message.includes("active revision"),
-      ),
-    ).toBe(true);
-  });
-  it("requires checked reviewer triplets when pending reviewers are disallowed", async () => {
-    const evidence = (checked: boolean) =>
-      [
-        "- [x] Run the PR message scanner.",
-        `- [${checked ? "x" : " "}] Reviewer slot 1 assigned`,
-        `- [${checked ? "x" : " "}] Reviewer slot 1 reviewed \`${headOid}\` against \`${baseOid}\``,
-        `- [${checked ? "x" : " "}] Reviewer slot 1 approved \`${headOid}\` against \`${baseOid}\``,
-      ].join("\n");
-    const sections = (checked: boolean) =>
-      message(
-        ["## Risk", "A large surface can hide defects."],
-        ["## Test plan", "Require an independent review."],
-        ["## 🧪 Verification", evidence(checked)],
-      );
-    const pending = await run(sections(false), {
-      allowPendingReviewers: false,
-      zone: "yellow",
-    });
-    expect(pending.code).toBe(1);
-    expect(
-      pending.result.violations.some(({ message }) =>
-        message.includes("confirmed reviewer evidence"),
-      ),
-    ).toBe(true);
-    expect(
-      await run(sections(true), {
-        allowPendingReviewers: false,
-        zone: "yellow",
-      }),
-    ).toMatchObject({ code: 0, result: { valid: true } });
   });
   it("treats placeholders inside inline and fenced code as literal content", async () => {
     const body = message(
@@ -1318,17 +1259,12 @@ describe("PR message scanner", () => {
   it.each(["None.", "N/A."])(
     "rejects punctuated generic required evidence: %s",
     async (generic) => {
-      const reviewerEvidence = [
-        "- [x] Run the PR message scanner.",
-        "- [ ] Reviewer slot 1 assigned",
-        `- [ ] Reviewer slot 1 reviewed \`${headOid}\` against \`${baseOid}\``,
-        `- [ ] Reviewer slot 1 approved \`${headOid}\` against \`${baseOid}\``,
-      ].join("\n");
+      const verificationEvidence = "- [x] Run the PR message scanner.";
       const scanned = await run(
         message(
           ["## Risk", generic],
           ["## Test plan", "Exercise the named risk."],
-          ["## 🧪 Verification", reviewerEvidence],
+          ["## 🧪 Verification", verificationEvidence],
         ),
         { zone: "yellow" },
       );

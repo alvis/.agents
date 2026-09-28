@@ -17,11 +17,10 @@ interface ThresholdZone {
   max_authored_net_loc: number;
   max_files_changed: number;
   name: string;
-  required_reviewers: number;
 }
 interface ThresholdFixture {
   metrics: Record<
-    "authored_net_loc" | "files_changed" | "required_reviewers",
+    "authored_net_loc" | "files_changed",
     { reason: string; unit: string }
   >;
   schema_version: number;
@@ -95,26 +94,22 @@ function createThresholds(): ThresholdFixture {
     metrics: {
       authored_net_loc: { reason: "review surface", unit: "lines" },
       files_changed: { reason: "review surface", unit: "paths" },
-      required_reviewers: { reason: "review depth", unit: "reviewers" },
     },
     zones: [
       {
         name: "green",
         max_files_changed: 1,
         max_authored_net_loc: 1,
-        required_reviewers: 0,
       },
       {
         name: "yellow",
         max_files_changed: 2,
         max_authored_net_loc: 2,
-        required_reviewers: 1,
       },
       {
         name: "red",
         max_files_changed: 3,
         max_authored_net_loc: 3,
-        required_reviewers: 2,
       },
     ],
   };
@@ -674,11 +669,8 @@ describe("PR size threshold inputs", () => {
     [0, "max_authored_net_loc", 0],
     [0, "max_files_changed", -1],
     [0, "max_authored_net_loc", -1],
-    [0, "required_reviewers", true],
-    [0, "required_reviewers", -1],
     [1, "max_files_changed", 1],
     [1, "max_authored_net_loc", 1],
-    [1, "required_reviewers", -1],
   ] as const)(
     "should reject invalid threshold limit zone %i %s=%s",
     async (zoneIndex, field, invalidValue) => {
