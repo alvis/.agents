@@ -114,7 +114,7 @@ Substitution rules:
 
 ## 🧪 Verification
 
-<!-- Record change-specific checks and revision-bound evidence. The published draft contains no reviewer tasks. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked reviewer block for the exact head/base. Record any specification deviation as an unchecked task. -->
+<!-- Record change-specific checks and revision-bound evidence. Display abbreviated seven-character SHAs in Verification; keep full OIDs in the evidence and managed reviewer-task metadata. The published draft contains no reviewer tasks. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked reviewer block for the exact head/base. Record any specification deviation as an unchecked task. -->
 {{verification_body}}
 
 ## 🚫 Boundary [ Optional ]

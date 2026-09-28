@@ -64,7 +64,10 @@ type GitHubCommand = (
 
 const START_MARKER = "<!-- coding:reviewer-tasks:start -->";
 const END_MARKER = "<!-- coding:reviewer-tasks:end -->";
+const REVISION_MARKER = /^<!-- coding:reviewer-tasks:revision head=([0-9a-f]{40}) base=([0-9a-f]{40}) -->$/;
 const FULL_OID = /^[0-9a-f]{40}$/;
+// Match the review summary's abbreviated SHA; the hidden marker retains exact OIDs.
+const SHORT_OID_LENGTH = 7;
 // GitHub supplies identity length; these patterns only exclude unsafe Markdown characters.
 const ACCOUNT_NAME = "[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?";
 const ACCOUNT_LOGIN = new RegExp(`^${ACCOUNT_NAME}(?:\\[bot\\])?$`);
@@ -142,15 +145,20 @@ export function renderReviewerTaskBlock(input: ReviewerTaskBlockInput): string {
   for (const mention of input.mentions)
     if (!REVIEWER_MENTION.test(mention))
       throw new Error(`reviewer mention is invalid: ${mention}`);
-  const revision = `\`${input.headOid}\` against \`${input.baseOid}\``;
+  const revision = input.headOid.slice(0, SHORT_OID_LENGTH);
   const tasks = input.mentions.map(
-    (mention) => `- [ ] ${mention} review ${revision}.`,
+    (mention) => `- [ ] ${mention} review ${revision}`,
   );
   if (input.hasBlackZoneVerification)
     tasks.push(
       `- [ ] Verify the black-zone scope and risk controls for ${revision}.`,
     );
-  return [START_MARKER, ...tasks, END_MARKER].join("\n");
+  return [
+    START_MARKER,
+    `<!-- coding:reviewer-tasks:revision head=${input.headOid} base=${input.baseOid} -->`,
+    ...tasks,
+    END_MARKER,
+  ].join("\n");
 }
 
 /** Insert or replace the managed task block in one Verification section. */
@@ -178,9 +186,10 @@ export function upsertReviewerTaskBlock(body: string, block: string): string {
       throw new Error("reviewer task block must be inside Verification");
     if (normalizeTaskChecks(existing.block) === normalizeTaskChecks(block))
       return body;
+    const sameRevision =
+      existing.block.split(/\r?\n/)[1] === block.split("\n")[1];
     const checkedTasks = new Set(
-      existing.block
-        .split(/\r?\n/)
+      (sameRevision ? existing.block.split(/\r?\n/) : [])
         .filter((line) => /^- \[[xX]\] /.test(line))
         .map(normalizeTaskChecks),
     );
@@ -223,31 +232,37 @@ export function inspectReviewerTaskBlock(
   const block = body.slice(start, end);
   const lines = block.split(/\r?\n/);
   if (
-    lines.length < 3 ||
+    lines.length < 4 ||
     lines[0] !== START_MARKER ||
     lines.at(-1) !== END_MARKER
   )
     throw new Error("PR body contains malformed reviewer task markers");
+  const revision = REVISION_MARKER.exec(lines[1]!);
+  if (!revision ||
+    (headOid && revision[1] !== headOid) ||
+    (baseOid && revision[2] !== baseOid))
+    throw new Error("managed reviewer task has invalid revision");
+  const shortHead = revision[1]!.slice(0, SHORT_OID_LENGTH);
   const seen = new Set<string>();
   let sawBlackZone = false;
-  for (const line of lines.slice(1, -1)) {
+  for (const line of lines.slice(2, -1)) {
     const task = /^- \[[ xX]\] (.+)$/.exec(line)?.[1];
     if (!task) throw new Error("managed reviewer task has invalid shape");
-    const black = /^Verify the black-zone scope and risk controls for `([0-9a-f]{40})` against `([0-9a-f]{40})`\.$/.exec(task);
+    const black = /^Verify the black-zone scope and risk controls for ([0-9a-f]+)\.$/.exec(task);
     if (black) {
-      if (headOid && baseOid && (black[1] !== headOid || black[2] !== baseOid))
+      if (black[1] !== shortHead)
         throw new Error("managed reviewer task has invalid revision");
       if (sawBlackZone) throw new Error("managed reviewer task is duplicated");
       sawBlackZone = true;
       continue;
     }
-    const review = /^(@[^ ]+) review `([0-9a-f]{40})` against `([0-9a-f]{40})`\.$/.exec(task);
+    const review = /^(@[^ ]+) review ([0-9a-f]+)$/.exec(task);
     const mention = review?.[1];
     if (
       !review ||
       !mention ||
       !REVIEWER_MENTION.test(mention) ||
-      (headOid && baseOid && (review[2] !== headOid || review[3] !== baseOid)) ||
+      review[2] !== shortHead ||
       sawBlackZone
     )
       throw new Error("managed reviewer task has invalid shape or revision");

@@ -27,7 +27,7 @@ export const ARCHETYPES = [
 ] as const;
 const ZONES = ["green", "yellow", "red", "black"] as const;
 const COMMENT = /<!--.*?-->/gs;
-const REVIEWER_TASK_MARKER = /^<!-- coding:reviewer-tasks:(?:start|end) -->$/;
+const REVIEWER_TASK_MARKER = /^<!-- coding:reviewer-tasks:(?:start|end|revision head=[0-9a-f]{40} base=[0-9a-f]{40}) -->$/;
 const PLACEHOLDER = /\{\{[^{}]+\}\}/g;
 const FULL_OID = /^[0-9a-f]{40}$/;
 const HEADING = /^ {0,3}(## .+?)\s*$/;
@@ -620,8 +620,9 @@ export function scan(options: ScanOptions): Violation[] {
     baseOid,
   } = options;
   const violations: Violation[] = [];
+  let managed: ReturnType<typeof inspectReviewerTaskBlock> = null;
   try {
-    const managed = inspectReviewerTaskBlock(body, headOid, baseOid);
+    managed = inspectReviewerTaskBlock(body, headOid, baseOid);
     if (managed) upsertReviewerTaskBlock(body, managed.block);
   } catch (cause) {
     violations.push({ rule_id: "GIT-PR-02", message: (cause as Error).message });
@@ -649,8 +650,13 @@ export function scan(options: ScanOptions): Violation[] {
   }
   addHeadingContractViolations(violations, parsedTemplate);
   const bodyComments = [...body.matchAll(COMMENT)]
-    .map((match) => match[0])
-    .filter((comment) => !REVIEWER_TASK_MARKER.test(comment));
+    .filter((match) =>
+      !managed ||
+      match.index! < managed.start ||
+      match.index! >= managed.end ||
+      !REVIEWER_TASK_MARKER.test(match[0]),
+    )
+    .map((match) => match[0]);
   const templateComments = [...template.matchAll(COMMENT)].map(
     (match) => match[0],
   );

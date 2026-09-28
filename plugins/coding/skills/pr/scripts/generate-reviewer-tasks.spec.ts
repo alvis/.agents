@@ -362,9 +362,10 @@ describe("fn:renderReviewerTaskBlock", () => {
       }),
     ).toBe(
       "<!-- coding:reviewer-tasks:start -->\n" +
-        `- [ ] @alice review \`${headOid}\` against \`${baseOid}\`.\n` +
-        `- [ ] @acme/platform review \`${headOid}\` against \`${baseOid}\`.\n` +
-        `- [ ] Verify the black-zone scope and risk controls for \`${headOid}\` against \`${baseOid}\`.\n` +
+        `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->\n` +
+        `- [ ] @alice review ${headOid.slice(0, 7)}\n` +
+        `- [ ] @acme/platform review ${headOid.slice(0, 7)}\n` +
+        `- [ ] Verify the black-zone scope and risk controls for ${headOid.slice(0, 7)}.\n` +
         "<!-- coding:reviewer-tasks:end -->",
     );
   });
@@ -407,9 +408,25 @@ describe("fn:upsertReviewerTaskBlock", () => {
     const checked = inserted.replace("- [ ] @alice review", "- [x] @alice review");
     const next = renderReviewerTaskBlock({ headOid, baseOid, mentions: ["@alice", "@bob"], hasBlackZoneVerification: false });
     const refreshed = upsertReviewerTaskBlock(checked, next);
-    expect(refreshed).toContain(`- [x] @alice review \`${headOid}\` against \`${baseOid}\`.`);
-    expect(refreshed).toContain(`- [ ] @bob review \`${headOid}\` against \`${baseOid}\`.`);
+    expect(refreshed).toContain(`- [x] @alice review ${headOid.slice(0, 7)}`);
+    expect(refreshed).toContain(`- [ ] @bob review ${headOid.slice(0, 7)}`);
     expect(refreshed.match(/coding:reviewer-tasks:start/g)).toHaveLength(1);
+  });
+
+  it("should clear checks when a full head or base changes behind the same short SHA", () => {
+    const checked = upsertReviewerTaskBlock(body, block).replace(
+      "- [ ] @alice review",
+      "- [x] @alice review",
+    );
+    for (const revision of [
+      { headOid: `${headOid.slice(0, 7)}${"3".repeat(33)}`, baseOid },
+      { headOid, baseOid: "3".repeat(40) },
+    ]) {
+      const next = renderReviewerTaskBlock({ ...revision, mentions: ["@alice"], hasBlackZoneVerification: false });
+      const refreshed = upsertReviewerTaskBlock(checked, next);
+      expect(refreshed).toContain(`- [ ] @alice review ${headOid.slice(0, 7)}`);
+      expect(refreshed).not.toContain("- [x] @alice review");
+    }
   });
 
   it("should reject a manually altered managed task", () => {
@@ -726,8 +743,9 @@ describe("cmd:reviewer-tasks", () => {
       body:
         "Summary\n\n## 🧪 Verification\n\n" +
         "<!-- coding:reviewer-tasks:start -->\n" +
-        `- [ ] @assigned review \`${headOid}\` against \`${baseOid}\`.\n` +
-        `- [ ] @author review \`${headOid}\` against \`${baseOid}\`.\n` +
+        `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->\n` +
+        `- [ ] @assigned review ${headOid.slice(0, 7)}\n` +
+        `- [ ] @author review ${headOid.slice(0, 7)}\n` +
         "<!-- coding:reviewer-tasks:end -->\n\n" +
         "- [x] Tests pass.\n",
     });
@@ -758,8 +776,8 @@ describe("cmd:reviewer-tasks", () => {
       }),
     });
     const result = await runReviewerTasksCli(args, github);
-    expect(result.block).toContain(`- [x] @assigned review \`${headOid}\` against \`${baseOid}\`.`);
-    expect(result.block).toContain(`- [ ] @author review \`${headOid}\` against \`${baseOid}\`.`);
+    expect(result.block).toContain(`- [x] @assigned review ${headOid.slice(0, 7)}`);
+    expect(result.block).toContain(`- [ ] @author review ${headOid.slice(0, 7)}`);
     expect(result.body).toContain(result.block);
     expect(github.patch).toHaveBeenCalledWith("repos/acme/widget/pulls/7", { body: result.body });
   });
