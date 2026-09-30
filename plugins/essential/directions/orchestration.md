@@ -2,6 +2,8 @@
 
 Delegate on signal, not reflex. The Project Manager owns delivery across teams. Coding topology follows `coding:directions/WORKFLOW.md`; do not add a coordinator around one bounded executable slice. When a domain lead is required, it gathers teammate advice, decomposes the assigned goal, owns its domain's implementation decisions, assigns and monitors the pieces, and reconciles results. Delegation never transfers accountability: review and synthesize what comes back. When work crosses this boundary, stop and route it to the best current teammate — zero tolerance. Once you are dispatching, [delegate.md](delegate.md) carries the handover, message, naming, nesting, and model and effort selection.
 
+Before executing or dispatching lifecycle work, follow [complete-plan reads](../references/state.md#complete-plan-reads).
+
 ## Choosing the topology
 
 Classify the task and pick the substrate once, up front, then name the success criteria before launch — a run with no stop condition is not ready:

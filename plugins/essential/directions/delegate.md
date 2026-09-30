@@ -12,6 +12,8 @@ Read this before dispatching a subagent or composing a first task handover. Whet
 - **Delegate continuing work directly when the owner is known.** Knowing the best teammate's `agent_id`, message it directly; knowing the teammate but not the ID, ask the main agent to resolve it; with no known owner, ask it to suggest one — it prefers a living teammate with matching folder or feature history, else spawns and returns a new named teammate's `agent_id`. Without a direct teammate-messaging capability, return the compact hand-off to the caller.
 - **Synthesize.** Collect what returns, identify patterns, and consolidate it into actionable results.
 
+For lifecycle work, apply [complete-plan reads](../references/state.md#complete-plan-reads) before dispatch and give the worker the resolved canonical paths plus applicable linked detail.
+
 ## First handover
 
 This section owns the prompt interface; task-specific instructions add detail without restating or renaming its fields. Put the stable reference alone on the first line — the Work ID, else the runtime Task ID, or a PR ID or commit SHA for Git history; an ordinal or semantic task label is never a substitute. [naming.md](../references/naming.md) owns the identifier shapes, read only when you must mint a new name.

@@ -146,6 +146,14 @@ function parseHookOutput(
 }
 
 describe("Codex plan Stop validator", () => {
+  it("should allow a plan body larger than the operating system argument limit", () => {
+    // Two MB exceeds the observed macOS 1 MiB argv ceiling and Linux per-argument limit.
+    const presentation = validPlan.replace("</proposed_plan>", `${"Detailed rationale.\n".repeat(100_000)}</proposed_plan>`);
+    const result = runHook({ lines: [createAssistantMessage(turnId, presentation)] });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  }, 15_000); // The 2 MB subprocess path took 3.9s locally; allow CI contention.
+
   it("should direct malformed Stop events to the portable plan instructions", () => {
     expect(parseHookOutput(runHook({ eventInput: "not json" }))).toEqual({
       systemMessage: expect.stringContaining("essential:directions/plan.md"),

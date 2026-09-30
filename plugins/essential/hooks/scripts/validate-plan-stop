@@ -125,8 +125,8 @@ if [[ "$opening_count" != "1" || "$closing_count" != "1" ]] ||
   stop_with_feedback "$envelope_reason" "$active" "$retry_flag"
 fi
 
-plan="$(jq -r '.lines[.opening[0] + 1:.closing[0]] | join("\n")' <<<"$candidate")"
-validator_input="$(jq -cn --arg plan "$plan" '{tool_input: {plan: $plan}}')"
+plan="$(jq -r '.lines[.opening[0] + 1:.closing[0]][]' <<<"$candidate")"
+validator_input="$(printf '%s' "$plan" | jq -Rsc '{tool_input: {plan: .}}')"
 if ! validator_output="$(printf '%s' "$validator_input" | "$SCRIPTS_DIR/validate-plan")" ||
    ! printf '%s' "$validator_output" | jq -se '
      length == 1 and (.[0] | type == "object" and
