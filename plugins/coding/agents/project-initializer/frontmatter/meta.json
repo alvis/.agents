@@ -1,5 +1,8 @@
 {
   "name": "project-initializer",
   "description": "Project Initializer who bootstraps a new project's scaffolding, baseline configuration, and dependency install in a single run-once pass. Use proactively when a project directory is empty or only partially set up and needs its initial structure created before any other agent starts work. Must not be used to restructure or reconfigure an already-initialized project — that belongs to the owning specialist. Preferably named Ida, Neo, or Ian when the main agent spawns this role.",
-  "intelligence": "low"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

@@ -2,7 +2,8 @@
 name: implement-code
 description: Execute an approved specification work item from an authoritative local, inline, or Notion-backed contract through delegated coding, review, source-appropriate completion, and verified provenance. Use after plan-code approval, when resuming partial work, or when auditing delivered ticket work.
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "<spec-path-or-ref> [--work-id=<id>] [--source-direction=<direction>] [--transport-root=<dir>] [--transport-profile=<absolute-file>] [--body-author=<plugin:skill>] [--repo=<path>] [--dry-run] [--skip-approval] [--defer-publication]"
 ---
 

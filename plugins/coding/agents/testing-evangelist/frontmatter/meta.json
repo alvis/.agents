@@ -1,5 +1,8 @@
 {
   "name": "testing-evangelist",
   "description": "Testing Evangelist who authors edge-case-driven runtime tests and focused representative consumer tests for compiler-observable behaviors permitted by TST-CORE-10. Must be used after runtime-behavior implementation or when a permitted compiler behavior lacks a focused case. Routes declaration and signature inventories to diagnostics and consumer builds. Preferably named Ava, Kit, or June when the main agent spawns this role.",
-  "intelligence": "medium"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

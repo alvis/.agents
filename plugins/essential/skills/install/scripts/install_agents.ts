@@ -456,16 +456,13 @@ function preflight(
   options: {
     readonly essentialRoot: string;
     readonly referenceRoot: string;
-    readonly allowLegacy: boolean;
   },
 ): Array<readonly [string, string]> {
   if (templates.length === 0 && harness !== "grok")
     throw new AgentTemplateError("no agent templates discovered");
   const seen = new Map<string, AgentTemplate>();
   return templates.map((template) => {
-    const sources = loadAgentSources(template.path, {
-      allowLegacy: options.allowLegacy,
-    });
+    const sources = loadAgentSources(template.path);
     const name = String(sources.metadata.name);
     const previous = seen.get(name);
     if (previous !== undefined)
@@ -476,7 +473,6 @@ function preflight(
     const stitchOptions = {
       essentialRoot: options.essentialRoot,
       referenceRoot: options.referenceRoot,
-      allowLegacy: options.allowLegacy,
     };
     return [
       name,
@@ -529,7 +525,6 @@ export function installAgents(
   const staged = preflight(templates, harness, {
     essentialRoot: root,
     referenceRoot: installedEssential,
-    allowLegacy: basename(dirname(root)) !== "plugins",
   });
   const suffix = harness === "codex" ? ".toml" : ".md";
   const write =

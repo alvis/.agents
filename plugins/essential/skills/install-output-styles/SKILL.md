@@ -2,7 +2,8 @@
 name: install-output-styles
 description: "Install bundled Claude Code output-style Markdown files into ~/.claude/output-styles. Use when asked to install, refresh, or repair a response style shipped with this skill; do not use for editing style content or project-scoped .claude/output-styles files."
 requirements:
-  intelligence: low
+  model: routine
+  effort: deliberate
 ---
 
 # Install Output Styles

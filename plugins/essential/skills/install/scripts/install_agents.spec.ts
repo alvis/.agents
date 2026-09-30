@@ -53,12 +53,12 @@ function writeTemplate(plugin: string, name: string, alias = false): string {
     JSON.stringify({
       name,
       description: `Test role. Preferably named Ava, Kit, or June when the main agent spawns this role.`,
-      intelligence: "inherit",
+      requirements: { model: "capable", effort: "deliberate" },
     }),
   );
   writeFileSync(
     resolve(template, "frontmatter/claude.json"),
-    JSON.stringify({ memory: "project" }),
+    JSON.stringify({ memory: "project", permissionMode: "default" }),
   );
   writeFileSync(resolve(template, "frontmatter/codex.json"), "{}");
   writeFileSync(resolve(template, "frontmatter/grok.json"), "{}");
@@ -172,6 +172,24 @@ describe("agent discovery and installation", () => {
     expect(
       readFileSync(resolve(destination, `second-agent${suffix}`), "utf8"),
     ).toContain(`@${realpathSync(resolve(destination, ".essential/references/state-systems.md"))}`);
+    const installedAgent = readFileSync(
+      resolve(destination, `first-agent${suffix}`),
+      "utf8",
+    );
+    if (harness === "codex") {
+      expect(installedAgent).toMatch(/^name = "first-agent"$/m);
+      expect(installedAgent).toMatch(/^nickname_candidates = \["Ava", "Kit", "June"\]$/m);
+      expect(installedAgent).not.toMatch(/^(?:model|model_reasoning_effort) = /m);
+    } else {
+      const frontmatter = JSON.parse(installedAgent.split("---\n", 3)[1]!) as Record<string, unknown>;
+      expect(frontmatter.name).toBe("first-agent");
+      expect(frontmatter).not.toHaveProperty("model");
+      expect(frontmatter).not.toHaveProperty("effort");
+      if (harness === "claude") {
+        expect(frontmatter.memory).toBe("project");
+        expect(frontmatter.permissionMode).toBe("default");
+      }
+    }
     expect(
       readFileSync(resolve(destination, ".essential/references/state-systems.md"), "utf8"),
     ).toBe("State systems.\n");

@@ -2,7 +2,8 @@
 name: setup-project
 description: Ensure project structure exists before development, creating barebone scaffolding only if needed. Use when initializing new projects, validating project setup, or ensuring monorepo component structure.
 requirements:
-  intelligence: low
+  model: capable
+  effort: deliberate
 context: fork
 argument-hint: "<target-path> [--type=app|lib|service]"
 ---

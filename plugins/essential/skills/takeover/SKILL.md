@@ -2,7 +2,8 @@
 name: takeover
 description: Resume paused work from the default source tree's centralized .state/works/. Offer incomplete streams, settle reviewing streams against applicable landing evidence, resolve pending decisions, select risk-appropriate implementation ownership, and drive one selected stream toward its charter. Promote durable results before non-coding completion; route coding publication through the relevant change-publication capability.
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "[--revalidate]"
 ---
 

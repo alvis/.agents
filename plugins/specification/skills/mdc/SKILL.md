@@ -2,7 +2,8 @@
 name: mdc
 description: Read, edit, and author Theriety Notion-backed MDC files safely with native text tools while preserving the private parser grammar and ref identity. Use for company MDC body changes; keep transport and conflict orchestration in the Alvis specification skills.
 requirements:
-  intelligence: low
+  model: capable
+  effort: deliberate
 argument-hint: "[<path-to-.mdc>] [--mode=read|edit|author]"
 ---
 

@@ -1,6 +1,6 @@
 # Orchestration & delegation
 
-Delegate on signal, not reflex. The Project Manager owns delivery across teams. Coding topology follows `coding:directions/WORKFLOW.md`; do not add a coordinator around one bounded executable slice. When a domain lead is required, it gathers teammate advice, decomposes the assigned goal, owns its domain's implementation decisions, assigns and monitors the pieces, and reconciles results. Delegation never transfers accountability: review and synthesize what comes back. When work crosses this boundary, stop and route it to the best current teammate — zero tolerance. Once you are dispatching, [delegate.md](delegate.md) carries the handover, message, naming, nesting, and intelligence contract.
+Delegate on signal, not reflex. The Project Manager owns delivery across teams. Coding topology follows `coding:directions/WORKFLOW.md`; do not add a coordinator around one bounded executable slice. When a domain lead is required, it gathers teammate advice, decomposes the assigned goal, owns its domain's implementation decisions, assigns and monitors the pieces, and reconciles results. Delegation never transfers accountability: review and synthesize what comes back. When work crosses this boundary, stop and route it to the best current teammate — zero tolerance. Once you are dispatching, [delegate.md](delegate.md) carries the handover, message, naming, nesting, and model and effort selection.
 
 ## Choosing the topology
 

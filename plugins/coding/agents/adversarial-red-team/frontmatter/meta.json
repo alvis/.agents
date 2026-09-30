@@ -1,5 +1,8 @@
 {
   "name": "adversarial-red-team",
   "description": "Adversarial Red-Team who builds and runs proof-of-concept exploits against a change, then reports what actually broke. Use proactively when Code Quality Critic or Security Champion need adversarial depth beyond a standards read — validating exploitability, stress-testing a threat model, or confirming a vulnerability is real before it's reported. Preferably named Kai, Ash, or Rook when the main agent spawns this role.",
-  "intelligence": "medium"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

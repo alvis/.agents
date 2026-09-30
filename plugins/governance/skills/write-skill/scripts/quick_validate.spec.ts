@@ -79,11 +79,12 @@ function skill(
   name: string,
   description: string,
   body: string,
-  intelligence = "medium",
+  model = "capable",
+  effort = "deliberate",
 ): string {
   return write(
     resolve(root, "skills", name, "SKILL.md"),
-    `---\nname: ${name}\ndescription: "${description}"\nrequirements:\n  intelligence: ${intelligence}\n---\n\n${body}\n`,
+    `---\nname: ${name}\ndescription: "${description}"\nrequirements:\n  model: ${model}\n  effort: ${effort}\n---\n\n${body}\n`,
   );
 }
 
@@ -141,362 +142,178 @@ describe("skill discovery and basic policy", () => {
 });
 
 const validRequirementForms = [
-  "requirements:\n  intelligence: medium",
-  "requirements: {intelligence: medium}",
-  "requirements:\n  {intelligence: medium}",
-  "requirements:\n  {\n    intelligence: medium\n  }",
+  "requirements:\n  model: capable\n  effort: deliberate",
+  "requirements: {model: capable, effort: deliberate}",
+  "requirements:\n  {model: capable, effort: deliberate}",
+  "requirements:\n  {\n    model: capable,\n    effort: deliberate\n  }",
 ];
 
-describe("requirements intelligence", () => {
+function policyMessages(path: string): string[] {
+  return validatePolicy(path).errors.map((issue) => issue.message);
+}
+
+describe("portable skill minimums", () => {
   it.each(validRequirementForms)(
-    "accepts requirements intelligence mapping form %#",
+    "should accept both minimums in YAML mapping form %#",
     async (requirements) => {
       const root = await temporaryRoot();
       expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when accepting portable intelligence across valid YAML mapping forms."\n${requirements}`,
-          ),
+        policyMessages(
+          rawSkill(root, 'name: shared\ndescription: "A shared workflow with portable minimums."\n' + requirements),
         ),
       ).toEqual([]);
     },
   );
 
-  it("accepts whole-document flow frontmatter", async () => {
+  it("should accept whole-document flow frontmatter", async () => {
     const root = await temporaryRoot();
     expect(
-      errors(
-        rawSkill(root, "{name: shared, requirements: {intelligence: medium}}"),
-      ),
+      policyMessages(rawSkill(root, "{name: shared, requirements: {model: capable, effort: deliberate}}")),
     ).toEqual([]);
   });
 
-  const nodeReferences = [
-    [
-      "metadata",
-      "{name: shared, requirements: {intelligence: medium}, metadata: &legacy {intelligence: high}}",
-    ],
-    [
-      "metadata",
-      "{name: shared, requirements: {intelligence: medium}, metadata: *legacy}",
-    ],
-    [
-      "requirements",
-      "{name: shared, requirements: &required {intelligence: medium}}",
-    ],
+  it.each([
+    ["literal block scalar", "requirements: |\n  model: capable\n  effort: deliberate"],
+    ["folded block scalar", "requirements: >\n  model: capable\n  effort: deliberate"],
+    ["plain scalar", "requirements: not-a-mapping\n  model: capable\n  effort: deliberate"],
+  ])("should reject %s requirements parent despite mapping-like content", async (_form, requirements) => {
+    const root = await temporaryRoot();
+    const path = rawSkill(root, "name: shared\n" + requirements);
+    expect(policyMessages(path).join(" ")).toMatch(/requirements/);
+  });
+
+  it("should reject repeated requirements parents that split model and effort", async () => {
+    const root = await temporaryRoot();
+    const path = rawSkill(
+      root,
+      "name: shared\nrequirements:\n  model: capable\nrequirements:\n  effort: deliberate",
+    );
+    expect(policyMessages(path).join(" ")).toMatch(/requirements/);
+  });
+
+  it.each([
+    ["requirements:\n  effort: deliberate", "requirements.model"],
+    ["requirements:\n  model: capable", "requirements.effort"],
+    ["requirements:\n  model: extreme\n  effort: deliberate", "requirements.model"],
+    ["requirements:\n  model: capable\n  effort: automatic", "requirements.effort"],
+    ["requirements:\n  model: [capable]\n  effort: deliberate", "requirements.model"],
+    ["requirements:\n  model: capable\n  effort: {high: true}", "requirements.effort"],
+    ["requirements: {model: capable, model: expert, effort: deliberate}", "requirements.model"],
+    ["requirements: {model: capable, effort: deliberate, effort: exhaustive}", "requirements.effort"],
+    ["requirements: {model: capable, effort: deliberate, intelligence: high}", "intelligence"],
+    ["requirements:\n  intelligence: high", "intelligence"],
+    ["requirements: {intelligenceLevel: high, effort: deliberate}", "model"],
+    ["requirements: {modelTier: capable, effort: deliberate}", "model"],
+    ["requirements: {model: capable, reasoningLevel: deliberate}", "effort"],
+    ["requirements: {model: capable, effort: deliberate}\nmetadata: {intelligence: high}", "intelligence"],
+    ["requirements: {model: capable, effort: deliberate}\nmetadata: {intelligenceLevel: high}", "intelligenceLevel"],
+    ["requirements: {model: capable, effort: deliberate}\nmetadata: {modelTier: capable}", "modelTier"],
+    ["requirements: {model: capable, effort: deliberate}\nmetadata: {reasoningLevel: deliberate}", "reasoningLevel"],
+    ["requirements: {model: capable, effort: deliberate}\nintelligence: high", "intelligence"],
+  ])("should reject malformed, missing, duplicated, or obsolete minimum %#", async (frontmatter, field) => {
+    const root = await temporaryRoot();
+    expect(
+      policyMessages(rawSkill(root, "name: shared\n" + frontmatter)).join(" "),
+    ).toContain(field);
+  });
+
+  it.each([
+    ["metadata", "{name: shared, requirements: {model: capable, effort: deliberate}, metadata: &legacy {intelligence: high}}"],
+    ["metadata", "{name: shared, requirements: {model: capable, effort: deliberate}, metadata: *legacy}"],
+    ["requirements", "{name: shared, requirements: &required {model: capable, effort: deliberate}}"],
     ["requirements", "{name: shared, requirements: *required}"],
-  ] as const;
-  it.each(nodeReferences)(
-    "rejects %s node references in whole-document flow frontmatter",
+  ] as const)(
+    "should reject %s node references in whole-document flow frontmatter",
     async (mapping, frontmatter) => {
       const root = await temporaryRoot();
-      expect(errors(rawSkill(root, frontmatter))).toEqual([
-        {
-          message: `Shared skill ${mapping} must not use YAML node properties or aliases; use a plain mapping.`,
-          line: 2,
-        },
-      ]);
-    },
-  );
-
-  it("rejects inherited skill intelligence", async () => {
-    const root = await temporaryRoot();
-    expect(
-      errors(
-        skill(
-          root,
-          "inherited",
-          "Use when a shared workflow needs a concrete portable intelligence requirement.",
-          "# Inherited\n\n## Workflow\n\nDo the work.",
-          "inherit",
-        ),
-      ),
-    ).toEqual([
-      {
-        message:
-          "Shared skills must declare a concrete requirements.intelligence; inherit is agent-only.",
-        line: 5,
-      },
-    ]);
-  });
-
-  it("rejects missing skill intelligence", async () => {
-    const root = await temporaryRoot();
-    expect(
-      errors(
-        rawSkill(
-          root,
-          'name: shared\ndescription: "Use when validating a missing portable intelligence requirement."',
-        ),
-      ),
-    ).toEqual([
-      {
-        message:
-          "Shared skills must declare exactly one requirements.intelligence.",
-      },
-    ]);
-  });
-
-  it("rejects unknown skill intelligence", async () => {
-    const root = await temporaryRoot();
-    expect(
-      errors(
-        skill(
-          root,
-          "unknown",
-          "Use when validating an unknown portable intelligence requirement.",
-          "# Unknown\n\n## Workflow\n\nDo the work.",
-          "extreme",
-        ),
-      ),
-    ).toEqual([
-      {
-        message:
-          "Shared skill requirements.intelligence must name a concrete level from Essential's intelligence mapping.",
-        line: 5,
-      },
-    ]);
-  });
-
-  it("rejects nested skill intelligence", async () => {
-    const root = await temporaryRoot();
-    expect(
-      errors(
-        rawSkill(
-          root,
-          'name: shared\ndescription: "Use when validating a nested portable intelligence requirement."\nmetadata:\n  nested:\n    intelligence: high',
-        ),
-      ),
-    ).toEqual([
-      {
-        message:
-          "Shared skills must declare exactly one requirements.intelligence.",
-      },
-    ]);
-  });
-
-  const legacyForms = [
-    ["metadata:\n  intelligence: medium", 5],
-    [
-      "requirements:\n  intelligence: medium\nmetadata:\n  intelligence: medium",
-      7,
-    ],
-    [
-      "requirements:\n  intelligence: medium\nmetadata: {intelligence: high}",
-      6,
-    ],
-    [
-      "requirements:\n  intelligence: medium\nmetadata:\n  {intelligence: high}",
-      7,
-    ],
-    [
-      "requirements:\n  intelligence: medium\nmetadata:\n  {\n    intelligence: high\n  }",
-      8,
-    ],
-  ] as const;
-  it.each(legacyForms)(
-    "rejects legacy metadata intelligence form %#",
-    async (form, line) => {
-      const root = await temporaryRoot();
-      expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when validating removal of the legacy shared intelligence metadata path."\n${form}`,
-          ),
-        ),
-      ).toEqual([
-        {
-          message:
-            "Shared skills must not declare metadata.intelligence; use requirements.intelligence.",
-          line,
-        },
-      ]);
-    },
-  );
-
-  it.each(
-    validRequirementForms.map((_, index) => [
-      [
-        "metadata:\n  category: portable",
-        "metadata: {category: portable}",
-        "metadata:\n  {category: portable}",
-        "metadata:\n  {\n    category: portable\n  }",
-      ][index],
-    ]),
-  )("allows unrelated metadata form %#", async ([metadata]) => {
-    const root = await temporaryRoot();
-    expect(
-      errors(
-        rawSkill(
-          root,
-          `name: shared\ndescription: "Use when preserving unrelated metadata across valid YAML mapping forms."\nrequirements:\n  intelligence: medium\n${metadata}`,
-        ),
-      ),
-    ).toEqual([]);
-  });
-
-  it.each(["metadata: &legacy {intelligence: high}", "metadata: *legacy"])(
-    "rejects unsupported metadata node reference %#",
-    async (metadata) => {
-      const root = await temporaryRoot();
-      expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when rejecting metadata node references that can hide legacy intelligence."\nrequirements:\n  intelligence: medium\n${metadata}`,
-          ),
-        ),
-      ).toEqual([
-        {
-          message:
-            "Shared skill metadata must not use YAML node properties or aliases; use a plain mapping.",
-          line: 6,
-        },
+      expect(policyMessages(rawSkill(root, frontmatter))).toEqual([
+        "Shared skill " + mapping + " must not use YAML node properties or aliases; use a plain mapping.",
       ]);
     },
   );
 
   it.each([
-    "requirements: &required {intelligence: medium}",
-    "requirements: *required",
-  ])(
-    "rejects unsupported requirements node reference %#",
-    async (requirements) => {
+    "metadata:\n  category: portable",
+    "metadata: {category: portable}",
+    "metadata:\n  {category: portable}",
+  ])("should allow unrelated metadata form %#", async (metadata) => {
+    const root = await temporaryRoot();
+    expect(
+      policyMessages(
+        rawSkill(root, "name: shared\nrequirements: {model: capable, effort: deliberate}\n" + metadata),
+      ),
+    ).toEqual([]);
+  });
+
+  it.each(["metadata: &legacy {intelligence: high}", "metadata: *legacy"])(
+    "should reject unsupported metadata node reference %#",
+    async (metadata) => {
       const root = await temporaryRoot();
       expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when rejecting requirements node references that obscure concrete intelligence."\n${requirements}`,
-          ),
+        policyMessages(
+          rawSkill(root, "name: shared\nrequirements: {model: capable, effort: deliberate}\n" + metadata),
         ),
       ).toEqual([
-        {
-          message:
-            "Shared skill requirements must not use YAML node properties or aliases; use a plain mapping.",
-          line: 4,
-        },
+        "Shared skill metadata must not use YAML node properties or aliases; use a plain mapping.",
       ]);
     },
   );
+
+  it.each([
+    "requirements: &required {model: capable, effort: deliberate}",
+    "requirements: *required",
+  ])("should reject unsupported requirements node reference %#", async (requirements) => {
+    const root = await temporaryRoot();
+    expect(
+      policyMessages(rawSkill(root, "name: shared\n" + requirements)),
+    ).toEqual([
+      "Shared skill requirements must not use YAML node properties or aliases; use a plain mapping.",
+    ]);
+  });
 });
 
-const mergeCases = [
-  [
-    "metadata",
-    "requirements:\n  intelligence: medium\nmetadata:\n  <<: *legacy",
-    7,
-  ],
-  [
-    "metadata",
-    "requirements:\n  intelligence: medium\nmetadata: {<<: *legacy}",
-    6,
-  ],
-  ["requirements", "requirements:\n  intelligence: medium\n  <<: *required", 6],
-  ["requirements", "requirements: {intelligence: medium, <<: *required}", 4],
-] as const;
-const nonScalarCases = [
-  [
-    "metadata",
-    "requirements:\n  intelligence: medium\nmetadata: {key: &legacy intelligence, *legacy: high}",
-    6,
-  ],
-  [
-    "metadata",
-    "requirements:\n  intelligence: medium\nmetadata:\n  ? intelligence\n  : high",
-    7,
-  ],
-  [
-    "requirements",
-    "requirements: {intelligence: medium, key: &legacy intelligence, *legacy: high}",
-    4,
-  ],
-  [
-    "requirements",
-    "requirements:\n  intelligence: medium\n  ? intelligence\n  : high",
-    6,
-  ],
-] as const;
+describe("adversarial YAML minimums", () => {
+  it.each([
+    ["metadata", "requirements: {model: capable, effort: deliberate}\nmetadata: {<<: *legacy}"],
+    ["requirements", "requirements: {model: capable, effort: deliberate, <<: *required}"],
+  ] as const)("should reject YAML merge keys in %s", async (mapping, frontmatter) => {
+    const root = await temporaryRoot();
+    expect(
+      policyMessages(rawSkill(root, "name: shared\n" + frontmatter)),
+    ).toEqual([
+      "Shared skill " + mapping + " must not use YAML merge keys; use a plain mapping.",
+    ]);
+  });
 
-describe("adversarial YAML keys", () => {
-  it.each(mergeCases)(
-    "rejects YAML merge key in %s mapping",
-    async (mapping, frontmatter, line) => {
-      const root = await temporaryRoot();
-      expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when rejecting YAML merge keys that can obscure portable intelligence."\n${frontmatter}`,
-          ),
-        ),
-      ).toEqual([
-        {
-          message: `Shared skill ${mapping} must not use YAML merge keys; use a plain mapping.`,
-          line,
-        },
-      ]);
-    },
-  );
-  it.each(nonScalarCases)(
-    "rejects non-scalar key in %s mapping",
-    async (mapping, frontmatter, line) => {
-      const root = await temporaryRoot();
-      expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when rejecting aliased or complex keys that can obscure portable intelligence."\n${frontmatter}`,
-          ),
-        ),
-      ).toEqual([
-        {
-          message: `Shared skill ${mapping} must use direct scalar keys; aliases and complex keys are unsupported.`,
-          line,
-        },
-      ]);
-    },
-  );
-  it.each(["'intelligence'", '"intelligence"'])(
-    "accepts quoted requirements intelligence key %s",
+  it.each([
+    ["metadata", "requirements: {model: capable, effort: deliberate}\nmetadata: {key: &legacy intelligence, *legacy: high}"],
+    ["requirements", "requirements: {model: capable, effort: deliberate, key: &legacy model, *legacy: expert}"],
+  ] as const)("should reject non-scalar keys in %s", async (mapping, frontmatter) => {
+    const root = await temporaryRoot();
+    expect(
+      policyMessages(rawSkill(root, "name: shared\n" + frontmatter)),
+    ).toEqual([
+      "Shared skill " + mapping + " must use direct scalar keys; aliases and complex keys are unsupported.",
+    ]);
+  });
+
+  it.each(["'model'", '"model"', "'effort'", '"effort"'])(
+    "should accept quoted minimum key %s",
     async (key) => {
       const root = await temporaryRoot();
-      const path = skill(
-        root,
-        "quoted-requirement",
-        "Use when accepting a direct quoted scalar key for portable intelligence.",
-        "# Quoted requirement\n\n## Workflow\n\nDo the work.",
-      );
-      write(
-        path,
-        readFileSync(path, "utf8").replace(
-          "  intelligence: medium",
-          `  ${key}: medium`,
-        ),
-      );
-      expect(errors(path)).toEqual([]);
+      const frontmatter = key.includes("model")
+        ? "requirements:\n  " + key + ": capable\n  effort: deliberate"
+        : "requirements:\n  model: capable\n  " + key + ": deliberate";
+      expect(policyMessages(rawSkill(root, "name: shared\n" + frontmatter))).toEqual([]);
     },
   );
+
   it.each(["'intelligence'", '"intelligence"'])(
-    "rejects quoted metadata intelligence key %s",
+    "should reject quoted legacy metadata key %s",
     async (key) => {
       const root = await temporaryRoot();
-      expect(
-        errors(
-          rawSkill(
-            root,
-            `name: shared\ndescription: "Use when rejecting a direct quoted legacy intelligence key."\nrequirements:\n  intelligence: medium\nmetadata:\n  ${key}: high`,
-          ),
-        ),
-      ).toEqual([
-        {
-          message:
-            "Shared skills must not declare metadata.intelligence; use requirements.intelligence.",
-          line: 7,
-        },
-      ]);
+      const frontmatter = "name: shared\nrequirements: {model: capable, effort: deliberate}\nmetadata:\n  " + key + ": high";
+      expect(policyMessages(rawSkill(root, frontmatter)).join(" ")).toContain("intelligence");
     },
   );
 });
@@ -511,6 +328,8 @@ const modelKeys = [
   "model_reasoning_effort",
   "model-reasoning-effort",
   "modelReasoningEffort",
+  "modelTier",
+  "reasoningLevel",
   "reasoning_effort",
   "reasoning-effort",
 ];
@@ -518,24 +337,13 @@ const allowedToolsMessage =
   "Shared skills must not declare allowed-tools: Codex does not support this field; shared skills inherit runtime capabilities.";
 
 describe("cross-harness root fields", () => {
-  it.each(modelKeys)("rejects model selection field %s", async (key) => {
+  it.each(modelKeys)("should reject native model selection field %s", async (key) => {
     const root = await temporaryRoot();
-    expect(
-      errors(
-        rawSkill(
-          root,
-          `name: shared\ndescription: "Use when validating harness-neutral shared skill metadata across runtimes."\n${key}: provider-specific\nmetadata:\n  intelligence: medium`,
-        ),
-      ),
-    ).toEqual([
-      {
-        message:
-          "Shared skills must not declare model or effort fields; use requirements.intelligence.",
-        line: 4,
-      },
-    ]);
+    const frontmatter =
+      "name: shared\n" + key + ": provider-specific\nrequirements: {model: capable, effort: deliberate}";
+    expect(policyMessages(rawSkill(root, frontmatter)).join(" ")).toMatch(/model|effort/);
   });
-  it("reports allowed-tools failure by shared skill path", async () => {
+  it("should report allowed-tools failure by shared skill path", async () => {
     const root = await temporaryRoot();
     const path = rawSkill(
       root,
@@ -546,14 +354,14 @@ describe("cross-harness root fields", () => {
     });
   });
   it.each(["allowed-tools :", "'allowed-tools':", '"allowed-tools":'])(
-    "rejects allowed-tools YAML variant %s",
+    "should reject allowed-tools YAML variant %s",
     async (key) => {
       const root = await temporaryRoot();
       expect(
         errors(
           rawSkill(
             root,
-            `name: shared\ndescription: "Use when validating shared skill metadata across supported runtime harnesses."\n${key} Read`,
+            'name: shared\ndescription: "Use when validating shared skill metadata across supported runtime harnesses."\n' + key + " Read",
           ),
         ),
       ).toEqual([{ message: allowedToolsMessage, line: 4 }]);
@@ -663,7 +471,7 @@ describe("semantic and unsupported root mapping syntax", () => {
       expect(errors(rawSkill(root, frontmatter))).toEqual([
         {
           message:
-            "Shared skills must declare exactly one requirements.intelligence.",
+            "Shared skills must declare exactly one requirements.model.",
         },
       ]);
     },

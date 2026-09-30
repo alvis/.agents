@@ -2,7 +2,8 @@
 name: lint
 description: Enforce coding standards mechanically across a selected scope with risk-appropriate ownership and review. Use when source files need lint-error correction, standards enforcement, or consistent formatting, including calls extended by another plugin's portable lint profile; behavior-changing repairs belong to fix.
 requirements:
-  intelligence: medium
+  model: capable
+  effort: deliberate
 ---
 
 # Linting

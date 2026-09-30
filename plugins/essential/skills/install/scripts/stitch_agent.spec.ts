@@ -15,7 +15,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   AgentTemplateError,
-  intelligenceLevels,
   loadAgentSources,
   preferredNameCandidates,
   stitchAgentDefinition,
@@ -56,7 +55,7 @@ function stateSystemAccess(document: string): Record<string, string> {
   );
 }
 
-function jsonIntelligenceProjection(document: string): Record<string, string> {
+function jsonNativeSettings(document: string): Record<string, unknown> {
   const frontmatter = JSON.parse(document.split("---\n", 3)[1]!) as Record<
     string,
     unknown
@@ -64,13 +63,11 @@ function jsonIntelligenceProjection(document: string): Record<string, string> {
   return Object.fromEntries(
     ["model", "effort"]
       .filter((field) => field in frontmatter)
-      .map((field) => [field, String(frontmatter[field])]),
+      .map((field) => [field, frontmatter[field]]),
   );
 }
 
-function codexIntelligenceProjection(
-  document: string,
-): Record<string, string> {
+function codexNativeSettings(document: string): Record<string, string> {
   return Object.fromEntries(
     [...document.matchAll(/^(model|model_reasoning_effort) = "([^"]+)"$/gm)].map(
       (match) => [match[1]!, match[2]!],
@@ -107,7 +104,7 @@ function writeTemplate(
       name,
       description:
         "A test role. Preferably named Ava, Kit, or June when the main agent spawns this role.",
-      intelligence: "inherit",
+      requirements: { model: "capable", effort: "deliberate" },
       ...options.metadata,
     }),
   );
@@ -146,7 +143,7 @@ describe("agent stitching", () => {
   it("projects one split template deterministically for every harness", () => {
     const root = temporaryRoot();
     const template = writeTemplate(root, "test-agent", {
-      metadata: { intelligence: "high" },
+      metadata: { requirements: { model: "expert", effort: "instinctive" } },
       claude: { color: "blue", permissionMode: "default" },
       codex: { sandbox_mode: "workspace-write" },
       grok: { color: "green" },
@@ -161,12 +158,9 @@ describe("agent stitching", () => {
     expect(projected).toMatchObject({
       name: "test-agent",
       color: "blue",
-      model: intelligenceLevels.high!.claude.model,
-      effort: intelligenceLevels.high!.claude.effort,
       memory: "project",
     });
-    expect(projected).not.toHaveProperty("intelligence");
-    expect(claude).toContain("# Test agent\n\nIntelligence level: high.");
+    expect(jsonNativeSettings(claude)).toEqual({});
     const access = {
       read: "all-agents",
       write: "main-agent",
@@ -179,7 +173,7 @@ describe("agent stitching", () => {
     expect(codex).toContain('name = "test-agent"\n');
     expect(codex).toContain('nickname_candidates = ["Ava", "Kit", "June"]');
     expect(codex).toContain('sandbox_mode = "workspace-write"');
-    expect(codex).not.toContain("## Memory");
+    expect(codexNativeSettings(codex)).toEqual({});
     expect(stateSystemAccess(codex)).toEqual(access);
     expect(stitchCodexAgentDefinition(template)).toBe(codex);
 
@@ -191,50 +185,30 @@ describe("agent stitching", () => {
     expect(grokProjected).toMatchObject({
       name: "test-agent",
       color: "green",
-      model: intelligenceLevels.high!.grok.model,
-      effort: intelligenceLevels.high!.grok.effort,
     });
-    expect(grokProjected).not.toHaveProperty("intelligence");
-    expect(grok).toContain("# Test agent\n\nIntelligence level: high.");
+    expect(jsonNativeSettings(grok)).toEqual({});
     expect(stateSystemAccess(grok)).toEqual(access);
-    expect(grok).not.toContain("## Memory");
     expect(stitchGrokAgentDefinition(template)).toBe(grok);
   });
 
   it.each([
-    ["mechanical", "gpt-5.6-luna", "high"],
-    ["low", "gpt-5.6-sol", "medium"],
-    ["medium", "gpt-6-astra", "low"],
-    ["high", "gpt-6-astra", "medium"],
-    ["xhigh", "gpt-6-astra", "high"],
-    ["max", "gpt-6-astra", "xhigh"],
-    ["inherit", undefined, undefined],
+    ["routine", "instinctive"],
+    ["capable", "deliberate"],
+    ["expert", "exhaustive"],
+    ["capable", "instinctive"],
+    ["routine", "exhaustive"],
   ])(
-    "should project %s intelligence consistently for every harness",
-    (intelligence, model, modelReasoningEffort) => {
+    "should accept independent %s and %s minimums without pinning native settings",
+    (model, effort) => {
       const root = temporaryRoot();
       const template = writeTemplate(root, "test-agent", {
-        metadata: { intelligence },
+        metadata: { requirements: { model, effort } },
       });
 
-      const claude = jsonIntelligenceProjection(
-        stitchAgentDefinition(template),
-      );
-      const codex = codexIntelligenceProjection(
-        stitchCodexAgentDefinition(template),
-      );
-      const grok = jsonIntelligenceProjection(
-        stitchGrokAgentDefinition(template),
-      );
-
-      expect({ claude, codex, grok }).toEqual({
-        claude: intelligenceLevels[intelligence]!.claude,
-        codex:
-          model === undefined
-            ? {}
-            : { model, model_reasoning_effort: modelReasoningEffort },
-        grok: intelligenceLevels[intelligence]!.grok,
-      });
+      expect(loadAgentSources(template).metadata.requirements).toEqual({ model, effort });
+      expect(jsonNativeSettings(stitchAgentDefinition(template))).toEqual({});
+      expect(codexNativeSettings(stitchCodexAgentDefinition(template))).toEqual({});
+      expect(jsonNativeSettings(stitchGrokAgentDefinition(template))).toEqual({});
     },
   );
 
@@ -299,19 +273,42 @@ describe("agent stitching", () => {
   it.each([
     [{ name: "Wrong" }, "invalid agent name"],
     [{ name: "other-agent" }, "does not match directory"],
-    [{ intelligence: "unknown" }, "invalid intelligence"],
+    [{ requirements: { model: "unknown", effort: "deliberate" } }, "requirements.model"],
+    [{ requirements: { model: "capable", effort: "unknown" } }, "requirements.effort"],
+    [{ requirements: { model: "capable" } }, "requirements.effort"],
+    [{ requirements: { effort: "deliberate" } }, "requirements.model"],
+    [{ requirements: null }, "requirements"],
+    [{ requirements: ["capable", "deliberate"] }, "requirements"],
+    [{ intelligence: "high" }, "intelligence"],
+    [{ intelligenceLevel: "high" }, "intelligenceLevel"],
+    [{ modelTier: "capable" }, "modelTier"],
+    [{ reasoningLevel: "deliberate" }, "reasoningLevel"],
+    [{ requirements: { model: "capable", effort: "deliberate", intelligence: "high" } }, "intelligence"],
+    [{ requirements: { modelTier: "capable", effort: "deliberate" } }, "modelTier"],
+    [{ requirements: { model: "capable", reasoningLevel: "deliberate" } }, "reasoningLevel"],
+    [{ model: "gpt-6-sol" }, "model"],
+    [{ effort: "high" }, "effort"],
   ])("rejects invalid metadata %#", (metadata, message) => {
     const root = temporaryRoot();
     const template = writeTemplate(root, "test-agent", { metadata });
     expect(() => stitchAgentDefinition(template)).toThrow(message);
   });
 
-  it("rejects derived overlay fields and non-scalar Codex values", () => {
+  it.each([
+    ["claude", { model: "gpt-6-sol" }, "model"],
+    ["claude", { effort: "high" }, "effort"],
+    ["codex", { model: "gpt-6-sol" }, "model"],
+    ["codex", { model_reasoning_effort: "high" }, "model_reasoning_effort"],
+    ["grok", { model: "gpt-6-sol" }, "model"],
+    ["grok", { effort: "high" }, "effort"],
+  ] as const)("should reject fixed %s overlay field %s", (harness, overlay, field) => {
     const root = temporaryRoot();
-    const claude = writeTemplate(root, "claude-agent", {
-      claude: { model: "forged" },
-    });
-    expect(() => loadAgentSources(claude)).toThrow("derived field 'model'");
+    const template = writeTemplate(root, "test-agent", { [harness]: overlay });
+    expect(() => loadAgentSources(template)).toThrow(`derived field '${field}'`);
+  });
+
+  it("should reject non-scalar Codex overlay values", () => {
+    const root = temporaryRoot();
     const codex = writeTemplate(root, "codex-agent", {
       codex: { nested: { forged: true } },
     });

@@ -67,11 +67,18 @@ Only the main agent assigns a configurable teammate `name` or label. Use `<short
 ## Nest only one-off
 
 - Nesting is exceptional and one-off: consider it only where a subagent-dispatch capability exists and the helper's single returned artifact or summary ends the delegation. A leaf-by-charter never spawns, whatever the runtime supports.
-- The nested call supplies only its `subagent_type` (for example, `test-reporter`), task, and context — never a configured name, never a standing nested teammate.
+- The nested call supplies its `subagent_type` (for example, `test-reporter`), task, context, and the supported model and effort launch settings selected below — never a configured name or standing nested teammate. If the runtime cannot set or expose the required pair, do not launch it as eligible.
 - **Bound exceptional fan-out.** Declare a task-wide child-spawn budget before the first one-off nested spawn; default to three. Hand-offs to known `agent_id`s don't spend it.
 - Continuing or collaborative work is not nesting: route it by `agent_id` under "Delegate well".
 - Rely on the native nesting ceiling: keep no second depth counter, never delegate to an ancestor, and never reuse a sibling edge.
 
-## Resolve intelligence
+## Select model and effort
 
-Choose the lowest intelligence whose `best_for` examples cover the task, from the authoritative ranks and examples in `skills/install/references/intelligence-levels.json`. Metadata declares the role's level; harness adapters alone translate it into native model and effort fields. [ALLAGENT.md](../hooks/ALLAGENT.md) owns skill eligibility. Resolve `inherit`, and a main session carrying no level, from the active harness projection before dispatch: take its exact configured rank, or the highest configured rank for the same model when the active effort exceeds every configured effort. Other missing or ambiguous projections are ineligible.
+Apply this procedure to named roles, generic agents, nested launches, and reused teammates. [Model tiers and effort](../references/models.md) defines the axes and is the sole provider mapping.
+
+1. Assess the anticipated lifetime task, including verification, likely repairs, and expected follow-ups. Choose Model Tier for framing and judgment, and Effort for investigation, dependent steps, and checking. Ordinary mixed work is Capable + Deliberate; focused recognition may be Capable or Expert + Instinctive.
+2. Take the maximum **independently** on each axis across task needs, the role's `requirements.model` and `requirements.effort`, and every anticipated skill's minimums. A skill floor is not a fixed launch setting.
+3. A launch selecting Routine requires at least Deliberate, even if its skill minimum is Routine + Instinctive. A stronger model may run Instinctive and still satisfy that skill minimum. Resolve the pair through controls the active harness actually supports and set both explicitly where available. Preserve native API field names and restrictions; report an unsupported profile or unavailable control rather than silently substituting settings.
+4. Record the portable profile, native settings, and task reason, distinguishing planned from observed execution. A missing or unexposed native value cannot prove eligibility. Before unexpected work exceeds either selected axis, reassign or relaunch at a suitable configuration; do not treat a warm agent's original launch as silently upgraded.
+
+Check ownership against the *observed* model and effort when exposed, including main sessions and nested agents. If the harness cannot establish that both minimums are met, transfer the task to a qualified owner or report the unsupported control. [ALLAGENT.md](../hooks/ALLAGENT.md) owns the ineligibility handoff.

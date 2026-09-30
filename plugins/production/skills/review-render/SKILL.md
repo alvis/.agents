@@ -2,7 +2,8 @@
 name: review-render
 description: Capture stakeholder feedback and approvals on a specific render or cut, bound to its exact revision and timecode ranges, and determine which approvals survive a new revision or a changed decision. Use when a cut is reviewed, feedback like "approved" or "make the text larger" arrives, or someone asks whether an existing approval still applies; this skill records review truth, never edits media.
 requirements:
-  intelligence: medium
+  model: capable
+  effort: deliberate
 argument-hint: "<render-id> [--work-id=<id>]"
 ---
 

@@ -2,7 +2,8 @@
 name: handoff
 description: 'Create or execute a context-complete cross-domain plan as an orchestrator. Use when another agent must continue without prior context, or when a multi-domain plan needs coordinated execution while this skill retains decision ownership. For coding-session persistence, use essential:handover.'
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 ---
 
 # Handoff

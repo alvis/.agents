@@ -1,10 +1,10 @@
 <!-- INSTRUCTION: This template describes ONE stitched agent, assembled from five canonical source files under plugins/<owner>/agents/<name>/:
      - base.md — the BODY below (pure markdown, persona/charter/loop/context, no frontmatter)
-     - frontmatter/meta.json — shared name, description, and intelligence metadata
+     - frontmatter/meta.json — shared name, description, and portable minimums
      - frontmatter/claude.json — Claude-only frontmatter
      - frontmatter/codex.json — Codex-only fields
      - frontmatter/grok.json — Grok Build-only fields
-     Validate and build only a temporary artifact with Essential's install stitch helper. The stitcher derives one Intelligence level line beneath the rendered H1 from meta.json; never duplicate that line in base.md. Before editing any agent, re-check the live Claude Code docs for the current valid frontmatter key surface — this template mirrors it at time of writing, but the docs win on conflict. Log any conflict you find. -->
+     Validate and build only a temporary artifact with Essential's install stitch helper. The stitcher derives `Minimum: <Model> Model Tier, <Effort> Effort.` beneath the rendered H1 from meta.json; never duplicate that line in base.md. Before editing any agent, re-check the live Claude Code docs for the current valid frontmatter key surface — this template mirrors it at time of writing, but the docs win on conflict. Log any conflict you find. -->
 
 ## frontmatter/meta.json
 
@@ -12,7 +12,7 @@
 {
   "name": "role-only kebab-case name, e.g. frontend-implementer or principal-engineer",
   "description": "One-line purpose + explicit trigger phrases such as 'use proactively when...' or 'must use if...' + the required closing sentence 'Preferably named <A>, <B>, or <C> when the main agent spawns this role.'",
-  "intelligence": "mechanical|low|medium|high|xhigh|max|inherit — projected to harness-native model and effort fields by Essential's authoritative intelligence matrix"
+  "requirements": { "model": "routine|capable|expert", "effort": "instinctive|deliberate|exhaustive" }
 }
 ```
 
@@ -34,7 +34,7 @@
 }
 ```
 
-Do not repeat `name`, `description`, or `intelligence`, and do not set derived `model` or `effort`.
+Do not repeat shared metadata or set fixed native `model` or `effort` in a harness overlay. The rendered body states the portable minimums; launch settings are selected per task.
 
 ## frontmatter/codex.json
 
@@ -42,7 +42,7 @@ Do not repeat `name`, `description`, or `intelligence`, and do not set derived `
 {}
 ```
 
-Keep this object empty until Codex supports a native scalar per-agent field not already derived from `meta.json`, the intelligence matrix, or `base.md`. Nested objects and arrays are rejected because they cannot be serialized by the scalar TOML projection. Never define `name`, `description`, `nickname_candidates`, `intelligence`, `intelligenceLevel`, `model`, `model_reasoning_effort`, or `developer_instructions` here.
+Keep this object empty until Codex supports a native scalar per-agent field not already supplied by `meta.json` or `base.md`. Nested objects and arrays are rejected because they cannot be serialized by the scalar TOML projection. Never define `name`, `description`, `nickname_candidates`, `requirements`, `model`, `model_reasoning_effort`, or `developer_instructions` here.
 
 ## frontmatter/grok.json
 
@@ -50,7 +50,7 @@ Keep this object empty until Codex supports a native scalar per-agent field not 
 {}
 ```
 
-Required but empty — the same ceremony as `codex.json`. Keep this object empty until Grok Build exposes a native scalar per-agent field not already derived from `meta.json`, the intelligence matrix, or `base.md`. Grok Build forbids hooks in agent frontmatter, so hook-bearing fields stay Claude-only by construction. Never define `name`, `description`, `intelligence`, `intelligenceLevel`, `model`, or `effort` here; the stitcher derives them.
+Required but empty — the same ceremony as `codex.json`. Keep this object empty until Grok Build exposes a native scalar per-agent field not already supplied by `meta.json` or `base.md`. Grok Build forbids hooks in agent frontmatter, so hook-bearing fields stay Claude-only by construction. Never define `name`, `description`, `requirements`, `model`, or `effort` here; the stitcher emits portable minimums in the body.
 
 ### permissionMode — pick by launch scenario, not by vibe
 

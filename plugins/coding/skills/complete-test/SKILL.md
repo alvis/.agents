@@ -2,7 +2,8 @@
 name: complete-test
 description: Author and improve tests for pending test cases, coverage gaps, fixtures, and redundancy cleanup. Use for test TODOs, it.todo or describe.todo entries, explicit test-writing requests, or coverage work. Production implementation stubs belong to complete-code; diagnosed failures belong to fix.
 requirements:
-  intelligence: medium
+  model: capable
+  effort: deliberate
 argument-hint: "[scope] [--framework=<name>]"
 ---
 

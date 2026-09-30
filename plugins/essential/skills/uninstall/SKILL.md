@@ -2,7 +2,8 @@
 name: uninstall
 description: "Remove agents and startup configuration owned by Essential's installer while preserving edited and unrelated user files. Use when removing this marketplace's installed agent team, detaching its Grok startup guidance, or undoing an Essential installation in the active harness."
 requirements:
-  intelligence: medium
+  model: routine
+  effort: deliberate
 ---
 
 # Uninstall

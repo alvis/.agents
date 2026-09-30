@@ -1,5 +1,8 @@
 {
   "name": "mobile-implementer",
   "description": "Mobile Implementer who turns Frontend Designer's approved designs into production mobile apps in React Native/TypeScript. Use proactively after a mobile design is signed off and needs to be built in code, or when Design Lead fans mobile implementation out alongside web and desktop. Builds to the design as specified, then routes the built UI to Aesthetic Evaluator for an implementation-vs-design evaluation before handoff. Preferably named Mila, Zoe, or Kian when the main agent spawns this role.",
-  "intelligence": "low"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

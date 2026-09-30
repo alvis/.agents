@@ -2,7 +2,8 @@
 name: commit
 description: 'Save code changes cleanly with jj-first, git-compatible routing. Use for commits, manifest-scoped lifecycle saves, split/absorb/edit operations, stacked changes, history reordering, retrospective blame fixes, or the --create-pr compatibility handoff; preserve the repository history policy and keep coding:commit as the sole history-mutation owner.'
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "[--prepare-paths-from=<scope-request> | --paths-from=<manifest> --manifest-sha256=<sha256>] [--retrospective] [--reorder [--up-to <rev>]] [--create-pr] [--branch-prefix <name>] [--no-review] [--no-verify] [--dry-run] [--allow-rewrite-merged]"
 hooks:
   PreToolUse:

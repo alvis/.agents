@@ -2,7 +2,8 @@
 name: cleanup
 description: Audit and safely retire stale development state across git branches, registered Git worktrees, jj workspaces, and the centralized state root. Use for /cleanup or abandoned-work audits; require evidence, the three-day landing window, recoverable backup, and per-target approval before removal or permanent archival.
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 argument-hint: "[path] [--exclude-remote]"
 ---
 

@@ -2,7 +2,8 @@
 name: doctor
 description: Diagnose a structural issue observed while reading needed .state/ files, including overview.md, or fulfill an explicit state diagnostic request. Check one affected stream by default; use the state-wide scope for an observed overview issue or explicit global investigation. Propose only repairs needed for the reading, with approval and an owning stream lease.
 requirements:
-  intelligence: medium
+  model: capable
+  effort: deliberate
 argument-hint: "[work-id] [--strict]"
 ---
 

@@ -2,7 +2,8 @@
 name: sync-tool
 description: 'Install or update registered coding CLI tools (brew, jj, gh, fallow, python) across macOS, Linux, and Windows. Use when tools are missing, stale, or needed on PATH for a sibling skill, including requests to install jj/gh/brew, update coding tools, or verify CLI dependencies before work.'
 requirements:
-  intelligence: low
+  model: routine
+  effort: instinctive
 argument-hint: "[--only <name1,name2>] [--check] [--dry-run] [--force]"
 ---
 

@@ -1,5 +1,8 @@
 {
   "name": "specification-expert",
   "description": "Specification Expert who creates technical specifications, versioned architecture/design documents, requirements, and user-facing documentation. Must be used for specification authoring, requirements gathering, architecture documentation, and Notion-backed spec work through the Specification skills. Preferably named Sam, Kim, or Ari when the main agent spawns this role.",
-  "intelligence": "low"
+  "requirements": {
+    "model": "capable",
+    "effort": "deliberate"
+  }
 }

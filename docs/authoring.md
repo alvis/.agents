@@ -26,7 +26,7 @@ A named validator is the required check. Hook byte budgets have no test gate; me
 | No placeholder text and no unresolved local links | Same validator prevents incomplete shipped instructions |
 | Agent metadata `description` at most 1,024 characters | `plugins/essential/skills/install/scripts/stitch_agent.ts` preserves harness metadata limits |
 | Agent metadata `name` matches `^[a-z0-9]+(?:-[a-z0-9]+)*$` and its directory | Same validator keeps portable identities |
-| Agent metadata `intelligence` is listed in `plugins/essential/skills/install/references/intelligence-levels.json` | Harness model and effort fields derive from this portable level |
+| Agent and skill `requirements.model` and `requirements.effort` use the independent minimums in [Model and effort profiles](../plugins/essential/references/models.md) | Stitch and skill validators reject obsolete intelligence fields and fixed native settings |
 | Agent harness overlays omit `tools` | Agents inherit runtime capabilities |
 | Codex overlay values are scalar TOML fields | Nicknames derive from metadata; stitched Codex and Grok bodies cannot promise Claude-only isolation |
 | `memory` is `"project"`; body has exactly one `## Memory` section | Stitch validator preserves one portable memory contract |

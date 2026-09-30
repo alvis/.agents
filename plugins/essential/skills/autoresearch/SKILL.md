@@ -2,7 +2,8 @@
 name: autoresearch
 description: 'Run a metric-driven research loop: define a metric, evaluator, baseline, and target; evolve candidate solutions; score and adversarially verify them; then mutate survivors until the target, budget, or plateau ends the run. Use for measurable optimization of prompts, code, experiments, or creative variants; use deep-research for fact-finding.'
 requirements:
-  intelligence: high
+  model: capable
+  effort: deliberate
 context: fork
 argument-hint: "<research-goal-or-brief-path> [--brief=<path>] [--resume=<run-dir>] [--max-rounds=<n>] [--backend=programmatic|judges|human]"
 ---
@@ -45,7 +46,7 @@ Subagent dispatch in steps 4, 5, and 7 follows `plugins/governance/standards/del
    <IMPORTANT>
    Hard gate: no subagent dispatch or scripted-execution launch happens anywhere in this skill before the user explicitly approves the brief. Present its decision surface (metric, backend, baseline, target, budget/plateau, constraints, directions, code-execution grant) and ask: approve / edit a field (re-render and re-present) / abort. On approval the brief freezes — only `## Amendments` is ever appended.
    </IMPORTANT>
-4. **Scaffold and calibrate.** Scaffold the run layout once per [references/dossier.md](references/dossier.md) (`leaderboard.md` header with baseline row, `rounds/`, `best/`, and `worktrees/` in code mode). Then smoke-test the harness with one calibration eval of the baseline through the chosen backend exactly as a round would score ([./directions/eval-backends.md](directions/eval-backends.md)): the full judge panel, one use of the graphical or structured user-input tool for the human backend, or one mechanical-intelligence evaluator for programmatic.
+4. **Scaffold and calibrate.** Scaffold the run layout once per [references/dossier.md](references/dossier.md) (`leaderboard.md` header with baseline row, `rounds/`, `best/`, and `worktrees/` in code mode). Then smoke-test the harness with one calibration eval of the baseline through the chosen backend exactly as a round would score ([./directions/eval-backends.md](directions/eval-backends.md)): the full judge panel, one use of the graphical or structured user-input tool for the human backend, or one evaluator selected for the complete programmatic score task for programmatic.
    - `baseline.artifact: 'none'` (cold start): skip calibration and set the baseline score to null — round 1's best initializes the trajectory.
    - A user-asserted `baseline.score` still gets the calibration: it is the harness smoke test, not just a measurement.
    - A parseable score becomes the `leaderboard.md` baseline row; the brief's `baseline.score` stays untouched — the leaderboard owns measured values.

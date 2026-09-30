@@ -68,6 +68,12 @@ Claude Code supplies plan prose to Essential's plan-transition `PreToolUse` vali
 
 Grok Build's plan tool supplies no plan body and ignores blocking Stop output. OpenCode V1 exposes neither a native plan-transition event nor cancellable Stop, so their receipts remain adapted and unavailable respectively.
 
+## Agent configuration
+
+Canonical agent metadata declares independent `requirements.model` and `requirements.effort` minimums. The stitcher validates them and exposes them in the generated role instructions while omitting fixed native model and effort fields. Claude, Codex, and Grok installation preserve the role's remaining harness-specific configuration; OpenCode carries the same minimums through its compatibility projection.
+
+[Delegation](../../plugins/essential/directions/delegate.md) owns task-based selection for named and generic agents; the [model and effort reference](../../plugins/essential/references/models.md) owns portable profiles and provider mappings. Selection requires controls exposed by the active harness. An inherited configuration is usable only when its observed profile satisfies the assignment; an unsupported or unverified profile is reported rather than silently substituted. The externally supplied scripted-execution adapter is not implemented by this repository.
+
 ## OpenCode projection flow
 
 ```text
