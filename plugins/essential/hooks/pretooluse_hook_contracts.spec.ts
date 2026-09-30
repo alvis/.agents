@@ -51,6 +51,10 @@ Incomplete plan submissions receive actionable feedback before execution.
 
 Inside: the three hook scripts. Outside: content heuristics.
 
+## 📍 Working environment
+
+Directory: /work/plan-validation. Version control: jj workspace.
+
 ## 🗂️ Tasks
 
 - TST: Validate the plan.
@@ -410,12 +414,20 @@ describe("plan validator", () => {
     expectAllowed(runHook(plans, { plan }));
   });
 
+  it.each(["CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT"])("should reject a missing working environment through %s", (variable) => {
+    expect(denialReason(runHook(plans, { plan: compliantPlan.replace("## 📍 Working environment", "") }, variable))).toContain("missing headings: Working environment.");
+  });
+
+  it.each(["CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT"])("should accept a large plan presentation through %s", (variable) => {
+    expectAllowed(runHook(plans, { plan: compliantPlan + "Detailed rationale.\n".repeat(2_000) }, variable));
+  });
+
   it("should validate Grok's session-local plan before exit", () => {
     const root = mkdtempSync(resolve(tmpdir(), "grok-plan-"));
     try {
       const transcriptPath = resolve(root, "updates.jsonl");
       writeFileSync(transcriptPath, "");
-      writeFileSync(resolve(root, "plan.md"), "## Context\nIncomplete.\n");
+      writeFileSync(resolve(root, "plan.md"), compliantPlan.replace("## 📍 Working environment", ""));
       const result = spawnSync("bash", ["-c", commandFor(plans)], {
         encoding: "utf8",
         env: harnessEnvironment("GROK_PLUGIN_ROOT"),
@@ -426,8 +438,8 @@ describe("plan validator", () => {
         }),
       });
       expect(result.status, result.stderr).toBe(0);
-      expect(grokDenialReason(JSON.parse(result.stdout))).toContain("missing headings");
-      writeFileSync(resolve(root, "plan.md"), compliantPlan);
+      expect(grokDenialReason(JSON.parse(result.stdout))).toContain("missing headings: Working environment.");
+      writeFileSync(resolve(root, "plan.md"), compliantPlan + "Detailed rationale.\n".repeat(2_000));
       const corrected = spawnSync("bash", ["-c", commandFor(plans)], {
         encoding: "utf8",
         env: harnessEnvironment("GROK_PLUGIN_ROOT"),
@@ -454,15 +466,15 @@ describe("plan validator", () => {
     const root = mkdtempSync(resolve(tmpdir(), "claude-plan-"));
     try {
       const planFilePath = resolve(root, "approved plan.md");
-      writeFileSync(planFilePath, "## Context\nIncomplete.\n");
+      writeFileSync(planFilePath, compliantPlan.replace("## 📍 Working environment", ""));
       const result = spawnSync("bash", ["-c", commandFor(plans)], {
         encoding: "utf8",
         env: harnessEnvironment("CLAUDE_PLUGIN_ROOT"),
         input: JSON.stringify({ tool_name: "ExitPlanMode", tool_input: { planFilePath } }),
       });
       expect(result.status, result.stderr).toBe(0);
-      expect(denialReason(JSON.parse(result.stdout))).toContain("missing headings");
-      writeFileSync(planFilePath, compliantPlan);
+      expect(denialReason(JSON.parse(result.stdout))).toContain("missing headings: Working environment.");
+      writeFileSync(planFilePath, compliantPlan + "Detailed rationale.\n".repeat(2_000));
       const corrected = spawnSync("bash", ["-c", commandFor(plans)], {
         encoding: "utf8",
         env: harnessEnvironment("CLAUDE_PLUGIN_ROOT"),
@@ -491,14 +503,14 @@ describe("plan validator", () => {
         runHook(plans, { plan: compliantPlan.replace("## 🧭 Context", "") }),
       ),
     ).toContain("missing headings: Context."));
-  it("should name all four missing default-plan headings", () =>
+  it("should name every missing default-plan heading", () =>
     expect(
       denialReason(
         runHook(plans, {
           plan: "## Context\n\nSlow.\n\n## Summary\n\nFast.\n",
         }),
       ),
-    ).toContain("missing headings: Goal, Requirements, Boundary, Tasks, Direction."));
+    ).toContain("missing headings: Goal, Requirements, Boundary, Working environment, Tasks, Direction."));
   it("should reject a plan missing Tasks", () =>
     expect(denialReason(runHook(plans, { plan: compliantPlan.replace(/## 🗂️ Tasks\n\n- TST: Validate the plan\.\n\n/, "") }))).toContain("missing headings: Tasks."));
   it("should allow a complete plan", () =>
@@ -506,13 +518,13 @@ describe("plan validator", () => {
   it("should match headings at any depth and case", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## Tasks\nf\n## direction\nd\n### context\ne\n",
+        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## WORKING ENVIRONMENT\n/work; jj workspace.\n## Tasks\nf\n## direction\nd\n### context\ne\n",
       }),
     ));
   it("should recognize compound emoji prefixes at different heading depths", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
+        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n### 📍 Working environment\n/work; jj workspace.\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
       }),
     ));
   it("should not treat prefixed words or longer names as required headings", () =>

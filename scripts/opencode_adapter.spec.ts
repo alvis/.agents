@@ -112,6 +112,7 @@ describe("opencode adapter manifest validation", () => {
       sandbox,
     );
     const projection = join(realpathSync(sandbox.project), ".opencode");
+
     adapterPath = join(projection, "plugins", "alvis-marketplace.js");
     expect(existsSync(adapterPath)).toBe(true);
   });
@@ -328,6 +329,25 @@ describe("opencode adapter manifest validation", () => {
     expect(cleared.output).toBe("unchanged");
   });
 
+  it("should reject a missing working environment through OpenCode plan exit", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
+    await expect(hooks["tool.execute.before"](
+      { callID: "missing-environment", sessionID: "environment-session", tool: "exit_plan_mode" },
+      { args: { plan: "# Goal\nShip.\n## Context\nCurrent.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\nValidate.\n## Direction\nTest.\n" } },
+    )).rejects.toThrow(/missing headings: Working environment\./);
+  });
+
+  it("should accept a large plan presentation through OpenCode plan exit", async () => {
+    const { AlvisMarketplace } = await loadAdapter();
+    const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
+    const plan = "# Goal\nShip.\n## Context\nCurrent.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Tasks\nValidate.\n## Direction\nTest.\n" + "Detailed rationale.\n".repeat(2_000);
+    await expect(hooks["tool.execute.before"](
+      { callID: "large-plan", sessionID: "large-plan-session", tool: "exit_plan_mode" },
+      { args: { plan } },
+    )).resolves.toBeUndefined();
+  });
+
   it("should enforce every available plan alias", async () => {
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
@@ -337,7 +357,7 @@ describe("opencode adapter manifest validation", () => {
         { callID: "plan", sessionID: "session", tool: "exit_plan_mode" },
         { args: { plan: "# Goal\n\nMissing the other required headings.\n" } },
       ),
-    ).rejects.toThrow(/missing headings: Requirements, Boundary, Tasks, Direction, Context/);
+    ).rejects.toThrow(/missing headings: Requirements, Boundary, Working environment, Tasks, Direction, Context/);
   });
 
   it("should reject a plan missing Tasks through OpenCode plan exit", async () => {
@@ -345,14 +365,14 @@ describe("opencode adapter manifest validation", () => {
     const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
     await expect(hooks["tool.execute.before"](
       { callID: "missing-tasks", sessionID: "session", tool: "exit_plan_mode" },
-      { args: { plan: "# Goal\nShip.\n## Context\nCurrent.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Direction\nTest.\n" } },
+      { args: { plan: "# Goal\nShip.\n## Context\nCurrent.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Direction\nTest.\n" } },
     )).rejects.toThrow(/missing headings: Tasks/);
   });
 
   it("should reject the current disk-backed OpenCode plan before exit", async () => {
     const planDirectory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(planDirectory, { recursive: true });
-    writeFileSync(join(planDirectory, "123-current.md"), "# Goal\nIncomplete.\n");
+    writeFileSync(join(planDirectory, "123-current.md"), "# Goal\nShip.\n## Context\nCurrent.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\nValidate.\n## Direction\nTest.\n");
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
@@ -366,14 +386,14 @@ describe("opencode adapter manifest validation", () => {
     await expect(hooks["tool.execute.before"](
       { callID: "native-plan-invalid", sessionID: "session", tool: "plan_exit" },
       { args: {} },
-    )).rejects.toThrow(/missing headings/);
+    )).rejects.toThrow(/missing headings: Working environment\./);
   });
 
   it("should validate the current plan without replacing native arguments", async () => {
     const planDirectory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(planDirectory, { recursive: true });
     writeFileSync(join(planDirectory, "124-complete.md"),
-      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
+      "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n" + "Detailed rationale.\n".repeat(2_000));
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
@@ -479,7 +499,7 @@ describe("opencode adapter manifest validation", () => {
   it("should deliver approval instructions after a successful native plan exit", async () => {
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
-    const approvedPlan = "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n";
+    const approvedPlan = "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n";
     writeFileSync(join(directory, "128-approved.md"), approvedPlan);
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
@@ -505,7 +525,7 @@ describe("opencode adapter manifest validation", () => {
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
     const path = join(directory, "130-changed.md");
-    writeFileSync(path, "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(path, "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
@@ -534,7 +554,7 @@ describe("opencode adapter manifest validation", () => {
   it("should not deliver approval context after a rejected native exit", async () => {
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, "129-rejected.md"), "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(join(directory, "129-rejected.md"), "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({
       client: {
@@ -815,7 +835,7 @@ describe("opencode adapter manifest validation", () => {
     const { AlvisMarketplace } = await loadAdapter();
     const directory = join(sandbox.project, ".opencode", "plans");
     mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, "131-tamper.md"), "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
+    writeFileSync(join(directory, "131-tamper.md"), "# Goal\nShip.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Working environment\n/work; jj workspace.\n## Tasks\n- TST: Validate.\n## Direction\nTest.\n## Context\nCurrent.\n");
     const hooks = await AlvisMarketplace({
       client: {
         project: { current: async () => ({ data: { vcs: "git" } }) },

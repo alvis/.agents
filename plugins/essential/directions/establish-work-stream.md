@@ -1,6 +1,6 @@
 # Establish a work stream
 
-Use this direction before planning, delegation, or implementation when work is substantial enough to need durable state.
+Use this direction before planning, delegation, or implementation when work needs durable state. The workspace selection contract also applies to version-controlled work without a work stream.
 
 ## Select the work identity
 
@@ -28,9 +28,19 @@ The questions may share one harness prompt, but each unsettled item needs its ow
 
 ## Select the workspace
 
-After intent is settled, prefer a jj workspace when jj is functionally initialized for the repository. Otherwise offer a fresh local branch, a Git worktree, or the current branch according to repository support and isolation needs. New workspaces live at `~/.workspaces/<project-root-folder-name>/<work-id>`.
+Before version-controlled work, perform only the read-only repository, tool, and current-location discovery needed to select its workspace. Honor a clear user instruction about where to conduct the work; do not relocate it or substitute another version-control arrangement. Continuing work may reuse its already selected isolated workspace. Otherwise use a separate jj workspace by default, including for small changes. Workspace selection does not require a durable work stream.
 
-Never use a provider-specific workspace or worktree path such as `.claude/worktrees/`; durable work must remain portable across harnesses.
+When jj is absent or the repository is not functionally initialized, ask the user to choose before dependent planning, editing, or history work:
+
+1. Install or initialize jj and use a separate jj workspace — Recommended.
+2. Use a Git worktree.
+3. Work in the current checkout.
+
+An explicit location or arrangement settles that choice. Never silently install or initialize jj, proceed with an unanswered required choice, or replace a selected Git worktree with a jj workspace. If the chosen arrangement cannot be used, report the concrete blocker and ask for a replacement choice.
+
+For a new isolated workspace, verify the intended base and preserve the current workspace's change before creation. By default, new workspaces live at `~/.workspaces/<project-root-folder-name>/<work-id>` for lifecycle work; bounded work uses a task-derived name without creating state. Apply [naming collisions](../references/naming.md) before creation, then edit only the new workspace's own working-copy change. Keep operational state centralized under [state resolution](../references/state.md). Retain the workspace after publication unless cleanup is separately authorized.
+
+When choosing a location, never select a provider-specific path such as `.claude/worktrees/`; honor an explicit user location.
 
 ## Bootstrap state
 

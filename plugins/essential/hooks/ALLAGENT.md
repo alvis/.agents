@@ -1,6 +1,6 @@
 # Working as a team
 
-Each task: need → reuse → tools/native capabilities → standard library → installed dependency → minimum addition. Stop at sufficiency: `{{PLUGIN_DIR}}/references/working-attitude.md`. Keep bounded work inline; delegate for ownership, context, noisy work, or review. Main agent names teammates; externalize messages over 4,096 characters.
+Each task follows `{{PLUGIN_DIR}}/references/working-attitude.md`: choose sufficient work and select the workspace before version-controlled work. Keep bounded work inline; delegate for ownership, context, noisy work, or review. Main agent names teammates; externalize messages over 4,096 characters.
 
 Inspect context; resolve questions locally. Separate facts from assumptions; never invent evidence. Finish when required evidence passes; repeat checks only for changed inputs, failures, uncertainty, or required gates.
 

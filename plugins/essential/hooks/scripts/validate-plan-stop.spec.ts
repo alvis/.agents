@@ -39,6 +39,10 @@ Incomplete plans receive corrective feedback in T3.
 
 Only the Essential hooks change.
 
+## 📍 Working environment
+
+Directory: /work/plan-validation. Version control: jj workspace.
+
 ## 🗂️ Tasks
 
 - TST: Validate the plan.
@@ -154,6 +158,20 @@ describe("Codex plan Stop validator", () => {
     expect(result.stdout).toBe("");
   }, 15_000); // The 2 MB subprocess path took 3.9s locally; allow CI contention.
 
+  it("should block a plan missing its working environment", () => {
+    expect(parseHookOutput(runHook({ lastAssistantMessage: validPlan.replace("## 📍 Working environment", "") }))).toMatchObject({
+      decision: "block",
+      reason: expect.stringContaining("missing headings: Working environment."),
+    });
+  });
+
+  it("should allow a large plan presentation from the current turn", () => {
+    const presentation = validPlan.replace("</proposed_plan>", `${"Detailed rationale.\n".repeat(2_000)}</proposed_plan>`);
+    const result = runHook({ lines: [createAssistantMessage(turnId, presentation)] });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  });
+
   it("should direct malformed Stop events to the portable plan instructions", () => {
     expect(parseHookOutput(runHook({ eventInput: "not json" }))).toEqual({
       systemMessage: expect.stringContaining("essential:directions/plan.md"),
@@ -239,7 +257,7 @@ describe("Codex plan Stop validator", () => {
     const decision = parseHookOutput(result);
     expect(decision.decision).toBe("block");
     expect(decision.reason).toContain(
-      "missing headings: Goal, Requirements, Boundary, Tasks, Direction.",
+      "missing headings: Goal, Requirements, Boundary, Working environment, Tasks, Direction.",
     );
   });
 

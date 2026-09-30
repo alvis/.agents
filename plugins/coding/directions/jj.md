@@ -12,15 +12,17 @@ Never use `--all` for routine publication. Push all and only the bookmarks selec
 
 ## Setup when first using `jj`
 
-`jj` requires 0.44+ — run `coding:sync-tool --only jj --check`, run `coding:sync-tool --only jj` if it fails, then repeat the check.
+First apply `essential:directions/establish-work-stream.md#select-the-workspace`. This guide runs only after jj is selected; a selected Git worktree or Git checkout uses Git. Never install, initialize, or replace that arrangement implicitly.
 
-For an ordinary Git checkout that has not been initialized, run this before editing:
+For selected jj work, `jj` requires 0.44+ — run `coding:sync-tool --only jj --check`. If installation or upgrade is required and not already authorized by the selection, ask before running `coding:sync-tool --only jj`, then repeat the check.
+
+After the user selects jj initialization, initialize from the repository's primary Git checkout:
 
 ```bash
 jj git init --colocate
 ```
 
-Prove colocation by comparing the Git HEAD with the parent of the `jj` working copy; directory names alone are not evidence:
+A linked Git worktree cannot be initialized in place. This limitation does not authorize replacing a user's Git worktree choice. For selected jj work, prove colocation before creating its separate workspace:
 
 ```bash
 GIT_HEAD=$(git rev-parse HEAD) || exit $?
@@ -28,22 +30,14 @@ JJ_HEAD=$(jj log -r @- --no-graph -T 'commit_id') || exit $?
 [ "$GIT_HEAD" = "$JJ_HEAD" ]
 ```
 
-<IMPORTANT>
-A linked Git worktree cannot be initialized in place: current `jj` rejects `jj git init --colocate` there. Before working in a selected Git worktree, run that command from the repository's primary Git checkout, then create a `jj workspace` at the intended revision and work there. Do not begin edits in an uninitialized linked Git worktree or treat it as a `jj workspace`.
-</IMPORTANT>
-
-Use the repository's work-ID and location rules when creating the replacement workspace:
+Use the selected location, collision-checked name, and verified base:
 
 ```bash
-jj workspace add ~/.workspaces/<project-root-folder-name>/<work-id> \
+jj workspace add <selected-workspace-path> --name <workspace-name> \
   --revision <base-revision>
 ```
 
-Each `jj` workspace has its own `@` and shares the repository's operation log. Never edit another workspace's working-copy change. After integration, forget the registered workspace before removing its directory:
-
-```bash
-jj workspace forget <workspace-name>
-```
+Each jj workspace has its own `@` and shares the repository's operation log. Never edit another workspace's working-copy change. Publication does not authorize workspace deletion; `coding:cleanup` owns separately authorized retirement.
 
 ## Working model
 
@@ -164,7 +158,7 @@ If the target is immutable or already merged, stop using `jj edit` and take the 
 
 ## Work in parallel
 
-Use a parallel workspace only when the new task has no file or semantic dependency on the current `@`. Shared files or required ordering stay in the current workspace and are split later if needed.
+Select the work location under `essential:directions/establish-work-stream.md#select-the-workspace`. Within that selected workspace, independent tasks may use additional workspaces; dependent tasks sharing files proceed sequentially there. This ordering rule never overrides the initial isolation selection.
 
 1. Record the default workspace's current change ID and inspect visible heads.
 2. Reuse the selected work ID and create the workspace with `jj workspace add` at the intended base revision.
@@ -173,7 +167,7 @@ Use a parallel workspace only when the new task has no file or semantic dependen
    - keep the parallel change independent and publish it separately;
    - integrate it above the default change with `jj rebase -s <parallel-change> -d <default-change>`; or
    - create an intentional merge change with `jj new <default-change> <parallel-change>`.
-5. Verify the resulting graph. Once the workspace has no remaining independent work, run `jj workspace forget <workspace-name>`, verify it is no longer registered, then remove its directory through the cleanup owner.
+5. Verify the resulting graph and retain the workspace. Separately authorized retirement routes to `coding:cleanup`, which forgets the registration before removing its directory.
 
 If `jj workspace add` cannot resolve the base, fetch the selected remote and retry only after confirming the exact revision. If two workspaces edited the same change ID, stop normal integration and use the divergence route.
 

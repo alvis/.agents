@@ -4,8 +4,7 @@ Read this for implementation, setup, completion, refactoring, modernization, and
 
 ## Choose the workspace
 
-- For a small change, work in place unless the user names another location.
-- For substantial work worth a stacked pull request, follow `essential:directions/establish-work-stream.md`. Reuse a suitable open stream before creating an ID; `essential:references/naming.md` owns work-ID, state-path, and branch shapes.
+Follow `essential:directions/establish-work-stream.md#select-the-workspace` for all version-controlled work. Substantial work also follows that direction's identity and bootstrap contract; reuse a suitable open stream before creating an ID. `essential:references/naming.md` owns work-ID, state-path, and branch shapes.
 
 ## Establish the change
 
