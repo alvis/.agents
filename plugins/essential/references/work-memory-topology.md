@@ -12,7 +12,7 @@ Read this when creating, locating, or migrating ignored local state. `state-syst
 └── works/<work-id>                     # one live stream, phase planned, working, or reviewing
     ├── goal.md                         # approved charter, exact spec provenance, scope, and success criteria
     ├── state.md                        # complete resumable context and canonical task graph
-    ├── plan.md                         # exact approved delivery snapshot; directions/approve-plan.md owns persistence
+    ├── plan.md                         # approved remainder; references/state.md owns complete-plan reads
     ├── lease.json                      # main-agent ownership and expiry record
     ├── state                           # focused execution views and append-only history
     │   ├── working.md                  # narrow current focus and handback point
@@ -34,7 +34,7 @@ Read this when creating, locating, or migrating ignored local state. `state-syst
     ├── review.md                       # review-area roll-up and closure status
     ├── reviews/*.md                    # one area-specific review and its findings
     └── artifacts/                      # non-Markdown evidence and generated receipts
-        ├── plan-approvals/              # immutable content snapshots, approval receipts, and events/ publication history
+        ├── plan-approvals/              # immutable full text, projections/, receipts, and events/ publication history
         └── spec-sync/                  # immutable external synchronization evidence
             ├── bases/<base-id>/        # exact accepted external bytes
             └── materializations/

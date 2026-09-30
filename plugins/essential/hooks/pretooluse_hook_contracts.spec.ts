@@ -405,6 +405,11 @@ describe("question validator", () => {
 });
 
 describe("plan validator", () => {
+  it("should allow a plan whose body exceeds pipe buffering after its first heading", () => {
+    const plan = compliantPlan + "Detailed rationale.\n".repeat(20_000);
+    expectAllowed(runHook(plans, { plan }));
+  });
+
   it("should validate Grok's session-local plan before exit", () => {
     const root = mkdtempSync(resolve(tmpdir(), "grok-plan-"));
     try {

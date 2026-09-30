@@ -82,13 +82,14 @@ Where the risk warrants it, add only these details to the ingredients above. Ada
 For a lifecycle-managed work stream, the shared ingredients are distributed without duplication:
 
 - `goal.md` supplies Goal, Requirements, and Boundary through the charter link;
-- root `state.md` task definitions, assignments, status, and dependency edges supply Tasks and Direction under [the state contract](../references/state.md); and
+- root `state.md` task definitions, assignments, status, and dependency edges supply Tasks and execution order under [the state contract](../references/state.md);
+- root `plan.md` supplies approved Direction and remaining detail; and
 - root status plus links to `decisions/` and `state/journal.md` supply Context.
 
-Non-authoritative detail such as `state/plan.md` may expand an existing task ID, but it cannot redefine any shared ingredient. [Approved-plan persistence](approve-plan.md) preserves immutable comparison snapshots; current execution belongs in the registry. Follow the state lifecycle for ownership, revisions, and approval.
+Non-authoritative detail such as `state/plan.md` may expand an existing task ID, but it cannot redefine any shared ingredient. [Complete-plan reads](../references/state.md#complete-plan-reads) defines ownership across the three canonical files. [Approved-plan persistence](approve-plan.md) preserves unrestricted full approval evidence and bounded projections; current execution belongs in the registry. Never measure or limit the plan presented to the user. Follow the state lifecycle for ownership, revisions, and approval.
 
 ## Revision and verification
 
-Revise Direction without operator approval when evidence changes the route but Goal, Requirements, and Boundary remain fixed and the owning workflow grants that authority. Surface any proposed contract change to its owner before continuing.
+When evidence changes the route but Goal, Requirements, and Boundary remain fixed, the owning workflow may authorize a Direction adjustment without operator approval. Record that adjustment in mutable `state/` detail keyed by existing task IDs, link it from `state.md`, and journal its reason; preserve the approved remainder under [complete-plan reads](../references/state.md#complete-plan-reads). Surface any proposed contract change to its owner before continuing.
 
 Before handing off, approving, or executing a plan, check the six sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.

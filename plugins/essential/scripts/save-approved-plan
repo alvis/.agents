@@ -43,36 +43,50 @@ write_state() {
 work_id=""
 token=""
 plan_file=""
+goal_file=""
+state_file=""
+remainder_file=""
 approval_source=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --work-id|--token|--plan-file|--source)
+    --work-id|--token|--plan-file|--goal-file|--state-file|--remainder-file|--source)
       [[ $# -ge 2 ]] || fail "$1 requires a value"
       case "$1" in
         --work-id) work_id="$2" ;;
         --token) token="$2" ;;
         --plan-file) plan_file="$2" ;;
+        --goal-file) goal_file="$2" ;;
+        --state-file) state_file="$2" ;;
+        --remainder-file) remainder_file="$2" ;;
         --source) approval_source="$2" ;;
       esac
       shift 2 ;;
     -h|--help)
-      printf '%s\n' 'usage: save-approved-plan --work-id ID --token TOKEN --plan-file ABSOLUTE_PATH --source APPROVAL_ID'
+      printf '%s\n' 'usage: save-approved-plan --work-id ID --token TOKEN --plan-file ABSOLUTE_PATH --goal-file ABSOLUTE_PATH --state-file ABSOLUTE_PATH --remainder-file ABSOLUTE_PATH --source APPROVAL_ID'
       exit 0 ;;
     *) fail "unknown argument: $1" ;;
   esac
 done
 [[ -n "$work_id" && -n "$token" && -n "$approval_source" ]] || fail "work ID, lease token, and approval source are required"
 [[ "$approval_source" != fingerprint:* ]] || fail "approval source requires the actual submission identity, not a payload fingerprint"
-[[ "$plan_file" == /* && -f "$plan_file" && ! -L "$plan_file" && -r "$plan_file" ]] || fail "approved plan must be an absolute readable regular file"
-# Freeze external plan bytes before computing identity or issuing state writes.
-staged_plan="$(mktemp "${TMPDIR:-/tmp}/essential-approved-plan.XXXXXX")"
-trap 'rm -f "$staged_plan"' EXIT
-cat "$plan_file" >"$staged_plan" || fail "cannot stage approved plan"
-plan_file="$staged_plan"
-# output-manifest.md caps work Markdown at 16 KiB; never truncate approved bytes
-plan_bytes="$(wc -c <"$plan_file" | tr -d ' ')"
-[[ "$plan_bytes" -le 16384 ]] || fail "approved plan exceeds the 16384-byte work-Markdown limit; resolve a compliant approved plan before saving"
-python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"); sys.exit(0 if text.strip() else 1)' "$plan_file" >/dev/null 2>&1 || fail "approved plan must contain nonempty UTF-8 text"
+# Freeze all external inputs before identity calculation or any state write.
+staging_dir="$(mktemp -d "${TMPDIR:-/tmp}/essential-approved-plan.XXXXXX")"
+trap 'rm -rf "$staging_dir"' EXIT
+inputs=("$plan_file" "$goal_file" "$state_file" "$remainder_file")
+names=(approved.txt goal.md state.md plan.md)
+for index in 0 1 2 3; do
+  input="${inputs[$index]}"
+  name="${names[$index]}"
+  [[ "$input" == /* && -f "$input" && ! -L "$input" && -r "$input" ]] || fail "$name input must be an absolute readable regular file"
+  cat "$input" >"$staging_dir/$name" || fail "cannot stage $name"
+  python3 -c 'import pathlib,sys; text=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"); sys.exit(0 if text.strip() else 1)' "$staging_dir/$name" >/dev/null 2>&1 || fail "$name must contain nonempty UTF-8 text"
+  if [[ "$index" -gt 0 ]]; then
+    # output-manifest.md bounds persisted work Markdown, never the presentation.
+    bytes="$(wc -c <"$staging_dir/$name" | tr -d ' ')"
+    [[ "$bytes" -le 16384 ]] || fail "$name exceeds the 16384-byte work-Markdown limit; obtain a revised approved projection before saving"
+  fi
+done
+plan_file="$staging_dir/approved.txt"
 
 if ! resolved="$("$SCRIPTS_DIR/resolve-state-workspace" --work-id "$work_id")"; then
   fail "workspace resolution refused: $resolved"
@@ -102,16 +116,27 @@ if [[ -f "$work_dir/$receipt" ]]; then
     and (.source | type == "string" and length > 0)
   ' "$work_dir/$receipt" >/dev/null 2>&1 || fail "immutable approval receipt is invalid"
 fi
-old_snapshot=""
-old_sha256=""
-if [[ -f "$work_dir/plan.md" ]]; then
-  old_sha256="$(hash_file "$work_dir/plan.md")"
-  old_snapshot="artifacts/plan-approvals/$old_sha256.txt"
-  safe_target "$old_snapshot"
-  if [[ -f "$work_dir/$old_snapshot" ]]; then
-    cmp -s "$work_dir/plan.md" "$work_dir/$old_snapshot" || fail "prior-plan snapshot conflicts with its hash"
+projections='{}'
+for name in goal.md state.md plan.md; do
+  safe_target "$name"
+  projection_sha256="$(hash_file "$staging_dir/$name")"
+  previous_sha256=""
+  if [[ -f "$work_dir/$name" ]]; then
+    cat "$work_dir/$name" >"$staging_dir/previous-$name"
+    previous_sha256="$(hash_file "$staging_dir/previous-$name")"
   fi
-fi
+  projections="$(jq -c --arg name "$name" --arg sha256 "$projection_sha256" --arg previous_sha256 "$previous_sha256" \
+    '. + {($name): {sha256:$sha256, previous_sha256:$previous_sha256}}' <<<"$projections")"
+  for content_hash in "$projection_sha256" "$previous_sha256"; do
+    [[ -n "$content_hash" ]] || continue
+    blob="artifacts/plan-approvals/projections/$content_hash.txt"
+    safe_target "$blob"
+    if [[ -f "$work_dir/$blob" ]]; then
+      [[ "$(hash_file "$work_dir/$blob")" == "$content_hash" ]] || fail "immutable projection snapshot conflicts with its hash"
+    fi
+  done
+done
+old_sha256="$(jq -r '.["plan.md"].previous_sha256' <<<"$projections")"
 
 # Immutable event records serialize approval publication independently of content
 # reuse. A pending event must finish before a later approval can publish.
@@ -121,9 +146,11 @@ event_complete="artifacts/plan-approvals/events/$event_id.published.json"
 safe_target "$event_intent"
 safe_target "$event_complete"
 latest_revision=0
-latest_sha256=""
+latest_plan_sha256=""
 event_count=0
 pending_event=""
+first_approval_revision=0
+first_approval_source="$approval_source"
 shopt -s nullglob
 for intent_path in "$work_dir"/artifacts/plan-approvals/events/*.json; do
   if [[ "$intent_path" == *.published.json ]]; then
@@ -136,13 +163,23 @@ for intent_path in "$work_dir"/artifacts/plan-approvals/events/*.json; do
     .work_id == $work_id and (.source | type == "string" and length > 0)
     and (.sha256 | test("^[a-f0-9]{64}$"))
     and (.previous_sha256 | test("^([a-f0-9]{64})?$"))
+    and (if has("projections") then
+      (.projections | keys == ["goal.md", "plan.md", "state.md"])
+      and (.projections | all(.[];
+        (.sha256 | test("^[a-f0-9]{64}$"))
+        and (.previous_sha256 | test("^([a-f0-9]{64})?$"))))
+      else true end)
     and (.revision | type == "number" and . > 0 and floor == .)
   ' "$intent_path" >/dev/null 2>&1 || fail "invalid approval event history"
   [[ "$(basename "$intent_path" .json)" == "$(jq -j '.source' "$intent_path" | hash_file -)" ]] || fail "approval event identity conflicts"
   revision="$(jq -r '.revision' "$intent_path")"
+  if [[ "$(jq -r '.sha256' "$intent_path")" == "$sha256" && ( "$first_approval_revision" -eq 0 || "$revision" -lt "$first_approval_revision" ) ]]; then
+    first_approval_revision="$revision"
+    first_approval_source="$(jq -r '.source' "$intent_path")"
+  fi
   if [[ "$revision" -gt "$latest_revision" ]]; then
     latest_revision="$revision"
-    latest_sha256="$(jq -r '.sha256' "$intent_path")"
+    latest_plan_sha256="$(jq -r '.projections["plan.md"].sha256 // .sha256' "$intent_path")"
   fi
   event_count=$((event_count + 1))
   complete_path="${intent_path%.json}.published.json"
@@ -164,48 +201,76 @@ if [[ -n "$pending_event" ]]; then
   [[ "$(jq -r '.revision' "$work_dir/$pending_event")" -eq "$latest_revision" ]] || fail "older approval publication is incomplete"
   [[ "$pending_event" == "$event_intent" ]] || fail "pending approval publication must be resolved first"
 fi
+completed_retry=false
 if [[ -f "$work_dir/$event_intent" ]]; then
-  jq -e --arg source "$approval_source" --arg sha256 "$sha256" '
+  jq -e --arg source "$approval_source" --arg sha256 "$sha256" --argjson projections "$projections" '
     .source == $source and .sha256 == $sha256
-  ' "$work_dir/$event_intent" >/dev/null || fail "approval event conflicts with approved content"
+    and (.projections | map_values(.sha256)) == ($projections | map_values(.sha256))
+  ' "$work_dir/$event_intent" >/dev/null || fail "approval event conflicts with approved content or projections"
+  [[ "$(jq -r '.revision' "$work_dir/$event_intent")" -eq "$latest_revision" ]] || fail "stale approval event cannot replace the current plan"
   if [[ -f "$work_dir/$event_complete" ]]; then
-    [[ "$old_sha256" == "$sha256" ]] || fail "stale approval event cannot replace the current plan"
+    completed_retry=true
+    [[ "$old_sha256" == "$latest_plan_sha256" ]] || fail "current plan conflicts with the latest approval publication"
   else
-    previous_sha256="$(jq -r '.previous_sha256' "$work_dir/$event_intent")"
-    [[ "$old_sha256" == "$sha256" || "$old_sha256" == "$previous_sha256" ]] || fail "pending approval publication conflicts with the current plan"
+    for name in goal.md state.md plan.md; do
+      current_hash="$(jq -r --arg name "$name" '.[$name].previous_sha256' <<<"$projections")"
+      jq -e --arg name "$name" --arg current "$current_hash" '
+        .projections[$name] | .sha256 == $current or .previous_sha256 == $current
+      ' "$work_dir/$event_intent" >/dev/null || fail "pending approval publication conflicts with current $name"
+    done
   fi
-elif [[ "$latest_revision" -gt 0 && "$old_sha256" != "$latest_sha256" ]]; then
+  projections="$(jq -c '.projections' "$work_dir/$event_intent")"
+elif [[ "$latest_revision" -gt 0 && "$old_sha256" != "$latest_plan_sha256" ]]; then
   fail "current plan conflicts with the latest approval publication"
 fi
 
 generated_files='[]'
 if [[ ! -f "$work_dir/$event_intent" ]]; then
   event_body="$(jq -cn --arg work_id "$work_id" --arg source "$approval_source" \
-    --arg sha256 "$sha256" --arg previous_sha256 "$old_sha256" \
+    --arg sha256 "$sha256" --arg previous_sha256 "$old_sha256" --argjson projections "$projections" \
     --argjson revision "$((latest_revision + 1))" \
-    '{work_id:$work_id,source:$source,sha256:$sha256,previous_sha256:$previous_sha256,revision:$revision}')"
+    '{work_id:$work_id,source:$source,sha256:$sha256,previous_sha256:$previous_sha256,projections:$projections,revision:$revision}')"
   write_state "$event_intent" <<<"$event_body"
-fi
-# preserve previous bytes before any replacement, including plans predating receipts
-if [[ -n "$old_snapshot" && ! -f "$work_dir/$old_snapshot" ]]; then
-  write_state "$old_snapshot" --content-file "$work_dir/plan.md"
 fi
 if [[ ! -f "$work_dir/$snapshot" ]]; then
   write_state "$snapshot" --content-file "$plan_file"
 fi
 if [[ ! -f "$work_dir/$receipt" ]]; then
   receipt_body="$(jq -cn --arg sha256 "$sha256" --arg work_id "$work_id" \
-    --arg source "$approval_source" --arg recorded_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg source "$first_approval_source" --arg recorded_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     '{sha256: $sha256, work_id: $work_id, source: $source, approved_by: "user", recorded_at: $recorded_at}')"
   write_state "$receipt" <<<"$receipt_body"
 fi
-# snapshot bytes are now immutable; read that verified copy for the final publish
-if [[ ! -f "$work_dir/plan.md" ]] || ! cmp -s "$work_dir/$snapshot" "$work_dir/plan.md"; then
-  write_state plan.md --content-file "$work_dir/$snapshot"
-fi
-[[ "$(hash_file "$work_dir/plan.md")" == "$sha256" ]] || fail "saved plan verification failed"
-if [[ ! -f "$work_dir/$event_complete" ]]; then
+for name in goal.md state.md plan.md; do
+  projection_sha256="$(jq -r --arg name "$name" '.[$name].sha256' <<<"$projections")"
+  blob="artifacts/plan-approvals/projections/$projection_sha256.txt"
+  if [[ ! -f "$work_dir/$blob" ]]; then
+    write_state "$blob" --content-file "$staging_dir/$name"
+  fi
+  # Preserve the before-image on first publication or recovery while still available.
+  if [[ "$completed_retry" == false && -f "$staging_dir/previous-$name" ]]; then
+    previous_hash="$(hash_file "$staging_dir/previous-$name")"
+    previous_blob="artifacts/plan-approvals/projections/$previous_hash.txt"
+    if [[ ! -f "$work_dir/$previous_blob" ]]; then
+      write_state "$previous_blob" --content-file "$staging_dir/previous-$name"
+    fi
+  fi
+done
+# A completed event is evidence, not permission to roll back execution progress.
+if [[ "$completed_retry" == false ]]; then
+  for name in goal.md state.md plan.md; do
+    projection_sha256="$(jq -r --arg name "$name" '.[$name].sha256' <<<"$projections")"
+    blob="artifacts/plan-approvals/projections/$projection_sha256.txt"
+    if [[ ! -f "$work_dir/$name" ]] || ! cmp -s "$work_dir/$blob" "$work_dir/$name"; then
+      write_state "$name" --content-file "$work_dir/$blob"
+    fi
+  done
+  for name in goal.md state.md plan.md; do
+    expected="$(jq -r --arg name "$name" '.[$name].sha256' <<<"$projections")"
+    [[ "$(hash_file "$work_dir/$name")" == "$expected" ]] || fail "saved $name verification failed"
+  done
   write_state "$event_complete" --content-file "$work_dir/$event_intent"
 fi
-jq -cn --arg plan_path "$work_dir/plan.md" --arg sha256 "$sha256" --argjson generated_files "$generated_files" \
-  '{status: (if ($generated_files | length) == 0 then "unchanged" else "saved" end), plan_path: $plan_path, sha256: $sha256, generated_files: $generated_files}'
+jq -cn --arg plan_path "$work_dir/plan.md" --arg goal_path "$work_dir/goal.md" --arg state_path "$work_dir/state.md" \
+  --arg sha256 "$sha256" --argjson projections "$projections" --argjson generated_files "$generated_files" \
+  '{status: (if ($generated_files | length) == 0 then "unchanged" else "saved" end), plan_path:$plan_path, goal_path:$goal_path, state_path:$state_path, sha256:$sha256, projections:$projections, generated_files:$generated_files}'
