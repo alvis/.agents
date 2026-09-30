@@ -14,7 +14,7 @@ Validation depth follows the risk and claims; ceremony cannot substitute for evi
 
 ## Required ingredients
 
-Every presented plan, including main-agent, delegated, conversational, and sample plans, uses the six headings below in order, with an emoji prefix on each main section heading. Keep small plans concise; do not create a plan artifact for formatting alone. When another artifact owns an ingredient, give its exact path and only the summary needed to navigate it. Progress checklists are not plan presentations.
+Every presented plan, including main-agent, delegated, conversational, and sample plans, uses the headings below in order, with an emoji prefix on each main section heading. Keep small plans concise; do not create a plan artifact for formatting alone. When another artifact owns an ingredient, give its exact path and only the summary needed to navigate it. Progress checklists are not plan presentations.
 
 ### 🎯 Goal
 
@@ -45,6 +45,10 @@ When concrete deliverables are already established during planning, list them un
 ### 🚧 Boundary
 
 Name what is inside the plan, what is deliberately outside it, and any limit on authority, time, systems, data, or validation that changes execution. Reference Context's assumption IDs when they constrain the boundary instead of restating them.
+
+### 📍 Working environment
+
+Name the working directory and version-control arrangement, such as a separate jj workspace, Git worktree, or explicitly selected current checkout. Distinguish the current directory from a proposed one until creation is verified; name the intended base when relevant. Follow [workspace selection](establish-work-stream.md#select-the-workspace) before dependent work. This section is presentation metadata: retain it in immutable approval evidence, omit the entire section from saved root `plan.md`, and keep necessary workspace anchors in their canonical state locations under [approved-plan persistence](approve-plan.md).
 
 ### 🗂️ Tasks
 
@@ -92,4 +96,4 @@ Non-authoritative detail such as `state/plan.md` may expand an existing task ID,
 
 When evidence changes the route but Goal, Requirements, and Boundary remain fixed, the owning workflow may authorize a Direction adjustment without operator approval. Record that adjustment in mutable `state/` detail keyed by existing task IDs, link it from `state.md`, and journal its reason; preserve the approved remainder under [complete-plan reads](../references/state.md#complete-plan-reads). Surface any proposed contract change to its owner before continuing.
 
-Before handing off, approving, or executing a plan, check the six sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.
+Before handing off, approving, or executing a plan, check these sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.

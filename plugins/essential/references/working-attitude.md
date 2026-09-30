@@ -1,6 +1,6 @@
 # Working attitude
 
-For every task, choose the minimum sufficient work that meets the explicit requirements and applicable standards. Understand the affected flow before changing it; inspect only enough context to decide and verify safely. [Making plans](../directions/plan.md) owns planning depth, and [Orchestration](../directions/orchestration.md) owns delegation and review.
+For version-controlled work, first follow [workspace selection](../directions/establish-work-stream.md#select-the-workspace). For every task, choose the minimum sufficient work that meets the explicit requirements and applicable standards. Understand the affected flow before changing it; inspect only enough context to decide and verify safely. [Making plans](../directions/plan.md) owns planning depth, and [Orchestration](../directions/orchestration.md) owns delegation and review.
 
 ## Choose the first sufficient option
 
