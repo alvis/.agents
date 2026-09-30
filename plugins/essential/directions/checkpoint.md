@@ -21,13 +21,13 @@ After a successful material source or external action, decision, task transition
   --reason "$MATERIAL_CHANGE" --event-id "$EVENT_ID"
 ```
 
-Use the action/result identity for `EVENT_ID`; an immediate duplicate handback does not advance the generation. Read-only operations, failed actions, no-op edits, and unchanged observations create no obligation. `state-write` automatically advances registered ownership when canonical work bytes change, including journal or table writes. It excludes artifact receipts, lease heartbeats, and checkpoint bookkeeping. Domain owners must explicitly record source/external actions and decision-only changes: filesystem hooks cannot discover an unreported semantic decision.
+Use the action/result identity for `EVENT_ID`; an immediate duplicate handback does not advance the generation. Read-only operations, failed actions, no-op edits, and unchanged observations create no obligation. `state-write` automatically advances registered ownership when canonical work bytes change, including journal or table writes and allowlisted global publication. Global writes mark the generation pending without treating project-relative paths as work-relative checkpoint files. It excludes artifact receipts, lease heartbeats, and checkpoint bookkeeping. Domain owners must explicitly record source/external actions and decision-only changes: filesystem hooks cannot discover an unreported semantic decision.
 
 Append the event to `state/journal.md`, reconcile affected tables, and refresh the owned stream's overview row when its derived values changed. Preserve other streams' overview rows. Subagents return material results immediately to the main agent; they never receive the lease or write a checkpoint.
 
 ## Acknowledge the checkpoint
 
-Read the record's current `generation`. Once the journal, affected tables, and overview cover that generation, acknowledge it with any additional reconciled work-relative table paths:
+Read the record's current `generation`. Once the journal, affected tables, overview, and any [completed-work publication](journals.md) cover that generation, acknowledge it with any additional reconciled work-relative table paths:
 
 ```bash
 "$ESSENTIAL_ROOT/scripts/state-checkpoint.ts" complete \

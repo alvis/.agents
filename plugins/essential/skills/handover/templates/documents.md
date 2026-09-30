@@ -148,10 +148,10 @@ The global index beside the centralized `.state/works/`: one table of every work
 
 ## Recently landed
 
-- `<work-id>` — `<one line>` `<merge date>`
+- <YYYY-MM-DD> — [`<work-id>`](journals/<domain>/<YYYY-MM-DD>-<work-id>.md): <summary>
 ```
 
-Every cell's derivation, the `Next action` budget, the `Last progress` rule, and the sort order live in [overviews.md](../../../references/overviews.md); this template is only their shape. Handover fills `Goal` and `Requirements` from user intent when creating a brand-new overview, or leaves an explicit `-` for the main agent to resolve — never inventing them from stream files — and preserves them byte-for-byte afterwards, exactly like unrefreshed rows. When creating or reconciling `State systems`, write exactly the three presence rows. The required documentation and local-state rows are `configured`; the external-authority row is `none`, `configured`, or `pending`. Never put a URL, revision, mirror, or local path there; stream anchors belong in `goal.md`.
+Copy recent entries from [completed-work history](../../../references/overviews.md#completed-work-history); do not author them here. Every cell's derivation, the `Next action` budget, the `Last progress` rule, and the sort order live in [overviews.md](../../../references/overviews.md); this template is only their shape. Handover fills `Goal` and `Requirements` from user intent when creating a brand-new overview, or leaves an explicit `-` for the main agent to resolve — never inventing them from stream files — and preserves them byte-for-byte afterwards, exactly like unrefreshed rows. When creating or reconciling `State systems`, write exactly the three presence rows. The required documentation and local-state rows are `configured`; the external-authority row is `none`, `configured`, or `pending`. Never put a URL, revision, mirror, or local path there; stream anchors belong in `goal.md`.
 
 ## `state/working.md`
 

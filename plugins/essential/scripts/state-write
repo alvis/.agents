@@ -14,7 +14,10 @@ set -euo pipefail
 usage() {
   cat >&2 <<'USAGE'
 usage: state-write --work-dir <dir> --token <token> \
-         --target <work-relative path> [--content-file <path>] [--ttl <s>]
+         <--target <work-relative path>|--state-target <state-relative path>> \
+         [--content-file <path>] [--ttl <s>]
+Global targets: overview.md, journals.md, or
+journals/<domain>/<YYYY-MM-DD>-<owned-work-id>.md under .state/.
 Content is read from --content-file, else stdin. Exit codes: 0 written,
 2 invalid usage, 4 lease free/expired, 5 foreign lease or wrong token.
 USAGE
@@ -36,6 +39,7 @@ sha256_hex() {
 work_dir=""
 token=""
 target=""
+state_target=""
 content_file=""
 ttl=1800
 while [[ $# -gt 0 ]]; do
@@ -46,6 +50,8 @@ while [[ $# -gt 0 ]]; do
     --token=*) token="${1#--token=}"; shift ;;
     --target) [[ $# -ge 2 ]] || invalid "--target requires a value"; target="$2"; shift 2 ;;
     --target=*) target="${1#--target=}"; shift ;;
+    --state-target) [[ $# -ge 2 ]] || invalid "--state-target requires a value"; state_target="$2"; shift 2 ;;
+    --state-target=*) state_target="${1#--state-target=}"; shift ;;
     --content-file) [[ $# -ge 2 ]] || invalid "--content-file requires a value"; content_file="$2"; shift 2 ;;
     --content-file=*) content_file="${1#--content-file=}"; shift ;;
     --ttl) [[ $# -ge 2 ]] || invalid "--ttl requires a value"; ttl="$2"; shift 2 ;;
@@ -59,21 +65,41 @@ done
 [[ -d "$work_dir" ]] || invalid "work directory does not exist: $work_dir"
 [[ ! -L "$work_dir" ]] || invalid "work directory must not be a symlink: $work_dir"
 [[ -n "$token" ]] || invalid "--token is required"
-[[ -n "$target" ]] || invalid "--target is required"
+[[ -n "$target" || -n "$state_target" ]] || invalid "--target or --state-target is required"
+[[ -z "$target" || -z "$state_target" ]] || invalid "--target and --state-target are mutually exclusive"
 [[ "$ttl" =~ ^[0-9]+$ && "$ttl" -gt 0 ]] || invalid "--ttl must be a positive integer"
 
-# Target must stay inside the work directory: relative, no traversal, and no
-# symlinked component anywhere on its path.
-case "$target" in
+# Global publication is explicit; ordinary work-relative writes retain their boundary.
+work_dir="$(cd "$work_dir" && pwd -P)"
+target_root="$work_dir"
+if [[ -n "$state_target" ]]; then
+  [[ "$(basename "$(dirname "$work_dir")")" == works && "$(basename "$(dirname "$(dirname "$work_dir")")")" == .state ]] || invalid "global writes require .state/works/<work-id>"
+  work_id="$(basename "$work_dir")"
+  [[ "$work_id" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || invalid "global writes require a valid work ID"
+  if [[ "$state_target" != overview.md && "$state_target" != journals.md ]]; then
+    [[ "$state_target" =~ ^journals/[a-z0-9]+(-[a-z0-9]+)*/[0-9]{4}-[0-9]{2}-[0-9]{2}-${work_id}\.md$ ]] || invalid "global target is not allowlisted: $state_target"
+    completion_date="${state_target##*/}"
+    completion_date="${completion_date:0:10}"
+    jq -ne --arg date "$completion_date" '
+      ($date | split("-") | map(tonumber)) as $parts |
+      $parts[0] as $year | $parts[1] as $month | $parts[2] as $day |
+      ($year % 4 == 0 and ($year % 100 != 0 or $year % 400 == 0)) as $leap |
+      [31, (if $leap then 29 else 28 end), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as $days |
+      $year > 0 and $month >= 1 and $month <= 12 and $day >= 1 and $day <= $days[$month - 1]
+    ' >/dev/null || invalid "global target has an invalid completion date: $state_target"
+  fi
+  target_root="$(dirname "$(dirname "$work_dir")")"
+fi
+selected_target="${state_target:-$target}"
+case "$selected_target" in
   /*) invalid "target must be work-relative, not absolute: $target" ;;
 esac
-[[ "$target" != *".."* ]] || invalid "target must not contain traversal: $target"
-[[ "$target" == *[!/]* ]] || invalid "target must name a file: $target"
+[[ "$selected_target" != *".."* ]] || invalid "target must not contain traversal: $selected_target"
+[[ "$selected_target" == *[!/]* ]] || invalid "target must name a file: $selected_target"
 
-work_dir="$(cd "$work_dir" && pwd -P)"
-target_path="$work_dir/$target"
-component="$work_dir"
-relative="$target"
+target_path="$target_root/$selected_target"
+component="$target_root"
+relative="$selected_target"
 while [[ "$relative" == */* ]]; do
   component="$component/${relative%%/*}"
   relative="${relative#*/}"
@@ -142,9 +168,14 @@ mkdir_target="$(dirname "$target_path")"
 mv -f "$temp" "$target_path"
 trap - EXIT
 
-if [[ "$changed" == true && "$target" != state/checkpoints/* && "$target" != artifacts/* && "$target" != lease.json ]]; then
-  "$(dirname "$0")/state-checkpoint.ts" record-write --work-dir "$work_dir" \
-    --token "$token" --target "$target" --previous-hash "$previous_hash" --ttl "$ttl" >/dev/null
+if [[ "$changed" == true ]]; then
+  if [[ -n "$state_target" ]]; then
+    "$(dirname "$0")/state-checkpoint.ts" record-global-write --work-dir "$work_dir" \
+      --token "$token" --target "$state_target" --ttl "$ttl" >/dev/null
+  elif [[ "$target" != state/checkpoints/* && "$target" != artifacts/* && "$target" != lease.json ]]; then
+    "$(dirname "$0")/state-checkpoint.ts" record-write --work-dir "$work_dir" \
+      --token "$token" --target "$target" --previous-hash "$previous_hash" --ttl "$ttl" >/dev/null
+  fi
 fi
 
 jq -n --arg status written --arg target "$target_path" \

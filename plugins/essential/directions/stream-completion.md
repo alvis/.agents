@@ -25,6 +25,8 @@ Finished execution lands in phase `reviewing`, never straight in a terminal stat
 - **Coding work:** the recorded pull request(s) observed merged (`gh pr view <n> --json state,mergedAt`), or the stream's changes observed present on the default branch when no PR exists.
 - **Non-coding work:** explicit acceptance records the accepter, accepted artifact, and revision, and the promotion receipt lists every durable result promoted out of transient `.state/` into its authoritative destination or evidences `not required` when none exists.
 
+Record the completion receipt first, then [publish the retrospective](journals.md) before treating completion persistence as finished. The project history remains available after the overview's recent view rolls over or the stream archives.
+
 On this transition, remove the `Blocked on:` value when it named the now-met submission wait. Retain a blocker only when it is independently unresolved and still has a concrete owner or durable carrier; completion does not erase that separate question, and retirement remains gated on its resolution.
 
 An author's assertion that the work is finished is never landing evidence. For non-coding work the author may also be the accepter only when the charter explicitly grants that authority. Passing tests are not landing evidence while review, sync, publication, durable promotion, or history anchoring remains required.
