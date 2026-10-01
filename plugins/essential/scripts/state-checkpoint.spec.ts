@@ -178,6 +178,54 @@ class CheckpointHarness {
 }
 
 describe("cmd:state-checkpoint", () => {
+  it("should checkpoint material global writes without treating global paths as work-relative files", async (context) => {
+    const harness = await createHarness(context);
+    const args = [
+      "--work-dir",
+      harness.work,
+      "--token",
+      harness.token,
+      "--state-target",
+      "journals.md",
+    ];
+    expect(
+      harness.run(join(plugin, "scripts/state-write"), args, "# History\n")
+        .status,
+    ).toBe(0);
+    harness.track();
+    expect(
+      harness.run(join(plugin, "scripts/state-write"), args, "# History\n")
+        .status,
+    ).toBe(0);
+    expect(harness.readReceipt().generation).toBe(0);
+
+    expect(
+      harness.run(
+        join(plugin, "scripts/state-write"),
+        args,
+        "# Completed history\n",
+      ).status,
+    ).toBe(0);
+
+    expect(harness.readReceipt()).toMatchObject({
+      generation: 1,
+      checkpoint: { generation: 0 },
+    });
+    expect(JSON.parse(harness.hook("Stop").stdout)).toMatchObject({
+      decision: "block",
+    });
+    harness.write("state/journal.md", `# Journal\n${event}`);
+    harness.write("state.md", "# Reconciled completion\n");
+    harness.writeOverview("demo");
+    const acknowledged = harness.checkpoint("complete", "--generation", "3");
+    expect(
+      acknowledged.status,
+      acknowledged.stdout || acknowledged.stderr,
+    ).toBe(0);
+    expect(harness.readReceipt().checkpoint.generation).toBe(3);
+    expect(harness.hook("Stop")).toMatchObject({ status: 0, stdout: "" });
+  });
+
   for (const flag of ["-h", "--help"]) {
     for (const action of ["", "stop"]) {
       it(`should handle ${flag} after '${action}' without stdin or state changes`, async (context) => {
@@ -192,12 +240,7 @@ describe("cmd:state-checkpoint", () => {
         const before = snapshotHelpDirectory(root);
         const child = spawn(
           join(plugin, "scripts/state-checkpoint.ts"),
-          [
-            ...(action ? [action] : []),
-            flag,
-            "--work-dir",
-            work,
-          ],
+          [...(action ? [action] : []), flag, "--work-dir", work],
           {
             cwd: root,
             env: { ...process.env, TMPDIR: root },

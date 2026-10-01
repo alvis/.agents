@@ -40,9 +40,23 @@ Read this when creating or reconciling the global `.state/overview.md`, or the w
 - `Documentations` carries durable `docs/` links and capability references. Exact specification links belong in the stream's `goal.md` `## Specification provenance`, never in this table. A capability the stream holds accepted-but-unpushed deviations against is suffixed `(pending-publication)`; resolve a sibling's pending publication before planning new work against that capability.
 - Qualify a cell in the cell. A `†`/`‡` glyph legend is a second vocabulary a reader must learn before reading the first.
 - Sort by phase, then `Last progress`. Ordering costs nothing and cannot go stale, which is exactly what a priority column cannot claim — do not add one.
-- `Recently landed` lists completed streams one line each, hard-capped at 20. It is a memory aid, not an index: `archive/<work-id>/state.md` holds the rest, and it does not go stale.
+- `Recently landed` is the recent view of [completed-work history](#completed-work-history), not a second authoring destination.
 
 Every stream in `.state/works/` is exactly one row. A completed row leaves the table on the schedule in [retirement.md](retirement.md), and every fact in it comes from that stream's `## Completion receipt`, so dropping it loses nothing.
+
+## Completed-work history
+
+`.state/journals/<domain>/<YYYY-MM-DD>-<work-id>.md` is the historical retrospective for one completed stream, using [the template](../templates/journal.md). Its `completed` timestamp is the ordering source; its completion date and stable Work ID name the file. [Naming](naming.md#documents) owns the path convention.
+
+`.state/journals.md` is a derived complete index: `# Workstream journals`, then one `## <domain>` section per domain, sorted alphabetically. Each section contains one physical line per retrospective in descending completion-timestamp order, with Work ID ascending for equal timestamps:
+
+```markdown
+- <YYYY-MM-DD> — [`<work-id>`](journals/<domain>/<YYYY-MM-DD>-<work-id>.md): <summary>
+```
+
+The overview's `Recently landed` contains the five newest lines globally, copied exactly from this index. Five bounds the landing memory aid without hiding active work: the `Streams` table and `Awaiting you` retain their complete live sets. The complete journal index retains older summaries after the recent view rolls over and after work-directory archival.
+
+[Publication](../directions/journals.md) owns authoring, lease-verified writes, retry, and reconciliation. Existing completion history is not backfilled on read or ordinary handover.
 
 ## Lazy work overviews
 

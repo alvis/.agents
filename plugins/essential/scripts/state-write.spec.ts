@@ -12,7 +12,16 @@ import {
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished } from "vitest";
+
+import type { SpawnSyncReturns } from "node:child_process";
+
+interface GlobalWriteHarness {
+  root: string;
+  state: string;
+  work: string;
+  token: string;
+}
 
 const here = import.meta.dirname;
 const leaseScript = resolve(here, "state-lease");
@@ -237,3 +246,174 @@ describe("lease-guarded state writing", () => {
     ).toEqual([]);
   });
 });
+
+describe("cmd:state-write global targets", () => {
+  it.each([
+    "overview.md",
+    "journals.md",
+    "journals/essential/2026-09-30-demo.md",
+  ])("should write allowlisted %s under the canonical state root", (target) => {
+    const harness = globalHarness();
+    const result = writeGlobal(harness, target);
+    expect(result.status, result.stdout || result.stderr).toBe(0);
+    expect(readFileSync(resolve(harness.state, target), "utf8")).toBe(
+      "global content\n",
+    );
+    expect(existsSync(resolve(harness.work, target))).toBe(false);
+  });
+
+  it.each([
+    "../escape.md",
+    "/tmp/escape.md",
+    "journals/../overview.md",
+    "journals/web/2026-09-30-foreign.md",
+    "journals/web/2026-02-30-demo.md",
+    "journals/Web/2026-09-30-demo.md",
+    "works/foreign/state.md",
+    "environment.md",
+    "journals/web/nested/2026-09-30-demo.md",
+  ])("should refuse unsafe or unowned global target %s", (target) => {
+    const harness = globalHarness();
+    const before = readdirSync(harness.state, { recursive: true }).sort();
+    expect(writeGlobal(harness, target).status).not.toBe(0);
+    expect(readdirSync(harness.state, { recursive: true }).sort()).toEqual(
+      before,
+    );
+  });
+
+  it("should refuse simultaneous work and state target arguments", () => {
+    const harness = globalHarness();
+    expect(
+      writeGlobal(harness, "overview.md", "--target", "state.md").status,
+    ).not.toBe(0);
+    expect(existsSync(resolve(harness.state, "overview.md"))).toBe(false);
+    expect(existsSync(resolve(harness.work, "state.md"))).toBe(false);
+  });
+
+  it.each(["missing", "expired", "foreign"])(
+    "should preserve global content with a %s lease",
+    (kind) => {
+      const harness = globalHarness();
+      const path = resolve(harness.work, "lease.json");
+      if (kind === "missing") rmSync(path);
+      if (kind === "expired")
+        writeFileSync(
+          path,
+          JSON.stringify({
+            ...JSON.parse(readFileSync(path, "utf8")),
+            expires_at_epoch: 0,
+          }),
+        );
+      writeFileSync(resolve(harness.state, "overview.md"), "original\n");
+      expect(
+        writeGlobal(
+          harness,
+          "overview.md",
+          ...(kind === "foreign" ? ["--token", "wrong"] : []),
+        ).status,
+      ).not.toBe(0);
+      expect(readFileSync(resolve(harness.state, "overview.md"), "utf8")).toBe(
+        "original\n",
+      );
+    },
+  );
+
+  it.each(["target", "parent", "directory"])(
+    "should refuse a symlink or nonregular global %s",
+    (kind) => {
+      const harness = globalHarness();
+      const victim = resolve(harness.root, "victim");
+      mkdirSync(victim);
+      writeFileSync(resolve(victim, "overview.md"), "untouched\n");
+      if (kind === "target")
+        symlinkSync(
+          resolve(victim, "overview.md"),
+          resolve(harness.state, "overview.md"),
+        );
+      if (kind === "parent")
+        symlinkSync(victim, resolve(harness.state, "journals"));
+      if (kind === "directory")
+        mkdirSync(resolve(harness.state, "overview.md"));
+      expect(
+        writeGlobal(
+          harness,
+          kind === "parent" ? "journals/web/2026-09-30-demo.md" : "overview.md",
+        ).status,
+      ).not.toBe(0);
+      expect(readdirSync(victim)).toEqual(["overview.md"]);
+      expect(readFileSync(resolve(victim, "overview.md"), "utf8")).toBe(
+        "untouched\n",
+      );
+    },
+  );
+
+  it("should refuse a noncanonical work root", () => {
+    const harness = new StateWriteHarness();
+    const token = harness.acquire();
+    const result = spawnSync(
+      "/bin/bash",
+      [
+        stateWrite,
+        "--work-dir",
+        harness.workDirectory,
+        "--token",
+        token,
+        "--state-target",
+        "overview.md",
+      ],
+      { encoding: "utf8", input: "bad\n" },
+    );
+    expect(result.status).not.toBe(0);
+    expect(existsSync(resolve(harness.root, "overview.md"))).toBe(false);
+  });
+});
+
+function globalHarness(): GlobalWriteHarness {
+  const root = mkdtempSync(resolve(tmpdir(), "state-global-write-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  const state = resolve(root, ".state");
+  const work = resolve(state, "works/demo");
+  mkdirSync(work, { recursive: true });
+  const acquired = spawnSync(
+    "/bin/bash",
+    [
+      leaseScript,
+      "acquire",
+      "--work-dir",
+      work,
+      "--capability",
+      "pm",
+      "--session",
+      "global-test",
+    ],
+    { encoding: "utf8" },
+  );
+  expect(acquired.status, acquired.stderr).toBe(0);
+  return {
+    root,
+    state,
+    work,
+    token: (JSON.parse(acquired.stdout) as { token: string }).token,
+  };
+}
+
+function writeGlobal(
+  harness: GlobalWriteHarness,
+  target: string,
+  ...args: string[]
+): SpawnSyncReturns<string> {
+  return spawnSync(
+    "/bin/bash",
+    [
+      stateWrite,
+      "--work-dir",
+      harness.work,
+      "--token",
+      harness.token,
+      "--state-target",
+      target,
+      ...args,
+    ],
+    { encoding: "utf8", input: "global content\n" },
+  );
+}

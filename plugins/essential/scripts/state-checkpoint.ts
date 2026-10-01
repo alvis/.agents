@@ -23,7 +23,14 @@ import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
 
-type Action = "track" | "dirty" | "complete" | "record-write" | "turn" | "stop";
+type Action =
+  | "track"
+  | "dirty"
+  | "complete"
+  | "record-write"
+  | "record-global-write"
+  | "turn"
+  | "stop";
 interface Checkpoint {
   generation: number;
   files?: Record<string, string>;
@@ -122,7 +129,7 @@ owner actions:
   track | dirty | complete
 
 internal actions:
-  record-write | turn | stop
+  record-write | record-global-write | turn | stop
 
 See directions/checkpoint.md for action-specific arguments.`;
 }
@@ -134,12 +141,13 @@ function runOwnerAction(action: Action, options: CheckpointParams): object {
   const token = requireString(options.token, "--token");
   const lease = readHeldLease(work, token);
   let session = options.session;
-  if (action === "record-write") {
+  if (action === "record-write" || action === "record-global-write") {
     const target = requireString(options.target, "--target");
     if (
-      target.startsWith("artifacts/") ||
-      target.startsWith("state/checkpoints/") ||
-      target === "lease.json"
+      action === "record-write" &&
+      (target.startsWith("artifacts/") ||
+        target.startsWith("state/checkpoints/") ||
+        target === "lease.json")
     ) {
       return { status: "not_material" };
     }
@@ -186,13 +194,21 @@ function runOwnerAction(action: Action, options: CheckpointParams): object {
     throw new Error(
       "register this runtime session with track before recording work",
     );
-  } else if (action === "dirty" || action === "record-write") {
+  } else if (
+    action === "dirty" ||
+    action === "record-write" ||
+    action === "record-global-write"
+  ) {
     if (action === "dirty")
       record = markDirty(work, record, {
         reason: requireString(options.reason, "--reason"),
         eventId: options.eventId,
       });
-    else {
+    else if (action === "record-global-write") {
+      record = markDirty(work, record, {
+        reason: `global state changed: ${requireString(options.target, "--target")}`,
+      });
+    } else {
       const target = requireString(options.target, "--target");
       resolveWorkPath(work, target);
       record = markDirty(work, record, {
@@ -588,6 +604,7 @@ function isAction(value: string | undefined): value is Action {
     value === "dirty" ||
     value === "complete" ||
     value === "record-write" ||
+    value === "record-global-write" ||
     value === "turn" ||
     value === "stop"
   );

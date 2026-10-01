@@ -4,7 +4,10 @@ Read this when creating, locating, or migrating ignored local state. `state-syst
 
 ```text
 .state                                  # ignored operational work memory in the default source tree
-├── overview.md                         # authored goal plus the derived index of every stream
+├── overview.md                         # authored goal, live-stream index, and five recent completion summaries
+├── journals.md                         # complete domain-grouped completion index
+├── journals/<domain>/                  # historical workstream retrospectives
+│   └── <YYYY-MM-DD>-<work-id>.md        # completion date and stable identity
 ├── environment.md                      # dated, re-measurable trees, refs, and gates; never per-stream
 ├── traps.md                            # one line each: symptom, cause, and what to do instead
 ├── notion/                             # optional transport mirror; never a contract authority
