@@ -3,14 +3,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import {
-  fstatSync,
-  lstatSync,
-  readFileSync,
-  readdirSync,
-  realpathSync,
-  statSync,
-} from "node:fs";
+import { lstatSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -47,7 +40,7 @@ function main(): void {
         command.token,
         command.summaryFile,
       );
-      if (result) process.stdout.write(`${JSON.stringify(result)}\n`);
+      process.stdout.write(`${JSON.stringify(result)}\n`);
     }
   } catch (error) {
     const failure = error as Error;
@@ -348,48 +341,6 @@ function checkLease(workDir: string, token: string): void {
     fail("invalid_lease", "a live matching lease is required");
 }
 
-function holdsLock(lockPath: string): boolean {
-  const descriptor = Number(process.env.STATE_JOURNALS_LOCK_FD);
-  if (!Number.isSafeInteger(descriptor) || descriptor < 0) return false;
-  try {
-    const held = fstatSync(descriptor);
-    const current = statSync(lockPath);
-    return (
-      held.isFile() && held.dev === current.dev && held.ino === current.ino
-    );
-  } catch {
-    return false;
-  }
-}
-
-function runUnderLock(
-  lockPath: string,
-  workDir: string,
-  token: string,
-  summaryFile: string,
-): void {
-  const result = spawnSync(
-    "python3",
-    [
-      join(SCRIPT_DIR, "state-journals-lock.py"),
-      lockPath,
-      process.execPath,
-      fileURLToPath(import.meta.url),
-      "publish",
-      "--work-dir",
-      workDir,
-      "--token",
-      token,
-      "--summary-file",
-      summaryFile,
-    ],
-    { encoding: "utf8" },
-  );
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  process.exitCode = result.status ?? 1;
-}
-
 function writeState(
   workDir: string,
   token: string,
@@ -447,7 +398,7 @@ function publish(
   workDirInput: string,
   token: string,
   summaryFile: string,
-): object | undefined {
+): object {
   if (!isAbsolute(workDirInput) || !isAbsolute(summaryFile))
     fail("usage", "work-dir and summary-file must be absolute paths");
   inspectPath(workDirInput, "directory", true);
@@ -468,15 +419,6 @@ function publish(
   summary.target = `journals/${summary.domain}/${summary.completed.slice(0, 10)}-${summary.workId}.md`;
   readCompletion(workDir);
   checkLease(workDir, token);
-  const lockPath = join(stateRoot, ".state-journals.lock");
-  inspectPath(lockPath, "file", false);
-  if (!holdsLock(lockPath)) {
-    preparePublication(stateRoot, workId, summary);
-    if (process.env.STATE_JOURNALS_LOCK_FD !== undefined)
-      fail("lock_failed", "journal publication lock was not inherited");
-    runUnderLock(lockPath, workDir, token, summaryFile);
-    return undefined;
-  }
   const publication = preparePublication(stateRoot, workId, summary);
   checkLease(workDir, token);
   writeState(workDir, token, summary.target, summary.file);

@@ -1,5 +1,4 @@
-import { spawn, spawnSync } from "node:child_process";
-import { once } from "node:events";
+import { spawnSync } from "node:child_process";
 import {
   lstatSync,
   mkdirSync,
@@ -54,7 +53,6 @@ class JournalHarness {
       "# State\n\n- Phase: `completed`\n\n## Completion receipt\n\n- Completed at: 2026-09-30T12:00:00Z\n- Landing evidence: merged commit abc123\n",
     );
     writeFileSync(join(this.state, "overview.md"), originalOverview);
-    writeFileSync(join(this.state, ".state-journals.lock"), "");
     writeFileSync(this.input, summaryText(current));
     const acquired = spawnSync(
       "/bin/bash",
@@ -114,42 +112,6 @@ describe("cmd:state-journals", () => {
     expect(result.stdout).toBe("");
     expect(result.stderr.length).toBeGreaterThan(0);
     expect(snapshot(harness.root)).toEqual(before);
-  });
-
-  it("should refuse a live publisher and release its OS lock after process death", async () => {
-    const harness = new JournalHarness();
-    const lock = join(harness.state, ".state-journals.lock");
-    const holder = spawn(
-      "python3",
-      [
-        "-c",
-        "import fcntl, sys\nwith open(sys.argv[1], 'r+') as lock:\n fcntl.flock(lock, fcntl.LOCK_EX)\n print('ready', flush=True)\n sys.stdin.read()\n",
-        lock,
-      ],
-      { stdio: "pipe" },
-    );
-    onTestFinished(() => {
-      holder.kill("SIGKILL");
-    });
-    await once(holder.stdout, "data");
-    const before = snapshot(harness.state);
-    const inode = lstatSync(lock).ino;
-
-    const contended = harness.publish();
-
-    expect(contended.status).not.toBe(0);
-    expect(JSON.parse(contended.stdout)).toMatchObject({
-      code: "lock_contention",
-    });
-    expect(snapshot(harness.state)).toEqual(before);
-    const exited = once(holder, "exit");
-    holder.kill("SIGKILL");
-    await exited;
-    expect(harness.publish().status).toBe(0);
-    expect(lstatSync(lock).ino).toBe(inode);
-    expect(readFileSync(join(harness.state, "overview.md"), "utf8")).toBe(
-      originalOverview.replace("Old history", entry(current)),
-    );
   });
 
   it("should update one owned summary without duplicating its history entry", () => {
@@ -380,8 +342,6 @@ describe("cmd:state-journals", () => {
     "destination directory",
     "domain symlink",
     "overview symlink",
-    "lock symlink",
-    "lock directory",
   ])(
     "should refuse unsafe files (%s) without touching their referents",
     (kind) => {
@@ -393,11 +353,6 @@ describe("cmd:state-journals", () => {
         rmSync(harness.input);
         if (kind === "input symlink") symlinkSync(victim, harness.input);
         else mkdirSync(harness.input);
-      } else if (kind.startsWith("lock")) {
-        const lock = join(harness.state, ".state-journals.lock");
-        rmSync(lock);
-        if (kind === "lock symlink") symlinkSync(victim, lock);
-        else mkdirSync(lock);
       } else if (kind === "domain symlink") {
         mkdirSync(join(harness.state, "journals"));
         symlinkSync(harness.root, join(harness.state, "journals/essential"));
