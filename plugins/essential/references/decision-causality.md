@@ -14,6 +14,10 @@ Every decision child records, beyond status/headline/owner/created/provenance:
 
 Empty fields are omitted, not written as placeholders.
 
+## Accepted tradeoffs
+
+Future in-repo ADRs and work-local `.state/` decision children use an optional `## 🤝 Accepted Trade Offs` section. Omit it when no tradeoffs were explicitly accepted. When included, list every explicitly accepted cost, limitation, risk, or compromise as a bullet explaining what it buys. Keep unresolved risks and rejected alternatives in their own sections; do not infer acceptance from their presence. Existing records require no backfill.
+
 ## Blast-radius sweep on acceptance
 
 When the user accepts a decision, the main agent runs one sweep before any further dispatch:

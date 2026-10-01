@@ -27,9 +27,15 @@ TODO: State the accepted choice in plain English first, then give the precise ru
 
 TODO: Name the meaningful alternatives and why they were not selected.
 
+## 🤝 Accepted Trade Offs
+
+<!-- Optional; follow ../../references/decision-causality.md#accepted-tradeoffs. -->
+
+- TODO: Describe an explicitly accepted tradeoff and what it buys.
+
 ## ⚖️ Consequences
 
-TODO: Explain what improves, the costs and maintenance this choice introduces, and the risks that remain.
+TODO: Explain what improves, the operational and maintenance implications, and unresolved risks without repeating the accepted tradeoffs.
 
 <!-- OPTIONAL SUPERSEDED HEADER
 
