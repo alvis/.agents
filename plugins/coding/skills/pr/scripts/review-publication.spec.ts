@@ -669,6 +669,7 @@ describe("cmd:review-publication", () => {
         link: actionsJob,
         startedAt: "2026-09-28T09:58:00Z",
         completedAt: null,
+        workflow: "",
       },
       {
         name: "test",
@@ -677,6 +678,7 @@ describe("cmd:review-publication", () => {
         link: actionsJob,
         startedAt: null,
         completedAt: "2026-09-28T10:00:00Z",
+        workflow: "",
       },
       {
         name: "lint",
@@ -685,6 +687,7 @@ describe("cmd:review-publication", () => {
         link: "https://ci.example.com/jobs/1",
         startedAt: "2026-09-28T09:59:00Z",
         completedAt: "2026-09-28T10:00:00Z",
+        workflow: "",
       },
     ]);
     expect(result.writes).toEqual([]);
@@ -2079,6 +2082,11 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
     if (options.templateMutation !== undefined) {
       mkdirSync(join(root, "skills/pr/scripts"), { recursive: true });
       cpSync(scriptPath, installedScript);
+      cpSync(
+        join(import.meta.dirname, "../../../scripts/gh"),
+        join(root, "scripts/gh"),
+        { recursive: true },
+      );
       const templates = join(import.meta.dirname, "../templates");
       cpSync(templates, join(root, "skills/pr/templates"), { recursive: true });
       const templatePath = join(
