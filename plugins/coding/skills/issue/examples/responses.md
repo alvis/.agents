@@ -40,7 +40,7 @@ Related to #219, which affects downloads through a different code path.
 
 ### 🔁 Duplicate of #184
 
-Both reports reproduce the same encoding failure before upload reaches storage. The failing path and reproduction conditions match. Closing this issue as a duplicate; follow #184 for updates.
+Both reports reproduce the same encoding failure before upload reaches storage. The failing path and reproduction conditions match. Follow #184 for updates.
 
 ## Classification — Feature
 

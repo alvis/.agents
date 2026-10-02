@@ -4,7 +4,7 @@ Use this canonical triage-comment layout and incorporate applicable repository-s
 
 | Disposition | Heading | Required content |
 | --- | --- | --- |
-| Duplicate | 🔁 Duplicate of #N | Evidence of the same underlying issue; canonical reference; closing action only after comment verification |
+| Duplicate | 🔁 Duplicate of #N | Evidence of the same underlying issue; canonical reference |
 | Feature/Task | 🏷️ Classified as Feature/Task | Intended behavior or maintenance evidence; bug triage ends |
 | Missing information | ❓ Information Needed | Specific missing inputs and how they enable investigation |
 | Supported cause | 🔎 Analysis | One explicit causal conclusion (validated by existing evidence, or likely from static inspection); symptom-reproduction evidence reported separately without implying causal validation; inspected revision; standalone verified code permalinks; next step; no fix claim |

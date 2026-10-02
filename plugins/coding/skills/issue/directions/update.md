@@ -6,13 +6,13 @@
 4. Reread immediately before writing and merge only intended changes. For a title-only update, leave the body untouched:
 
 ```bash
-gh issue edit "$NUMBER" --repo "$REPOSITORY" --title "$TITLE"
+bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue.ts" edit "$NUMBER" --repo "$HOST/$REPOSITORY" --title "$TITLE"
 ```
 
 For a body update, write the exact complete revised body to `BODY_FILE`, then:
 
 ```bash
-gh issue edit "$NUMBER" --repo "$REPOSITORY" --body-file "$BODY_FILE"
+bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue.ts" edit "$NUMBER" --repo "$HOST/$REPOSITORY" --body-file "$BODY_FILE"
 ```
 
 Add `--title "$TITLE"` to the body command only when both fields change.

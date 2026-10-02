@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# gh pr/repo calls go through the coding plugin's routing wrappers, which
+# keep gh's interface and reroute over REST where GraphQL is blocked
+CODING_SCRIPTS=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../../scripts" && pwd)
 
 usage() {
   echo "usage: temp-tree.sh open-git|open-jj <repo> <revision> | open-clone <repository-url> <pr-number> <revision> | close <lease>" >&2
@@ -83,7 +86,7 @@ open_clone() {
   printf '%s\n' "$repository" >"$lease/repo"
   printf '%s\n' "$tree" >"$lease/tree"
   trap 'close_lease "$lease"' ERR HUP INT TERM
-  gh repo clone "$repository" "$tree" -- --no-checkout >&2
+  bun "$CODING_SCRIPTS/gh-repo.ts" clone "$repository" "$tree" -- --no-checkout >&2
   git -C "$tree" fetch origin "pull/$pr_number/head" >&2
   git -C "$tree" cat-file -e "$revision^{commit}"
   git -C "$tree" checkout --detach "$revision" >&2
