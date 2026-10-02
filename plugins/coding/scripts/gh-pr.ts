@@ -70,7 +70,7 @@ export const UNSUPPORTED: Readonly<Record<string, string>> = {
   revert: "GitHub exposes pull-request revert only through GraphQL (revertPullRequest)",
   status: "the cross-repository status summary is a GraphQL search with no REST equivalent",
   "closing-issue links":
-    "closingIssuesReferences and add/removeCloseIssueReferences are GraphQL-only; list resolving issues as `Closing #<n>` in the PR body instead",
+    "closingIssuesReferences and add/removeCloseIssueReferences are GraphQL-only; list resolving issues on the PR body's closing line (`Closes #<n>, closes #<m>`) instead",
   "gh stack":
     "the gh-stack extension calls GitHub itself and cannot be rerouted by this wrapper",
   checkout: "not used by the coding skills; no REST route implemented",

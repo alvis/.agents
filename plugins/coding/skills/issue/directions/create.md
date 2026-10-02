@@ -8,7 +8,7 @@
 6. Write the exact body to `BODY_FILE` without shell interpolation, then run:
 
 ```bash
-gh issue create --repo "$REPOSITORY" --title "$TITLE" --body-file "$BODY_FILE"
+bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue.ts" create --repo "$HOST/$REPOSITORY" --title "$TITLE" --body-file "$BODY_FILE"
 ```
 
 7. Bind the returned URL and number. Read it back, then apply selected metadata through `directions/github.md`. If creation succeeds but metadata fails, report the existing issue and failed fields; never create a second issue to retry metadata.

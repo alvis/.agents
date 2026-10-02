@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {
+  cpSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -154,9 +155,14 @@ esac
     // the readiness gate reads checks through the publisher's REST `checks`
     // action, whose output shape review-publication.spec.ts owns; this stub
     // replays the fixture so the gate's own classification stays under test
-    mkdirSync(join(root, "scripts"));
+    // the gate reaches `gh pr` through the plugin's wrapper, so mirror the
+    // plugin layout around the skill directory and pin the native route
+    const skill = join(root, "plugin/skills/pr");
+    mkdirSync(join(skill, "scripts"), { recursive: true });
+    cpSync(join(import.meta.dirname, "../../../scripts/gh-pr.ts"), join(root, "plugin/scripts/gh-pr.ts"));
+    cpSync(join(import.meta.dirname, "../../../scripts/gh"), join(root, "plugin/scripts/gh"), { recursive: true });
     writeFileSync(
-      join(root, "scripts/review-publication.ts"),
+      join(skill, "scripts/review-publication.ts"),
       'process.stdout.write(require("node:fs").readFileSync(process.env.CHECKS_FILE, "utf8"));\n',
     );
     const completed = spawnSync(
@@ -169,7 +175,8 @@ esac
           PATH: `${root}:${process.env.PATH}`,
           METADATA: metadata,
           CHECKS_FILE: checks,
-          CODING_PR_SKILL_DIR: root,
+          CODING_PR_SKILL_DIR: skill,
+          GH_ROUTE: "native",
           CI_STATE: options.ciState ?? "green",
           REPOSITORY: "example/repo",
           IS_MISSING: String(options.isMissing ?? false),
