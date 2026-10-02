@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 import { basename, dirname, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { checkFromRun, checkFromStatus } from "../../../scripts/gh/checks.ts";
+
 type JsonObject = Record<string, unknown>;
 type PublicationKind =
   "discussion-reply" | "review" | "review-supplement" | "status";
@@ -1001,51 +1003,9 @@ function readLiveCiChecks(
   runs: readonly JsonObject[] = readLiveCheckRuns(executable, target),
 ): JsonObject[] {
   return [
-    ...runs.map(checkFromRun),
-    ...readLiveCommitStatuses(executable, target).map(checkFromStatus),
+    ...runs.map((run) => ({ ...checkFromRun(run) })),
+    ...readLiveCommitStatuses(executable, target).map((status) => ({ ...checkFromStatus(status) })),
   ];
-}
-
-/**
- * normalizes one REST check run into the bucket/state/link shape the CI
- * classifier reads, mirroring how `gh pr checks` reports a check run: the
- * details URL is the link, and neutral stays distinct from skipped
- */
-function checkFromRun(run: JsonObject): JsonObject {
-  const status = stringValue(run.status, "CI check run status").toLowerCase();
-  const conclusion = run.conclusion === null || run.conclusion === undefined
-    ? null
-    : stringValue(run.conclusion, "CI check run conclusion").toLowerCase();
-  const bucket = status !== "completed" || conclusion === null
-    ? "pending"
-    : conclusion === "success"
-      ? "pass"
-      : ["skipped", "neutral"].includes(conclusion)
-        ? "skipping"
-        : conclusion === "cancelled"
-          ? "cancel"
-          : "fail";
-  return {
-    name: stringValue(run.name, "CI check run name"),
-    bucket,
-    state: (status === "completed" && conclusion !== null ? conclusion : status).toUpperCase(),
-    link: run.details_url ?? run.html_url ?? null,
-    startedAt: run.started_at ?? null,
-    completedAt: run.completed_at ?? null,
-  };
-}
-
-/** normalizes one legacy commit status into the same classifier shape */
-function checkFromStatus(status: JsonObject): JsonObject {
-  const state = stringValue(status.state, "commit status state").toLowerCase();
-  return {
-    name: stringValue(status.context, "commit status context"),
-    bucket: state === "success" ? "pass" : state === "pending" ? "pending" : "fail",
-    state: state.toUpperCase(),
-    link: status.target_url ?? null,
-    startedAt: status.created_at ?? null,
-    completedAt: state === "pending" ? null : (status.updated_at ?? null),
-  };
 }
 
 function readLiveCommitStatuses(

@@ -318,6 +318,9 @@ describe("review publication shell guard", () => {
         const templates = join(directory, "skills/pr/templates");
         mkdirSync(scripts, { recursive: true });
         cpSync(contractPath, join(scripts, "review-publication.ts"));
+        cpSync(join(pluginRoot, "scripts/gh"), join(directory, "scripts/gh"), {
+          recursive: true,
+        });
         cpSync(join(pluginRoot, "skills/pr/templates"), templates, {
           recursive: true,
         });
@@ -455,6 +458,9 @@ describe("review publication shell guard", () => {
     const directory = mkdtempSync(join(tmpdir(), "review-gate-mutation-"));
     const scriptDirectory = join(directory, "skills/pr/scripts");
     mkdirSync(scriptDirectory, { recursive: true });
+    cpSync(join(pluginRoot, "scripts/gh"), join(directory, "scripts/gh"), {
+      recursive: true,
+    });
     const source = readFileSync(contractPath, "utf8");
     const mutant = source.replace(
       "const decision = classifyReviewPublicationCommand(command, pluginRoot);",
