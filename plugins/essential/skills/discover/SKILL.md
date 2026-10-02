@@ -4,7 +4,7 @@ description: "Discovers material unknowns before planning. Use for a blindspot p
 requirements:
   model: capable
   effort: deliberate
-argument-hint: "[blindspots|options|interview|reference|prototype|readiness|state|implementation] <problem> | decisions [selector…] [--only=active,proposed,superseded] [--persist] [--work-id=<id>]"
+argument-hint: "[blindspots|options|interview|reference|prototype|readiness|state|implementation] <problem> [--persist] [--work-id=<id>] | decisions [selector…] [--only=active,proposed,superseded]"
 ---
 
 # Discover
