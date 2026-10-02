@@ -2,7 +2,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { detectRoute } from "./gh/route.ts";
+import { detectRoute } from "./gh/detect.ts";
 import { cloud, restCalls, runScript } from "./gh/spec-harness.ts";
 import { UNSUPPORTED } from "./gh-pr.ts";
 

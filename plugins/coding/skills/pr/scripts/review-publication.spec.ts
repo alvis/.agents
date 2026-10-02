@@ -53,6 +53,7 @@ interface RunOptions {
   publisher?: string;
   rawInput?: string;
   relationPullNumber?: number;
+  route?: "native" | "rest";
   threadMetadata?: string;
   templateMutation?: {
     readonly name: "inline-review.md" | "overall-review.md";
@@ -206,7 +207,7 @@ const reply = {
   },
   comment_id: 81,
   operation: "reply-inline",
-  thread_id: null,
+  thread_comment_id: null,
 } as const;
 const receipt = createReviewPublicationReceipt(review);
 
@@ -1457,35 +1458,67 @@ describe("cmd:review-publication", () => {
     },
   );
 
-  it.each(["resolve-thread", "unresolve-thread"])(
-    "should publish one approved %s operation",
-    (operation) => {
+  it.each([
+    ["resolve-thread", "resolveReviewThread"],
+    ["unresolve-thread", "unresolveReviewThread"],
+  ])(
+    "should publish one approved %s operation through GraphQL natively",
+    (operation, field) => {
       const approval = createReviewPublicationReceipt({
         ...reply,
         operation,
         body: null,
         comment_id: null,
-        thread_id: "PRRT_123",
+        thread_comment_id: 81,
       });
       const result = runCommand(approval);
 
-      expect(result.status).toBe(0);
-      expect(result.writes).toEqual([
-        {
-          arguments: [
-            "api",
-            "graphql",
-            "--hostname",
-            "github.com",
-            "--input",
-            "-",
-          ],
-          body: Buffer.from(approval.payload_utf8_base64, "base64").toString(
-            "utf8",
-          ),
-          operation: "write",
-        },
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.writes).toHaveLength(1);
+      expect(result.writes[0]!.arguments).toEqual([
+        "api",
+        "graphql",
+        "--hostname",
+        "github.com",
+        "--input",
+        "-",
       ]);
+      expect(JSON.parse(result.writes[0]!.body)).toEqual({
+        query: `mutation($threadId:ID!){${field}(input:{threadId:$threadId}){thread{isResolved}}}`,
+        variables: { threadId: "PRRT_123" },
+      });
+    },
+  );
+
+  it.each([
+    ["resolve-thread", "resolve"],
+    ["unresolve-thread", "unresolve"],
+  ])(
+    "should publish one approved %s operation through the cloud route",
+    (operation, action) => {
+      const approval = createReviewPublicationReceipt({
+        ...reply,
+        operation,
+        body: null,
+        comment_id: null,
+        thread_comment_id: 81,
+      });
+      const result = runCommand(approval, { route: "rest" });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.writes.map((write) => write.arguments)).toEqual([
+        [
+          "api",
+          "--hostname",
+          "github.com",
+          "--method",
+          "POST",
+          `repos/example/project/pulls/35/ccr/comments/81/${action}`,
+        ],
+      ]);
+      expect(
+        result.records.some((record) => record.arguments.includes("graphql")),
+      ).toBe(false);
     },
   );
 
@@ -1495,7 +1528,7 @@ describe("cmd:review-publication", () => {
       operation: "resolve-thread",
       body: null,
       comment_id: null,
-      thread_id: "PRRT_123",
+      thread_comment_id: 81,
     });
     const result = runCommand(approval, { relationPullNumber: 36 });
 
@@ -1503,16 +1536,16 @@ describe("cmd:review-publication", () => {
     expect(result.writes).toEqual([]);
   });
 
-  it("should reject missing thread metadata before writing", () => {
+  it("should reject a comment that belongs to no thread before writing", () => {
     const approval = createReviewPublicationReceipt({
       ...reply,
       operation: "unresolve-thread",
       body: null,
       comment_id: null,
-      thread_id: "PRRT_123",
+      thread_comment_id: 81,
     });
     const result = runCommand(approval, {
-      threadMetadata: '{"data":{"node":null}}',
+      threadMetadata: threadPage([{ id: "PRRT_9", commentIds: [70] }]),
     });
 
     expect(result.status).not.toBe(0);
@@ -2024,6 +2057,35 @@ describe("cmd:review-publication", () => {
   );
 });
 
+/** one native GraphQL review-thread page holding the given threads */
+function threadPage(
+  threads: readonly { id: string; commentIds: readonly number[] }[],
+): string {
+  const done = { hasNextPage: false, endCursor: null };
+  return JSON.stringify({
+    data: {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            pageInfo: done,
+            nodes: threads.map((thread) => ({
+              id: thread.id,
+              isResolved: false,
+              isOutdated: false,
+              path: "src/index.ts",
+              line: 3,
+              comments: {
+                pageInfo: done,
+                nodes: thread.commentIds.map((databaseId) => ({ databaseId })),
+              },
+            })),
+          },
+        },
+      },
+    },
+  });
+}
+
 function runCommand(input: unknown, options: RunOptions = {}): RunResult {
   const root = mkdtempSync(join(tmpdir(), "review-publication-spec-"));
   try {
@@ -2039,7 +2101,7 @@ function runCommand(input: unknown, options: RunOptions = {}): RunResult {
       `#!/usr/bin/env bun
 import { appendFileSync, readFileSync } from "node:fs";
 const args = process.argv.slice(2);
-const isWrite = args.includes("--input");
+const isWrite = args.includes("--input") || args.includes("POST");
 const body = isWrite ? readFileSync(0, "utf8") : "";
 appendFileSync(process.env.PUBLICATION_RECORD, JSON.stringify({arguments: args, body, operation: isWrite ? "write" : "read"}) + "\\n");
 if (isWrite) { process.stdout.write('{"id":91}\\n'); process.exit(0); }
@@ -2148,19 +2210,9 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
         PUBLICATION_CHECK_RUNS: options.checkRuns ?? checkRunPages(passingRun),
         PUBLICATION_USER: options.publisher ?? "publisher",
         PUBLICATION_RELATION: String(options.relationPullNumber ?? 35),
+        GH_ROUTE: options.route ?? "native",
         PUBLICATION_THREAD_METADATA:
-          options.threadMetadata ??
-          JSON.stringify({
-            data: {
-              node: {
-                __typename: "PullRequestReviewThread",
-                pullRequest: {
-                  number: options.relationPullNumber ?? 35,
-                  repository: { nameWithOwner: "example/project" },
-                },
-              },
-            },
-          }),
+          options.threadMetadata ?? threadPage([{ id: "PRRT_123", commentIds: [80, 81] }]),
         PUBLICATION_POLICY_RULES: JSON.stringify(
           options.policyRulePages ?? [options.policyRules ?? []],
         ),
