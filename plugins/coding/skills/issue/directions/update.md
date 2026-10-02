@@ -1,7 +1,7 @@
 # Update
 
 1. Read the specified issue and discussion using `directions/github.md`; resolve requested content and metadata changes against current evidence.
-2. Change the title only when requested or supported by the intended update; retain its reporter-authored facts and scope. For body changes, prefer the applicable repository template, otherwise `templates/body.md`. Preserve the reporter's observations and human edits; distinguish report, verified findings, and pending questions. Incorporate new facts into their owning sections rather than appending contradictory updates.
+2. Change the title only when requested or supported by the intended update; retain its reporter-authored facts and scope. Apply `directions/templates.md` to only the fields authorized to change. For a body change, preserve the reporter's observations and human edits; distinguish report, verified findings, and pending questions. Incorporate new facts into their owning sections rather than appending contradictory updates.
 3. If a faithful update cannot preserve a material disputed statement, leave that statement unchanged and report the conflict. Do not replace the complete body with a generic summary.
 4. Reread immediately before writing and merge only intended changes. For a title-only update, leave the body untouched:
 
