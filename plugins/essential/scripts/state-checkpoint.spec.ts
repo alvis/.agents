@@ -177,8 +177,8 @@ class CheckpointHarness {
   }
 }
 
-// each case runs up to ~20 hook subprocesses; single cases exceeded 5s on macOS CI
-// (18 cases took 33-36s), so 30s allows over 5x headroom per case
+// each case runs up to ~20 hook subprocesses; single cases reached 7.31s on macOS CI
+// (18 cases took 33-36s), so 30s allows over 4x headroom per case
 describe("cmd:state-checkpoint", { timeout: 30_000 }, () => {
   it("should checkpoint material global writes without treating global paths as work-relative files", async (context) => {
     const harness = await createHarness(context);
