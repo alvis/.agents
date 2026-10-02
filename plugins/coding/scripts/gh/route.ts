@@ -219,3 +219,41 @@ export function requestedFields(fields: string, available: readonly string[]): s
     );
   return names;
 }
+
+/** a REST implementation of one subcommand */
+export type Handler = (argv: readonly string[]) => Promise<number>;
+
+/**
+ * runs one wrapper invocation: native passthrough, or the REST handler for
+ * the subcommand, refusing unsupported or unknown subcommands by name
+ * @param group - the `gh` command group, such as `pr`
+ * @param handlers - REST handlers by subcommand
+ * @param unsupported - refused subcommands with their reasons
+ * @param argv - arguments after the wrapper, starting with the subcommand
+ * @param env - process environment
+ * @returns the exit code
+ */
+export async function runWrapper(
+  group: string,
+  handlers: Readonly<Record<string, Handler>>,
+  unsupported: Readonly<Record<string, string>>,
+  argv: readonly string[],
+  env: Record<string, string | undefined>,
+): Promise<number> {
+  if (detectRoute(env) === "native") return await passthrough(group, argv);
+  const [subcommand, ...rest] = argv;
+  try {
+    if (subcommand !== undefined && unsupported[subcommand] !== undefined)
+      throw new WrapperError(`gh ${group} ${subcommand} is unavailable through REST: ${unsupported[subcommand]}`);
+    const handler = subcommand === undefined ? undefined : handlers[subcommand];
+    if (handler === undefined)
+      throw new WrapperError(
+        `unknown gh ${group} subcommand "${subcommand ?? ""}"; supported through REST: ${Object.keys(handlers).join(", ")}`,
+      );
+    return await handler(rest);
+  } catch (error) {
+    if (!(error instanceof WrapperError)) throw error;
+    process.stderr.write(`gh-${group}: ${error.message}\n`);
+    return error.exitCode;
+  }
+}

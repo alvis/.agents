@@ -17,19 +17,18 @@ import {
   api,
   apiList,
   currentBranch,
-  detectRoute,
   parseRepositorySpec,
-  passthrough,
   printJson,
   readBody,
   requestedFields,
   resolveRepository,
+  runWrapper,
   WrapperError,
 } from "./gh/route.ts";
 
 import type { CheckRun, CommitStatus } from "./gh/checks.ts";
 import type { ParsedArgs } from "./gh/args.ts";
-import type { Repository } from "./gh/route.ts";
+import type { Handler, Repository } from "./gh/route.ts";
 
 /** the REST pull-request fields this wrapper reads */
 interface Pull {
@@ -469,7 +468,7 @@ async function diff(argv: readonly string[]): Promise<number> {
 }
 
 /** the REST implementation of every supported subcommand */
-const HANDLERS: Readonly<Record<string, (argv: readonly string[]) => Promise<number>>> = {
+const HANDLERS: Readonly<Record<string, Handler>> = {
   view,
   list: listPulls,
   create,
@@ -494,20 +493,7 @@ export async function main(
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough("pr", argv);
-  const [subcommand, ...rest] = argv;
-  try {
-    if (subcommand !== undefined && UNSUPPORTED[subcommand] !== undefined)
-      throw new WrapperError(`gh pr ${subcommand} is unavailable through REST: ${UNSUPPORTED[subcommand]}`);
-    const handler = subcommand === undefined ? undefined : HANDLERS[subcommand];
-    if (handler === undefined)
-      throw new WrapperError(`unknown gh pr subcommand "${subcommand ?? ""}"; supported through REST: ${Object.keys(HANDLERS).join(", ")}`);
-    return await handler(rest);
-  } catch (error) {
-    if (!(error instanceof WrapperError)) throw error;
-    process.stderr.write(`gh-pr: ${error.message}\n`);
-    return error.exitCode;
-  }
+  return await runWrapper("pr", HANDLERS, UNSUPPORTED, argv, env);
 }
 
 if (import.meta.main) process.exit(await main(process.argv.slice(2)));
