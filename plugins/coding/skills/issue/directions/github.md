@@ -12,7 +12,7 @@ gh api --hostname "$HOST" --method GET \
 
 An issue response containing `pull_request` is not an issue. Save `node_id`, title, body, state, labels, milestone, timestamps, and comment IDs/content for comparison. Page comments from 1 while a next page exists and detail budget remains; each request consumes a detail read. Do not infer thread completeness from a truncated response. Record the latest substantive human evidence separately from generic update timestamps.
 
-Read `.github/ISSUE_TEMPLATE/`, contributing instructions, and repository project conventions before composing writes. Discover existing metadata:
+For create and authorized title/body updates, discover effective issue templates and contributing instructions through `directions/templates.md`. Read repository project conventions before composing writes. Discover existing metadata:
 
 ```bash
 gh api --hostname "$HOST" --paginate "repos/$REPOSITORY/labels?per_page=100"

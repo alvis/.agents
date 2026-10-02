@@ -1,6 +1,6 @@
 # Issue body
 
-Use the applicable repository template first. Otherwise render this shape, omitting sections without relevant content and replacing every slot. For updates, retain reporter observations and existing human additions. Metadata belongs in GitHub fields, not decorative body lists.
+Use this shape only when `directions/templates.md` selects the body fallback. Omit sections without relevant content and replace every slot. For updates, retain reporter observations and existing human additions. Metadata belongs in GitHub fields, not decorative body lists.
 
 ```markdown
 📌
