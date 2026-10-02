@@ -776,6 +776,15 @@ function runGitHubPolicyRead(
   if (completed.status !== 0) {
     if (allowUnprotected && completed.stderr.includes("Branch not protected (HTTP 404)"))
       return null;
+    // an integration token without administration read gets 403 here; the
+    // branch's public `protected` flag proves the same absence the 404 does,
+    // while a protected branch whose rules stay unreadable still refuses
+    if (
+      allowUnprotected &&
+      completed.stderr.includes("(HTTP 403)") &&
+      isBranchUnprotected(executable, host, endpoint.replace(/\/protection$/u, ""))
+    )
+      return null;
     throw new Error(
       `required-check policy lookup failed: ${completed.stderr.trim() || completed.stdout.trim() || `exit ${completed.status}`}`,
     );
@@ -787,6 +796,22 @@ function runGitHubPolicyRead(
   }
 }
 
+function isBranchUnprotected(
+  executable: string,
+  host: string,
+  branchEndpoint: string,
+): boolean {
+  const completed = spawnSync(executable, ["api", "--hostname", host, branchEndpoint], {
+    encoding: "utf8",
+  });
+  if (completed.status !== 0) return false;
+  try {
+    return objectValue(JSON.parse(completed.stdout) as unknown, "branch").protected === false;
+  } catch {
+    return false;
+  }
+}
+
 function readLiveCiState(
   receipt: ReviewPublicationReceipt,
   executable: string,
@@ -795,37 +820,8 @@ function readLiveCiState(
   const context = (receipt.approved_assessment as ReviewPublicationAssessment)
     .review_context.ci;
   assertLiveRequiredPolicy(receipt, executable);
-  const completed = spawnSync(
-    executable,
-    [
-      "pr",
-      "checks",
-      String(target.pull_number),
-      "--repo",
-      `${target.host}/${target.owner}/${target.repo}`,
-      "--json",
-      "bucket,completedAt,link,name,startedAt,state,workflow",
-    ],
-    { encoding: "utf8" },
-  );
-  if (
-    completed.status !== 0 &&
-    completed.status !== 1 &&
-    completed.status !== 8
-  ) {
-    throw new Error(
-      `CI lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
-    );
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(completed.stdout);
-  } catch {
-    throw new Error("CI lookup returned malformed JSON");
-  }
-  const checks = arrayValue(parsed, "live CI checks").map((item) =>
-    objectValue(item, "live CI check"),
-  );
+  const runs = readLiveCheckRuns(executable, target);
+  const checks = readLiveCiChecks(executable, target, runs);
   let pending = false;
   for (const check of checks) {
     const bucket = stringValue(check.bucket, "CI bucket").toLowerCase();
@@ -862,11 +858,7 @@ function readLiveCiState(
     )
       pending = true;
   }
-  const appRuns = context.expected_checks.some(
-    (check) => check.app_id !== undefined && check.app_id !== -1,
-  )
-    ? readLiveCheckRuns(executable, target)
-    : [];
+  const appRuns = runs;
   for (const expected of context.expected_checks) {
     if (expected.app_id !== undefined && expected.app_id !== -1) {
       const matchingRuns = appRuns.filter((run) => {
@@ -966,7 +958,7 @@ function checkMatchesWorkflowPath(
 
 function readLiveCheckRuns(
   executable: string,
-  target: PublicationTarget,
+  target: Pick<PublicationTarget, "host" | "owner" | "repo" | "head_oid">,
 ): JsonObject[] {
   const completed = spawnSync(
     executable,
@@ -995,6 +987,98 @@ function readLiveCheckRuns(
       objectValue(page, `CI check-run page ${index + 1}`).check_runs,
       "CI check runs",
     ).map((run) => objectValue(run, "CI check run")),
+  );
+}
+
+/**
+ * lists every check run and legacy commit status on one revision over REST,
+ * in the bucket/state/link shape `gh pr checks` reports, so callers need no
+ * GraphQL access
+ */
+function readLiveCiChecks(
+  executable: string,
+  target: Pick<PublicationTarget, "host" | "owner" | "repo" | "head_oid">,
+  runs: readonly JsonObject[] = readLiveCheckRuns(executable, target),
+): JsonObject[] {
+  return [
+    ...runs.map(checkFromRun),
+    ...readLiveCommitStatuses(executable, target).map(checkFromStatus),
+  ];
+}
+
+/**
+ * normalizes one REST check run into the bucket/state/link shape the CI
+ * classifier reads, mirroring how `gh pr checks` reports a check run: the
+ * details URL is the link, and neutral stays distinct from skipped
+ */
+function checkFromRun(run: JsonObject): JsonObject {
+  const status = stringValue(run.status, "CI check run status").toLowerCase();
+  const conclusion = run.conclusion === null || run.conclusion === undefined
+    ? null
+    : stringValue(run.conclusion, "CI check run conclusion").toLowerCase();
+  const bucket = status !== "completed" || conclusion === null
+    ? "pending"
+    : conclusion === "success"
+      ? "pass"
+      : ["skipped", "neutral"].includes(conclusion)
+        ? "skipping"
+        : conclusion === "cancelled"
+          ? "cancel"
+          : "fail";
+  return {
+    name: stringValue(run.name, "CI check run name"),
+    bucket,
+    state: (status === "completed" && conclusion !== null ? conclusion : status).toUpperCase(),
+    link: run.details_url ?? run.html_url ?? null,
+    startedAt: run.started_at ?? null,
+    completedAt: run.completed_at ?? null,
+  };
+}
+
+/** normalizes one legacy commit status into the same classifier shape */
+function checkFromStatus(status: JsonObject): JsonObject {
+  const state = stringValue(status.state, "commit status state").toLowerCase();
+  return {
+    name: stringValue(status.context, "commit status context"),
+    bucket: state === "success" ? "pass" : state === "pending" ? "pending" : "fail",
+    state: state.toUpperCase(),
+    link: status.target_url ?? null,
+    startedAt: status.created_at ?? null,
+    completedAt: state === "pending" ? null : (status.updated_at ?? null),
+  };
+}
+
+function readLiveCommitStatuses(
+  executable: string,
+  target: Pick<PublicationTarget, "host" | "owner" | "repo" | "head_oid">,
+): JsonObject[] {
+  const completed = spawnSync(
+    executable,
+    [
+      "api",
+      "--hostname",
+      target.host,
+      "--paginate",
+      "--slurp",
+      `repos/${target.owner}/${target.repo}/commits/${target.head_oid}/status?per_page=100`,
+    ],
+    { encoding: "utf8" },
+  );
+  if (completed.status !== 0)
+    throw new Error(
+      `CI commit-status lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
+    );
+  let pages: unknown;
+  try {
+    pages = JSON.parse(completed.stdout);
+  } catch {
+    throw new Error("CI commit-status lookup returned malformed JSON");
+  }
+  return arrayValue(pages, "CI commit-status pages").flatMap((page, index) =>
+    arrayValue(
+      objectValue(page, `CI commit-status page ${index + 1}`).statuses,
+      "CI commit statuses",
+    ).map((status) => objectValue(status, "CI commit status")),
   );
 }
 
@@ -2852,6 +2936,7 @@ function printUsage(): never {
       "  review-publication.ts publish --approval FILE [--dry-run]",
       "  review-publication.ts update --approval FILE --review-id N [--dry-run]",
       "  review-publication.ts policy-hash --host HOST --owner OWNER --repo REPO --base-ref REF",
+      "  review-publication.ts checks --host HOST --owner OWNER --repo REPO --head OID",
       "  review-publication.ts guard",
       "",
     ].join("\n"),
@@ -2884,6 +2969,23 @@ function main(arguments_: readonly string[]): void {
         target,
       ),
     })}\n`);
+    return;
+  }
+  if (action === "checks") {
+    const host = argumentValue(options, "--host");
+    const owner = argumentValue(options, "--owner");
+    const repo = argumentValue(options, "--repo");
+    const head = argumentValue(options, "--head");
+    if (!host || !owner || !repo || !head) printUsage();
+    process.stdout.write(`${JSON.stringify(readLiveCiChecks(
+      process.env.REVIEW_PUBLICATION_GH_BIN ?? "gh",
+      {
+        host: patternString(host, HOST_PATTERN, "GitHub host"),
+        owner: patternString(owner, OWNER_PATTERN, "repository owner"),
+        repo: patternString(repo, REPO_PATTERN, "repository name"),
+        head_oid: oidValue(head, "head OID"),
+      },
+    ))}\n`);
     return;
   }
   const approvalPath = argumentValue(options, "--approval");
