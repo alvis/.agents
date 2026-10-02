@@ -385,7 +385,7 @@ Capture the returned task/job ID as `active_schedule_id`. Cancel only that exact
 
 #### Poll contract
 
-The one poller queries every PR bottom-up, without `--required` or filtering:
+The one poller queries every PR bottom-up, reading every check without filtering:
 
 ```bash
 bun run "${CODING_PR_SKILL_DIR}/scripts/review-publication.ts" checks \

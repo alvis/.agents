@@ -31,6 +31,8 @@ interface TransportRecord {
 interface RunOptions {
   action?: "approve" | "checks" | "publish" | "update";
   checkRunsExit?: number;
+  statusesExit?: number;
+  statusesBody?: string;
   statuses?: readonly Record<string, unknown>[];
   protectionStatus?: 403 | 404;
   branchProtected?: boolean;
@@ -619,6 +621,18 @@ describe("cmd:review-publication", () => {
     expect(result.writes).toEqual([]);
   });
 
+  it.each([
+    ["stale", "pending"],
+    ["timed_out", "fail"],
+  ] as const)("should bucket a %s check run as %s, like gh pr checks", (conclusion, bucket) => {
+    const result = runCommand(receipt, {
+      action: "checks",
+      checkRuns: checkRunPages({ ...passingRun, conclusion }),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)[0].bucket).toBe(bucket);
+  });
+
   it("should keep an unapproved neutral CI result pending", () => {
     const result = runCommand(receipt, {
       checkRuns: checkRunPages({ ...passingRun, conclusion: "neutral" }),
@@ -924,6 +938,8 @@ describe("cmd:review-publication", () => {
   it.each([
     { checkRuns: "not authorized", checkRunsExit: 4 },
     { checkRuns: "{}" },
+    { statusesBody: "not authorized", statusesExit: 4 },
+    { statusesBody: "not json" },
   ])(
     "should block publication without usable expected CI evidence %#",
     (options) => {
@@ -2047,7 +2063,7 @@ else if (args.some(arg => arg.includes("/rules/branches/main?"))) { const pages 
 else if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
 else if (args.some(arg => /actions\\/runs\\/12$/.test(arg))) process.stdout.write(process.env.PUBLICATION_WORKFLOW_RUN);
 else if (args.some(arg => arg.includes("/check-runs?"))) { process.stdout.write(process.env.PUBLICATION_CHECK_RUNS); process.exit(Number(process.env.PUBLICATION_CHECK_RUNS_EXIT)); }
-else if (args.some(arg => arg.includes("/status?"))) process.stdout.write(JSON.stringify([{state: "pending", statuses: JSON.parse(process.env.PUBLICATION_STATUSES)}]));
+else if (args.some(arg => arg.includes("/status?"))) { process.stdout.write(process.env.PUBLICATION_STATUSES_BODY || JSON.stringify([{state: "pending", statuses: JSON.parse(process.env.PUBLICATION_STATUSES)}])); process.exit(Number(process.env.PUBLICATION_STATUSES_EXIT)); }
 else if (args.some(arg => /pulls\\/36\\/reviews\\/91$/.test(arg))) { process.stderr.write("Not Found (HTTP 404)"); process.exit(1); }
 else if (args.some(arg => /reviews\\/91$/.test(arg))) process.stdout.write(process.env.PUBLICATION_REVIEW_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('/check-runs?') ? process.env.PUBLICATION_REVIEW_AFTER_CI : process.env.PUBLICATION_REVIEW);
 else if (args.includes("graphql")) process.stdout.write(process.env.PUBLICATION_THREAD_METADATA);
@@ -2122,6 +2138,8 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
         REVIEW_PUBLICATION_GH_BIN: executable,
         PUBLICATION_RECORD: recordPath,
         PUBLICATION_STATUSES: JSON.stringify(options.statuses ?? []),
+        PUBLICATION_STATUSES_EXIT: String(options.statusesExit ?? 0),
+        PUBLICATION_STATUSES_BODY: options.statusesBody ?? "",
         PUBLICATION_PROTECTION_STATUS: String(options.protectionStatus ?? 404),
         PUBLICATION_BRANCH_PROTECTED: String(options.branchProtected ?? false),
         PUBLICATION_WORKFLOW_RUN: JSON.stringify(

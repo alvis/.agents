@@ -801,12 +801,8 @@ function isBranchUnprotected(
   host: string,
   branchEndpoint: string,
 ): boolean {
-  const completed = spawnSync(executable, ["api", "--hostname", host, branchEndpoint], {
-    encoding: "utf8",
-  });
-  if (completed.status !== 0) return false;
   try {
-    return objectValue(JSON.parse(completed.stdout) as unknown, "branch").protected === false;
+    return runGitHubRead(executable, ["api", "--hostname", host, branchEndpoint]).protected === false;
   } catch {
     return false;
   }
@@ -956,9 +952,17 @@ function checkMatchesWorkflowPath(
     oidValue(run.head_sha, "CI workflow head") === target.head_oid;
 }
 
-function readLiveCheckRuns(
+/**
+ * reads every page of one per-revision CI resource over REST and returns the
+ * items under `key`; check runs and commit statuses share this so their
+ * failure handling cannot drift apart
+ */
+function readRevisionPages(
   executable: string,
   target: Pick<PublicationTarget, "host" | "owner" | "repo" | "head_oid">,
+  resource: "check-runs" | "status",
+  key: "check_runs" | "statuses",
+  label: string,
 ): JsonObject[] {
   const completed = spawnSync(
     executable,
@@ -968,26 +972,32 @@ function readLiveCheckRuns(
       target.host,
       "--paginate",
       "--slurp",
-      `repos/${target.owner}/${target.repo}/commits/${target.head_oid}/check-runs?per_page=100`,
+      `repos/${target.owner}/${target.repo}/commits/${target.head_oid}/${resource}?per_page=100`,
     ],
     { encoding: "utf8" },
   );
   if (completed.status !== 0)
     throw new Error(
-      `CI check-run lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
+      `CI ${label} lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
     );
   let pages: unknown;
   try {
     pages = JSON.parse(completed.stdout);
   } catch {
-    throw new Error("CI check-run lookup returned malformed JSON");
+    throw new Error(`CI ${label} lookup returned malformed JSON`);
   }
-  return arrayValue(pages, "CI check-run pages").flatMap((page, index) =>
-    arrayValue(
-      objectValue(page, `CI check-run page ${index + 1}`).check_runs,
-      "CI check runs",
-    ).map((run) => objectValue(run, "CI check run")),
+  return arrayValue(pages, `CI ${label} pages`).flatMap((page, index) =>
+    arrayValue(objectValue(page, `CI ${label} page ${index + 1}`)[key], `CI ${label}s`).map(
+      (item) => objectValue(item, `CI ${label}`),
+    ),
   );
+}
+
+function readLiveCheckRuns(
+  executable: string,
+  target: Pick<PublicationTarget, "host" | "owner" | "repo" | "head_oid">,
+): JsonObject[] {
+  return readRevisionPages(executable, target, "check-runs", "check_runs", "check-run");
 }
 
 /**
@@ -1005,6 +1015,9 @@ function readLiveCiChecks(
     ...readLiveCommitStatuses(executable, target).map(checkFromStatus),
   ];
 }
+
+/** conclusions `gh pr checks` reports as failed; any other, such as `stale`, stays pending */
+const FAILED_CONCLUSIONS = new Set(["failure", "timed_out", "action_required", "startup_failure"]);
 
 /**
  * normalizes one REST check run into the bucket/state/link shape the CI
@@ -1024,7 +1037,9 @@ function checkFromRun(run: JsonObject): JsonObject {
         ? "skipping"
         : conclusion === "cancelled"
           ? "cancel"
-          : "fail";
+          : FAILED_CONCLUSIONS.has(conclusion)
+            ? "fail"
+            : "pending";
   return {
     name: stringValue(run.name, "CI check run name"),
     bucket,
@@ -1052,34 +1067,7 @@ function readLiveCommitStatuses(
   executable: string,
   target: Pick<PublicationTarget, "host" | "owner" | "repo" | "head_oid">,
 ): JsonObject[] {
-  const completed = spawnSync(
-    executable,
-    [
-      "api",
-      "--hostname",
-      target.host,
-      "--paginate",
-      "--slurp",
-      `repos/${target.owner}/${target.repo}/commits/${target.head_oid}/status?per_page=100`,
-    ],
-    { encoding: "utf8" },
-  );
-  if (completed.status !== 0)
-    throw new Error(
-      `CI commit-status lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
-    );
-  let pages: unknown;
-  try {
-    pages = JSON.parse(completed.stdout);
-  } catch {
-    throw new Error("CI commit-status lookup returned malformed JSON");
-  }
-  return arrayValue(pages, "CI commit-status pages").flatMap((page, index) =>
-    arrayValue(
-      objectValue(page, `CI commit-status page ${index + 1}`).statuses,
-      "CI commit statuses",
-    ).map((status) => objectValue(status, "CI commit status")),
-  );
+  return readRevisionPages(executable, target, "status", "statuses", "commit-status");
 }
 
 function matchesCiLinkSource(prefix: string, link: string): boolean {
