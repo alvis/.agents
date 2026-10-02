@@ -388,8 +388,12 @@ Capture the returned task/job ID as `active_schedule_id`. Cancel only that exact
 The one poller queries every PR bottom-up, without `--required` or filtering:
 
 ```bash
-gh pr checks <pr> --json bucket,completedAt,link,name,startedAt,state,workflow
+bun run "${CODING_PR_SKILL_DIR}/scripts/review-publication.ts" checks \
+  --host "$HOST" --owner "${REPOSITORY%%/*}" --repo "${REPOSITORY#*/}" \
+  --head "$EXPECTED_HEAD_OID"
 ```
+
+It lists the head's check runs and commit statuses over REST, so it works where GraphQL is unavailable.
 
 Before consuming checks, query the current PR `headRefOid` and require it to equal the parent's recorded `expected_head_oid`. Treat a mismatch as pending with explicit stale-head evidence; never accept checks from an older or unexpected revision.
 
@@ -412,7 +416,6 @@ stack:
     inaccessible_expected_sources: [<source and access error>]
     observed_checks:
       - name: <name>
-        workflow: <workflow>
         bucket: <bucket>
         state: <state>
         link: <url>
@@ -452,13 +455,9 @@ Skip this step for an explicitly unreviewed creation; leave every PR draft witho
   [ "$REVIEWED_HEAD_OID" = "$EXPECTED_HEAD_OID" ] &&
   [ "$REVIEWED_BASE_REF" = "$EXPECTED_BASE_REF" ] &&
   [ "$REVIEWED_BASE_OID" = "$EXPECTED_BASE_OID" ] || exit 1
-if PR_CHECKS=$(gh pr checks "$PR_URL" --repo "$HOST/$REPOSITORY" \
-  --json bucket,completedAt,link,name,startedAt,state,workflow); then
-  PR_CHECKS_EXIT=0
-else
-  PR_CHECKS_EXIT=$?
-fi
-case "$PR_CHECKS_EXIT" in 0|1|8) ;; *) exit 1 ;; esac
+PR_CHECKS=$(bun run "${CODING_PR_SKILL_DIR}/scripts/review-publication.ts" checks \
+  --host "$HOST" --owner "${REPOSITORY%%/*}" --repo "${REPOSITORY#*/}" \
+  --head "$EXPECTED_HEAD_OID") || exit 1
 jq -e 'type == "array" and all(.[]; (.bucket == "pass" or .bucket == "skipping") and .completedAt != null)' \
   >/dev/null <<<"$PR_CHECKS" || exit 1
 PR_METADATA=$(gh pr view "$PR_URL" --repo "$HOST/$REPOSITORY" \
