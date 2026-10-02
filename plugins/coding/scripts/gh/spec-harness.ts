@@ -22,7 +22,7 @@ export interface Run {
   readonly calls: Call[];
 }
 
-/** a REST response keyed by a path prefix the fake gh matches */
+/** a response keyed by a REST path prefix, or `graphql`, that the fake gh matches */
 export type Routes = Record<string, { readonly body: unknown; readonly exit?: number }>;
 
 /** options for one wrapper run */
@@ -44,7 +44,7 @@ const args = process.argv.slice(2);
 const stdin = args.includes("--input") ? readFileSync(0, "utf8") : "";
 appendFileSync(process.env.FAKE_RECORD, JSON.stringify({ args, stdin }) + "\\n");
 if (args[0] !== "api") { process.stdout.write("native " + args.join(" ") + "\\n"); process.exit(Number(process.env.FAKE_NATIVE_EXIT)); }
-const path = args.find((arg) => arg.startsWith("repos/")) ?? "";
+const path = args.find((arg) => arg.startsWith("repos/")) ?? (args.includes("graphql") ? "graphql" : "");
 const routes = JSON.parse(process.env.FAKE_ROUTES);
 const key = Object.keys(routes).filter((prefix) => path.startsWith(prefix)).sort((a, b) => b.length - a.length)[0];
 if (key === undefined) { process.stderr.write("no fake route for " + path); process.exit(3); }

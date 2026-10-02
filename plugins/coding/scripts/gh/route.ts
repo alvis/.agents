@@ -13,8 +13,7 @@
 
 import { $ } from "bun";
 
-/** how one wrapper invocation reaches GitHub */
-export type Route = "native" | "rest";
+import { detectRoute } from "./detect.ts";
 
 /** a GitHub repository the REST route addresses */
 export interface Repository {
@@ -35,18 +34,6 @@ export class WrapperError extends Error {
   ) {
     super(message);
   }
-}
-
-/**
- * selects the route: `GH_ROUTE=native|rest` wins, otherwise a Claude Code
- * cloud session (`CLAUDE_CODE_REMOTE=true`) takes REST and everything else
- * keeps the native `gh` behavior
- * @param env - process environment
- * @returns the selected route
- */
-export function detectRoute(env: Record<string, string | undefined>): Route {
-  if (env.GH_ROUTE === "native" || env.GH_ROUTE === "rest") return env.GH_ROUTE;
-  return env.CLAUDE_CODE_REMOTE === "true" ? "rest" : "native";
 }
 
 /**
