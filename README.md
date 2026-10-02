@@ -144,7 +144,7 @@ When the target is a standalone or non-TypeScript repository, verify each select
 Use a lowercase tracker-derived ID that will remain stable, such as `eng-421-checkout-refunds`:
 
 ```text
-/essential:discover "Find delivery blind spots for checkout refunds" --work-id=eng-421-checkout-refunds --mode=blindspots --persist
+/essential:discover blindspots "Find delivery blind spots for checkout refunds" --work-id=eng-421-checkout-refunds --persist
 /specification:spec-code "Design idempotent checkout refunds from these requirements" --work-id=eng-421-checkout-refunds --capability=checkout-refunds
 /specification:plan-code --work-id=eng-421-checkout-refunds
 /specification:implement-code --work-id=eng-421-checkout-refunds --repo=/absolute/path/to/target-project --defer-publication
