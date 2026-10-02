@@ -88,7 +88,7 @@ Do not copy child detail into an overview. `state.md` links to the overview, not
 | `decisions.md` | `proposed`, `accepted`, `rejected`, `superseded` |
 | `design.md` | `draft`, `approved`, `implemented`, `promoted`, `superseded` |
 
-Each child starts with structured metadata containing at least its canonical status, one-line headline, owner, created timestamp, and source/provenance references. A `decisions/` child additionally follows [decision-causality.md](decision-causality.md): causal metadata (`supersedes`/`affects`/`invalidates`/`preserves`), the blast-radius sweep on acceptance, and the completion gate that dispositions every accepted decision before retirement.
+Each child starts with structured metadata containing at least its canonical status, one-line headline, owner, created timestamp, and source/provenance references. Author `decisions/` children from [the decision template](../templates/state/decisions/decision.md); [their lifecycle](../directions/decisions.md) owns acceptance, supersession, and completion.
 
 When a `proposals/` or `changes/` child's deviation section records a deviation from an externally backed specification, it links to the owning `goal.md` provenance and names the accepted base/receipt used. The transport mirror is not an authored specification. A non-external contract cites its authoritative source instead of inventing Notion provenance: a reachable `repo:` local source keeps its exact source path authoritative and cites that path (the work-local copy is only content-equivalent), while a `local-approved:` or `inline-approved:` source cites its active-work specification.
 

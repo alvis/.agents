@@ -72,7 +72,7 @@ The main agent holds the work item's lease and is the sole writer anywhere under
 
 ### Overviews, decisions, and reviews
 
-Create `proposals.md`, `changes.md`, `decisions.md`, or `design.md` with the first child in its folder and reconcile them per [overviews.md](overviews.md) — including the proposals-vs-changes distinction, canonical child statuses, and deviation provenance. Decisions follow [decision-causality.md](decision-causality.md); accepting one triggers the blast-radius sweep. Reviews follow [reviews.md](reviews.md): `review.md` rolls up the seven canonical review areas plus any plugin-namespaced areas, and work closes only when the roll-up agrees with every detail.
+Create `proposals.md`, `changes.md`, `decisions.md`, or `design.md` with the first child in its folder and reconcile them per [overviews.md](overviews.md) — including the proposals-vs-changes distinction, canonical child statuses, and deviation provenance. Author decision children from [the decision template](../templates/state/decisions/decision.md) and follow [their lifecycle](../directions/decisions.md). Reviews follow [reviews.md](reviews.md): `review.md` rolls up the seven canonical review areas plus any plugin-namespaced areas, and work closes only when the roll-up agrees with every detail.
 
 ## Specification lifecycle
 

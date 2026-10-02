@@ -29,7 +29,7 @@ TODO: Name the meaningful alternatives and why they were not selected.
 
 ## 🤝 Accepted Trade Offs
 
-<!-- Optional; follow ../../references/decision-causality.md#accepted-tradeoffs. -->
+<!-- Optional: omit this section when no tradeoffs were explicitly accepted. List every explicitly accepted cost, limitation, risk, or compromise as a bullet explaining what it buys. Keep unresolved risks in Consequences and rejected alternatives in Alternatives considered; do not infer acceptance from their presence. Existing records require no backfill. -->
 
 - TODO: Describe an explicitly accepted tradeoff and what it buys.
 

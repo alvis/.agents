@@ -14,8 +14,6 @@ Follow the shared [durable documentation reader contract](../references/durable-
 
 Before accepting an effective ADR, remove unresolved template placeholders and contradictory status declarations. Ordinary Markdown autolinks and inline HTML are not placeholders. An effective ADR must stand on its own: it contains no supersession metadata, explicit replacement/predecessor language, or links into `superseded/`.
 
-Follow the shared [accepted-tradeoff contract](../references/decision-causality.md#accepted-tradeoffs) for the optional section.
-
 ## Clarify an accepted record
 
 An active accepted ADR may be clarified in place when the edit changes only wording, definitions, or examples. Compare the diff with the prior version: the choice, rationale, alternatives, consequences, and technical guarantees must retain their meaning. Git history records the clarification; no new ADR metadata is needed. A substantive change follows [supersession](adr-supersession.md), which also owns historical-body preservation.

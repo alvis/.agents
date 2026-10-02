@@ -9,7 +9,7 @@ For each decision, present context and viable options with tradeoffs, always inc
 
 Process outcomes:
 
-- Finalized: the main agent writes or updates `decisions/<semantic-slug>.md` with status, headline, rationale, alternatives, evidence, impact, and supersession, then reconciles `decisions.md` and affected `state.md` tasks.
+- Finalized: the main agent prepares the record from [the decision template](../../../templates/state/decisions/decision.md) and follows [the decision lifecycle](../../../directions/decisions.md) for writing, acceptance, supersession, and reconciliation.
 - Research: a delegated researcher returns the proposed child content, headline, status, and evidence; the main agent writes the `proposals/` child and reconciles `proposals.md`.
 - Deferred: the main agent keeps the question, options, recommendation, owner/deadline, and affected blocked tasks in `state.md`; it creates a decision child only when durable decision history already exists.
 

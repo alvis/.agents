@@ -15,7 +15,8 @@ Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLA
 | `directions/adr-authoring.md` | When creating, accepting, clarifying, or indexing an ADR | Identity, effective-record placement, authoring, clarification, and indexing |
 | `directions/adr-supersession.md` | When replacing an accepted architectural choice | Successor creation, archive placement, historical preservation, and index updates |
 | `directions/adr-review.md` | When checking ADR integrity or reading history | Integrity review and targeted archive inspection |
-| `references/decision-causality.md` | When creating/accepting/superseding a decision | `supersedes`/`affects`/`invalidates`/`preserves`, blast-radius sweep, decision completion gate |
+| `templates/state/decisions/decision.md` | When preparing a work-local decision | Inline metadata, causal-field, and section prompts |
+| `directions/decisions.md` | When accepting/superseding/closing work-local decisions | Blast-radius sweep, supersession, decision completion gate |
 | `references/approvals.md` | When recording approvals or durable claims that age | The approval binding tuple, freshness metadata |
 | `references/anchors.md` | For non-git anchors or cross-stream initiatives | Anchor declarations, adapter contract, initiative manifests |
 | `./directions/lease.md` | Before main-agent writes | `ensure` choreography, the main-agent-only first-use bootstrap, the lease-verified write path, release moments |
