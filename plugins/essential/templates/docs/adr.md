@@ -27,9 +27,15 @@ TODO: State the accepted choice in plain English first, then give the precise ru
 
 TODO: Name the meaningful alternatives and why they were not selected.
 
+## 🤝 Accepted Trade Offs
+
+<!-- Optional: omit this section when no tradeoffs were explicitly accepted. List every explicitly accepted cost, limitation, risk, or compromise as a bullet explaining what it buys. Keep unresolved risks in Consequences and rejected alternatives in Alternatives considered; do not infer acceptance from their presence. Existing records require no backfill. -->
+
+- TODO: Describe an explicitly accepted tradeoff and what it buys.
+
 ## ⚖️ Consequences
 
-TODO: Explain what improves, the costs and maintenance this choice introduces, and the risks that remain.
+TODO: Explain what improves, the operational and maintenance implications, and unresolved risks without repeating the accepted tradeoffs.
 
 <!-- OPTIONAL SUPERSEDED HEADER
 
