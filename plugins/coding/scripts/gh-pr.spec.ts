@@ -276,6 +276,16 @@ describe("cmd:gh-pr", () => {
   });
 
   it.each([
+    ["merge", "7", "--squash", "--delete-branch"],
+    ["close", "7", "-d"],
+  ])("should refuse %s with branch deletion before any write", (...argv) => {
+    const result = run([...argv, "--repo", "example/project"], { env: cloud, routes: pullRoutes });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(UNSUPPORTED["--delete-branch"]);
+    expect(result.calls).toEqual([]);
+  });
+
+  it.each([
     [passingRun, 0],
     [{ ...passingRun, conclusion: "failure" }, 1],
     [{ ...passingRun, status: "in_progress", conclusion: null, completed_at: null }, 8],

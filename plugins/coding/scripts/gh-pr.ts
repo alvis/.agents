@@ -78,7 +78,17 @@ export const UNSUPPORTED: Readonly<Record<string, string>> = {
   lock: "not used by the coding skills; no REST route implemented",
   unlock: "not used by the coding skills; no REST route implemented",
   "update-branch": "not used by the coding skills; no REST route implemented",
+  "--delete-branch":
+    "the Claude Code cloud proxy refuses deleting a branch ref through REST and git push alike; delete the branch from a developer machine",
 };
+
+/** refuses `--delete-branch` before any write, so a close or merge never half-completes */
+function refuseDeleteBranch(subcommand: string, parsed: ParsedArgs): void {
+  if (parsed.booleans.has("delete-branch"))
+    throw new WrapperError(
+      `gh pr ${subcommand} --delete-branch is unavailable through REST: ${UNSUPPORTED["--delete-branch"]}`,
+    );
+}
 
 /** `--json` fields the REST route can produce for `view` and `list` */
 const PR_FIELDS = [
@@ -358,6 +368,7 @@ async function merge(argv: readonly string[]): Promise<number> {
     booleans: ["merge", "squash", "rebase", "delete-branch", "auto", "disable-auto"],
     aliases: { m: "merge", s: "squash", r: "rebase", d: "delete-branch", t: "subject", b: "body", F: "body-file" },
   });
+  refuseDeleteBranch("merge", parsed);
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
   const root = `repos/${repository.owner}/${repository.repo}`;
   const methods = (["merge", "squash", "rebase"] as const).filter((method) => parsed.booleans.has(method));
@@ -378,8 +389,6 @@ async function merge(argv: readonly string[]): Promise<number> {
   const sha = value(parsed, "match-head-commit");
   if (sha !== undefined) body.sha = sha;
   await api(repository, `${root}/pulls/${pull.number}/merge`, { method: "PUT", body });
-  if (parsed.booleans.has("delete-branch") && pull.head.repo?.full_name === `${repository.owner}/${repository.repo}`)
-    await api(repository, `${root}/git/refs/heads/${pull.head.ref}`, { method: "DELETE" });
   return 0;
 }
 
@@ -444,13 +453,12 @@ async function setState(argv: readonly string[], state: "open" | "closed"): Prom
     booleans: state === "closed" ? ["delete-branch"] : [],
     aliases: { c: "comment", d: "delete-branch" },
   });
+  refuseDeleteBranch(state === "closed" ? "close" : "reopen", parsed);
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
   const root = `repos/${repository.owner}/${repository.repo}`;
   const note = value(parsed, "comment");
   if (note !== undefined) await api(repository, `${root}/issues/${pull.number}/comments`, { method: "POST", body: { body: note } });
   await api(repository, `${root}/pulls/${pull.number}`, { method: "PATCH", body: { state } });
-  if (parsed.booleans.has("delete-branch") && pull.head.repo?.full_name === `${repository.owner}/${repository.repo}`)
-    await api(repository, `${root}/git/refs/heads/${pull.head.ref}`, { method: "DELETE" });
   return 0;
 }
 
