@@ -28,7 +28,7 @@ import {
 
 import type { CheckRun, CommitStatus } from "./checks.ts";
 import type { ParsedArgs } from "./args.ts";
-import type { Repository } from "./route.ts";
+import type { Handler, Repository } from "./route.ts";
 
 /** the REST pull-request fields this wrapper reads */
 interface Pull {
@@ -348,7 +348,7 @@ async function checks(argv: readonly string[]): Promise<number> {
 }
 
 /** the REST implementation of every subcommand with a `gh-pr-<subcommand>.ts` drop-in */
-export const SUBCOMMANDS: Readonly<Record<string, (argv: readonly string[]) => Promise<number>>> = {
+export const SUBCOMMANDS: Readonly<Record<string, Handler>> = {
   view,
   list: listPulls,
   create,
