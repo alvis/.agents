@@ -2,7 +2,7 @@
 
 Use this mode when someone new to the repository needs the reasons behind its shape: the human-approved architecture decision records (ADRs) and the decisions agents recorded in the local state tree. The mode is read-only: it changes no record, no state file, and no documentation.
 
-1. **Read the invocation.** `/discover decisions [--only=<set>] [selector…]`, or `--mode=decisions`, where `<set>` is a comma-separated subset of:
+1. **Read the invocation.** `/discover decisions [--only=<set>] [selector…]`, where `<set>` is a comma-separated subset of:
 
    | Value | ADRs | Local decisions |
    | --- | --- | --- |
