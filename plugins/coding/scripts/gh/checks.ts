@@ -11,15 +11,14 @@ export type CheckRun = Readonly<Record<string, unknown>>;
 export type CommitStatus = Readonly<Record<string, unknown>>;
 
 /** one check in the `gh pr checks --json` shape */
-export interface CheckEntry {
+export type CheckEntry = {
   readonly name: string;
   readonly bucket: "pass" | "fail" | "pending" | "skipping" | "cancel";
   readonly state: string;
   readonly link: string | null;
   readonly startedAt: string | null;
   readonly completedAt: string | null;
-  readonly workflow: string;
-}
+};
 
 function text(value: unknown, label: string): string {
   if (typeof value !== "string") throw new Error(`${label} is not a string`);
@@ -64,7 +63,6 @@ export function checkFromRun(run: CheckRun): CheckEntry {
     link: optionalText(run.details_url) ?? optionalText(run.html_url),
     startedAt: optionalText(run.started_at),
     completedAt: optionalText(run.completed_at),
-    workflow: "",
   };
 }
 
@@ -82,7 +80,6 @@ export function checkFromStatus(status: CommitStatus): CheckEntry {
     link: optionalText(status.target_url),
     startedAt: optionalText(status.created_at),
     completedAt: state === "pending" ? null : optionalText(status.updated_at),
-    workflow: "",
   };
 }
 
@@ -95,7 +92,6 @@ export function rollupFromRun(run: CheckRun): Record<string, unknown> {
   return {
     __typename: "CheckRun",
     name: text(run.name, "CI check run name"),
-    workflowName: "",
     status: text(run.status, "CI check run status").toUpperCase(),
     conclusion: optionalText(run.conclusion)?.toUpperCase() ?? "",
     startedAt: optionalText(run.started_at),

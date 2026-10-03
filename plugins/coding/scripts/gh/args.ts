@@ -19,10 +19,16 @@ export interface ParsedArgs {
 
 /** flags every REST-routed subcommand accepts */
 const COMMON: Required<FlagSpec> = {
-  values: ["repo", "json", "jq"],
+  values: ["repo"],
   booleans: [],
-  aliases: { R: "repo", q: "jq" },
+  aliases: { R: "repo" },
 };
+
+/** the `--json`/`--jq` pair, for the subcommands that print a field projection */
+export const JSON_FLAGS = {
+  values: ["json", "jq"],
+  aliases: { q: "jq" },
+} as const satisfies FlagSpec;
 
 /**
  * parses `gh`-style arguments. unknown flags are refused by name rather than

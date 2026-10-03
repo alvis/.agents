@@ -1013,8 +1013,8 @@ function readLiveCiChecks(
   runs: readonly JsonObject[] = readLiveCheckRuns(executable, target),
 ): JsonObject[] {
   return [
-    ...runs.map((run) => ({ ...checkFromRun(run) })),
-    ...readLiveCommitStatuses(executable, target).map((status) => ({ ...checkFromStatus(status) })),
+    ...runs.map(checkFromRun),
+    ...readLiveCommitStatuses(executable, target).map(checkFromStatus),
   ];
 }
 

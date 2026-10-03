@@ -5,7 +5,7 @@
  * through REST and the Claude Code cloud proxy's `/ccr/` routes.
  */
 
-import { parseArgs, value } from "./args.ts";
+import { JSON_FLAGS, parseArgs, value } from "./args.ts";
 import {
   checkFromRun,
   checkFromStatus,
@@ -214,7 +214,7 @@ async function repositoryFor(parsed: ParsedArgs): Promise<Repository> {
 }
 
 async function view(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, {});
+  const parsed = parseArgs(argv, JSON_FLAGS);
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
   const fields = value(parsed, "json");
   if (fields === undefined) {
@@ -229,8 +229,8 @@ async function view(argv: readonly string[]): Promise<number> {
 
 async function listPulls(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["head", "base", "state", "limit", "author"],
-    aliases: { H: "head", B: "base", s: "state", L: "limit", A: "author" },
+    values: ["head", "state", "limit", ...JSON_FLAGS.values],
+    aliases: { H: "head", s: "state", L: "limit", ...JSON_FLAGS.aliases },
   });
   const repository = await repositoryFor(parsed);
   const state = value(parsed, "state") ?? "open";
@@ -241,15 +241,11 @@ async function listPulls(argv: readonly string[]): Promise<number> {
   const head = value(parsed, "head");
   if (head?.includes(":")) query.set("head", head);
   const ref = head?.includes(":") ? head.split(":", 2)[1] : head;
-  const base = value(parsed, "base");
-  if (base) query.set("base", base);
-  const author = value(parsed, "author");
   const limit = Number(value(parsed, "limit") ?? 30);
   const pulls: Pull[] = [];
   for await (const pull of apiItems<Pull>(repository, `repos/${repository.owner}/${repository.repo}/pulls?${query}`)) {
     if (ref !== undefined && pull.head.ref !== ref) continue;
     if (state === "merged" && !pull.merged_at) continue;
-    if (author && pull.user?.login !== author) continue;
     pulls.push(pull);
     if (pulls.length >= limit) break;
   }
@@ -268,9 +264,9 @@ async function listPulls(argv: readonly string[]): Promise<number> {
 
 async function create(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["title", "body", "body-file", "base", "head"],
+    values: ["title", "body-file", "base", "head"],
     booleans: ["draft"],
-    aliases: { t: "title", b: "body", F: "body-file", B: "base", H: "head", d: "draft" },
+    aliases: { t: "title", F: "body-file", B: "base", H: "head", d: "draft" },
   });
   const repository = await repositoryFor(parsed);
   const root = `repos/${repository.owner}/${repository.repo}`;
@@ -282,7 +278,7 @@ async function create(argv: readonly string[]): Promise<number> {
     method: "POST",
     body: {
       title,
-      body: (await readBody(value(parsed, "body"), value(parsed, "body-file"))) ?? "",
+      body: (await readBody(value(parsed, "body-file"))) ?? "",
       base,
       head: value(parsed, "head") ?? (await currentBranch()),
       draft: parsed.booleans.has("draft"),
@@ -294,14 +290,14 @@ async function create(argv: readonly string[]): Promise<number> {
 
 async function edit(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["title", "body", "body-file", "base"],
-    aliases: { t: "title", b: "body", F: "body-file", B: "base" },
+    values: ["title", "body-file", "base"],
+    aliases: { t: "title", F: "body-file", B: "base" },
   });
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
   const changes: Record<string, string> = {};
   const title = value(parsed, "title");
   if (title !== undefined) changes.title = title;
-  const body = await readBody(value(parsed, "body"), value(parsed, "body-file"));
+  const body = await readBody(value(parsed, "body-file"));
   if (body !== undefined) changes.body = body;
   const base = value(parsed, "base");
   if (base !== undefined) changes.base = base;

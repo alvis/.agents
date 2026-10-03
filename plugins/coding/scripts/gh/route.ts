@@ -176,18 +176,12 @@ export async function currentBranch(): Promise<string> {
 }
 
 /**
- * reads a `--body`/`--body-file` pair, where `-` means stdin
- * @param body - inline body
+ * reads a `--body-file` value, where `-` means stdin
  * @param bodyFile - body file path or `-`
- * @returns the body text, or undefined when neither is given
+ * @returns the body text, or undefined when no file is given
  */
-export async function readBody(
-  body: string | undefined,
-  bodyFile: string | undefined,
-): Promise<string | undefined> {
-  if (body !== undefined && bodyFile !== undefined)
-    throw new WrapperError("specify only one of --body or --body-file");
-  if (bodyFile === undefined) return body;
+export async function readBody(bodyFile: string | undefined): Promise<string | undefined> {
+  if (bodyFile === undefined) return undefined;
   return bodyFile === "-" ? await Bun.stdin.text() : await Bun.file(bodyFile).text();
 }
 
@@ -202,7 +196,7 @@ export async function printJson(value: unknown, jq: string | undefined): Promise
     process.stdout.write(`${json}\n`);
     return;
   }
-  const result = await $`jq -r ${jq} < ${new Response(json)}`.quiet().nothrow();
+  const result = await $`jq -rc ${jq} < ${new Response(json)}`.quiet().nothrow();
   if (result.exitCode !== 0)
     throw new WrapperError(result.stderr.toString().trim() || "jq failed", result.exitCode);
   process.stdout.write(result.stdout.toString());

@@ -190,7 +190,6 @@ describe("cmd:gh-pr-<subcommand>", () => {
         {
           __typename: "CheckRun",
           name: "test",
-          workflowName: "",
           status: "COMPLETED",
           conclusion: "SUCCESS",
           startedAt: "2026-09-28T09:58:00Z",
@@ -326,10 +325,14 @@ describe("cmd:gh-pr-<subcommand>", () => {
     expect(result.status).toBe(exit);
   });
 
-  it("should refuse a flag the REST route cannot honor instead of ignoring it", () => {
-    const result = run(["view", "7", "--repo", "example/project", "--web"], { env: cloud });
+  it.each([
+    [["view", "7", "--web"], "--web"],
+    [["checks", "7", "--json", "name"], "--json"],
+    [["create", "--title", "Add widgets", "--body", "text"], "--body"],
+  ])("should refuse %j by naming %s instead of ignoring it", (argv, flag) => {
+    const result = run([...argv, "--repo", "example/project"], { env: cloud });
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("--web");
+    expect(result.stderr).toContain(flag);
     expect(result.calls).toEqual([]);
   });
 

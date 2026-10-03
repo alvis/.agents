@@ -669,7 +669,6 @@ describe("cmd:review-publication", () => {
         link: actionsJob,
         startedAt: "2026-09-28T09:58:00Z",
         completedAt: null,
-        workflow: "",
       },
       {
         name: "test",
@@ -678,7 +677,6 @@ describe("cmd:review-publication", () => {
         link: actionsJob,
         startedAt: null,
         completedAt: "2026-09-28T10:00:00Z",
-        workflow: "",
       },
       {
         name: "lint",
@@ -687,7 +685,6 @@ describe("cmd:review-publication", () => {
         link: "https://ci.example.com/jobs/1",
         startedAt: "2026-09-28T09:59:00Z",
         completedAt: "2026-09-28T10:00:00Z",
-        workflow: "",
       },
     ]);
     expect(result.writes).toEqual([]);
