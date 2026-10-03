@@ -10,15 +10,9 @@ import type { RunOptions } from "./spec-harness.ts";
 
 const scripts = join(import.meta.dirname, "..");
 const repository = {
-  node_id: "R_1",
-  name: "project",
   full_name: "example/project",
   html_url: "https://github.com/example/project",
-  description: null,
   default_branch: "main",
-  private: true,
-  visibility: "internal",
-  owner: { login: "example", node_id: "U_1" },
 };
 
 /** runs the `gh-repo-<argv[0]>.ts` drop-in with the remaining arguments against the fake gh */
@@ -45,18 +39,23 @@ describe("cmd:gh-repo-<subcommand>", () => {
 
   it("should project REST fields onto gh's --json names in a cloud session", () => {
     const result = run(
-      ["view", "example/project", "--json", "nameWithOwner,owner,defaultBranchRef,isPrivate,visibility,description"],
+      ["view", "example/project", "--json", "nameWithOwner,defaultBranchRef"],
       { env: cloud, routes: { "repos/example/project": { body: repository } } },
     );
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout)).toEqual({
       nameWithOwner: "example/project",
-      owner: { id: "U_1", login: "example" },
       defaultBranchRef: { name: "main" },
-      isPrivate: true,
-      visibility: "INTERNAL",
-      description: "",
     });
+  });
+
+  it.each([
+    [["view", "example/project"], "--json"],
+    [["view", "example/project", "--json", "description"], "description"],
+  ])("should refuse %j in a cloud session by naming %s", (argv, name) => {
+    const result = run(argv, { env: cloud, routes: { "repos/example/project": { body: repository } } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(name);
   });
 
   it("should resolve --repo when no positional repository is given", () => {

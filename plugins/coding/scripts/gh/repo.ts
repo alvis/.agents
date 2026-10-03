@@ -7,7 +7,7 @@
 
 import { $ } from "bun";
 
-import { parseArgs, value } from "./args.ts";
+import { JSON_FLAGS, parseArgs, value } from "./args.ts";
 import {
   api,
   parseRepositorySpec,
@@ -22,29 +22,13 @@ import type { Handler, Repository } from "./route.ts";
 
 /** the REST repository fields this wrapper reads */
 interface RestRepository {
-  readonly node_id: string;
-  readonly name: string;
   readonly full_name: string;
   readonly html_url: string;
-  readonly description: string | null;
   readonly default_branch: string;
-  readonly private: boolean;
-  readonly visibility?: string;
-  readonly owner: { readonly login: string; readonly node_id: string };
 }
 
 /** `--json` fields the REST route can produce for `view` */
-const REPO_FIELDS = [
-  "id",
-  "name",
-  "nameWithOwner",
-  "owner",
-  "url",
-  "description",
-  "defaultBranchRef",
-  "isPrivate",
-  "visibility",
-] as const;
+const REPO_FIELDS = ["nameWithOwner", "url", "defaultBranchRef"] as const;
 
 async function target(selector: string | undefined, flag: string | undefined): Promise<Repository> {
   return selector === undefined
@@ -53,24 +37,15 @@ async function target(selector: string | undefined, flag: string | undefined): P
 }
 
 async function view(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, {});
+  const parsed = parseArgs(argv, JSON_FLAGS);
+  const fields = value(parsed, "json");
+  if (fields === undefined) throw new WrapperError("--json is required when routed through REST");
   const repository = await target(parsed.positionals[0], value(parsed, "repo"));
   const rest = await api<RestRepository>(repository, `repos/${repository.owner}/${repository.repo}`);
-  const fields = value(parsed, "json");
-  if (fields === undefined) {
-    process.stdout.write(`name:\t${rest.full_name}\ndescription:\t${rest.description ?? ""}\n\n${rest.html_url}\n`);
-    return 0;
-  }
   const projections: Record<(typeof REPO_FIELDS)[number], unknown> = {
-    id: rest.node_id,
-    name: rest.name,
     nameWithOwner: rest.full_name,
-    owner: { id: rest.owner.node_id, login: rest.owner.login },
     url: rest.html_url,
-    description: rest.description ?? "",
     defaultBranchRef: { name: rest.default_branch },
-    isPrivate: rest.private,
-    visibility: (rest.visibility ?? (rest.private ? "private" : "public")).toUpperCase(),
   };
   const names = requestedFields(fields, REPO_FIELDS) as (typeof REPO_FIELDS)[number][];
   await printJson(Object.fromEntries(names.map((name) => [name, projections[name]])), value(parsed, "jq"));

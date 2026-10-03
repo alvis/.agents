@@ -35,8 +35,9 @@ describe("cmd:gh-issue-<subcommand>", () => {
   });
 
   it("should create an issue and print its URL", () => {
-    const result = run(["create", "--repo", "example/project", "-t", "New", "-b", "Text"], {
+    const result = run(["create", "--repo", "example/project", "-t", "New", "--body-file", "-"], {
       env: cloud,
+      stdin: "Text",
       routes: { [`${project}/issues`]: { body: issue } },
     });
     expect(result.status, result.stderr).toBe(0);
@@ -55,10 +56,13 @@ describe("cmd:gh-issue-<subcommand>", () => {
     expect(requestBody(result, `PATCH ${project}/issues/12`)).toEqual({ title: "Renamed", body: "New text" });
   });
 
-  it("should refuse a flag the coding skills never pass instead of ignoring it", () => {
-    const result = run(["edit", "12", "--repo", "example/project", "--add-label", "bug"], { env: cloud });
+  it.each([
+    [["edit", "12", "--add-label", "bug"], "--add-label"],
+    [["comment", "12", "--body", "text"], "--body"],
+  ])("should refuse %j by naming %s instead of ignoring it", (argv, flag) => {
+    const result = run([...argv, "--repo", "example/project"], { env: cloud });
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("--add-label");
+    expect(result.stderr).toContain(flag);
     expect(result.calls).toEqual([]);
   });
 

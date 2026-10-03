@@ -39,13 +39,13 @@ async function selectIssue(
 
 async function create(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["title", "body", "body-file"],
-    aliases: { t: "title", b: "body", F: "body-file" },
+    values: ["title", "body-file"],
+    aliases: { t: "title", F: "body-file" },
   });
   const repository = await resolveRepository(value(parsed, "repo"), process.env);
   const title = value(parsed, "title");
   if (title === undefined) throw new WrapperError("--title is required when routed through REST");
-  const body = { title, body: (await readBody(value(parsed, "body"), value(parsed, "body-file"))) ?? "" };
+  const body = { title, body: (await readBody(value(parsed, "body-file"))) ?? "" };
   const issue = await api<Issue>(repository, `repos/${repository.owner}/${repository.repo}/issues`, {
     method: "POST",
     body,
@@ -56,14 +56,14 @@ async function create(argv: readonly string[]): Promise<number> {
 
 async function edit(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["title", "body", "body-file"],
-    aliases: { t: "title", b: "body", F: "body-file" },
+    values: ["title", "body-file"],
+    aliases: { t: "title", F: "body-file" },
   });
   const { repository, number } = await selectIssue(parsed);
   const changes: Record<string, string> = {};
   const title = value(parsed, "title");
   if (title !== undefined) changes.title = title;
-  const body = await readBody(value(parsed, "body"), value(parsed, "body-file"));
+  const body = await readBody(value(parsed, "body-file"));
   if (body !== undefined) changes.body = body;
   if (Object.keys(changes).length > 0)
     await api(repository, `repos/${repository.owner}/${repository.repo}/issues/${number}`, { method: "PATCH", body: changes });
@@ -72,10 +72,10 @@ async function edit(argv: readonly string[]): Promise<number> {
 }
 
 async function comment(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, { values: ["body", "body-file"], aliases: { b: "body", F: "body-file" } });
+  const parsed = parseArgs(argv, { values: ["body-file"], aliases: { F: "body-file" } });
   const { repository, number } = await selectIssue(parsed);
-  const body = await readBody(value(parsed, "body"), value(parsed, "body-file"));
-  if (body === undefined) throw new WrapperError("--body or --body-file is required when routed through REST");
+  const body = await readBody(value(parsed, "body-file"));
+  if (body === undefined) throw new WrapperError("--body-file is required when routed through REST");
   const created = await api<{ html_url: string }>(
     repository,
     `repos/${repository.owner}/${repository.repo}/issues/${number}/comments`,
