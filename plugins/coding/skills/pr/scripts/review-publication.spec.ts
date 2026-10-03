@@ -29,9 +29,13 @@ interface TransportRecord {
 }
 
 interface RunOptions {
-  action?: "approve" | "publish" | "update";
-  ci?: string;
-  ciExit?: number;
+  action?: "approve" | "checks" | "publish" | "update";
+  checkRunsExit?: number;
+  statusesExit?: number;
+  statusesBody?: string;
+  statuses?: readonly Record<string, unknown>[];
+  protectionStatus?: 403 | 404;
+  branchProtected?: boolean;
   existingReview?: Record<string, unknown>;
   reviewAfterCi?: Record<string, unknown>;
   checkRuns?: string;
@@ -69,6 +73,29 @@ interface RunResult {
 const headOid = "1".repeat(40);
 const baseOid = "2".repeat(40);
 const changedOid = "3".repeat(40);
+const actionsJob = "https://github.com/example/project/actions/runs/12/job/34";
+const passingRun = {
+  name: "test",
+  head_sha: headOid,
+  app: { id: 15368 },
+  status: "completed",
+  conclusion: "success",
+  details_url: actionsJob,
+  html_url: actionsJob,
+  completed_at: "2026-09-28T10:00:00Z",
+} as const;
+const runningRun = {
+  ...passingRun,
+  status: "in_progress",
+  conclusion: null,
+  completed_at: null,
+} as const;
+const failedRun = { ...passingRun, conclusion: "failure" } as const;
+
+/** serializes check runs as the single REST page `gh api --paginate --slurp` returns */
+function checkRunPages(...runs: readonly Record<string, unknown>[]): string {
+  return JSON.stringify([{ check_runs: runs }]);
+}
 const evidenceDigest = "a".repeat(64);
 const requiredPolicyDigest = createHash("sha256")
   .update(JSON.stringify({ protection: null, rules: [] }))
@@ -222,7 +249,9 @@ describe("cmd:review-publication", () => {
       });
       expect(result.status).not.toBe(0);
       expect(
-        result.records.some((record) => record.arguments.includes("checks")),
+        result.records.some((record) =>
+          record.arguments.some((argument) => argument.includes("/check-runs?")),
+        ),
       ).toBe(true);
       expect(result.writes).toEqual([]);
     },
@@ -281,7 +310,9 @@ describe("cmd:review-publication", () => {
       });
       expect(result.status).not.toBe(0);
       expect(
-        result.records.some((record) => record.arguments.includes("checks")),
+        result.records.some((record) =>
+          record.arguments.some((argument) => argument.includes("/check-runs?")),
+        ),
       ).toBe(true);
       expect(result.writes).toEqual([]);
     },
@@ -370,16 +401,7 @@ describe("cmd:review-publication", () => {
       },
     });
     const result = runCommand(approval, {
-      ci: JSON.stringify([
-        {
-          name: "test",
-          workflow: "CI",
-          link: "https://github.com/example/project/actions/runs/12/job/34",
-          bucket: "pending",
-          state: "IN_PROGRESS",
-        },
-      ]),
-      ciExit: 8,
+      checkRuns: checkRunPages(runningRun),
     });
     expect(result.status).toBe(0);
     const published = JSON.parse(result.writes[0]!.body).body;
@@ -389,16 +411,7 @@ describe("cmd:review-publication", () => {
 
   it("should check live CI and publish a waiting summary while checks run", () => {
     const result = runCommand(receipt, {
-      ci: JSON.stringify([
-        {
-          name: "test",
-          workflow: "CI",
-          link: "https://github.com/example/project/actions/runs/12/job/34",
-          bucket: "pending",
-          state: "IN_PROGRESS",
-        },
-      ]),
-      ciExit: 8,
+      checkRuns: checkRunPages(runningRun),
     });
     expect(result.status).toBe(0);
     const payload = JSON.parse(result.writes[0]!.body);
@@ -608,23 +621,133 @@ describe("cmd:review-publication", () => {
     expect(result.writes).toEqual([]);
   });
 
+  it.each([
+    ["stale", "pending"],
+    ["timed_out", "fail"],
+  ] as const)("should bucket a %s check run as %s, like gh pr checks", (conclusion, bucket) => {
+    const result = runCommand(receipt, {
+      action: "checks",
+      checkRuns: checkRunPages({ ...passingRun, conclusion }),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)[0].bucket).toBe(bucket);
+  });
+
   it("should keep an unapproved neutral CI result pending", () => {
     const result = runCommand(receipt, {
-      ci: JSON.stringify([
-        {
-          name: "test",
-          workflow: "CI",
-          link: "https://github.com/example/project/actions/runs/12/job/34",
-          bucket: "neutral",
-          state: "NEUTRAL",
-          completedAt: "2026-09-28T10:00:00Z",
-        },
-      ]),
+      checkRuns: checkRunPages({ ...passingRun, conclusion: "neutral" }),
     });
     expect(result.status).toBe(0);
     expect(JSON.parse(result.writes[0]!.body).body).toBe(
       approvedBody(receipt, "pending"),
     );
+  });
+
+  it("should list a revision's check runs and commit statuses in the checks shape", () => {
+    const result = runCommand(receipt, {
+      action: "checks",
+      checkRuns: checkRunPages(
+        { ...runningRun, name: "build", started_at: "2026-09-28T09:58:00Z" },
+        { ...passingRun, conclusion: "skipped" },
+      ),
+      statuses: [
+        {
+          context: "lint",
+          state: "error",
+          target_url: "https://ci.example.com/jobs/1",
+          created_at: "2026-09-28T09:59:00Z",
+          updated_at: "2026-09-28T10:00:00Z",
+        },
+      ],
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual([
+      {
+        name: "build",
+        bucket: "pending",
+        state: "IN_PROGRESS",
+        link: actionsJob,
+        startedAt: "2026-09-28T09:58:00Z",
+        completedAt: null,
+      },
+      {
+        name: "test",
+        bucket: "skipping",
+        state: "SKIPPED",
+        link: actionsJob,
+        startedAt: null,
+        completedAt: "2026-09-28T10:00:00Z",
+      },
+      {
+        name: "lint",
+        bucket: "fail",
+        state: "ERROR",
+        link: "https://ci.example.com/jobs/1",
+        startedAt: "2026-09-28T09:59:00Z",
+        completedAt: "2026-09-28T10:00:00Z",
+      },
+    ]);
+    expect(result.writes).toEqual([]);
+  });
+
+  it("should read CI through REST without the GraphQL-backed checks command", () => {
+    const result = runCommand(receipt);
+    expect(result.status, result.stderr).toBe(0);
+    expect(
+      result.records.some(
+        ({ arguments: arguments_ }) =>
+          arguments_.includes("graphql") ||
+          (arguments_[0] === "pr" && arguments_[1] === "checks"),
+      ),
+    ).toBe(false);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "green"),
+    );
+  });
+
+  it.each([
+    [{ state: "failure", context: "lint" }, "red"],
+    [{ state: "error", context: "lint" }, "red"],
+    [{ state: "pending", context: "lint" }, "pending"],
+    [{ state: "success", context: "lint" }, "green"],
+  ] as const)(
+    "should classify a legacy commit status %j as %s CI",
+    (status, expectedState) => {
+      const result = runCommand(receipt, {
+        statuses: [
+          {
+            ...status,
+            target_url: "https://ci.example.com/jobs/1",
+            updated_at: "2026-09-28T10:00:00Z",
+          },
+        ],
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.writes[0]!.body).body).toBe(
+        approvedBody(receipt, expectedState),
+      );
+    },
+  );
+
+  it("should treat a forbidden protection read on an unprotected branch as unprotected", () => {
+    const result = runCommand(receipt, {
+      protectionStatus: 403,
+      branchProtected: false,
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "green"),
+    );
+  });
+
+  it("should refuse when a protected branch's policy cannot be read", () => {
+    const result = runCommand(receipt, {
+      protectionStatus: 403,
+      branchProtected: true,
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("required-check policy lookup failed");
+    expect(result.writes).toEqual([]);
   });
 
   it("should keep CI pending when workflows share a display name but have different paths", () => {
@@ -635,16 +758,7 @@ describe("cmd:review-publication", () => {
         path: ".github/workflows/optional.yml",
         name: "CI",
       },
-      ci: JSON.stringify([
-        {
-          name: "test",
-          workflow: "CI",
-          link: "https://github.com/example/project/actions/runs/12/job/34",
-          bucket: "pass",
-          state: "SUCCESS",
-          completedAt: "2026-09-28T10:00:00Z",
-        },
-      ]),
+      checkRuns: checkRunPages(passingRun),
     });
     expect(result.status).toBe(0);
     expect(JSON.parse(result.writes[0]!.body).body).toBe(
@@ -690,15 +804,7 @@ describe("cmd:review-publication", () => {
         },
       });
       const result = runCommand(approval, {
-        ci: JSON.stringify([
-          {
-            name: "test",
-            link,
-            bucket: "pass",
-            state: "SUCCESS",
-            completedAt: "2026-09-28T10:00:00Z",
-          },
-        ]),
+        checkRuns: checkRunPages({ ...passingRun, details_url: link }),
       });
       expect(result.status).toBe(0);
       expect(JSON.parse(result.writes[0]!.body).body).toBe(
@@ -727,15 +833,7 @@ describe("cmd:review-publication", () => {
       ["https://ci.example.com/jobs/1", "green"],
     ] as const) {
       const result = runCommand(approval, {
-        ci: JSON.stringify([
-          {
-            name: "test",
-            link,
-            bucket: "pass",
-            state: "SUCCESS",
-            completedAt: "2026-09-28T10:00:00Z",
-          },
-        ]),
+        checkRuns: checkRunPages({ ...passingRun, details_url: link }),
       });
       expect(result.status).toBe(0);
       expect(JSON.parse(result.writes[0]!.body).body).toBe(
@@ -746,17 +844,7 @@ describe("cmd:review-publication", () => {
 
   it("should show CI failure ahead of another pending check", () => {
     const result = runCommand(receipt, {
-      ci: JSON.stringify([
-        {
-          name: "test",
-          workflow: "CI",
-          link: "https://github.com/example/project/actions/runs/12/job/34",
-          bucket: "fail",
-          state: "FAILURE",
-        },
-        { name: "build", bucket: "pending", state: "IN_PROGRESS" },
-      ]),
-      ciExit: 1,
+      checkRuns: checkRunPages(failedRun, { ...runningRun, name: "build" }),
     });
     expect(result.status).toBe(0);
     const published = JSON.parse(result.writes[0]!.body).body;
@@ -768,32 +856,13 @@ describe("cmd:review-publication", () => {
     "should replace only the same pending review body after CI becomes %s",
     (bucket) => {
       const pending = runCommand(receipt, {
-        ci: JSON.stringify([
-          {
-            name: "test",
-            workflow: "CI",
-            link: "https://github.com/example/project/actions/runs/12/job/34",
-            bucket: "pending",
-            state: "IN_PROGRESS",
-          },
-        ]),
-        ciExit: 8,
+        checkRuns: checkRunPages(runningRun),
       });
       expect(pending.status, pending.stderr).toBe(0);
       const original = JSON.parse(pending.writes[0]!.body);
       const result = runCommand(receipt, {
         action: "update",
-        ci: JSON.stringify([
-          {
-            name: "test",
-            workflow: "CI",
-            link: "https://github.com/example/project/actions/runs/12/job/34",
-            bucket,
-            state: bucket === "pass" ? "SUCCESS" : "FAILURE",
-            completedAt: "2026-09-28T10:00:00Z",
-          },
-        ]),
-        ciExit: bucket === "pass" ? 0 : 1,
+        checkRuns: checkRunPages(bucket === "pass" ? passingRun : failedRun),
         existingReview: {
           id: 91,
           user: { login: "publisher" },
@@ -827,16 +896,7 @@ describe("cmd:review-publication", () => {
   it("should leave the existing review untouched while CI still runs", () => {
     const result = runCommand(receipt, {
       action: "update",
-      ci: JSON.stringify([
-        {
-          name: "test",
-          workflow: "CI",
-          link: "https://github.com/example/project/actions/runs/12/job/34",
-          bucket: "pending",
-          state: "IN_PROGRESS",
-        },
-      ]),
-      ciExit: 8,
+      checkRuns: checkRunPages(runningRun),
       existingReview: {
         id: 91,
         user: { login: "publisher" },
@@ -875,7 +935,12 @@ describe("cmd:review-publication", () => {
     expect(result.writes).toEqual([]);
   });
 
-  it.each([{ ci: "not authorized", ciExit: 4 }, { ci: "{}" }])(
+  it.each([
+    { checkRuns: "not authorized", checkRunsExit: 4 },
+    { checkRuns: "{}" },
+    { statusesBody: "not authorized", statusesExit: 4 },
+    { statusesBody: "not json" },
+  ])(
     "should block publication without usable expected CI evidence %#",
     (options) => {
       const result = runCommand(receipt, options);
@@ -1899,29 +1964,11 @@ describe("cmd:review-publication", () => {
         approval,
         ciState === "red"
           ? {
-              ci: JSON.stringify([
-                {
-                  name: "test",
-                  workflow: "CI",
-                  link: "https://github.com/example/project/actions/runs/12/job/34",
-                  bucket: "fail",
-                  state: "FAILURE",
-                },
-              ]),
-              ciExit: 1,
+              checkRuns: checkRunPages(failedRun),
             }
           : ciState === "pending"
             ? {
-                ci: JSON.stringify([
-                  {
-                    name: "test",
-                    workflow: "CI",
-                    link: "https://github.com/example/project/actions/runs/12/job/34",
-                    bucket: "pending",
-                    state: "IN_PROGRESS",
-                  },
-                ]),
-                ciExit: 8,
+                checkRuns: checkRunPages(runningRun),
               }
             : {},
       );
@@ -2010,17 +2057,18 @@ const body = isWrite ? readFileSync(0, "utf8") : "";
 appendFileSync(process.env.PUBLICATION_RECORD, JSON.stringify({arguments: args, body, operation: isWrite ? "write" : "read"}) + "\\n");
 if (isWrite) { process.stdout.write('{"id":91}\\n'); process.exit(0); }
 if (Number(process.env.PUBLICATION_METADATA_EXIT)) process.exit(Number(process.env.PUBLICATION_METADATA_EXIT));
-if (args.some(arg => arg.endsWith("/branches/main/protection"))) { process.stderr.write("Branch not protected (HTTP 404)"); process.exit(1); }
-else if (args.some(arg => arg.includes("/rules/branches/main?"))) { const pages = JSON.parse(process.env.PUBLICATION_POLICY_RULES_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('"checks"') ? process.env.PUBLICATION_POLICY_RULES_AFTER_CI : process.env.PUBLICATION_POLICY_RULES); process.stdout.write(JSON.stringify(args.includes("--paginate") && args.includes("--slurp") ? pages : pages[0])); }
+if (args.some(arg => arg.endsWith("/branches/main/protection"))) { process.stderr.write(process.env.PUBLICATION_PROTECTION_STATUS === "403" ? "Resource not accessible by integration (HTTP 403)" : "Branch not protected (HTTP 404)"); process.exit(1); }
+else if (args.some(arg => arg.endsWith("/branches/main"))) process.stdout.write(JSON.stringify({name: "main", protected: process.env.PUBLICATION_BRANCH_PROTECTED === "true"}));
+else if (args.some(arg => arg.includes("/rules/branches/main?"))) { const pages = JSON.parse(process.env.PUBLICATION_POLICY_RULES_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('/check-runs?') ? process.env.PUBLICATION_POLICY_RULES_AFTER_CI : process.env.PUBLICATION_POLICY_RULES); process.stdout.write(JSON.stringify(args.includes("--paginate") && args.includes("--slurp") ? pages : pages[0])); }
 else if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
-else if (args.includes("checks")) { process.stdout.write(process.env.PUBLICATION_CI); process.exit(Number(process.env.PUBLICATION_CI_EXIT)); }
 else if (args.some(arg => /actions\\/runs\\/12$/.test(arg))) process.stdout.write(process.env.PUBLICATION_WORKFLOW_RUN);
-else if (args.some(arg => arg.includes("/check-runs?"))) process.stdout.write(process.env.PUBLICATION_CHECK_RUNS);
+else if (args.some(arg => arg.includes("/check-runs?"))) { process.stdout.write(process.env.PUBLICATION_CHECK_RUNS); process.exit(Number(process.env.PUBLICATION_CHECK_RUNS_EXIT)); }
+else if (args.some(arg => arg.includes("/status?"))) { process.stdout.write(process.env.PUBLICATION_STATUSES_BODY || JSON.stringify([{state: "pending", statuses: JSON.parse(process.env.PUBLICATION_STATUSES)}])); process.exit(Number(process.env.PUBLICATION_STATUSES_EXIT)); }
 else if (args.some(arg => /pulls\\/36\\/reviews\\/91$/.test(arg))) { process.stderr.write("Not Found (HTTP 404)"); process.exit(1); }
-else if (args.some(arg => /reviews\\/91$/.test(arg))) process.stdout.write(process.env.PUBLICATION_REVIEW_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('"checks"') ? process.env.PUBLICATION_REVIEW_AFTER_CI : process.env.PUBLICATION_REVIEW);
+else if (args.some(arg => /reviews\\/91$/.test(arg))) process.stdout.write(process.env.PUBLICATION_REVIEW_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('/check-runs?') ? process.env.PUBLICATION_REVIEW_AFTER_CI : process.env.PUBLICATION_REVIEW);
 else if (args.includes("graphql")) process.stdout.write(process.env.PUBLICATION_THREAD_METADATA);
 else if (args.some(arg => /comments\\/81$/.test(arg))) process.stdout.write(JSON.stringify({pull_request_url: "https://api.github.com/repos/example/project/pulls/" + process.env.PUBLICATION_RELATION, issue_url: "https://api.github.com/repos/example/project/issues/" + process.env.PUBLICATION_RELATION}));
-else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('"checks"') ? process.env.PUBLICATION_METADATA_AFTER_CI : process.env.PUBLICATION_METADATA);
+else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('/check-runs?') ? process.env.PUBLICATION_METADATA_AFTER_CI : process.env.PUBLICATION_METADATA);
 `,
       { mode: 0o755 },
     );
@@ -2053,7 +2101,20 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
     const executableScript =
       options.templateMutation === undefined ? scriptPath : installedScript;
     const arguments_ =
-      options.action === "approve"
+      options.action === "checks"
+        ? [
+            executableScript,
+            "checks",
+            "--host",
+            "github.com",
+            "--owner",
+            "example",
+            "--repo",
+            "project",
+            "--head",
+            options.headOid ?? headOid,
+          ]
+        : options.action === "approve"
         ? [
             executableScript,
             "approve",
@@ -2076,18 +2137,11 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
         ...process.env,
         REVIEW_PUBLICATION_GH_BIN: executable,
         PUBLICATION_RECORD: recordPath,
-        PUBLICATION_CI:
-          options.ci ??
-          JSON.stringify([
-            {
-              name: "test",
-              bucket: "pass",
-              state: "SUCCESS",
-              workflow: "CI",
-              link: "https://github.com/example/project/actions/runs/12/job/34",
-              completedAt: "2026-09-28T10:00:00Z",
-            },
-          ]),
+        PUBLICATION_STATUSES: JSON.stringify(options.statuses ?? []),
+        PUBLICATION_STATUSES_EXIT: String(options.statusesExit ?? 0),
+        PUBLICATION_STATUSES_BODY: options.statusesBody ?? "",
+        PUBLICATION_PROTECTION_STATUS: String(options.protectionStatus ?? 404),
+        PUBLICATION_BRANCH_PROTECTED: String(options.branchProtected ?? false),
         PUBLICATION_WORKFLOW_RUN: JSON.stringify(
           options.workflowRun ?? {
             id: 12,
@@ -2096,13 +2150,12 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
             name: "CI",
           },
         ),
-        PUBLICATION_CI_EXIT: String(options.ciExit ?? 0),
+        PUBLICATION_CHECK_RUNS_EXIT: String(options.checkRunsExit ?? 0),
         PUBLICATION_REVIEW: JSON.stringify(options.existingReview ?? {}),
         PUBLICATION_REVIEW_AFTER_CI: options.reviewAfterCi
           ? JSON.stringify(options.reviewAfterCi)
           : "",
-        PUBLICATION_CHECK_RUNS:
-          options.checkRuns ?? JSON.stringify([{ check_runs: [] }]),
+        PUBLICATION_CHECK_RUNS: options.checkRuns ?? checkRunPages(passingRun),
         PUBLICATION_USER: options.publisher ?? "publisher",
         PUBLICATION_RELATION: String(options.relationPullNumber ?? 35),
         PUBLICATION_THREAD_METADATA:
