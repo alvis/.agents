@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { SUBCOMMANDS, UNSUPPORTED } from "./pr.ts";
-import { detectRoute } from "./route.ts";
+import { detectRoute, parseRepositorySpec } from "./route.ts";
 
 interface Call {
   readonly args: string[];
@@ -135,6 +135,13 @@ function restCalls(result: Run): string[] {
     });
 }
 
+/** returns the JSON body sent to the REST call `call`, as restCalls reports it */
+function requestBody(result: Run, call: string): unknown {
+  const recorded = result.calls.filter((entry) => entry.args[0] === "api")[restCalls(result).indexOf(call)];
+  if (recorded === undefined) throw new Error(`no REST call ${call}`);
+  return JSON.parse(recorded.stdin);
+}
+
 describe("fn:detectRoute", () => {
   it.each([
     [{}, "native"],
@@ -210,30 +217,52 @@ describe("cmd:gh-pr-<subcommand>", () => {
     expect(result.stdout).toBe("MERGED\n");
   });
 
-  it("should select a pull request by its head branch, preferring an open one", () => {
+  it("should select a pull request by its head branch in any fork, preferring an open one", () => {
+    const fork = { ...pull, number: 8, head: { ...pull.head, repo: { ...pull.head.repo, owner: { login: "contributor", node_id: "U_2" } } } };
     const result = run(["view", "feat/widgets", "--repo", "example/project", "--json", "number"], {
       env: cloud,
       routes: {
-        [`${project}/pulls?`]: { body: [{ ...pull, number: 6, state: "closed" }, pull] },
+        [`${project}/pulls?state=open`]: { body: [{ ...pull, number: 5, head: { ...pull.head, ref: "other" } }, fork] },
       },
     });
-    expect(JSON.parse(result.stdout)).toEqual({ number: 7 });
+    expect(JSON.parse(result.stdout)).toEqual({ number: 8 });
+    expect(restCalls(result)).toEqual([`GET ${project}/pulls?state=open&per_page=100&page=1`]);
+  });
+
+  it("should fall back to a closed pull request when no open one has the head branch", () => {
+    const result = run(["view", "example:feat/widgets", "--repo", "example/project", "--json", "number"], {
+      env: cloud,
+      routes: {
+        [`${project}/pulls?state=open`]: { body: [] },
+        [`${project}/pulls?state=all`]: { body: [{ ...pull, number: 6, state: "closed" }] },
+      },
+    });
+    expect(JSON.parse(result.stdout)).toEqual({ number: 6 });
     expect(restCalls(result)).toEqual([
-      `GET ${project}/pulls?state=all&per_page=100&head=example%3Afeat%2Fwidgets`,
+      `GET ${project}/pulls?state=open&head=example%3Afeat%2Fwidgets&per_page=100&page=1`,
+      `GET ${project}/pulls?state=all&head=example%3Afeat%2Fwidgets&per_page=100&page=1`,
     ]);
   });
 
-  it("should list by head and state with the requested fields", () => {
+  it("should list by head branch in any fork and state with the requested fields", () => {
     const result = run(
       ["list", "--repo", "example/project", "--head", "feat/widgets", "--state", "all", "--json", "number,headRepositoryOwner"],
-      { env: cloud, routes: { [`${project}/pulls?`]: { body: [pull] } } },
+      { env: cloud, routes: { [`${project}/pulls?`]: { body: [{ ...pull, number: 5, head: { ...pull.head, ref: "other" } }, pull] } } },
     );
     expect(JSON.parse(result.stdout)).toEqual([
       { number: 7, headRepositoryOwner: { id: "U_1", login: "example" } },
     ]);
-    expect(restCalls(result)).toEqual([
-      `GET ${project}/pulls?state=all&per_page=100&head=example%3Afeat%2Fwidgets`,
-    ]);
+    expect(restCalls(result)).toEqual([`GET ${project}/pulls?state=all&per_page=100&page=1`]);
+  });
+
+  it("should stop reading pages once --limit pull requests are found", () => {
+    const page = Array.from({ length: 100 }, (_, index) => ({ ...pull, number: index + 1 }));
+    const result = run(["list", "--repo", "example/project", "--limit", "100", "--json", "number"], {
+      env: cloud,
+      routes: { [`${project}/pulls?`]: { body: page } },
+    });
+    expect(JSON.parse(result.stdout)).toHaveLength(100);
+    expect(restCalls(result)).toEqual([`GET ${project}/pulls?state=open&per_page=100&page=1`]);
   });
 
   it("should create a draft pull request from a stdin body and print its URL", () => {
@@ -321,5 +350,100 @@ describe("cmd:gh-pr-<subcommand>", () => {
     });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("reviewDecision");
+  });
+
+  it.each([
+    [["--approve"], { event: "APPROVE" }],
+    [["--request-changes", "--body", "Fix it"], { event: "REQUEST_CHANGES", body: "Fix it" }],
+    [["--comment", "-b", "Looks fine"], { event: "COMMENT", body: "Looks fine" }],
+  ])("should submit a review for %j", (flags, body) => {
+    const result = run(["review", "7", "--repo", "example/project", ...flags], {
+      env: cloud,
+      routes: { ...pullRoutes, [`${project}/pulls/7/reviews`]: { body: {} } },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(requestBody(result, `POST ${project}/pulls/7/reviews`)).toEqual(body);
+  });
+
+  it("should refuse a review without exactly one event before any call", () => {
+    const result = run(["review", "7", "--repo", "example/project", "--approve", "--comment"], { env: cloud });
+    expect(result.status).toBe(1);
+    expect(result.calls).toEqual([]);
+  });
+
+  it("should comment on the pull request's issue and print the comment URL", () => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body", "Noted"], {
+      env: cloud,
+      routes: { ...pullRoutes, [`${project}/issues/7/comments`]: { body: { html_url: "https://github.com/example/project/pull/7#issuecomment-1" } } },
+    });
+    expect(result.stdout).toBe("https://github.com/example/project/pull/7#issuecomment-1\n");
+    expect(requestBody(result, `POST ${project}/issues/7/comments`)).toEqual({ body: "Noted" });
+  });
+
+  it("should list changed file names for diff --name-only", () => {
+    const result = run(["diff", "7", "--repo", "example/project", "--name-only"], {
+      env: cloud,
+      routes: { ...pullRoutes, [`${project}/pulls/7/files`]: { body: [{ filename: "a.ts" }, { filename: "b.ts" }] } },
+    });
+    expect(result.stdout).toBe("a.ts\nb.ts\n");
+  });
+
+  it.each([
+    [[], "application/vnd.github.diff"],
+    [["--patch"], "application/vnd.github.patch"],
+  ])("should request the %j diff media type", (flags, accept) => {
+    const result = run(["diff", "7", "--repo", "example/project", ...flags], { env: cloud, routes: pullRoutes });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.calls.at(-1)!.args).toContain(`Accept: ${accept}`);
+  });
+
+  it("should close with a comment and reopen through REST", () => {
+    const routes = { ...pullRoutes, [`${project}/issues/7/comments`]: { body: {} } };
+    const closed = run(["close", "7", "--repo", "example/project", "--comment", "Superseded"], { env: cloud, routes });
+    expect(restCalls(closed)).toEqual([`GET ${project}/pulls/7`, `POST ${project}/issues/7/comments`, `PATCH ${project}/pulls/7`]);
+    expect(requestBody(closed, `PATCH ${project}/pulls/7`)).toEqual({ state: "closed" });
+    const reopened = run(["reopen", "7", "--repo", "example/project"], { env: cloud, routes });
+    expect(requestBody(reopened, `PATCH ${project}/pulls/7`)).toEqual({ state: "open" });
+  });
+
+  it.each([
+    [["--auto", "--rebase"], `PUT ${project}/pulls/7/ccr/auto_merge`, { merge_method: "rebase" }],
+    [["--disable-auto"], `DELETE ${project}/pulls/7/ccr/auto_merge`, undefined],
+  ])("should change auto-merge through the cloud proxy route for %j", (flags, call, body) => {
+    const result = run(["merge", "7", "--repo", "example/project", ...flags], {
+      env: cloud,
+      routes: { ...pullRoutes, [`${project}/pulls/7/ccr/auto_merge`]: { body: {} } },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(restCalls(result).at(-1)).toBe(call);
+    if (body !== undefined) expect(requestBody(result, call)).toEqual(body);
+  });
+
+  it("should add and remove labels, reviewers and assignees on edit", () => {
+    const result = run(
+      ["edit", "7", "--repo", "example/project", "--add-label", "bug", "--remove-label", "wip", "--add-reviewer", "org/team", "--add-assignee", "author"],
+      { env: cloud, routes: { ...pullRoutes, [`${project}/issues/7/`]: { body: {} }, [`${project}/pulls/7/requested_reviewers`]: { body: {} } } },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(restCalls(result)).toEqual([
+      `GET ${project}/pulls/7`,
+      `POST ${project}/issues/7/labels`,
+      `DELETE ${project}/issues/7/labels/wip`,
+      `POST ${project}/pulls/7/requested_reviewers`,
+      `POST ${project}/issues/7/assignees`,
+    ]);
+    expect(requestBody(result, `POST ${project}/issues/7/labels`)).toEqual({ labels: ["bug"] });
+    expect(requestBody(result, `POST ${project}/pulls/7/requested_reviewers`)).toEqual({ reviewers: [], team_reviewers: ["team"] });
+  });
+});
+
+describe("fn:parseRepositorySpec", () => {
+  it.each([
+    ["https://x-access-token:secret@github.com/example/project.git", "github.com"],
+    ["ssh://git@ghe.example.com:2222/example/project.git", "ghe.example.com"],
+    ["git@github.com:example/project.git", "github.com"],
+    ["ghe.example.com/example/project", "ghe.example.com"],
+  ])("should drop credentials and ports from %s", (spec, host) => {
+    expect(parseRepositorySpec(spec)).toEqual({ host, owner: "example", repo: "project" });
   });
 });

@@ -14,6 +14,7 @@ import {
 } from "./checks.ts";
 import {
   api,
+  apiItems,
   apiList,
   currentBranch,
   detectRoute,
@@ -215,15 +216,28 @@ async function selectPull(
   const number = url?.[1] ?? (selector && /^#?\d+$/u.test(selector) ? selector.replace("#", "") : undefined);
   if (number !== undefined)
     return { repository: target, pull: await api<Pull>(target, `${root}/pulls/${number}`) };
-  const branch = selector ?? (await currentBranch());
-  const [owner, ref] = branch.includes(":") ? branch.split(":", 2) : [target.owner, branch];
-  const candidates = await api<Pull[]>(
-    target,
-    `${root}/pulls?state=all&per_page=100&head=${encodeURIComponent(`${owner}:${ref}`)}`,
-  );
-  const pull = candidates.find((candidate) => candidate.state === "open") ?? candidates[0];
+  // like `gh pr view`, the current branch is looked up in the target repository's
+  // own namespace, while a named branch matches any head, a fork's included
+  const branch = selector ?? `${target.owner}:${await currentBranch()}`;
+  const [owner, ref] = branch.includes(":") ? branch.split(":", 2) : [undefined, branch];
+  const head = owner === undefined ? "" : `&head=${encodeURIComponent(`${owner}:${ref}`)}`;
+  const pull =
+    (await firstHead(target, `${root}/pulls?state=open${head}`, ref!)) ??
+    (await firstHead(target, `${root}/pulls?state=all${head}`, ref!));
   if (!pull) throw new WrapperError(`no pull requests found for branch "${ref}"`);
   return { repository: target, pull };
+}
+
+/**
+ * finds the first pull request on a list endpoint whose head branch is `ref`
+ * @param repository - supplies the host
+ * @param path - the pulls list path
+ * @param ref - the head branch name
+ * @returns the pull request, or undefined when no page has one
+ */
+async function firstHead(repository: Repository, path: string, ref: string): Promise<Pull | undefined> {
+  for await (const pull of apiItems<Pull>(repository, path)) if (pull.head.ref === ref) return pull;
+  return undefined;
 }
 
 async function repositoryFor(parsed: ParsedArgs): Promise<Repository> {
@@ -253,19 +267,23 @@ async function listPulls(argv: readonly string[]): Promise<number> {
   const state = value(parsed, "state") ?? "open";
   if (!["open", "closed", "merged", "all"].includes(state))
     throw new WrapperError(`invalid --state "${state}"`);
-  const query = new URLSearchParams({ state: state === "merged" ? "closed" : state, per_page: "100" });
+  const query = new URLSearchParams({ state: state === "merged" ? "closed" : state });
+  // REST filters a head only as OWNER:BRANCH, while `gh pr list --head` matches the branch in any fork
   const head = value(parsed, "head");
-  if (head) query.set("head", head.includes(":") ? head : `${repository.owner}:${head}`);
+  if (head?.includes(":")) query.set("head", head);
+  const ref = head?.includes(":") ? head.split(":", 2)[1] : head;
   const base = value(parsed, "base");
   if (base) query.set("base", base);
   const author = value(parsed, "author");
   const limit = Number(value(parsed, "limit") ?? 30);
-  const pulls = (
-    await apiList<Pull>(repository, `repos/${repository.owner}/${repository.repo}/pulls?${query}`)
-  )
-    .filter((pull) => state !== "merged" || pull.merged_at)
-    .filter((pull) => !author || pull.user?.login === author)
-    .slice(0, limit);
+  const pulls: Pull[] = [];
+  for await (const pull of apiItems<Pull>(repository, `repos/${repository.owner}/${repository.repo}/pulls?${query}`)) {
+    if (ref !== undefined && pull.head.ref !== ref) continue;
+    if (state === "merged" && !pull.merged_at) continue;
+    if (author && pull.user?.login !== author) continue;
+    pulls.push(pull);
+    if (pulls.length >= limit) break;
+  }
   const fields = value(parsed, "json");
   if (fields === undefined) {
     for (const pull of pulls)

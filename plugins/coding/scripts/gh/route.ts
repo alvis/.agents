@@ -120,13 +120,36 @@ export async function apiList<T = unknown>(
 }
 
 /**
+ * reads a list endpoint one page at a time, so a caller that has what it
+ * needs stops before fetching the rest
+ * @param repository - supplies the host
+ * @param path - the REST list path, without paging parameters
+ * @yields each item in order
+ */
+export async function* apiItems<T = unknown>(
+  repository: Pick<Repository, "host">,
+  path: string,
+): AsyncGenerator<T> {
+  const separator = path.includes("?") ? "&" : "?";
+  for (let page = 1; ; page += 1) {
+    const items = await api<T[]>(repository, `${path}${separator}per_page=${PAGE_SIZE}&page=${page}`);
+    yield* items;
+    if (items.length < PAGE_SIZE) return;
+  }
+}
+
+/** GitHub's largest REST page; a shorter page is the last one */
+const PAGE_SIZE = 100;
+
+/**
  * parses `[HOST/]OWNER/REPO` or a repository URL
  * @param spec - the `--repo`, `GH_REPO`, or URL value
  * @param defaultHost - host used when the spec names none
  * @returns the repository
  */
 export function parseRepositorySpec(spec: string, defaultHost = "github.com"): Repository {
-  const url = /^(?:https?:\/\/|ssh:\/\/(?:[^@/]+@)?)([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/u.exec(spec);
+  // credentials and ports belong to the transport, not to the host `gh api --hostname` takes
+  const url = /^(?:https?|ssh|git):\/\/(?:[^@/]+@)?([^/:]+)(?::\d+)?\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/u.exec(spec);
   if (url) return { host: url[1]!, owner: url[2]!, repo: url[3]! };
   const scp = /^(?:[^@]+@)?([^:/]+):([^/]+)\/([^/]+?)(?:\.git)?$/u.exec(spec);
   if (scp) return { host: scp[1]!, owner: scp[2]!, repo: scp[3]! };
