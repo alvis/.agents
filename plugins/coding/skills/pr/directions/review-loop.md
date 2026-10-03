@@ -45,7 +45,7 @@ Do not act from the subagent summary alone. Resolve the host, repository coordin
 source "${CODING_PR_SKILL_DIR}/scripts/fetch-review-loop-discussion.sh" "$PR_URL"
 ```
 
-Retain the helper's canonical coordinates and metadata before the API calls. These commands illustrate the required fields; they are not a complete script. Page `reviewThreads` until `hasNextPage` is false. For every thread whose `comments.pageInfo.hasNextPage` is true, page that thread's `comments` connection by node ID until complete. Do not evaluate convergence from a partial page.
+Retain the helper's canonical coordinates and metadata before the API calls. These commands illustrate the required fields; they are not a complete script. The threads helper it calls returns the complete thread inventory; do not evaluate convergence if any of its reads failed.
 
 Read every ledger in the returned stack-to-ledger map before acting. Reject a missing, duplicate, or cross-stack path. Once a stack's per-surface dispositions are incorporated and no later pass needs its review tree, the parent closes its one retained tree lease. Remove each recorded `REVIEW_ARTIFACT_DIR` only under [the receipt lifecycle in review.md](review.md#locate-or-create-the-review-tree); a pending CI update still needs its exact approval receipt after this review pass ends.
 
