@@ -2079,6 +2079,11 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
     if (options.templateMutation !== undefined) {
       mkdirSync(join(root, "skills/pr/scripts"), { recursive: true });
       cpSync(scriptPath, installedScript);
+      cpSync(
+        join(import.meta.dirname, "../../../scripts/gh"),
+        join(root, "scripts/gh"),
+        { recursive: true },
+      );
       const templates = join(import.meta.dirname, "../templates");
       cpSync(templates, join(root, "skills/pr/templates"), { recursive: true });
       const templatePath = join(
