@@ -19,10 +19,10 @@ Both lookups are metadata reads. Neither moves a source tree, so resolution repo
 
 The stack namespace answers from the inventory that owns stack metadata, [List and land](../references/github-stacks.md#list-and-land). Match the number against each stack's `number`, and read that stack's members — their PR numbers, states, draft flags, and head branches — from the same response.
 
-The PR namespace answers from `gh pr view`:
+The PR namespace answers from the `gh pr view` wrapper:
 
 ```bash
-gh pr view "$NUMBER" --json number,url,title,state,isDraft,baseRefName,headRefName
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$NUMBER" --json number,url,title,state,isDraft,baseRefName,headRefName
 ```
 
 Only `Could not resolve to a PullRequest` or `no pull requests found` means the number is absent from the PR namespace; any other failure is that failure, so preserve its stderr and stop. On absence, read the stack inventory instead of reporting the reference as unlocatable.

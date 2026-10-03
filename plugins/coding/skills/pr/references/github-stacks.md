@@ -2,6 +2,8 @@
 
 Use the current upstream skill at <https://github.com/github/gh-stack/blob/main/skills/gh-stack/SKILL.md>, the [official documentation](https://gh.io/stacks), and `gh stack <command> --help` for the latest contract. Load this reference for every GitHub PR-stack request, regardless of which `coding:pr` route received it.
 
+`gh stack` is a GraphQL-backed `gh` extension with no REST route, so where GraphQL is blocked, as in coding-agent cloud sessions, it fails; there, publish the stack on the jj or plain Git route through `sync-pr-stack.sh` instead.
+
 For the jj route, consult the current [bookmark documentation](https://docs.jj-vcs.dev/latest/bookmarks/), [Git comparison for experts](https://docs.jj-vcs.dev/latest/git-experts/), and live `jj git push --help` output before relying on push behavior.
 
 Choose history ownership once. A repository is jj-colocated only when `git rev-parse HEAD` equals `jj log -r @- --no-graph -T 'commit_id'`; a missing command, failed command, or different ID selects the fully supported plain Git route. `coding:pr review` owns review on both routes.
@@ -76,7 +78,7 @@ The jj route needs no such guard: it lands a resolved head in a new workspace an
 For `/coding:pr stack list`, unconditionally inventory the current repository through its paginated `GET /repos/{owner}/{repo}/stacks` REST endpoint. Fetch every page and retain the JSON for agent decisions. The REST inventory keeps fully merged and closed stacks returned by the API.
 
 ```bash
-REPOSITORY=$(gh repo view --json nameWithOwner --jq '.nameWithOwner') || exit $?
+REPOSITORY=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-repo-view.ts" --json nameWithOwner --jq .nameWithOwner) || exit $?
 STACKS_REPORT=$(mktemp "$STACK_REPORT_DIR/inventory-XXXXXX.json") || exit $?
 gh api --paginate --slurp \
   -H 'Accept: application/vnd.github+json' \

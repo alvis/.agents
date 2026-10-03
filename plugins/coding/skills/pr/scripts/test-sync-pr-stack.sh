@@ -257,6 +257,8 @@ git -C "$COLOCATED" config user.name Test
 git -C "$COLOCATED" commit --quiet --allow-empty --no-gpg-sign -m base
 DETECT_SHA=$(git -C "$COLOCATED" rev-parse HEAD)
 DETECT_GIT_DIR="$COLOCATED/.git"
+# the fake gh answers native `gh pr` calls, so pin the wrappers to that route
+export GH_ROUTE=native
 export PATH="$FAKE_BIN:$PATH" FAKE_LOG LOCAL_REFS JJ_BOUND_REFS REMOTE_REFS PR_DATA \
   DETECT_SHA DETECT_GIT_DIR FAKE_REMOTE_LOOKUP=true SELECT_GIT=false \
   PUSH_MARKER POST_PUSH_HEAD_SEEN PR_RETARGETED

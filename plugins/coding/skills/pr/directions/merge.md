@@ -38,7 +38,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    ```bash
    DESTINATION=${CALLER_DESTINATION:-}
    if [ -z "$DESTINATION" ]; then
-     DESTINATION=$(gh pr view "$FIRST_PR" --json baseRefName --jq .baseRefName) || exit $?
+     DESTINATION=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$FIRST_PR" --json baseRefName --jq .baseRefName) || exit $?
    fi
    printf 'DESTINATION=%s\n' "$DESTINATION"
    ```
@@ -61,7 +61,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
      git branch --list
      git worktree list
    fi
-   gh auth status
+   gh api user --jq .login
    git fetch --prune -- "$REMOTE"
    if [ "$VCS" = jj ]; then
      jj git fetch --remote "$REMOTE"
@@ -73,7 +73,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 2. **Read PR metadata.** For every PR, collect number, state, base ref, head ref, head repository owner, head SHA, mergeability, and status rollup:
 
    ```bash
-   gh pr view <n> --json number,state,baseRefName,headRefName,headRepositoryOwner,headRepository,headRefOid,mergeStateStatus,statusCheckRollup,url,title
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" <n> --json number,state,baseRefName,headRefName,headRepositoryOwner,headRepository,headRefOid,mergeStateStatus,statusCheckRollup,url,title
    ```
 
    Stop if any PR is closed, merged, from an unavailable fork, or has a head branch/bookmark that cannot be checked out, rewritten, and pushed.
@@ -95,7 +95,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 
    Require each jj command to produce a non-empty commit ID. If any git link fails or any jj containment query is empty, stop and show the expected chain as `base <- PR1 head <- PR2 head ...` plus the detected mismatch.
 
-4. **Check CI unless forced.** Without `--force`, require every status check on every PR to be successful, skipped, or neutral. Treat pending, queued, expected, action-required, cancelled, timed-out, failure, error, or missing required checks as not green. Use both `mergeStateStatus` and `statusCheckRollup` from `gh pr view`.
+4. **Check CI unless forced.** Without `--force`, require every status check on every PR to be successful, skipped, or neutral. Treat pending, queued, expected, action-required, cancelled, timed-out, failure, error, or missing required checks as not green. Use both `mergeStateStatus` and `statusCheckRollup` from the [`gh-pr-view.ts`](../../../scripts/gh-pr-view.ts) read.
 
    If CI is not green, print a concise summary of failing checks and likely issue areas by PR, then ask whether the user wants to fix the issues locally and update the affected PRs. Suggest running `coding:fix` on the detected CI issues, updating the stacked PRs, then using the recurring scheduling capability at one-minute intervals to wait for green checks or rerun the fix when they fail again. Stop before merging until the user chooses a fix or force path.
 
@@ -118,9 +118,9 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    b. Merge it with the selected method:
 
    ```bash
-   gh pr merge <number> --rebase --delete-branch=false
-   gh pr merge <number> --squash --delete-branch=false
-   gh pr merge <number> --merge --delete-branch=false
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-merge.ts" <number> --rebase --delete-branch=false
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-merge.ts" <number> --squash --delete-branch=false
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-merge.ts" <number> --merge --delete-branch=false
    ```
 
    Use exactly one command matching `--method`. Keep `--delete-branch=false` until all descendants have been restacked.
@@ -155,15 +155,15 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    e. After each plain-Git link push, or after the one jj batch push, set and verify every remaining PR's base as its new parent branch. The immediate child targets the destination; deeper descendants retain the freshly restacked predecessor head:
 
    ```bash
-   gh pr edit <child-number> --base <new-parent-branch>
-   gh pr view <child-number> --json baseRefName --jq .baseRefName
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-edit.ts" <child-number> --base <new-parent-branch>
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" <child-number> --json baseRefName --jq .baseRefName
    ```
 
    Then use the child's new local tip as `<new-parent-ref>` for its child, but do not change a `round_tip` mid-round. After all descendants are pushed, refresh saved tips for the next round.
 
    f. Wait for GitHub to observe the push, then re-check CI before merging the next PR. If checks are pending, report that the stack was restacked and stop unless the user asked to wait; if asked to wait, poll at a reasonable interval for up to the user's requested duration.
 
-7. **Fix handling gate.** If any CI fix was made during this workflow by invoking or following `coding:fix`, update the affected PR branches/bookmarks using the same restack and push instructions above, but do not perform any `gh pr merge` action for the fixed PR or any downstream PR until the user gives explicit approval. Publish the contract-defined `merge-fix-published` status through [review-publishing.md](review-publishing.md), present the detailed fix summary to the user, and wait for explicit approval before returning to step 4. Until approval arrives, treat all downstream PRs as blocked even if their checks are green.
+7. **Fix handling gate.** If any CI fix was made during this workflow by invoking or following `coding:fix`, update the affected PR branches/bookmarks using the same restack and push instructions above, but do not run [`gh-pr-merge.ts`](../../../scripts/gh-pr-merge.ts) for the fixed PR or any downstream PR until the user gives explicit approval. Publish the contract-defined `merge-fix-published` status through [review-publishing.md](review-publishing.md), present the detailed fix summary to the user, and wait for explicit approval before returning to step 4. Until approval arrives, treat all downstream PRs as blocked even if their checks are green.
 
 8. **Conflict or failure recovery.** On rebase conflict, stop immediately and show the recovery commands for the active VCS:
 
@@ -184,7 +184,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 ## Verification
 
 - Dry-run mentally from the recorded metadata before mutating: the detected chain must be exactly linear.
-- Before every merge without `--force`, `gh pr view <n> --json mergeStateStatus,statusCheckRollup` must show green checks for the PR being merged.
+- Before every merge without `--force`, `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" <n> --json mergeStateStatus,statusCheckRollup` must show green checks for the PR being merged.
 - After every restack, verify ancestry with the active VCS:
 
   ```bash
