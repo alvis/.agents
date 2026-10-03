@@ -5,7 +5,7 @@
  * through REST and the Claude Code cloud proxy's `/ccr/` routes.
  */
 
-import { list, parseArgs, value } from "./args.ts";
+import { parseArgs, value } from "./args.ts";
 import {
   checkFromRun,
   checkFromStatus,
@@ -15,7 +15,6 @@ import {
 import {
   api,
   apiItems,
-  apiList,
   currentBranch,
   detectRoute,
   parseRepositorySpec,
@@ -56,40 +55,21 @@ interface Pull {
   readonly additions?: number;
   readonly deletions?: number;
   readonly mergeable_state?: string;
-  readonly created_at: string;
-  readonly updated_at: string;
-  readonly closed_at: string | null;
   readonly merged_at: string | null;
 }
 
 /**
- * operations the REST route cannot serve, with the reason. a subcommand here
- * has no drop-in, and a flag here fails fast instead of half-working. the
- * first group has no REST or `/ccr/` route at all; the second has a REST
- * route the coding skills never needed
+ * operations the coding skills run that the REST route cannot serve, with the
+ * reason; a flag here fails fast instead of half-working
  */
 export const UNSUPPORTED: Readonly<Record<string, string>> = {
-  revert: "GitHub exposes pull-request revert only through GraphQL (revertPullRequest)",
-  status: "the cross-repository status summary is a GraphQL search with no REST equivalent",
   "closing-issue links":
     "closingIssuesReferences and add/removeCloseIssueReferences are GraphQL-only; list resolving issues as `Closing #<n>` in the PR body instead",
   "gh stack":
     "the gh-stack extension calls GitHub itself and cannot be rerouted by this wrapper",
-  checkout: "not used by the coding skills; no REST route implemented",
-  lock: "not used by the coding skills; no REST route implemented",
-  unlock: "not used by the coding skills; no REST route implemented",
-  "update-branch": "not used by the coding skills; no REST route implemented",
   "--delete-branch":
     "the Claude Code cloud proxy refuses deleting a branch ref through REST and git push alike; delete the branch from a developer machine",
 };
-
-/** refuses `--delete-branch` before any write, so a close or merge never half-completes */
-function refuseDeleteBranch(subcommand: string, parsed: ParsedArgs): void {
-  if (parsed.booleans.has("delete-branch"))
-    throw new WrapperError(
-      `gh pr ${subcommand} --delete-branch is unavailable through REST: ${UNSUPPORTED["--delete-branch"]}`,
-    );
-}
 
 /** `--json` fields the REST route can produce for `view` and `list` */
 const PR_FIELDS = [
@@ -109,19 +89,12 @@ const PR_FIELDS = [
   "changedFiles",
   "additions",
   "deletions",
-  "createdAt",
-  "updatedAt",
-  "closedAt",
-  "mergedAt",
   "mergeStateStatus",
   "statusCheckRollup",
 ] as const;
 
 /** fields the list endpoint omits, which need the per-PR detail read */
 const DETAIL_FIELDS = new Set(["changedFiles", "additions", "deletions", "mergeStateStatus"]);
-
-/** `--json` fields `checks` can produce */
-const CHECK_FIELDS = ["name", "bucket", "state", "link", "startedAt", "completedAt", "workflow"];
 
 /**
  * projects one REST pull request onto `gh`'s field names
@@ -156,10 +129,6 @@ async function project(
     changedFiles: () => detail.changed_files,
     additions: () => detail.additions,
     deletions: () => detail.deletions,
-    createdAt: () => detail.created_at,
-    updatedAt: () => detail.updated_at,
-    closedAt: () => detail.closed_at,
-    mergedAt: () => detail.merged_at,
     mergeStateStatus: () => String(detail.mergeable_state ?? "unknown").toUpperCase(),
   };
   const entries: [string, unknown][] = [];
@@ -299,9 +268,9 @@ async function listPulls(argv: readonly string[]): Promise<number> {
 
 async function create(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["title", "body", "body-file", "base", "head", "label", "reviewer", "assignee"],
+    values: ["title", "body", "body-file", "base", "head"],
     booleans: ["draft"],
-    aliases: { t: "title", b: "body", F: "body-file", B: "base", H: "head", d: "draft", l: "label", r: "reviewer", a: "assignee" },
+    aliases: { t: "title", b: "body", F: "body-file", B: "base", H: "head", d: "draft" },
   });
   const repository = await repositoryFor(parsed);
   const root = `repos/${repository.owner}/${repository.repo}`;
@@ -319,41 +288,13 @@ async function create(argv: readonly string[]): Promise<number> {
       draft: parsed.booleans.has("draft"),
     },
   });
-  await applyIssueMetadata(repository, pull.number, parsed);
   process.stdout.write(`${pull.html_url}\n`);
   return 0;
 }
 
-async function applyIssueMetadata(repository: Repository, number: number, parsed: ParsedArgs): Promise<void> {
-  const root = `repos/${repository.owner}/${repository.repo}`;
-  const labels = [...list(parsed, "label"), ...list(parsed, "add-label")];
-  if (labels.length > 0) await api(repository, `${root}/issues/${number}/labels`, { method: "POST", body: { labels } });
-  for (const label of list(parsed, "remove-label"))
-    await api(repository, `${root}/issues/${number}/labels/${encodeURIComponent(label)}`, { method: "DELETE" });
-  const reviewers = [...list(parsed, "reviewer"), ...list(parsed, "add-reviewer")];
-  if (reviewers.length > 0)
-    await api(repository, `${root}/pulls/${number}/requested_reviewers`, { method: "POST", body: reviewerBody(reviewers) });
-  const removedReviewers = list(parsed, "remove-reviewer");
-  if (removedReviewers.length > 0)
-    await api(repository, `${root}/pulls/${number}/requested_reviewers`, { method: "DELETE", body: reviewerBody(removedReviewers) });
-  const assignees = [...list(parsed, "assignee"), ...list(parsed, "add-assignee")];
-  if (assignees.length > 0)
-    await api(repository, `${root}/issues/${number}/assignees`, { method: "POST", body: { assignees } });
-  const removedAssignees = list(parsed, "remove-assignee");
-  if (removedAssignees.length > 0)
-    await api(repository, `${root}/issues/${number}/assignees`, { method: "DELETE", body: { assignees: removedAssignees } });
-}
-
-function reviewerBody(reviewers: readonly string[]): { reviewers: string[]; team_reviewers: string[] } {
-  return {
-    reviewers: reviewers.filter((reviewer) => !reviewer.includes("/")),
-    team_reviewers: reviewers.filter((reviewer) => reviewer.includes("/")).map((team) => team.split("/")[1]!),
-  };
-}
-
 async function edit(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["title", "body", "body-file", "base", "add-label", "remove-label", "add-reviewer", "remove-reviewer", "add-assignee", "remove-assignee"],
+    values: ["title", "body", "body-file", "base"],
     aliases: { t: "title", b: "body", F: "body-file", B: "base" },
   });
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
@@ -366,7 +307,6 @@ async function edit(argv: readonly string[]): Promise<number> {
   if (base !== undefined) changes.base = base;
   if (Object.keys(changes).length > 0)
     await api(repository, `repos/${repository.owner}/${repository.repo}/pulls/${pull.number}`, { method: "PATCH", body: changes });
-  await applyIssueMetadata(repository, pull.number, parsed);
   process.stdout.write(`${pull.html_url}\n`);
   return 0;
 }
@@ -382,31 +322,19 @@ async function ready(argv: readonly string[]): Promise<number> {
 
 async function merge(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {
-    values: ["subject", "body", "body-file", "match-head-commit"],
-    booleans: ["merge", "squash", "rebase", "delete-branch", "auto", "disable-auto"],
-    aliases: { m: "merge", s: "squash", r: "rebase", d: "delete-branch", t: "subject", b: "body", F: "body-file" },
+    booleans: ["merge", "squash", "rebase", "delete-branch"],
+    aliases: { m: "merge", s: "squash", r: "rebase", d: "delete-branch" },
   });
-  refuseDeleteBranch("merge", parsed);
-  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
-  const root = `repos/${repository.owner}/${repository.repo}`;
+  // refused before any write, so a merge never half-completes
+  if (parsed.booleans.has("delete-branch"))
+    throw new WrapperError(`gh pr merge --delete-branch is unavailable through REST: ${UNSUPPORTED["--delete-branch"]}`);
   const methods = (["merge", "squash", "rebase"] as const).filter((method) => parsed.booleans.has(method));
-  if (parsed.booleans.has("disable-auto")) {
-    await api(repository, `${root}/pulls/${pull.number}/ccr/auto_merge`, { method: "DELETE" });
-    return 0;
-  }
   if (methods.length !== 1) throw new WrapperError("specify exactly one of --merge, --squash, or --rebase");
-  if (parsed.booleans.has("auto")) {
-    await api(repository, `${root}/pulls/${pull.number}/ccr/auto_merge`, { method: "PUT", body: { merge_method: methods[0] } });
-    return 0;
-  }
-  const body: Record<string, string> = { merge_method: methods[0]! };
-  const subject = value(parsed, "subject");
-  if (subject !== undefined) body.commit_title = subject;
-  const message = await readBody(value(parsed, "body"), value(parsed, "body-file"));
-  if (message !== undefined) body.commit_message = message;
-  const sha = value(parsed, "match-head-commit");
-  if (sha !== undefined) body.sha = sha;
-  await api(repository, `${root}/pulls/${pull.number}/merge`, { method: "PUT", body });
+  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
+  await api(repository, `repos/${repository.owner}/${repository.repo}/pulls/${pull.number}/merge`, {
+    method: "PUT",
+    body: { merge_method: methods[0] },
+  });
   return 0;
 }
 
@@ -417,81 +345,10 @@ async function checks(argv: readonly string[]): Promise<number> {
     ...(await readRuns(repository, pull.head.sha)).map(checkFromRun),
     ...(await readStatuses(repository, pull.head.sha)).map(checkFromStatus),
   ];
-  const fields = value(parsed, "json");
-  if (fields === undefined) {
-    for (const entry of entries)
-      process.stdout.write(`${entry.name}\t${entry.bucket}\t${entry.link ?? ""}\n`);
-  } else {
-    const names = requestedFields(fields, CHECK_FIELDS);
-    await printJson(
-      entries.map((entry) => Object.fromEntries(names.map((name) => [name, entry[name as keyof typeof entry]]))),
-      value(parsed, "jq"),
-    );
-  }
+  for (const entry of entries) process.stdout.write(`${entry.name}\t${entry.bucket}\t${entry.link ?? ""}\n`);
   // `gh pr checks` exits 1 when a check failed and 8 while any is pending
   if (entries.some((entry) => entry.bucket === "fail" || entry.bucket === "cancel")) return 1;
   return entries.some((entry) => entry.bucket === "pending") ? 8 : 0;
-}
-
-async function review(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, {
-    values: ["body", "body-file"],
-    booleans: ["approve", "request-changes", "comment"],
-    aliases: { a: "approve", r: "request-changes", c: "comment", b: "body", F: "body-file" },
-  });
-  const events = (["approve", "request-changes", "comment"] as const).filter((event) => parsed.booleans.has(event));
-  if (events.length !== 1) throw new WrapperError("specify exactly one of --approve, --request-changes, or --comment");
-  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
-  const body = await readBody(value(parsed, "body"), value(parsed, "body-file"));
-  const event = { approve: "APPROVE", "request-changes": "REQUEST_CHANGES", comment: "COMMENT" }[events[0]!];
-  await api(repository, `repos/${repository.owner}/${repository.repo}/pulls/${pull.number}/reviews`, {
-    method: "POST",
-    body: body === undefined ? { event } : { event, body },
-  });
-  return 0;
-}
-
-async function comment(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, { values: ["body", "body-file"], aliases: { b: "body", F: "body-file" } });
-  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
-  const body = await readBody(value(parsed, "body"), value(parsed, "body-file"));
-  if (body === undefined) throw new WrapperError("--body or --body-file is required when routed through REST");
-  const created = await api<{ html_url: string }>(
-    repository,
-    `repos/${repository.owner}/${repository.repo}/issues/${pull.number}/comments`,
-    { method: "POST", body: { body } },
-  );
-  process.stdout.write(`${created.html_url}\n`);
-  return 0;
-}
-
-async function setState(argv: readonly string[], state: "open" | "closed"): Promise<number> {
-  const parsed = parseArgs(argv, {
-    values: state === "closed" ? ["comment"] : [],
-    booleans: state === "closed" ? ["delete-branch"] : [],
-    aliases: { c: "comment", d: "delete-branch" },
-  });
-  refuseDeleteBranch(state === "closed" ? "close" : "reopen", parsed);
-  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
-  const root = `repos/${repository.owner}/${repository.repo}`;
-  const note = value(parsed, "comment");
-  if (note !== undefined) await api(repository, `${root}/issues/${pull.number}/comments`, { method: "POST", body: { body: note } });
-  await api(repository, `${root}/pulls/${pull.number}`, { method: "PATCH", body: { state } });
-  return 0;
-}
-
-async function diff(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, { booleans: ["name-only", "patch"] });
-  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
-  const root = `repos/${repository.owner}/${repository.repo}/pulls/${pull.number}`;
-  if (parsed.booleans.has("name-only")) {
-    const files = await apiList<{ filename: string }>(repository, `${root}/files?per_page=100`);
-    process.stdout.write(files.map((file) => `${file.filename}\n`).join(""));
-    return 0;
-  }
-  const accept = parsed.booleans.has("patch") ? "application/vnd.github.patch" : "application/vnd.github.diff";
-  process.stdout.write(await api<string>(repository, root, { accept, raw: true }));
-  return 0;
 }
 
 /** the REST implementation of every subcommand with a `gh-pr-<subcommand>.ts` drop-in */
@@ -503,11 +360,6 @@ export const SUBCOMMANDS: Readonly<Record<string, (argv: readonly string[]) => P
   ready,
   merge,
   checks,
-  review,
-  comment,
-  close: (argv) => setState(argv, "closed"),
-  reopen: (argv) => setState(argv, "open"),
-  diff,
 };
 
 /**

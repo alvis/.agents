@@ -67,8 +67,6 @@ export interface ApiOptions {
   readonly method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   readonly body?: unknown;
   readonly paginate?: boolean;
-  readonly accept?: string;
-  readonly raw?: boolean;
 }
 
 /**
@@ -76,8 +74,8 @@ export interface ApiOptions {
  * authentication, host configuration, and proxy settings
  * @param repository - supplies the host
  * @param path - the REST path, such as `repos/o/r/pulls/1`
- * @param options - method, JSON body, pagination, media type
- * @returns parsed JSON, or the raw text when `raw` is set
+ * @param options - method, JSON body, pagination
+ * @returns parsed JSON
  */
 export async function api<T = unknown>(
   repository: Pick<Repository, "host">,
@@ -87,7 +85,6 @@ export async function api<T = unknown>(
   const args = ["api", "--hostname", repository.host];
   if (options.method) args.push("--method", options.method);
   if (options.paginate) args.push("--paginate", "--slurp");
-  if (options.accept) args.push("-H", `Accept: ${options.accept}`);
   args.push(path);
   const result =
     options.body === undefined
@@ -101,22 +98,7 @@ export async function api<T = unknown>(
       result.exitCode,
     );
   const text = result.stdout.toString();
-  if (options.raw) return text as T;
   return (text.trim() === "" ? null : JSON.parse(text)) as T;
-}
-
-/**
- * reads every page of a list endpoint
- * @param repository - supplies the host
- * @param path - the REST list path
- * @returns the concatenated items
- */
-export async function apiList<T = unknown>(
-  repository: Pick<Repository, "host">,
-  path: string,
-): Promise<T[]> {
-  const pages = await api<T[][]>(repository, path, { paginate: true });
-  return pages.flat();
 }
 
 /**

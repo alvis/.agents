@@ -81,15 +81,3 @@ export function parseArgs(argv: readonly string[], spec: FlagSpec): ParsedArgs {
 export function value(parsed: ParsedArgs, name: string): string | undefined {
   return parsed.values.get(name)?.at(-1);
 }
-
-/**
- * reads every value of a repeatable flag, splitting comma lists
- * @param parsed - parsed arguments
- * @param name - long flag name
- * @returns the values
- */
-export function list(parsed: ParsedArgs, name: string): string[] {
-  return (parsed.values.get(name) ?? []).flatMap((entry) =>
-    entry.split(",").map((item) => item.trim()).filter(Boolean),
-  );
-}
