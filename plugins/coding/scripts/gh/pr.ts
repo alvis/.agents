@@ -16,19 +16,18 @@ import {
   api,
   apiItems,
   currentBranch,
-  detectRoute,
   parseRepositorySpec,
-  passthrough,
   printJson,
   readBody,
   requestedFields,
   resolveRepository,
+  runWrapper,
   WrapperError,
 } from "./route.ts";
 
 import type { CheckRun, CommitStatus } from "./checks.ts";
 import type { ParsedArgs } from "./args.ts";
-import type { Repository } from "./route.ts";
+import type { Handler, Repository } from "./route.ts";
 
 /** the REST pull-request fields this wrapper reads */
 interface Pull {
@@ -348,7 +347,7 @@ async function checks(argv: readonly string[]): Promise<number> {
 }
 
 /** the REST implementation of every subcommand with a `gh-pr-<subcommand>.ts` drop-in */
-export const SUBCOMMANDS: Readonly<Record<string, (argv: readonly string[]) => Promise<number>>> = {
+export const SUBCOMMANDS: Readonly<Record<string, Handler>> = {
   view,
   list: listPulls,
   create,
@@ -370,12 +369,5 @@ export async function run(
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough("pr", [subcommand, ...argv]);
-  try {
-    return await SUBCOMMANDS[subcommand]!(argv);
-  } catch (error) {
-    if (!(error instanceof WrapperError)) throw error;
-    process.stderr.write(`gh-pr-${subcommand}: ${error.message}\n`);
-    return error.exitCode;
-  }
+  return await runWrapper("pr", subcommand, SUBCOMMANDS, argv, env);
 }
