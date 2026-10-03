@@ -12,11 +12,11 @@ Own `create`, `update`, `lookup`, and `triage`. Infer the action from intent; pa
 
 ## Inputs and setup
 
-- Bind the target GitHub host and `OWNER/REPO` from an explicit URL/repository, otherwise inspect `bun "${ISSUE_SKILL_DIR}/../../scripts/gh-repo.ts" view --json nameWithOwner,url`. Do not guess between conflicting targets.
+- Bind the target GitHub host and `OWNER/REPO` from an explicit URL/repository, otherwise inspect `bun "${ISSUE_SKILL_DIR}/../../scripts/gh-repo-view.ts" --json nameWithOwner,url`. Do not guess between conflicting targets.
 - `create` needs a report or requested change; `update` needs an issue identifier and desired changes; `lookup` needs described symptoms/changes; `triage` accepts issue identifiers or automatic selection.
 - Optional intent: metadata choices, `pick` (default 3), force, read-only preview, candidate/detail budgets, and search restrictions. Three picks bounds the investigation batch while allowing progress past skipped issues.
 - Require authenticated `gh`, `jq`, and Git for code inspection. Check `gh api --hostname "$HOST" user --jq .login`; never install tools, broaden scopes, or change login silently. Report missing prerequisites.
-- Resolve this loaded skill's absolute directory once as `ISSUE_SKILL_DIR`; every resource path below is relative to it, regardless of the working directory or harness. Run commands in the target repository, passing `--repo "$HOST/$REPOSITORY"` to the `gh-issue.ts` wrapper; API recipes pass `--hostname` explicitly.
+- Resolve this loaded skill's absolute directory once as `ISSUE_SKILL_DIR`; every resource path below is relative to it, regardless of the working directory or harness. Run commands in the target repository, passing `--repo "$HOST/$REPOSITORY"` to the `gh-issue-<subcommand>.ts` drop-ins; API recipes pass `--hostname` explicitly.
 
 ## Dispatch
 

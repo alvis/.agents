@@ -1,6 +1,6 @@
 # GitHub mechanics
 
-Every recipe here is a REST call or the coding plugin's [`gh-issue.ts`](../../../scripts/gh-issue.ts) wrapper, which keeps `gh issue`'s interface and reroutes over REST where GraphQL is blocked.
+Every recipe here is a REST call or one of the coding plugin's `gh-issue-<subcommand>.ts` drop-ins, such as [`gh-issue-comment.ts`](../../../scripts/gh-issue-comment.ts), which keep `gh issue <subcommand>`'s interface and reroute over REST where GraphQL is blocked.
 
 ## Read and bind
 
@@ -29,7 +29,7 @@ Issue types exist only for organization-owned repositories; a 404 for a user-own
 Write multiline text through a file or JSON input, never interpolate report text into shell code. Post a triage comment with:
 
 ```bash
-bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue.ts" comment "$NUMBER" --repo "$HOST/$REPOSITORY" --body-file "$BODY_FILE"
+bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue-comment.ts" "$NUMBER" --repo "$HOST/$REPOSITORY" --body-file "$BODY_FILE"
 ```
 
 After every mutation, fetch the changed resource and compare intended values. For comments, bind the returned comment URL/ID and verify its body. On a timeout/unknown write result, reread before retrying; reuse an existing equivalent comment or issue instead of duplicating it. On permission/validation failure, stop that operation and report its explicit cause. Honor rate-limit reset/retry headers. At most two targeted retries limits duplicate-write risk; unresolved outcomes remain reported. Read-back cannot eliminate the API's race window: detect conflicts and do not overwrite newly observed human edits.

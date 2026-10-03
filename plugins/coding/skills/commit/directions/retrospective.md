@@ -98,7 +98,7 @@ After git rebase completes, jj will see the rewritten objects on next op; run `j
   ```bash
   jj bookmark list -r '<target>::'
   # For each bookmark with a PR:
-  bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr.ts" view <bookmark> --json state -q .state
+  bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-view.ts" <bookmark> --json state -q .state
   ```
 
   Any `MERGED` → STOP, route to [merged.md](./merged.md).

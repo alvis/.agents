@@ -159,7 +159,7 @@ esac
     // plugin layout around the skill directory and pin the native route
     const skill = join(root, "plugin/skills/pr");
     mkdirSync(join(skill, "scripts"), { recursive: true });
-    cpSync(join(import.meta.dirname, "../../../scripts/gh-pr.ts"), join(root, "plugin/scripts/gh-pr.ts"));
+    cpSync(join(import.meta.dirname, "../../../scripts/gh-pr-view.ts"), join(root, "plugin/scripts/gh-pr-view.ts"));
     cpSync(join(import.meta.dirname, "../../../scripts/gh"), join(root, "plugin/scripts/gh"), { recursive: true });
     writeFileSync(
       join(skill, "scripts/review-publication.ts"),

@@ -18,7 +18,7 @@ if [ -z "$REMOTE" ]; then
   GITHUB_REMOTES=()
   while IFS= read -r CANDIDATE; do
     PUSH_URL=$(git remote get-url --push -- "$CANDIDATE") || exit $?
-    if bun "$CODING_SCRIPTS/gh-repo.ts" view "$PUSH_URL" --json nameWithOwner >/dev/null 2>&1; then
+    if bun "$CODING_SCRIPTS/gh-repo-view.ts" "$PUSH_URL" --json nameWithOwner >/dev/null 2>&1; then
       GITHUB_REMOTES[${#GITHUB_REMOTES[@]}]=$CANDIDATE
     fi
   done < <(git remote || exit $?)
@@ -31,7 +31,7 @@ if [ -z "$REMOTE" ]; then
 fi
 PUSH_URL=$(git remote get-url --push -- "$REMOTE") || exit $?
 PUSH_REPOSITORY=$(
-  bun "$CODING_SCRIPTS/gh-repo.ts" view "$PUSH_URL" --json nameWithOwner --jq .nameWithOwner
+  bun "$CODING_SCRIPTS/gh-repo-view.ts" "$PUSH_URL" --json nameWithOwner --jq .nameWithOwner
 ) || exit $?
 PUSH_OWNER=${PUSH_REPOSITORY%%/*}
 printf 'REMOTE=%s\nPUSH_OWNER=%s\n' "$REMOTE" "$PUSH_OWNER"

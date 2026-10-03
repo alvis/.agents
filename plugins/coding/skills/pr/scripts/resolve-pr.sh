@@ -19,7 +19,7 @@ fi
 
 # macOS ships bash 3.2, where "${repo_args[@]}" is an unbound-variable error
 # under set -u when the array is empty; this expansion stays safe on both.
-metadata=$(bun "$CODING_SCRIPTS/gh-pr.ts" view "$pr_input" ${repo_args[@]+"${repo_args[@]}"} \
+metadata=$(bun "$CODING_SCRIPTS/gh-pr-view.ts" "$pr_input" ${repo_args[@]+"${repo_args[@]}"} \
   --json number,url,title,body,state,isDraft,baseRefName,baseRefOid,\
 headRefName,headRefOid,headRepositoryOwner,changedFiles,additions,deletions,\
 author,statusCheckRollup)

@@ -86,7 +86,7 @@ open_clone() {
   printf '%s\n' "$repository" >"$lease/repo"
   printf '%s\n' "$tree" >"$lease/tree"
   trap 'close_lease "$lease"' ERR HUP INT TERM
-  bun "$CODING_SCRIPTS/gh-repo.ts" clone "$repository" "$tree" -- --no-checkout >&2
+  bun "$CODING_SCRIPTS/gh-repo-clone.ts" "$repository" "$tree" -- --no-checkout >&2
   git -C "$tree" fetch origin "pull/$pr_number/head" >&2
   git -C "$tree" cat-file -e "$revision^{commit}"
   git -C "$tree" checkout --detach "$revision" >&2

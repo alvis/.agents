@@ -22,7 +22,7 @@ The stack namespace answers from the inventory that owns stack metadata, [List a
 The PR namespace answers from the `gh pr view` wrapper:
 
 ```bash
-bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view "$NUMBER" --json number,url,title,state,isDraft,baseRefName,headRefName
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$NUMBER" --json number,url,title,state,isDraft,baseRefName,headRefName
 ```
 
 Only `Could not resolve to a PullRequest` or `no pull requests found` means the number is absent from the PR namespace; any other failure is that failure, so preserve its stderr and stop. On absence, read the stack inventory instead of reporting the reference as unlocatable.

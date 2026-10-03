@@ -267,7 +267,7 @@ Interpret every status literally:
 A successful non-dry run has no errors, every live head is `verified`, and every existing open PR base is `verified`; `deferred` and `skipped_merged` are terminal only through their actions above. A handled nonzero still carries the complete partial receipt: parse it before stopping, preserve verified prefix work, and restart discovery through the matching recovery row. Dry-run success contains only `planned`, `deferred`, or `not_applicable` mutation statuses and authorizes no push, edit, or creation. When the head has no open PR, create a draft:
 
 ```bash
-PR=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" create --repo "$HOST/$REPOSITORY" --draft --title "$TITLE" --body-file - \
+PR=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-create.ts" --repo "$HOST/$REPOSITORY" --draft --title "$TITLE" --body-file - \
   --base "$PR_BASE" --head "$PUSH_OWNER:$BOOKMARK" <<<"$BODY")
 ```
 
@@ -276,8 +276,8 @@ After creation, read back that numeric PR with `--repo "$HOST/$REPOSITORY"` and 
 When the head has one open PR, reread its body and closing associations at the verified published head/base pair. Make the Related Issues closing line name exactly the issues whose disposition is resolving: add new ones and demote a now-partial or related issue to a plain reference. Reconcile concurrent body edits before submitting the revised text. Once this gate passes, edit the PR and retain draft state:
 
 ```bash
-bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" edit "$PR" --title "$TITLE" --body-file - --base "$PR_BASE" <<<"$BODY"
-bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" ready "$PR" --undo
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-edit.ts" "$PR" --title "$TITLE" --body-file - --base "$PR_BASE" <<<"$BODY"
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR" --undo
 ```
 
 Read back the same metadata after an update and require the bound head/base pair, `state: OPEN`, and `isDraft: true`. A successful mutation command alone does not establish publication or draft state.
@@ -292,7 +292,7 @@ After either path binds `PR`, add nonempty selections as JSON so commas remain i
 
 ```bash
 if jq -e 'length > 0' >/dev/null <<<"$SELECTED_LABELS"; then
-  PR_NUMBER=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view "$PR" --repo "$HOST/$REPOSITORY" \
+  PR_NUMBER=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR" --repo "$HOST/$REPOSITORY" \
     --json number --jq .number)
   jq -ce '{labels: .}' <<<"$SELECTED_LABELS" |
     gh api --method POST --hostname "$HOST" \
@@ -302,7 +302,7 @@ fi
 
 Publish a genuinely necessary self-contained black-zone unit as a draft with specific `## ⚠️ Risk`, `## 🧭 Test Plan`, and `## 📐 Why This Size` evidence. The authoring body contains no reviewer or authorization tasks while draft. A ready PR gains an unchecked exact-revision black-zone verification task in its managed Verification block. No comment authorizes or gates AI review.
 
-Capture each PR number, URL, head, base, bookmark, and change ID. After the batch push, record `expected_head_oid` from each pushed bookmark and verify it against `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view "$PR" --json headRefOid --jq .headRefOid`; a mismatch is not the published result and must be resolved before monitoring. After any accepted repair/history rewrite with downstream bookmarks, synchronize the affected stack before monitoring again. Reuse `ROOT_BASE` only when the selected heads and their base map are unchanged; otherwise restart discovery and recompute it first:
+Capture each PR number, URL, head, base, bookmark, and change ID. After the batch push, record `expected_head_oid` from each pushed bookmark and verify it against `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR" --json headRefOid --jq .headRefOid`; a mismatch is not the published result and must be resolved before monitoring. After any accepted repair/history rewrite with downstream bookmarks, synchronize the affected stack before monitoring again. Reuse `ROOT_BASE` only when the selected heads and their base map are unchanged; otherwise restart discovery and recompute it first:
 
 ```bash
 if SYNC_RECEIPT=$(bash "${CODING_PR_SKILL_DIR}/scripts/sync-pr-stack.sh" \
@@ -460,7 +460,7 @@ PR_CHECKS=$(bun run "${CODING_PR_SKILL_DIR}/scripts/review-publication.ts" check
   --head "$EXPECTED_HEAD_OID") || exit 1
 jq -e 'type == "array" and all(.[]; (.bucket == "pass" or .bucket == "skipping") and .completedAt != null)' \
   >/dev/null <<<"$PR_CHECKS" || exit 1
-PR_METADATA=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view "$PR_URL" --repo "$HOST/$REPOSITORY" \
+PR_METADATA=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR_URL" --repo "$HOST/$REPOSITORY" \
   --json state,headRefOid,baseRefName,baseRefOid,isDraft) || exit 1
 jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
   --arg base_oid "$EXPECTED_BASE_OID" '
@@ -471,7 +471,7 @@ jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
 
 Classify the fresh `PR_CHECKS` with the step 5 expected-check and source evidence for `EXPECTED_HEAD_OID`; require green. The following metadata read pins the head and base after the check fetch. If the check rollup is pending, red, incomplete, or inaccessible, return to CI convergence instead of marking the PR ready.
 
-If the pinned PR metadata reports `isDraft: true`, run `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" ready "$PR_NUMBER" --repo "$HOST/$REPOSITORY"`; if it is already ready, skip that transition and continue task attachment. Then call the same generator with `--apply`. GitHub may assign CODEOWNERS during the ready transition, so the apply invocation resolves reviewers again and its returned block is authoritative. It rereads the live PR, refuses a draft or changed head/base, and replaces one managed task block under Verification. Read back the exact body and ready state; require the managed block to equal the apply invocation's returned block and the entire body to equal its returned `body` on the pinned revision. If attachment or readback fails, reread the pinned PR body before changing draft state. Undo readiness with `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" ready "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --undo` only when the managed block is confirmed absent; then verify the draft body still has no reviewer tasks. If the block is present or body state cannot be read, keep the PR ready, report the partial outcome, and reconcile the body before any later draft transition. No reviewer tasks are published in a draft. Do not check whether a human checked a task, approved a review, or left an authorization comment.
+If the pinned PR metadata reports `isDraft: true`, run `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY"`; if it is already ready, skip that transition and continue task attachment. Then call the same generator with `--apply`. GitHub may assign CODEOWNERS during the ready transition, so the apply invocation resolves reviewers again and its returned block is authoritative. It rereads the live PR, refuses a draft or changed head/base, and replaces one managed task block under Verification. Read back the exact body and ready state; require the managed block to equal the apply invocation's returned block and the entire body to equal its returned `body` on the pinned revision. If attachment or readback fails, reread the pinned PR body before changing draft state. Undo readiness with `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --undo` only when the managed block is confirmed absent; then verify the draft body still has no reviewer tasks. If the block is present or body state cannot be read, keep the PR ready, report the partial outcome, and reconcile the body before any later draft transition. No reviewer tasks are published in a draft. Do not check whether a human checked a task, approved a review, or left an authorization comment.
 
 ### Author the PR text
 

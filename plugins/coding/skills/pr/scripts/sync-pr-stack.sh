@@ -261,7 +261,7 @@ resolve_local_oid() {
 
 list_owned_prs() {
   bookmark=$1
-  if ! discovery=$(bun "$CODING_SCRIPTS/gh-pr.ts" list --repo "$repository" --head "$bookmark" \
+  if ! discovery=$(bun "$CODING_SCRIPTS/gh-pr-list.ts" --repo "$repository" --head "$bookmark" \
     --state all --limit 100 \
     --json number,state,headRefOid,headRepositoryOwner,baseRefName,baseRefOid,url)
   then
@@ -334,7 +334,7 @@ discover_pr() {
 
 read_pr() {
   pr_number=$1
-  bun "$CODING_SCRIPTS/gh-pr.ts" view "$pr_number" --repo "$repository" \
+  bun "$CODING_SCRIPTS/gh-pr-view.ts" "$pr_number" --repo "$repository" \
     --json number,state,headRefOid,headRepositoryOwner,baseRefName,baseRefOid,url
 }
 
@@ -695,7 +695,7 @@ for index in ${live_indices[@]+"${live_indices[@]}"}; do
     mark_base_failure "$index" pr_base_oid_mismatch
 
   if [ "$readback_base" != "$expected_base" ]; then
-    if ! bun "$CODING_SCRIPTS/gh-pr.ts" edit "$pr_number" --repo "$repository" \
+    if ! bun "$CODING_SCRIPTS/gh-pr-edit.ts" "$pr_number" --repo "$repository" \
       --base "$expected_base" >/dev/null; then
       mark_base_failure "$index" pr_edit_failed
     fi

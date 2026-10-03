@@ -15,7 +15,7 @@ Detection:
 
 ```bash
 # For each bookmark pointing at or downstream of the target:
-bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr.ts" view <bookmark> --json state -q .state
+bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-view.ts" <bookmark> --json state -q .state
 # MERGED → this workflow
 ```
 
@@ -123,7 +123,7 @@ jj git push --bookmark <affected-bookmark>
 
 The tracked remote bookmark gives `jj git push` force-with-lease semantics: a remote change since the fetch rejects the push. Do not include descendants or any other bookmark in this command. The explicit Option 2 consent authorizes this affected bookmark only.
 
-If open downstream PRs remain, inspect their current checks read-only with `bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr.ts" checks`; do not invoke mutating `coding:pr update` as a monitor. Updating or restacking descendants requires separate explicit user consent. With no relevant downstream PR, skip monitoring.
+If open downstream PRs remain, inspect their current checks read-only with `bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-checks.ts"`; do not invoke mutating `coding:pr update` as a monitor. Updating or restacking descendants requires separate explicit user consent. With no relevant downstream PR, skip monitoring.
 
 Verify the integrity guard in [SKILL.md](../SKILL.md) passes.
 
@@ -147,7 +147,7 @@ Notify reviewers and downstream consumers:
 ## Mandatory follow-ups
 
 - Option 1: normal save follow-ups ([save.md](./save.md)).
-- Option 2: integrity check, ordinary project scripts unless `--no-verify`, mandatory exact-revision publication gate, direct force-with-lease sync of the affected bookmark only, then read-only `bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr.ts" checks` for relevant downstream PRs. Updating or restacking them needs separate explicit consent.
+- Option 2: integrity check, ordinary project scripts unless `--no-verify`, mandatory exact-revision publication gate, direct force-with-lease sync of the affected bookmark only, then read-only `bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-checks.ts"` for relevant downstream PRs. Updating or restacking them needs separate explicit consent.
 - Always: report the chosen route per [SKILL.md](../SKILL.md) Completion.
 
 ## Error / edge cases

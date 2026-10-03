@@ -38,7 +38,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    ```bash
    DESTINATION=${CALLER_DESTINATION:-}
    if [ -z "$DESTINATION" ]; then
-     DESTINATION=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view "$FIRST_PR" --json baseRefName --jq .baseRefName) || exit $?
+     DESTINATION=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$FIRST_PR" --json baseRefName --jq .baseRefName) || exit $?
    fi
    printf 'DESTINATION=%s\n' "$DESTINATION"
    ```
@@ -73,7 +73,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 2. **Read PR metadata.** For every PR, collect number, state, base ref, head ref, head repository owner, head SHA, mergeability, and status rollup:
 
    ```bash
-   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view <n> --json number,state,baseRefName,headRefName,headRepositoryOwner,headRepository,headRefOid,mergeStateStatus,statusCheckRollup,url,title
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" <n> --json number,state,baseRefName,headRefName,headRepositoryOwner,headRepository,headRefOid,mergeStateStatus,statusCheckRollup,url,title
    ```
 
    Stop if any PR is closed, merged, from an unavailable fork, or has a head branch/bookmark that cannot be checked out, rewritten, and pushed.
@@ -118,9 +118,9 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    b. Merge it with the selected method:
 
    ```bash
-   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" merge <number> --rebase --delete-branch=false
-   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" merge <number> --squash --delete-branch=false
-   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" merge <number> --merge --delete-branch=false
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-merge.ts" <number> --rebase --delete-branch=false
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-merge.ts" <number> --squash --delete-branch=false
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-merge.ts" <number> --merge --delete-branch=false
    ```
 
    Use exactly one command matching `--method`. Keep `--delete-branch=false` until all descendants have been restacked.
@@ -155,8 +155,8 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    e. After each plain-Git link push, or after the one jj batch push, set and verify every remaining PR's base as its new parent branch. The immediate child targets the destination; deeper descendants retain the freshly restacked predecessor head:
 
    ```bash
-   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" edit <child-number> --base <new-parent-branch>
-   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view <child-number> --json baseRefName --jq .baseRefName
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-edit.ts" <child-number> --base <new-parent-branch>
+   bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" <child-number> --json baseRefName --jq .baseRefName
    ```
 
    Then use the child's new local tip as `<new-parent-ref>` for its child, but do not change a `round_tip` mid-round. After all descendants are pushed, refresh saved tips for the next round.
@@ -184,7 +184,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 ## Verification
 
 - Dry-run mentally from the recorded metadata before mutating: the detected chain must be exactly linear.
-- Before every merge without `--force`, `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr.ts" view <n> --json mergeStateStatus,statusCheckRollup` must show green checks for the PR being merged.
+- Before every merge without `--force`, `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" <n> --json mergeStateStatus,statusCheckRollup` must show green checks for the PR being merged.
 - After every restack, verify ancestry with the active VCS:
 
   ```bash
