@@ -1016,7 +1016,7 @@ function readLiveCiChecks(
   ];
 }
 
-/** conclusions `gh pr checks` reports as failed; any other, such as `stale`, stays pending */
+/** conclusions `gh pr checks` reports as failed, plus `startup_failure`, which never completes and would otherwise stay pending; any other, such as `stale`, stays pending */
 const FAILED_CONCLUSIONS = new Set(["failure", "timed_out", "action_required", "startup_failure"]);
 
 /**
