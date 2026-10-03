@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { cloud, runScript } from "./spec-harness.ts";
-import { SUBCOMMANDS, UNSUPPORTED } from "./repo.ts";
+import { SUBCOMMANDS } from "./repo.ts";
 
 import type { RunOptions } from "./spec-harness.ts";
 
@@ -28,13 +28,12 @@ function run(argv: readonly string[], options: RunOptions = {}) {
 }
 
 describe("cmd:gh-repo-<subcommand>", () => {
-  it("should ship one drop-in per REST subcommand and none for an unsupported one", () => {
+  it("should ship one drop-in per REST subcommand", () => {
     const dropIns = readdirSync(scripts)
       .map((name) => /^gh-repo-([a-z-]+)\.ts$/u.exec(name)?.[1])
       .filter((name) => name !== undefined)
       .sort();
     expect(dropIns).toEqual(Object.keys(SUBCOMMANDS).sort());
-    expect(dropIns.filter((name) => name in UNSUPPORTED)).toEqual([]);
   });
 
   it("should pass every argument through to gh unchanged outside a cloud session", () => {

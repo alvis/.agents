@@ -2325,14 +2325,10 @@ function assertSameTarget(
 }
 
 function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
-  // coding's gh-pr-review.ts, gh-pr-comment.ts and gh-issue-comment.ts
-  // drop-ins reach the same review and comment writes over REST, so they are
-  // guarded exactly like raw gh
-  const dropIn = words
-    .map((word) => basename(word))
-    .find((name) => /^gh-(?:pr-(?:review|comment)|issue-comment)\.ts$/u.test(name));
-  if (dropIn === "gh-issue-comment.ts") return "gh-issue-comment.ts can target a pull request";
-  if (dropIn !== undefined) return `${dropIn} bypasses the approved payload`;
+  // coding's gh-issue-comment.ts drop-in reaches the same comment write over
+  // REST, so it is guarded exactly like raw gh issue comment
+  if (words.some((word) => basename(word) === "gh-issue-comment.ts"))
+    return "gh-issue-comment.ts can target a pull request";
   const ghIndex = words.findIndex((word) => basename(word) === "gh");
   if (ghIndex === -1) return null;
   const arguments_ = [...words.slice(ghIndex + 1)];
@@ -2661,7 +2657,7 @@ function looksLikeReviewWrite(command: string): boolean {
     /\bgh\b[\s\S]*?\b(?:pr\s+(?:comment|review)|issue\s+comment)\b/.test(
       command,
     ) ||
-    /\bgh-(?:pr-(?:review|comment)|issue-comment)\.ts\b/.test(command) ||
+    /\bgh-issue-comment\.ts\b/.test(command) ||
     (/\bgh\b[\s\S]*?\bapi\b/.test(command) &&
       (PROTECTED_GRAPHQL_PATTERN.test(command) ||
         /repos\/[^\s]+\/(?:issues|pulls)\//.test(command)))

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { SUBCOMMANDS, UNSUPPORTED } from "./pr.ts";
 import { detectRoute, parseRepositorySpec } from "./route.ts";
-import { cloud, requestBody, restCalls, runScript } from "./spec-harness.ts";
+import { cloud, restCalls, runScript } from "./spec-harness.ts";
 
 import type { Routes, RunOptions } from "./spec-harness.ts";
 

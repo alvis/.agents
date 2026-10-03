@@ -20,18 +20,6 @@ import {
 
 import type { Handler, Repository } from "./route.ts";
 
-/** `gh repo` subcommands the REST route does not serve, with the reason; none has a drop-in */
-export const UNSUPPORTED: Readonly<Record<string, string>> = {
-  create: "not used by the coding skills; no REST route implemented",
-  fork: "not used by the coding skills; no REST route implemented",
-  edit: "not used by the coding skills; no REST route implemented",
-  list: "not used by the coding skills; no REST route implemented",
-  sync: "not used by the coding skills; no REST route implemented",
-  rename: "not used by the coding skills; no REST route implemented",
-  archive: "not used by the coding skills; no REST route implemented",
-  delete: "not used by the coding skills; no REST route implemented",
-};
-
 /** the REST repository fields this wrapper reads */
 interface RestRepository {
   readonly node_id: string;

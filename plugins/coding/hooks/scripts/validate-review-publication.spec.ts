@@ -119,15 +119,14 @@ const protectedCommands = [
   "gh -R acme/app pr review 35 --approve; echo done",
   "gh api user $(gh pr review 35 --approve)",
   "gh api repos/acme/app/issues/35/comments --method POST; echo done",
-  "bun run plugins/coding/scripts/gh-pr-review.ts 35 --approve",
-  "bun plugins/coding/scripts/gh-pr-comment.ts 35 --body-file review.md",
-  "./gh-pr-review.ts 35 --comment --body Approved",
+  "bun plugins/coding/scripts/gh-issue-comment.ts 35 --body-file review.md",
+  "./gh-issue-comment.ts 35 --body Approved",
   'bun run "$CODING_SCRIPTS/gh-issue-comment.ts" 35 --body Approved',
-  "cd repo && bun gh-pr-comment.ts 35 --body Approved",
-  "bun gh-pr-review.ts 35 --approve | tee out.log",
+  "cd repo && bun gh-issue-comment.ts 35 --body Approved",
+  "bun gh-issue-comment.ts 35 --body Approved | tee out.log",
   "true\nbun gh-issue-comment.ts 35 --body Approved",
-  "bun gh-pr-review.ts 35 --comment --body Approved 2>&1",
-  "echo start; bun gh-pr-review.ts 35 --approve",
+  "bun gh-issue-comment.ts 35 --body Approved 2>&1",
+  "echo start; bun gh-issue-comment.ts 35 --body Approved",
 ];
 
 describe("review publication shell guard", () => {
