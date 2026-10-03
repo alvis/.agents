@@ -1,12 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { detectRoute } from "./gh/route.ts";
-import { UNSUPPORTED } from "./gh-pr.ts";
+import { SUBCOMMANDS, UNSUPPORTED } from "./pr.ts";
+import { detectRoute } from "./route.ts";
 
 interface Call {
   readonly args: string[];
@@ -23,7 +23,7 @@ interface Run {
 /** a REST response keyed by a path prefix the fake gh matches */
 type Routes = Record<string, { readonly body: unknown; readonly exit?: number }>;
 
-const script = join(import.meta.dirname, "gh-pr.ts");
+const scripts = join(import.meta.dirname, "..");
 const head = "1".repeat(40);
 const base = "2".repeat(40);
 const pull = {
@@ -64,7 +64,7 @@ const passingRun = {
 };
 
 /**
- * runs gh-pr.ts against a fake `gh` that records every call and answers
+ * runs the `gh-pr-<argv[0]>.ts` drop-in with the remaining arguments against a fake `gh` that records every call and answers
  * `gh api` paths from `routes`; any other call is the native passthrough
  */
 function run(
@@ -93,7 +93,8 @@ process.exit(route.exit ?? 0);
 `,
       { mode: 0o755 },
     );
-    const result = spawnSync("bun", [script, ...argv], {
+    const [subcommand, ...rest] = argv;
+    const result = spawnSync("bun", [join(scripts, `gh-pr-${subcommand}.ts`), ...rest], {
       encoding: "utf8",
       input: options.stdin ?? "",
       env: {
@@ -146,7 +147,16 @@ describe("fn:detectRoute", () => {
   });
 });
 
-describe("cmd:gh-pr", () => {
+describe("cmd:gh-pr-<subcommand>", () => {
+  it("should ship one drop-in per REST subcommand and none for an unsupported one", () => {
+    const dropIns = readdirSync(scripts)
+      .map((name) => /^gh-pr-([a-z-]+)\.ts$/u.exec(name)?.[1])
+      .filter((name) => name !== undefined)
+      .sort();
+    expect(dropIns).toEqual(Object.keys(SUBCOMMANDS).sort());
+    expect(dropIns.filter((name) => name in UNSUPPORTED)).toEqual([]);
+  });
+
   it("should pass every argument through to gh unchanged outside a cloud session", () => {
     const argv = ["view", "7", "--json", "number", "--repo", "example/project"];
     const result = run(argv, { nativeExit: 5 });
@@ -295,13 +305,6 @@ describe("cmd:gh-pr", () => {
       routes: { ...pullRoutes, [`${project}/commits/${head}/check-runs`]: { body: { check_runs: [checkRun] } } },
     });
     expect(result.status).toBe(exit);
-  });
-
-  it("should refuse an unsupported subcommand with its reason", () => {
-    const result = run(["revert", "7", "--repo", "example/project"], { env: cloud });
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain(UNSUPPORTED.revert);
-    expect(result.calls).toEqual([]);
   });
 
   it("should refuse a flag the REST route cannot honor instead of ignoring it", () => {

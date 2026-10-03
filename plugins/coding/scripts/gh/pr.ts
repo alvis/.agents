@@ -1,18 +1,17 @@
-#!/usr/bin/env bun
 /**
- * a drop-in for `gh pr`. on a developer machine it runs `gh pr` unchanged; in
- * environments that block GitHub's GraphQL endpoint (see gh/route.ts for why)
- * it serves the subcommands below through REST and the Claude Code cloud
- * proxy's `/ccr/` routes, and refuses everything in UNSUPPORTED by name.
+ * the `gh pr` subcommands behind the `gh-pr-<subcommand>.ts` drop-ins. on a
+ * developer machine each runs `gh pr <subcommand>` unchanged; in environments
+ * that block GitHub's GraphQL endpoint (see route.ts for why) it is served
+ * through REST and the Claude Code cloud proxy's `/ccr/` routes.
  */
 
-import { list, parseArgs, value } from "./gh/args.ts";
+import { list, parseArgs, value } from "./args.ts";
 import {
   checkFromRun,
   checkFromStatus,
   rollupFromRun,
   rollupFromStatus,
-} from "./gh/checks.ts";
+} from "./checks.ts";
 import {
   api,
   apiList,
@@ -25,11 +24,11 @@ import {
   requestedFields,
   resolveRepository,
   WrapperError,
-} from "./gh/route.ts";
+} from "./route.ts";
 
-import type { CheckRun, CommitStatus } from "./gh/checks.ts";
-import type { ParsedArgs } from "./gh/args.ts";
-import type { Repository } from "./gh/route.ts";
+import type { CheckRun, CommitStatus } from "./checks.ts";
+import type { ParsedArgs } from "./args.ts";
+import type { Repository } from "./route.ts";
 
 /** the REST pull-request fields this wrapper reads */
 interface Pull {
@@ -63,9 +62,10 @@ interface Pull {
 }
 
 /**
- * operations the REST route cannot serve, with the reason; each fails fast
- * instead of half-working. the first group has no REST or `/ccr/` route at
- * all; the second has a REST route the coding skills never needed
+ * operations the REST route cannot serve, with the reason. a subcommand here
+ * has no drop-in, and a flag here fails fast instead of half-working. the
+ * first group has no REST or `/ccr/` route at all; the second has a REST
+ * route the coding skills never needed
  */
 export const UNSUPPORTED: Readonly<Record<string, string>> = {
   revert: "GitHub exposes pull-request revert only through GraphQL (revertPullRequest)",
@@ -476,8 +476,8 @@ async function diff(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
-/** the REST implementation of every supported subcommand */
-const HANDLERS: Readonly<Record<string, (argv: readonly string[]) => Promise<number>>> = {
+/** the REST implementation of every subcommand with a `gh-pr-<subcommand>.ts` drop-in */
+export const SUBCOMMANDS: Readonly<Record<string, (argv: readonly string[]) => Promise<number>>> = {
   view,
   list: listPulls,
   create,
@@ -493,29 +493,23 @@ const HANDLERS: Readonly<Record<string, (argv: readonly string[]) => Promise<num
 };
 
 /**
- * runs one `gh pr` invocation on the selected route
- * @param argv - arguments after `gh-pr.ts`, starting with the subcommand
+ * runs one `gh pr <subcommand>` invocation on the selected route
+ * @param subcommand - the drop-in's `gh pr` subcommand
+ * @param argv - arguments after the subcommand
  * @param env - process environment
  * @returns the exit code
  */
-export async function main(
+export async function run(
+  subcommand: string,
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough("pr", argv);
-  const [subcommand, ...rest] = argv;
+  if (detectRoute(env) === "native") return await passthrough("pr", [subcommand, ...argv]);
   try {
-    if (subcommand !== undefined && UNSUPPORTED[subcommand] !== undefined)
-      throw new WrapperError(`gh pr ${subcommand} is unavailable through REST: ${UNSUPPORTED[subcommand]}`);
-    const handler = subcommand === undefined ? undefined : HANDLERS[subcommand];
-    if (handler === undefined)
-      throw new WrapperError(`unknown gh pr subcommand "${subcommand ?? ""}"; supported through REST: ${Object.keys(HANDLERS).join(", ")}`);
-    return await handler(rest);
+    return await SUBCOMMANDS[subcommand]!(argv);
   } catch (error) {
     if (!(error instanceof WrapperError)) throw error;
-    process.stderr.write(`gh-pr: ${error.message}\n`);
+    process.stderr.write(`gh-pr-${subcommand}: ${error.message}\n`);
     return error.exitCode;
   }
 }
-
-if (import.meta.main) process.exit(await main(process.argv.slice(2)));
