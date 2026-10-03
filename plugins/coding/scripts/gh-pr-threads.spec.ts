@@ -25,6 +25,15 @@ describe("cmd:gh-pr-threads", () => {
     expect(result.calls.some((call) => call.args.includes("graphql"))).toBe(false);
   });
 
+  it("should name the cloud route when it does not return a thread array", () => {
+    const result = run(["7", "--repo", "example/project"], {
+      env: cloud,
+      routes: { "repos/example/project/pulls/7/ccr/review_threads": { body: { threads: [thread] } } },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("ccr/review_threads did not return a thread array");
+  });
+
   it("should normalize GraphQL threads onto the cloud shape outside a cloud session", () => {
     const done = { hasNextPage: false, endCursor: null };
     const page = {

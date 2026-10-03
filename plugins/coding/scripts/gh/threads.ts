@@ -59,8 +59,12 @@ interface ThreadNode {
  */
 export function listReviewThreads(gh: GhJson, route: Route, target: ThreadTarget): ReviewThread[] {
   const root = `repos/${target.owner}/${target.repo}/pulls/${target.number}`;
-  if (route === "rest")
-    return gh(["api", "--hostname", target.host, `${root}/ccr/review_threads`]) as ReviewThread[];
+  if (route === "rest") {
+    // the cloud route returns every thread in one response, so there is no page to follow
+    const threads = gh(["api", "--hostname", target.host, `${root}/ccr/review_threads`]);
+    if (!Array.isArray(threads)) throw new Error(`${root}/ccr/review_threads did not return a thread array`);
+    return threads as ReviewThread[];
+  }
   const threads: ReviewThread[] = [];
   let cursor: string | null = null;
   do {
@@ -94,6 +98,13 @@ export function listReviewThreads(gh: GhJson, route: Route, target: ThreadTarget
   return threads;
 }
 
+/**
+ * reads the comment IDs past a thread's first comment page
+ * @param gh - runs `gh` and parses its JSON output
+ * @param host - the GitHub host
+ * @param thread - the thread whose first comment page is already read
+ * @returns the IDs on every later page, in order
+ */
 function remainingComments(gh: GhJson, host: string, thread: ThreadNode): number[] {
   const ids: number[] = [];
   let page = thread.comments;
