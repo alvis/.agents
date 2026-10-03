@@ -1,13 +1,14 @@
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { cloud, requestBody, restCalls, runScript } from "./gh/spec-harness.ts";
-import { UNSUPPORTED } from "./gh-issue.ts";
+import { cloud, requestBody, restCalls, runScript } from "./spec-harness.ts";
+import { SUBCOMMANDS, UNSUPPORTED } from "./issue.ts";
 
-import type { RunOptions } from "./gh/spec-harness.ts";
+import type { RunOptions } from "./spec-harness.ts";
 
-const script = join(import.meta.dirname, "gh-issue.ts");
+const scripts = join(import.meta.dirname, "..");
 const project = "repos/example/project";
 const issue = {
   number: 12,
@@ -25,12 +26,22 @@ const issue = {
 };
 const issueRoutes = { [`${project}/issues/12`]: { body: issue } };
 
-/** runs gh-issue.ts against the fake gh */
+/** runs the `gh-issue-<argv[0]>.ts` drop-in with the remaining arguments against the fake gh */
 function run(argv: readonly string[], options: RunOptions = {}) {
-  return runScript(script, argv, options);
+  const [subcommand, ...rest] = argv;
+  return runScript(join(scripts, `gh-issue-${subcommand}.ts`), rest, options);
 }
 
-describe("cmd:gh-issue", () => {
+describe("cmd:gh-issue-<subcommand>", () => {
+  it("should ship one drop-in per REST subcommand and none for an unsupported one", () => {
+    const dropIns = readdirSync(scripts)
+      .map((name) => /^gh-issue-([a-z-]+)\.ts$/u.exec(name)?.[1])
+      .filter((name) => name !== undefined)
+      .sort();
+    expect(dropIns).toEqual(Object.keys(SUBCOMMANDS).sort());
+    expect(dropIns.filter((name) => name in UNSUPPORTED)).toEqual([]);
+  });
+
   it("should pass every argument through to gh unchanged outside a cloud session", () => {
     const argv = ["close", "12", "--duplicate-of", "3", "--repo", "example/project"];
     const result = run(argv, { nativeExit: 4 });
@@ -133,14 +144,4 @@ describe("cmd:gh-issue", () => {
     expect(result.stderr).toContain(UNSUPPORTED["close --duplicate-of"]);
     expect(result.calls).toEqual([]);
   });
-
-  it.each(Object.keys(UNSUPPORTED).filter((name) => !name.includes(" ")))(
-    "should refuse unsupported subcommand %s without calling GitHub",
-    (subcommand) => {
-      const result = run([subcommand, "12", "--repo", "example/project"], { env: cloud });
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain(UNSUPPORTED[subcommand]);
-      expect(result.calls).toEqual([]);
-    },
-  );
 });

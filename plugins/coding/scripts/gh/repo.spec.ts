@@ -1,13 +1,14 @@
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { cloud, runScript } from "./gh/spec-harness.ts";
-import { UNSUPPORTED } from "./gh-repo.ts";
+import { cloud, runScript } from "./spec-harness.ts";
+import { SUBCOMMANDS, UNSUPPORTED } from "./repo.ts";
 
-import type { RunOptions } from "./gh/spec-harness.ts";
+import type { RunOptions } from "./spec-harness.ts";
 
-const script = join(import.meta.dirname, "gh-repo.ts");
+const scripts = join(import.meta.dirname, "..");
 const repository = {
   node_id: "R_1",
   name: "project",
@@ -20,12 +21,22 @@ const repository = {
   owner: { login: "example", node_id: "U_1" },
 };
 
-/** runs gh-repo.ts against the fake gh */
+/** runs the `gh-repo-<argv[0]>.ts` drop-in with the remaining arguments against the fake gh */
 function run(argv: readonly string[], options: RunOptions = {}) {
-  return runScript(script, argv, options);
+  const [subcommand, ...rest] = argv;
+  return runScript(join(scripts, `gh-repo-${subcommand}.ts`), rest, options);
 }
 
-describe("cmd:gh-repo", () => {
+describe("cmd:gh-repo-<subcommand>", () => {
+  it("should ship one drop-in per REST subcommand and none for an unsupported one", () => {
+    const dropIns = readdirSync(scripts)
+      .map((name) => /^gh-repo-([a-z-]+)\.ts$/u.exec(name)?.[1])
+      .filter((name) => name !== undefined)
+      .sort();
+    expect(dropIns).toEqual(Object.keys(SUBCOMMANDS).sort());
+    expect(dropIns.filter((name) => name in UNSUPPORTED)).toEqual([]);
+  });
+
   it("should pass every argument through to gh unchanged outside a cloud session", () => {
     const argv = ["view", "example/project", "--json", "name"];
     const result = run(argv, { nativeExit: 2 });
@@ -63,12 +74,5 @@ describe("cmd:gh-repo", () => {
     expect(result.calls).toEqual([
       { args: ["git", "clone", "--depth", "1", "https://github.com/example/project.git", "work"], stdin: "" },
     ]);
-  });
-
-  it.each(Object.keys(UNSUPPORTED))("should refuse unsupported subcommand %s without calling GitHub", (subcommand) => {
-    const result = run([subcommand, "example/project"], { env: cloud });
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain(UNSUPPORTED[subcommand]);
-    expect(result.calls).toEqual([]);
   });
 });

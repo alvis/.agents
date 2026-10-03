@@ -16,13 +16,12 @@ import {
   api,
   apiItems,
   currentBranch,
-  detectRoute,
   parseRepositorySpec,
-  passthrough,
   printJson,
   readBody,
   requestedFields,
   resolveRepository,
+  runWrapper,
   WrapperError,
 } from "./route.ts";
 
@@ -370,12 +369,5 @@ export async function run(
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough("pr", [subcommand, ...argv]);
-  try {
-    return await SUBCOMMANDS[subcommand]!(argv);
-  } catch (error) {
-    if (!(error instanceof WrapperError)) throw error;
-    process.stderr.write(`gh-pr-${subcommand}: ${error.message}\n`);
-    return error.exitCode;
-  }
+  return await runWrapper("pr", subcommand, SUBCOMMANDS, argv, env);
 }

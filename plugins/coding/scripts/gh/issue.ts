@@ -1,12 +1,11 @@
-#!/usr/bin/env bun
 /**
- * a drop-in for `gh issue`. on a developer machine it runs `gh issue`
- * unchanged; where GitHub's GraphQL endpoint is blocked (see gh/route.ts for
- * why) it serves the subcommands below over REST and refuses everything in
- * UNSUPPORTED by name.
+ * the `gh issue` subcommands behind the `gh-issue-<subcommand>.ts` drop-ins.
+ * on a developer machine each runs `gh issue <subcommand>` unchanged; where
+ * GitHub's GraphQL endpoint is blocked (see route.ts for why) it is served
+ * over REST.
  */
 
-import { list, parseArgs, value } from "./gh/args.ts";
+import { list, parseArgs, value } from "./args.ts";
 import {
   api,
   parseRepositorySpec,
@@ -16,12 +15,16 @@ import {
   resolveRepository,
   runWrapper,
   WrapperError,
-} from "./gh/route.ts";
+} from "./route.ts";
 
-import type { ParsedArgs } from "./gh/args.ts";
-import type { Handler, Repository } from "./gh/route.ts";
+import type { ParsedArgs } from "./args.ts";
+import type { Handler, Repository } from "./route.ts";
 
-/** `gh issue` subcommands and flags the REST route does not serve, with the reason */
+/**
+ * `gh issue` operations the REST route does not serve, with the reason. a
+ * subcommand here has no drop-in, and a flag here fails fast instead of
+ * half-working
+ */
 export const UNSUPPORTED: Readonly<Record<string, string>> = {
   "close --duplicate-of":
     "the coding skills do not close issues as duplicates; reference the canonical issue in a comment instead",
@@ -217,20 +220,20 @@ async function view(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
-/** the REST implementation of every supported subcommand */
-const HANDLERS: Readonly<Record<string, Handler>> = { create, edit, comment, close, reopen, view };
+/** the REST implementation of every subcommand with a `gh-issue-<subcommand>.ts` drop-in */
+export const SUBCOMMANDS: Readonly<Record<string, Handler>> = { create, edit, comment, close, reopen, view };
 
 /**
- * runs one `gh issue` invocation on the selected route
- * @param argv - arguments after `gh-issue.ts`, starting with the subcommand
+ * runs one `gh issue <subcommand>` invocation on the selected route
+ * @param subcommand - the drop-in's `gh issue` subcommand
+ * @param argv - arguments after the subcommand
  * @param env - process environment
  * @returns the exit code
  */
-export async function main(
+export async function run(
+  subcommand: string,
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
-  return await runWrapper("issue", HANDLERS, UNSUPPORTED, argv, env);
+  return await runWrapper("issue", subcommand, SUBCOMMANDS, argv, env);
 }
-
-if (import.meta.main) process.exit(await main(process.argv.slice(2)));

@@ -1,14 +1,13 @@
-#!/usr/bin/env bun
 /**
- * a drop-in for `gh repo`. on a developer machine it runs `gh repo`
- * unchanged; where GitHub's GraphQL endpoint is blocked (see gh/route.ts for
- * why) it serves `view` over REST and `clone` through plain `git`, and refuses
- * everything in UNSUPPORTED by name.
+ * the `gh repo` subcommands behind the `gh-repo-<subcommand>.ts` drop-ins.
+ * on a developer machine each runs `gh repo <subcommand>` unchanged; where
+ * GitHub's GraphQL endpoint is blocked (see route.ts for why) `view` is served
+ * over REST and `clone` through plain `git`.
  */
 
 import { $ } from "bun";
 
-import { parseArgs, value } from "./gh/args.ts";
+import { parseArgs, value } from "./args.ts";
 import {
   api,
   parseRepositorySpec,
@@ -17,11 +16,11 @@ import {
   resolveRepository,
   runWrapper,
   WrapperError,
-} from "./gh/route.ts";
+} from "./route.ts";
 
-import type { Handler, Repository } from "./gh/route.ts";
+import type { Handler, Repository } from "./route.ts";
 
-/** `gh repo` subcommands the REST route does not serve, with the reason */
+/** `gh repo` subcommands the REST route does not serve, with the reason; none has a drop-in */
 export const UNSUPPORTED: Readonly<Record<string, string>> = {
   create: "not used by the coding skills; no REST route implemented",
   fork: "not used by the coding skills; no REST route implemented",
@@ -103,20 +102,20 @@ async function clone(argv: readonly string[]): Promise<number> {
   return result.exitCode;
 }
 
-/** the REST implementation of every supported subcommand */
-const HANDLERS: Readonly<Record<string, Handler>> = { view, clone };
+/** the REST implementation of every subcommand with a `gh-repo-<subcommand>.ts` drop-in */
+export const SUBCOMMANDS: Readonly<Record<string, Handler>> = { view, clone };
 
 /**
- * runs one `gh repo` invocation on the selected route
- * @param argv - arguments after `gh-repo.ts`, starting with the subcommand
+ * runs one `gh repo <subcommand>` invocation on the selected route
+ * @param subcommand - the drop-in's `gh repo` subcommand
+ * @param argv - arguments after the subcommand
  * @param env - process environment
  * @returns the exit code
  */
-export async function main(
+export async function run(
+  subcommand: string,
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
-  return await runWrapper("repo", HANDLERS, UNSUPPORTED, argv, env);
+  return await runWrapper("repo", subcommand, SUBCOMMANDS, argv, env);
 }
-
-if (import.meta.main) process.exit(await main(process.argv.slice(2)));

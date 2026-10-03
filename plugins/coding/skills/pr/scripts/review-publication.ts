@@ -2325,19 +2325,14 @@ function assertSameTarget(
 }
 
 function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
-  // coding's gh-pr.ts and gh-issue.ts wrappers reach the same review and
-  // comment writes over REST, so they are guarded exactly like raw gh
-  const wrapperIndex = words.findIndex((word) =>
-    /^gh-(?:pr|issue)\.ts$/u.test(basename(word)),
-  );
-  if (wrapperIndex !== -1) {
-    const group = basename(words[wrapperIndex]!) === "gh-pr.ts" ? "pr" : "issue";
-    const subcommand = words[wrapperIndex + 1] ?? "";
-    if (group === "pr" && ["comment", "review"].includes(subcommand))
-      return `gh-pr.ts ${subcommand} bypasses the approved payload`;
-    if (group === "issue" && subcommand === "comment")
-      return "gh-issue.ts comment can target a pull request";
-  }
+  // coding's gh-pr-review.ts, gh-pr-comment.ts and gh-issue-comment.ts
+  // drop-ins reach the same review and comment writes over REST, so they are
+  // guarded exactly like raw gh
+  const dropIn = words
+    .map((word) => basename(word))
+    .find((name) => /^gh-(?:pr-(?:review|comment)|issue-comment)\.ts$/u.test(name));
+  if (dropIn === "gh-issue-comment.ts") return "gh-issue-comment.ts can target a pull request";
+  if (dropIn !== undefined) return `${dropIn} bypasses the approved payload`;
   const ghIndex = words.findIndex((word) => basename(word) === "gh");
   if (ghIndex === -1) return null;
   const arguments_ = [...words.slice(ghIndex + 1)];

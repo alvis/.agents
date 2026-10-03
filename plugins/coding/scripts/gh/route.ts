@@ -223,36 +223,28 @@ export function requestedFields(fields: string, available: readonly string[]): s
 export type Handler = (argv: readonly string[]) => Promise<number>;
 
 /**
- * runs one wrapper invocation: native passthrough, or the REST handler for
- * the subcommand, refusing unsupported or unknown subcommands by name
+ * runs one `gh-<group>-<subcommand>.ts` drop-in: native passthrough, or the
+ * REST handler for the subcommand
  * @param group - the `gh` command group, such as `pr`
+ * @param subcommand - the drop-in's subcommand, a key of `handlers`
  * @param handlers - REST handlers by subcommand
- * @param unsupported - refused subcommands with their reasons
- * @param argv - arguments after the wrapper, starting with the subcommand
+ * @param argv - arguments after the subcommand
  * @param env - process environment
  * @returns the exit code
  */
 export async function runWrapper(
   group: string,
+  subcommand: string,
   handlers: Readonly<Record<string, Handler>>,
-  unsupported: Readonly<Record<string, string>>,
   argv: readonly string[],
   env: Record<string, string | undefined>,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough(group, argv);
-  const [subcommand, ...rest] = argv;
+  if (detectRoute(env) === "native") return await passthrough(group, [subcommand, ...argv]);
   try {
-    if (subcommand !== undefined && unsupported[subcommand] !== undefined)
-      throw new WrapperError(`gh ${group} ${subcommand} is unavailable through REST: ${unsupported[subcommand]}`);
-    const handler = subcommand === undefined ? undefined : handlers[subcommand];
-    if (handler === undefined)
-      throw new WrapperError(
-        `unknown gh ${group} subcommand "${subcommand ?? ""}"; supported through REST: ${Object.keys(handlers).join(", ")}`,
-      );
-    return await handler(rest);
+    return await handlers[subcommand]!(argv);
   } catch (error) {
     if (!(error instanceof WrapperError)) throw error;
-    process.stderr.write(`gh-${group}: ${error.message}\n`);
+    process.stderr.write(`gh-${group}-${subcommand}: ${error.message}\n`);
     return error.exitCode;
   }
 }

@@ -119,10 +119,10 @@ const protectedCommands = [
   "gh -R acme/app pr review 35 --approve; echo done",
   "gh api user $(gh pr review 35 --approve)",
   "gh api repos/acme/app/issues/35/comments --method POST; echo done",
-  "bun run plugins/coding/scripts/gh-pr.ts review 35 --approve",
-  "bun plugins/coding/scripts/gh-pr.ts comment 35 --body-file review.md",
-  "./gh-pr.ts review 35 --comment --body Approved",
-  'bun run "$CODING_SCRIPTS/gh-issue.ts" comment 35 --body Approved',
+  "bun run plugins/coding/scripts/gh-pr-review.ts 35 --approve",
+  "bun plugins/coding/scripts/gh-pr-comment.ts 35 --body-file review.md",
+  "./gh-pr-review.ts 35 --comment --body Approved",
+  'bun run "$CODING_SCRIPTS/gh-issue-comment.ts" 35 --body Approved',
 ];
 
 describe("review publication shell guard", () => {
@@ -150,8 +150,8 @@ describe("review publication shell guard", () => {
 
   it.each([
     "gh pr view 35 --json headRefOid",
-    "bun run plugins/coding/scripts/gh-pr.ts view 35 --json headRefOid",
-    "bun run plugins/coding/scripts/gh-issue.ts create --title Bug --body-file bug.md",
+    "bun run plugins/coding/scripts/gh-pr-view.ts 35 --json headRefOid",
+    "bun run plugins/coding/scripts/gh-issue-create.ts --title Bug --body-file bug.md",
     "gh api repos/acme/app/pulls/35/reviews",
     "gh api --method GET repos/acme/app/issues/35/comments",
     "gh api graphql -f 'query=query { viewer { login } }'",
