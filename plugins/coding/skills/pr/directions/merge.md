@@ -95,7 +95,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 
    Require each jj command to produce a non-empty commit ID. If any git link fails or any jj containment query is empty, stop and show the expected chain as `base <- PR1 head <- PR2 head ...` plus the detected mismatch.
 
-4. **Check CI unless forced.** Without `--force`, require every status check on every PR to be successful, skipped, or neutral. Treat pending, queued, expected, action-required, cancelled, timed-out, failure, error, or missing required checks as not green. Use both `mergeStateStatus` and `statusCheckRollup` from `gh pr view`.
+4. **Check CI unless forced.** Without `--force`, require every status check on every PR to be successful, skipped, or neutral. Treat pending, queued, expected, action-required, cancelled, timed-out, failure, error, or missing required checks as not green. Use both `mergeStateStatus` and `statusCheckRollup` from the [`gh-pr-view.ts`](../../../scripts/gh-pr-view.ts) read.
 
    If CI is not green, print a concise summary of failing checks and likely issue areas by PR, then ask whether the user wants to fix the issues locally and update the affected PRs. Suggest running `coding:fix` on the detected CI issues, updating the stacked PRs, then using the recurring scheduling capability at one-minute intervals to wait for green checks or rerun the fix when they fail again. Stop before merging until the user chooses a fix or force path.
 
@@ -163,7 +163,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 
    f. Wait for GitHub to observe the push, then re-check CI before merging the next PR. If checks are pending, report that the stack was restacked and stop unless the user asked to wait; if asked to wait, poll at a reasonable interval for up to the user's requested duration.
 
-7. **Fix handling gate.** If any CI fix was made during this workflow by invoking or following `coding:fix`, update the affected PR branches/bookmarks using the same restack and push instructions above, but do not perform any `gh pr merge` action for the fixed PR or any downstream PR until the user gives explicit approval. Publish the contract-defined `merge-fix-published` status through [review-publishing.md](review-publishing.md), present the detailed fix summary to the user, and wait for explicit approval before returning to step 4. Until approval arrives, treat all downstream PRs as blocked even if their checks are green.
+7. **Fix handling gate.** If any CI fix was made during this workflow by invoking or following `coding:fix`, update the affected PR branches/bookmarks using the same restack and push instructions above, but do not run [`gh-pr-merge.ts`](../../../scripts/gh-pr-merge.ts) for the fixed PR or any downstream PR until the user gives explicit approval. Publish the contract-defined `merge-fix-published` status through [review-publishing.md](review-publishing.md), present the detailed fix summary to the user, and wait for explicit approval before returning to step 4. Until approval arrives, treat all downstream PRs as blocked even if their checks are green.
 
 8. **Conflict or failure recovery.** On rebase conflict, stop immediately and show the recovery commands for the active VCS:
 

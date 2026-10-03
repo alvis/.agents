@@ -78,7 +78,7 @@ The jj route needs no such guard: it lands a resolved head in a new workspace an
 For `/coding:pr stack list`, unconditionally inventory the current repository through its paginated `GET /repos/{owner}/{repo}/stacks` REST endpoint. Fetch every page and retain the JSON for agent decisions. The REST inventory keeps fully merged and closed stacks returned by the API.
 
 ```bash
-REPOSITORY=$(gh repo view --json nameWithOwner --jq '.nameWithOwner') || exit $?
+REPOSITORY=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-repo-view.ts" --json nameWithOwner --jq .nameWithOwner) || exit $?
 STACKS_REPORT=$(mktemp "$STACK_REPORT_DIR/inventory-XXXXXX.json") || exit $?
 gh api --paginate --slurp \
   -H 'Accept: application/vnd.github+json' \
