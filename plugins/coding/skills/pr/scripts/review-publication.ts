@@ -2661,7 +2661,7 @@ function looksLikeReviewWrite(command: string): boolean {
     /\bgh\b[\s\S]*?\b(?:pr\s+(?:comment|review)|issue\s+comment)\b/.test(
       command,
     ) ||
-    /\bgh-(?:pr\.ts\s+(?:comment|review)|issue\.ts\s+comment)\b/.test(command) ||
+    /\bgh-(?:pr-(?:review|comment)|issue-comment)\.ts\b/.test(command) ||
     (/\bgh\b[\s\S]*?\bapi\b/.test(command) &&
       (PROTECTED_GRAPHQL_PATTERN.test(command) ||
         /repos\/[^\s]+\/(?:issues|pulls)\//.test(command)))

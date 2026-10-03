@@ -123,6 +123,11 @@ const protectedCommands = [
   "bun plugins/coding/scripts/gh-pr-comment.ts 35 --body-file review.md",
   "./gh-pr-review.ts 35 --comment --body Approved",
   'bun run "$CODING_SCRIPTS/gh-issue-comment.ts" 35 --body Approved',
+  "cd repo && bun gh-pr-comment.ts 35 --body Approved",
+  "bun gh-pr-review.ts 35 --approve | tee out.log",
+  "true\nbun gh-issue-comment.ts 35 --body Approved",
+  "bun gh-pr-review.ts 35 --comment --body Approved 2>&1",
+  "echo start; bun gh-pr-review.ts 35 --approve",
 ];
 
 describe("review publication shell guard", () => {
