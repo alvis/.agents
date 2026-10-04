@@ -29,7 +29,8 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 2. **Write the plan as a zero-context handoff.** Follow [Making plans](../../directions/plan.md), then specialize its required sections as follows:
    - **Goal** — make the improvement, beneficiaries, outcome, and acceptance evidence self-contained so the user can copy the block verbatim to initiate the work.
    - **Requirements** — preserve every acceptance criterion and operating constraint the next agent must satisfy.
-   - **Boundary** — name authorized systems, mutations, validation limits, and explicit non-goals.
+   - **Boundary** — name authorized systems, mutations, and validation limits.
+   - **Out of Scope** — give each excluded item its reason and disposition so the next agent does not reintroduce it.
    - **Tasks** — derive the shared presentation from the complete registry and last approved snapshot; preserve future owners, delivery settings, and retained history so the next executor can reconcile assignments.
    - **Direction** — include task-specific skills and an ordered implementation route with exact files, reasons, per-task acceptance, and rollback/stop conditions. When deterministic scripted execution is appropriate, embed a complete plain-JavaScript script or an exact durable script path with its SHA-256 checksum and invocation arguments. It must run as-is: no placeholders or hidden context, deterministic inputs, explicit agent types, and validation against [scripted-execution.md](../../references/scripted-execution.md). Otherwise include an equivalent sequential command plan.
    - **Context** — retain the direction's current-state, related-decision, and recent-work navigation, then add these handoff-specific subsections:

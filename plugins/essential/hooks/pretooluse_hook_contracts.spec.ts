@@ -49,7 +49,11 @@ Incomplete plan submissions receive actionable feedback before execution.
 
 ## 🚧 Boundary
 
-Inside: the three hook scripts. Outside: content heuristics.
+Inside: the three hook scripts.
+
+## ✂️ Out of Scope
+
+- Content heuristics — headings suffice; declined.
 
 ## 📍 Working environment
 
@@ -497,6 +501,12 @@ describe("plan validator", () => {
     expect(denialReason(JSON.parse(result.stdout))).toMatch(/plan/i);
   });
 
+  it("should name only a missing Out of Scope heading", () =>
+    expect(
+      denialReason(
+        runHook(plans, { plan: compliantPlan.replace("## ✂️ Out of Scope", "") }),
+      ),
+    ).toContain("missing headings: Out of Scope."));
   it("should name only a missing Context heading", () =>
     expect(
       denialReason(
@@ -510,7 +520,7 @@ describe("plan validator", () => {
           plan: "## Context\n\nSlow.\n\n## Summary\n\nFast.\n",
         }),
       ),
-    ).toContain("missing headings: Goal, Requirements, Boundary, Working environment, Tasks, Direction."));
+    ).toContain("missing headings: Goal, Requirements, Boundary, Out of Scope, Working environment, Tasks, Direction."));
   it("should reject a plan missing Tasks", () =>
     expect(denialReason(runHook(plans, { plan: compliantPlan.replace(/## 🗂️ Tasks\n\n- TST: Validate the plan\.\n\n/, "") }))).toContain("missing headings: Tasks."));
   it("should allow a complete plan", () =>
@@ -518,13 +528,13 @@ describe("plan validator", () => {
   it("should match headings at any depth and case", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## WORKING ENVIRONMENT\n/work; jj workspace.\n## Tasks\nf\n## direction\nd\n### context\ne\n",
+        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## out of scope\nNone.\n## WORKING ENVIRONMENT\n/work; jj workspace.\n## Tasks\nf\n## direction\nd\n### context\ne\n",
       }),
     ));
   it("should recognize compound emoji prefixes at different heading depths", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n### 📍 Working environment\n/work; jj workspace.\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
+        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n#### ✂️ OUT OF SCOPE\nNone.\n### 📍 Working environment\n/work; jj workspace.\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
       }),
     ));
   it("should not treat prefixed words or longer names as required headings", () =>

@@ -39,6 +39,10 @@ Incomplete plans receive corrective feedback in T3.
 
 Only the Essential hooks change.
 
+## ✂️ Out of Scope
+
+None — nothing removed.
+
 ## 📍 Working environment
 
 Directory: /work/plan-validation. Version control: jj workspace.
@@ -257,7 +261,7 @@ describe("Codex plan Stop validator", () => {
     const decision = parseHookOutput(result);
     expect(decision.decision).toBe("block");
     expect(decision.reason).toContain(
-      "missing headings: Goal, Requirements, Boundary, Working environment, Tasks, Direction.",
+      "missing headings: Goal, Requirements, Boundary, Out of Scope, Working environment, Tasks, Direction.",
     );
   });
 
