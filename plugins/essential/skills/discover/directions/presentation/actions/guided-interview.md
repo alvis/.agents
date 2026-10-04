@@ -11,7 +11,7 @@ Use this direction when several coupled questions need shared context and the us
 5. End with one decision synthesis that separates confirmed intent, untouched recommendations, deferred questions, and the implementation consequences of the combined answers.
 6. Stop when remaining questions cannot change architecture, scope, data contracts, user-visible behavior, or the next owner.
 
-The page supplements the conversation. It must not hide the highest-impact question inside a long form. The example's number of steps, option count, and components are directional: add, remove, split, or combine them to fit the actual interview while preserving impact order and synthesis fidelity.
+In [plan mode](../../plan.md) each round is one such page whose final section adds a readiness decision after the decision synthesis. The page supplements the conversation. It must not hide the highest-impact question inside a long form. The example's number of steps, option count, and components are directional: add, remove, split, or combine them to fit the actual interview while preserving impact order and synthesis fidelity.
 
 ## Structural fidelity
 

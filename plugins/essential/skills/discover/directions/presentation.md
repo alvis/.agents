@@ -13,6 +13,7 @@ Use an interactive HTML review surface when visual relationships, comparison, or
 | `options`        | ranked options        | Viable approaches or experiential directions need in-context comparison |
 | `options`        | brainstorm spectrum   | The user should react to a deliberately broad solution space            |
 | `interview`      | guided interview      | Several coupled questions need visible supporting context               |
+| `plan`           | guided interview      | Each planning-interview round, closed by a readiness decision           |
 | `reference`      | semantics map         | Terms, relationships, or observable behavior must map into the target   |
 | `prototype`      | interactive prototype | A disposable interaction is the cheapest useful probe                   |
 | `readiness`      | readiness check       | Evidence, assumptions, blockers, and the next owner need one view       |
@@ -30,7 +31,7 @@ Each action must nevertheless feel complete for its own job. Build from one cred
 
 The approved [domain explainer](presentation/actions/domain-explainer.md) and its data at `examples/data/domain-explainer.json` define the shared visual hierarchy, responsive shell, annotation flow, and folded single-prompt experience. Render it to see them: `examples/html/` is generated, not committed, so the data is what to read and one `--set` run is what to look at. Every action example follows that contract while changing its content density and its blocks to fit the action.
 
-Together, the sixteen action examples and four convention boards (specimen-board, board-hub, architecture-board, triage-board) must cover the complete reusable pattern catalog — sixteen against fifteen mode rows because build-journal is authored rather than chosen, as above. Use the [presentation coverage map](presentation/coverage.md) to see which action owns each demonstration. This is suite-level coverage: generated pages still select only the components that improve their task-specific UX. Neither is checked mechanically beyond `examples.spec.ts`, which renders the whole run, ties this table to it board by board, and refuses a block type that reaches no board; rendered review is what judges whether an action is complete.
+Together, the sixteen action examples and four convention boards (specimen-board, board-hub, architecture-board, triage-board) must cover the complete reusable pattern catalog — sixteen against sixteen mode rows: build-journal has no row because it is authored rather than chosen, as above, and `plan`'s row reuses the guided interview. Use the [presentation coverage map](presentation/coverage.md) to see which action owns each demonstration. This is suite-level coverage: generated pages still select only the components that improve their task-specific UX. Neither is checked mechanically beyond `examples.spec.ts`, which renders the whole run and refuses a block type that reaches no board; rendered review is what judges whether an action is complete.
 
 ## Variable length, modular sources
 

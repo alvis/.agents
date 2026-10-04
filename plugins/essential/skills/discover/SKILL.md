@@ -1,10 +1,10 @@
 ---
 name: discover
-description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, brainstorming approaches, an architecture interview, reference semantics, a disposable prototype, a readiness check, an operations board of local state, an account of a finished build, or explaining recorded decisions (ADRs and local state) to a newcomer; researched option selection belongs to essential:decide."
+description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, brainstorming approaches, an architecture interview, a multi-round planning interview, reference semantics, a disposable prototype, a readiness check, an operations board of local state, an account of a finished build, or explaining recorded decisions (ADRs and local state) to a newcomer; researched option selection belongs to essential:decide."
 requirements:
   model: capable
   effort: deliberate
-argument-hint: "[blindspots|options|interview|reference|prototype|readiness|state|implementation] <problem> [--persist] [--work-id=<id>] | decisions [selector…] [--only=active,proposed,superseded]"
+argument-hint: "[blindspots|options|interview|plan|reference|prototype|readiness|state|implementation] <problem> [--persist] [--work-id=<id>] | decisions [selector…] [--only=active,proposed,superseded]"
 ---
 
 # Discover
@@ -13,7 +13,7 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 
 ## Boundaries
 
-- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
+- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a multi-round interview that settles an implementation direction before planning, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
 - Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), choosing among already-grounded options (`essential:decide`), production UI design (`web:design`), or clear bounded implementation.
 - Never claim an unknown unknown has been found merely because it is plausible; record it as a hypothesis until evidence supports it.
 
@@ -24,7 +24,7 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 
 Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work directory from that contract. Run the resolver normally, or with `--work-id` for an explicit user override or the identifier selected by Essential's work-stream lifecycle. Treat an existing match as a candidate and reuse it only when its charter owns the requested outcome. On `work_id_required`, a main-agent run follows that lifecycle to select an identifier and reruns without asking the user to approve it; a subagent returns the resolver payload unless it already received the resolved work ID and root. The main agent performs the contract's ignore gate and no-clobber bootstrap before the first persistent artifact.
 
-Default to a conversational result. With `--persist` or a long-lived task, write the ledger to `state/discovery.md`; each material finding also earns one appended `state/journal.md` line from the main agent (a subagent returns the line as a reconciliation delta instead of appending it). Keep requested disposable prototypes under `artifacts/prototypes/<semantic-slug>/` and copied or summarized source material under `artifacts/discovery/`. Never modify application source.
+Default to a conversational result. With `--persist`, `plan` mode, or a long-lived task, write the ledger to `state/discovery.md`; each material finding also earns one appended `state/journal.md` line from the main agent (a subagent returns the line as a reconciliation delta instead of appending it). Keep requested disposable prototypes under `artifacts/prototypes/<semantic-slug>/` and copied or summarized source material under `artifacts/discovery/`. Never modify application source.
 
 For persistent discovery, follow `state-format.md` linked by the state contract. Register one `DSC` parent and every discovery leaf in root `state.md` before writing the child. Keep the root as the complete task registry and make `state/discovery.md` a reconciled child mirror with:
 
@@ -51,6 +51,7 @@ The evidence ledger uses these fields:
    - `blindspots`: missing constraints, failure modes, history, or integration surfaces may change the problem;
    - `options`: the problem is understood but the solution space is too narrow or too broad;
    - `interview`: the user holds material intent or preferences not yet stated;
+   - `plan`: the user wants to be interviewed, over as many rounds as needed, until an implementation direction or architecture is ready to plan;
    - `reference`: a codebase, document, site, image, or example defines the desired semantics more precisely than prose;
    - `prototype`: the cheapest way to learn is a disposable artifact and the user has authorized creating it;
    - `readiness`: existing evidence needs a plan/implementation go-no-go check;
@@ -61,6 +62,7 @@ The evidence ledger uses these fields:
    - [blindspots](directions/blindspots.md)
    - [options](directions/options.md)
    - [interview](directions/interview.md)
+   - [plan](directions/plan.md)
    - [reference](directions/reference.md)
    - [prototype](directions/prototype.md)
    - [readiness](directions/readiness.md)
@@ -69,7 +71,7 @@ The evidence ledger uses these fields:
    - [decisions](directions/decisions.md)
 4. **Update the ledger.** Preserve provenance. Move an item between kinds only when evidence or a user decision justifies it; do not collapse inference into observed fact. Record rejected alternatives and why they were rejected when they would otherwise be rediscovered.
 5. **Choose the next probe or stop.** Continue only when another cheap probe can resolve a material unknown. Stop when all material items are resolved, explicitly deferred with an owner, or blocking; remaining assumptions must be low-impact and reversible.
-6. **Route the result.** Recommend exactly one next owner: another discovery mode, `essential:decide`, `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.
+6. **Route the result.** Recommend exactly one next owner: another discovery mode, `essential:decide`, `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, execution-plan formation under `essential:directions/plan.md` after a `plan` round marked ready, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.
 7. **Present interactive results when useful.** If presentation criteria are met, choose the most suitable directional action from the presentation reference (including the plan/implementation/change lifecycle actions). Write a JSON data file, never HTML: the renderer owns every byte of the page, so what is authored here is content and the shape it takes, and there is no markup, stylesheet, or script to hand-write. Before composing:
    - **Check `references/features.md`** — the Floor features are mandatory; the Menu is a shelf of proven devices, never a completeness requirement.
    - **Build a coverage map**: list every ledger finding, unknown, stream, and decision, and assign each to a section. Content that fits no block type goes in prose rather than being dropped — never lose ledger content to satisfy the catalog.
