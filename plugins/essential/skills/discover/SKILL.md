@@ -4,7 +4,7 @@ description: "Discovers material unknowns before planning. Use for a blindspot p
 requirements:
   model: capable
   effort: deliberate
-argument-hint: "<problem>|decisions [selector…] [--mode=blindspots|options|interview|reference|prototype|readiness|state|implementation|decisions] [--only=active,proposed,superseded] [--persist] [--work-id=<id>]"
+argument-hint: "[blindspots|options|interview|reference|prototype|readiness|state|implementation] <problem> [--persist] [--work-id=<id>] | decisions [selector…] [--only=active,proposed,superseded]"
 ---
 
 # Discover
@@ -20,7 +20,7 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 ## Inputs and output
 
 - **Required**: the problem, goal, or artifact to explore; `decisions` takes optional record selectors instead.
-- **Optional**: `--mode`; `--only`, for `decisions` alone; `--persist`; explicit `--work-id`; the user's experience, confidence, references, hard constraints, and known unanswered questions.
+- **Optional**: a mode name; `--only`, for `decisions` alone; `--persist`; explicit `--work-id`; the user's experience, confidence, references, hard constraints, and known unanswered questions.
 
 Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work directory from that contract. Run the resolver normally, or with `--work-id` for an explicit user override or the identifier selected by Essential's work-stream lifecycle. Treat an existing match as a candidate and reuse it only when its charter owns the requested outcome. On `work_id_required`, a main-agent run follows that lifecycle to select an identifier and reruns without asking the user to approve it; a subagent returns the resolver payload unless it already received the resolved work ID and root. The main agent performs the contract's ignore gate and no-clobber bootstrap before the first persistent artifact.
 
@@ -47,7 +47,7 @@ The evidence ledger uses these fields:
 ## Workflow
 
 1. **Capture the starting map.** State the goal, requested deliverable, why it matters, what the user already knows, their familiarity with the codebase or domain, known questions, hard constraints, and supplied references. Ask only when a missing answer changes which discovery mode is appropriate.
-2. **Resolve exactly one mode.** An explicit valid `--mode`, or `decisions` as the first word, wins; otherwise use:
+2. **Resolve exactly one mode.** A mode the request names, such as `/discover interview …`, wins; otherwise infer it from the request:
    - `blindspots`: missing constraints, failure modes, history, or integration surfaces may change the problem;
    - `options`: the problem is understood but the solution space is too narrow or too broad;
    - `interview`: the user holds material intent or preferences not yet stated;
