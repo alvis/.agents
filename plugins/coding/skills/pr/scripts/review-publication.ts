@@ -7,6 +7,8 @@ import { basename, dirname, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { checkFromRun, checkFromStatus } from "../../../scripts/gh/checks.ts";
+import { detectRoute } from "../../../scripts/gh/detect.ts";
+import { threadResolutionRequest } from "../../../scripts/gh/threads.ts";
 
 type JsonObject = Record<string, unknown>;
 type PublicationKind =
@@ -193,7 +195,8 @@ interface DiscussionReplyAssessment extends CommonAssessment {
   readonly kind: "discussion-reply";
   readonly operation:
     "reply-inline" | "reply-issue" | "resolve-thread" | "unresolve-thread";
-  readonly thread_id: string | null;
+  /** any comment in the thread a resolve/unresolve operation targets */
+  readonly thread_comment_id: number | null;
 }
 
 type PublicationAssessment =
@@ -289,7 +292,7 @@ const STATUS_TEXT: Readonly<Record<StatusAssessment["status"], string>> = {
 const REVIEW_LANGUAGE_PATTERN =
   /(?:^|\b)(?:approve(?:d|s)?|request(?:ed|s)? changes|review verdict|substantive verdict|must change|not reviewed|goal and requirements|overall review)(?:\b|:)/i;
 const PROTECTED_REST_PATTERN = new RegExp(
-  String.raw`^repos/[^/]+/[^/]+/(?:issues/(?:\d+/comments|comments/\d+)|pulls/(?:\d+/(?:comments(?:/\d+/replies)?|reviews(?:/\d+(?:/events)?)?)|comments/\d+|reviews/\d+))(?:\?.*)?$`,
+  String.raw`^repos/[^/]+/[^/]+/(?:issues/(?:\d+/comments|comments/\d+)|pulls/(?:\d+/(?:comments(?:/\d+/replies)?|reviews(?:/\d+(?:/events)?)?|ccr/comments/\d+/(?:un)?resolve)|comments/\d+|reviews/\d+))(?:\?.*)?$`,
 );
 const PROTECTED_GRAPHQL_PATTERN =
   /\b(?:addComment|addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|deleteIssueComment|deletePullRequestReview|resolveReviewThread|submitPullRequestReview|unresolveReviewThread|updateIssueComment|updatePullRequestReview|updatePullRequestReviewComment)\b/;
@@ -541,6 +544,7 @@ export function publishReviewPublication(
           payload_sha256: variant!.payload_sha256,
           payload_utf8_base64: variant!.payload_utf8_base64,
         },
+    executable,
   );
   if (options.dryRun === true) return request.bytes.toString("utf8");
   const completed = spawnSync(executable, request.arguments_, {
@@ -1526,7 +1530,10 @@ function parseDiscussionReply(
     input.comment_id,
     "discussion comment ID",
   );
-  const threadId = nullableString(input.thread_id, "discussion thread ID");
+  const threadCommentId = nullablePositiveInteger(
+    input.thread_comment_id,
+    "discussion thread comment ID",
+  );
   if (operation.startsWith("reply-") && body === null) {
     throw new Error("discussion reply body is required");
   }
@@ -1541,9 +1548,9 @@ function parseDiscussionReply(
   }
   if (
     (operation === "resolve-thread" || operation === "unresolve-thread") &&
-    threadId === null
+    threadCommentId === null
   ) {
-    throw new Error("thread operation needs a thread ID");
+    throw new Error("thread operation needs a thread comment ID");
   }
   return {
     ...common,
@@ -1555,7 +1562,7 @@ function parseDiscussionReply(
     comment_id: commentId,
     kind: "discussion-reply",
     operation,
-    thread_id: threadId,
+    thread_comment_id: threadCommentId,
   };
 }
 
@@ -2137,13 +2144,11 @@ function renderDiscussionReply(
     assessment.operation === "resolve-thread" ||
     assessment.operation === "unresolve-thread"
   ) {
-    const field =
-      assessment.operation === "resolve-thread"
-        ? "resolveReviewThread"
-        : "unresolveReviewThread";
+    // the approved content is the thread and its desired state; the request
+    // that applies it depends on the route, so publication builds it live
     return {
-      query: `mutation($threadId:ID!){${field}(input:{threadId:$threadId}){thread{isResolved}}}`,
-      variables: { threadId: assessment.thread_id },
+      resolved: assessment.operation === "resolve-thread",
+      thread_comment_id: assessment.thread_comment_id,
     };
   }
   return { body: assessment.body };
@@ -2159,6 +2164,7 @@ function requiredParentReview(
 
 function publicationRequest(
   receipt: ReviewPublicationReceipt,
+  executable: string,
 ): PublicationRequest {
   const target = receipt.approved_assessment.target;
   const root = `repos/${target.owner}/${target.repo}`;
@@ -2181,16 +2187,21 @@ function publicationRequest(
     } else if (discussion.operation === "reply-issue") {
       endpoint = `${root}/issues/${target.pull_number}/comments`;
     } else {
+      const request = threadResolutionRequest(
+        (arguments_) => runGitHubRead(executable, arguments_),
+        detectRoute(process.env),
+        {
+          host: target.host,
+          owner: target.owner,
+          repo: target.repo,
+          number: target.pull_number,
+        },
+        discussion.thread_comment_id!,
+        discussion.operation === "resolve-thread",
+      );
       return {
-        arguments_: [
-          "api",
-          "graphql",
-          "--hostname",
-          target.host,
-          "--input",
-          "-",
-        ],
-        bytes: input,
+        arguments_: request.arguments_,
+        bytes: Buffer.from(request.input, "utf8"),
       };
     }
   }
@@ -2250,51 +2261,15 @@ function validateLiveDiscussionTarget(
 ): void {
   if (receipt.kind !== "discussion-reply") return;
   const assessment = receipt.approved_assessment as DiscussionReplyAssessment;
-  if (
-    assessment.operation === "resolve-thread" ||
-    assessment.operation === "unresolve-thread"
-  ) {
-    const target = assessment.target;
-    const thread = runGitHubRead(executable, [
-      "api",
-      "graphql",
-      "--hostname",
-      target.host,
-      "-f",
-      "query=query($thread:ID!){node(id:$thread){__typename ... on PullRequestReviewThread{pullRequest{number repository{nameWithOwner}}}}}",
-      "-f",
-      `thread=${assessment.thread_id}`,
-    ]);
-    const node = objectValue(
-      pathValue(thread, ["data", "node"]),
-      "review thread",
-    );
-    const actualNumber = positiveInteger(
-      pathValue(node, ["pullRequest", "number"]),
-      "review thread pull request number",
-    );
-    const actualRepository = stringValue(
-      pathValue(node, ["pullRequest", "repository", "nameWithOwner"]),
-      "review thread repository",
-    );
-    if (
-      node.__typename !== "PullRequestReviewThread" ||
-      actualNumber !== target.pull_number ||
-      actualRepository.toLowerCase() !==
-        `${target.owner}/${target.repo}`.toLowerCase()
-    ) {
-      throw new Error(
-        "review thread does not belong to the approved pull request",
-      );
-    }
-    return;
-  }
   const target = assessment.target;
   const repository = `${target.owner}/${target.repo}`;
-  const isInline = assessment.operation === "reply-inline";
+  const isInline = assessment.operation !== "reply-issue";
+  const commentId = assessment.operation.endsWith("-thread")
+    ? assessment.thread_comment_id
+    : assessment.comment_id;
   const endpoint = isInline
-    ? `repos/${repository}/pulls/comments/${assessment.comment_id}`
-    : `repos/${repository}/issues/comments/${assessment.comment_id}`;
+    ? `repos/${repository}/pulls/comments/${commentId}`
+    : `repos/${repository}/issues/comments/${commentId}`;
   const comment = runGitHubRead(executable, [
     "api",
     "--hostname",

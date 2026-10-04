@@ -11,7 +11,7 @@ Use exactly one discriminated message class:
 - `review` carries the complete semantic assessment and its bound inline findings. It is the only class with a substantive verdict and publishes through GitHub's native review endpoint.
 - `review-supplement` selects finding IDs from one attached, validated `review` receipt. It can publish derived evidence or unanchored findings as a PR issue comment but cannot introduce, restate, or replace a verdict.
 - `status` selects one contract-defined status value. It has no free-form body.
-- `discussion-reply` binds an independently classified exact body to a target issue or inline comment, or binds a thread-resolution operation to its thread ID. A reply body that contains an overall assessment or verdict is invalid regardless of its label.
+- `discussion-reply` binds an independently classified exact body to a target issue or inline comment, or binds a thread-resolution operation to the `thread_comment_id` of a comment in that thread. A reply body that contains an overall assessment or verdict is invalid regardless of its label.
 
 The review assessment must substantively cover intent and behavior, goal and requirement alignment, every applicable static standard with evidence, test-sensitivity reasoning, executed test evidence or a scoped runtime-test waiver, reuse, minimality, limitations or an explicit complete-review state, findings, trust caps, and a substantive verdict. The independent reviewer—not heading detection or the publication agent—owns the quality of that reasoning. A runtime-test waiver replaces only execution evidence; all static, sensitivity, limitation, finding, and verdict fields remain mandatory.
 

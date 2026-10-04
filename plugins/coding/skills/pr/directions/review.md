@@ -176,33 +176,20 @@ jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
     kind:"inline_comment", value:.}' \
   <<<"$INLINE_COMMENTS" >>"$REVIEW_DISCUSSION" || exit $?
 
-THREAD_PAGE=$(gh api graphql --hostname "$HOST" \
-  -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUMBER" -f query='
-query($owner:String!,$name:String!,$number:Int!,$cursor:String){
-  repository(owner:$owner,name:$name){
-    pullRequest(number:$number){
-      reviewThreads(first:100,after:$cursor){
-        pageInfo{hasNextPage endCursor}
-        nodes{id isResolved comments(first:100){
-          pageInfo{hasNextPage endCursor}
-          nodes{databaseId body url path line commit{oid} author{login}}
-        }}
-      }
-    }
-  }
-}') || exit $?
+THREADS=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-threads.ts" \
+  "$PR_NUMBER" --repo "$HOST/$OWNER/$REPO") || exit $?
 jq -ce --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
   --argjson pr "$PR_NUMBER" \
   '{host:$host, owner:$owner, repo:$repo, pr_number:$pr,
-    kind:"review_thread_page", value:.}' \
-  <<<"$THREAD_PAGE" >>"$REVIEW_DISCUSSION" || exit $?
+    kind:"review_threads", value:.}' \
+  <<<"$THREADS" >>"$REVIEW_DISCUSSION" || exit $?
 ```
 
-Repeat the GraphQL request with the returned cursor until `reviewThreads.pageInfo.hasNextPage` is false, appending every page with the same `host`, `owner`, `repo`, and `pr_number` envelope. When a thread's nested `comments.pageInfo.hasNextPage` is true, query that thread node by `id` with its own comments cursor until exhausted and append those pages with that envelope too. Use identity-scoped queries over `REVIEW_DISCUSSION` to read every record and full body while emitting only counts, stable IDs, and the exact record currently under review. This is bounded presentation, not sampling: the persisted artifact is the authority for the complete discussion.
+The threads helper follows every thread and comment page itself, through GraphQL or, where GraphQL is blocked, the cloud proxy's `/ccr/review_threads` route, so its one record is the complete thread inventory. Each thread lists its `comment_ids`, root first; join them to the `inline_comment` records for bodies, authors, and commits. Use identity-scoped queries over `REVIEW_DISCUSSION` to read every record and full body while emitting only counts, stable IDs, and the exact record currently under review. This is bounded presentation, not sampling: the persisted artifact is the authority for the complete discussion.
 
 Re-evaluate every existing P0/P1/P2 or mandatory-chore thread, including resolved threads whose evidence commit differs from `HEAD_OID`. For each previously reported issue, derive its verdict in every prior review where it was evaluated. Compare the latest verdict with the immediately preceding review's verdict; retain only issues whose verdict changed. The comparison is review-to-review, not commit-to-commit, so several pushes between reviews do not create extra entries.
 
-For every unresolved inline thread, inspect the pinned head for changes related to the concern. When the change addresses the concern, check the thread's complete reply history. If no reply records the published work, classify the exact confirmation body as a `discussion-reply` bound to that comment and issue its approval artifact under [review-publishing.md](review-publishing.md). Issue a separate thread-bound `discussion-reply` approval for resolution. The publication owner relays those artifacts through the canonical publisher; neither party may edit the approved body.
+For every unresolved inline thread, inspect the pinned head for changes related to the concern. When the change addresses the concern, check the thread's complete reply history. If no reply records the published work, classify the exact confirmation body as a `discussion-reply` bound to that comment and issue its approval artifact under [review-publishing.md](review-publishing.md). Issue a separate thread-bound `discussion-reply` approval for resolution, naming the thread by its root comment as `thread_comment_id`. The publication owner relays those artifacts through the canonical publisher; neither party may edit the approved body.
 
 Never resolve a thread whose concern still applies. Thread resolution records an independent review verdict; it is not available to the agent that implemented or published the change.
 
@@ -313,7 +300,7 @@ Follow [review-publishing.md](review-publishing.md). The independent reviewer su
 
 The contract deterministically renders one native review from the templates with its pinned `commit_id` and bound inline findings. Inspect that rendered output against the templates before handing off approval. It preserves the substantive verdict in the body and receipt. Passing reviews submit `COMMENT`; blocking reviews submit `REQUEST_CHANGES` unless a trust cap or self-review requires `COMMENT`. The publication agent receives only the approval artifact and runs the exact canonical publisher command; it may not compose, summarize, relabel, or repair the approved content.
 
-The publisher revalidates every receipt relationship and exact payload byte, re-reads the PR head, base ref, base OID, author, publisher identity, discussion target when applicable, then sends those same bytes in one GitHub call. Missing, malformed, altered, stale, or unreadable evidence stops before the write. A 422 is not repaired by editing the artifact: the independent reviewer must update the structured assessment and issue a new receipt. `--dry-run` performs the live reads and prints the exact payload without the final write.
+The publisher revalidates every receipt relationship and exact payload byte, re-reads the PR head, base ref, base OID, author, publisher identity, discussion target when applicable, then sends those same bytes in one GitHub call. A thread-resolution operation has no approved bytes: the publisher builds its request live from the `thread_comment_id`, looking the thread up first on the native route. Missing, malformed, altered, stale, or unreadable evidence stops before the write. A 422 is not repaired by editing the artifact: the independent reviewer must update the structured assessment and issue a new receipt. `--dry-run` performs the live reads and prints the exact payload without the final write.
 
 ## Verification
 

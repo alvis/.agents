@@ -8,19 +8,5 @@ REPO=$(jq -er .repo <<<"$PR_METADATA") || exit $?
 PR_NUMBER=$(jq -er .number <<<"$PR_METADATA") || exit $?
 gh api --hostname "$HOST" "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate
 gh api --hostname "$HOST" "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" --paginate
-gh api graphql --hostname "$HOST" \
-  -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUMBER" \
-  -f query='
-query($owner:String!,$name:String!,$number:Int!,$threadCursor:String){
-  repository(owner:$owner,name:$name){
-    pullRequest(number:$number){
-      reviewThreads(first:100,after:$threadCursor){
-        pageInfo{hasNextPage endCursor}
-        nodes{id isResolved comments(first:100){
-          pageInfo{hasNextPage endCursor}
-          nodes{databaseId body url path line commit{oid} author{login}}
-        }}
-      }
-    }
-  }
-}'
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-threads.ts" "$PR_NUMBER" \
+  --repo "$HOST/$OWNER/$REPO"

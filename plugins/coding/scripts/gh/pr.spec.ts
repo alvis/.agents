@@ -3,8 +3,9 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { detectRoute } from "./detect.ts";
 import { SUBCOMMANDS, UNSUPPORTED } from "./pr.ts";
-import { detectRoute, parseRepositorySpec } from "./route.ts";
+import { parseRepositorySpec } from "./route.ts";
 import { cloud, restCalls, runScript } from "./spec-harness.ts";
 
 import type { Routes, RunOptions } from "./spec-harness.ts";
@@ -76,9 +77,10 @@ describe("fn:detectRoute", () => {
 
 describe("cmd:gh-pr-<subcommand>", () => {
   it("should ship one drop-in per REST subcommand and none for an unsupported one", () => {
+    // gh-pr-threads.ts has no `gh pr` counterpart and serves itself
     const dropIns = readdirSync(scripts)
       .map((name) => /^gh-pr-([a-z-]+)\.ts$/u.exec(name)?.[1])
-      .filter((name) => name !== undefined)
+      .filter((name) => name !== undefined && name !== "threads")
       .sort();
     expect(dropIns).toEqual(Object.keys(SUBCOMMANDS).sort());
     expect(dropIns.filter((name) => name in UNSUPPORTED)).toEqual([]);
