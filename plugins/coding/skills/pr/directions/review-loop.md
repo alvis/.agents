@@ -13,7 +13,7 @@ Read `MAX_ITERATION` and `REVIEW_ITERATION` from the owning main agent's working
 Before provisioning or dispatching a reviewer, bind `EXPECTED_HEAD_OID`, `EXPECTED_BASE_REF`, and `EXPECTED_BASE_OID` from the publication owner's saved surface map. Verify every selected PR exists as an open draft at that surface:
 
 ```bash
-PR_METADATA=$(gh pr view "$PR_URL" --repo "$HOST/$OWNER/$REPO" \
+PR_METADATA=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR_URL" --repo "$HOST/$OWNER/$REPO" \
   --json state,headRefOid,baseRefName,baseRefOid,isDraft) || exit 1
 jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
   --arg base_oid "$EXPECTED_BASE_OID" '

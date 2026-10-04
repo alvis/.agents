@@ -1,6 +1,8 @@
 # Development links
 
-Load during issue-coverage planning for read-only inventory, before pushing an existing PR to remove proven stale links, and after publication to add or verify resolving links. Before each mutation, verify the numeric PR identity and the head/base pair bound for that phase; disposition evidence names the intended diff. `coding:issue` owns issue content and metadata; this direction owns PR-to-issue resolution links. Merely related or partially addressed issues receive plain references, not closing links. A manually linked resolving PR may close the issue when merged under GitHub's rules; removing keywords does not disable that behavior.
+Load during issue-coverage planning for read-only inventory, before pushing an existing PR to remove proven stale links, and after publication to add or verify resolving links. Before each mutation, verify the numeric PR identity and the head/base pair bound for that phase; disposition evidence names the intended diff. `coding:issue` owns issue content and metadata; this direction owns PR-to-issue resolution links. Every resolving issue is also on the PR body's closing line, whose form [create-update.md](create-update.md) owns; merely related or partially addressed issues receive plain references, not closing links. A manually linked resolving PR may close the issue when merged under GitHub's rules; removing keywords does not disable that behavior.
+
+The link reads and mutations below are GraphQL-only. Where GraphQL is blocked, as in coding-agent cloud sessions where the first read below returns HTTP 403, skip them: the closing line is then the only association, so report each resolving link as `unverified: GraphQL unavailable` without blocking readiness, and demote a stale issue on the closing line to a plain reference instead of removing a manual link.
 
 ## Resolve identities
 
@@ -70,6 +72,6 @@ Repeat the paginated read above and require the selected `ISSUE_ID` in the manua
 
 ## Failure and completion
 
-On timeout, transport failure, or GraphQL error, retain the response and read current manual links before retrying: the write may have succeeded. Retry only a still-missing relationship after correcting the observed cause, at most twice to bound repeated remote writes. Never remove unrelated relationships, broaden credentials automatically, close an issue directly, or add closing keywords as a fallback. Removal and conversion failures keep their publication/readiness blockers; green CI does not clear them.
+On timeout, transport failure, or GraphQL error, retain the response and read current manual links before retrying: the write may have succeeded. Retry only a still-missing relationship after correcting the observed cause, at most twice to bound repeated remote writes. Never remove unrelated relationships, broaden credentials automatically, or close an issue directly. Removal and conversion failures keep their publication/readiness blockers; green CI does not clear them.
 
 For GitHub Enterprise versions or permissions that do not expose this mutation/query, report the unsupported capability or permission failure and the published PR URL. A maintainer may establish the relationship through GitHub's Development UI; verify it through an available relationship read before reporting success. Publication with a required unresolved association is partial completion. Return each issue URL, PR URL, resolving intent, added/preserved/removed/unverified/failed outcome, and read-back evidence to the calling PR workflow.

@@ -26,6 +26,7 @@ function run(metadata: Record<string, unknown>) {
       env: {
         ...process.env,
         PATH: `${bin}:${process.env.PATH}`,
+        GH_ROUTE: "native",
         PR_METADATA: JSON.stringify(metadata),
       },
     }),

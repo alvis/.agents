@@ -83,7 +83,7 @@ User: "edit the avatar commit — picker should clamp at 5MB not 10"
 ```bash
 jj log -r 'description(glob:"avatar")' --no-graph
 # Resolves to change abc123
-gh pr view feat-avatar/01-web --json state -q .state
+bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-view.ts" feat-avatar/01-web --json state -q .state
 # OPEN — proceed
 ```
 
@@ -197,7 +197,7 @@ After local integrity passes, report the affected stack metadata and current PR 
 User: "edit the original auth feature commit to bump the rate limit"
 
 ```bash
-gh pr view feat-auth/01-service --json state -q .state
+bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-view.ts" feat-auth/01-service --json state -q .state
 # MERGED
 ```
 

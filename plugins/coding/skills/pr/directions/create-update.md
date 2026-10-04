@@ -15,7 +15,7 @@ Reviewers own size-standard findings and reviewability judgments. This workflow 
 ## Pull-request directions
 
 - Format the title as a Conventional Commit subject.
-- Keep issue-closing directives out of newly authored titles and bodies. Use plain references; `directions/issues.md` under `CODING_PR_SKILL_DIR` owns resolving associations and their verification.
+- List every issue the PR resolves on one closing line in the body's Related Issues section, repeating the keyword per issue because GitHub links only a keyword-prefixed reference: `Closes #<n>, closes #<m>`, with `closes <owner>/<repo>#<n>` for another repository. GitHub then links and closes each on merge in every environment, including where the GraphQL link mutations are unavailable. Keep directives out of the title and every other section, and give partial or merely related issues plain references. `directions/issues.md` under `CODING_PR_SKILL_DIR` owns manual Development links and their verification.
 - Open every human-authored PR as a draft. A documented incident may authorize a hotfix exception; automated dependency or generator PRs follow their platform configuration.
 - Use a repository-local PR template when present; otherwise render [message.md](../templates/message.md). Keep labels and size bookkeeping out of the title and body.
 - Before submission, inspect every changed file under `GIT-PR-TYPE-05` for a durable purpose and remove prohibited artifacts through the implementation/history owner. Select and apply every relevant standard through `essential:directions/standards.md`; fix violations and record green revision-bound evidence in Verification before publication.
@@ -267,24 +267,24 @@ Interpret every status literally:
 A successful non-dry run has no errors, every live head is `verified`, and every existing open PR base is `verified`; `deferred` and `skipped_merged` are terminal only through their actions above. A handled nonzero still carries the complete partial receipt: parse it before stopping, preserve verified prefix work, and restart discovery through the matching recovery row. Dry-run success contains only `planned`, `deferred`, or `not_applicable` mutation statuses and authorizes no push, edit, or creation. When the head has no open PR, create a draft:
 
 ```bash
-PR=$(gh pr create --repo "$HOST/$REPOSITORY" --draft --title "$TITLE" --body-file - \
+PR=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-create.ts" --repo "$HOST/$REPOSITORY" --draft --title "$TITLE" --body-file - \
   --base "$PR_BASE" --head "$PUSH_OWNER:$BOOKMARK" <<<"$BODY")
 ```
 
 After creation, read back that numeric PR with `--repo "$HOST/$REPOSITORY"` and verify its number, `headRepositoryOwner.login`, `headRefOid`, `baseRefName`, and `baseRefOid` against the bound owner, head, base name, and base OID; require `state: OPEN` and `isDraft: true`. Creation is not complete until this deferred base and draft state become verified.
 
-When the head has one open PR, reread its body and closing associations at the verified published head/base pair. Before removing a valid body-based closing directive, use `directions/issues.md` to establish and verify its manual replacement. A failed or unverified conversion blocks the body edit: leave the existing body untouched, report the pending conversion, and continue CI monitoring for any already-published head. Never restore or newly publish a closing directive. Reconcile concurrent body edits before submitting the revised text. Once this gate passes, edit the PR and retain draft state:
+When the head has one open PR, reread its body and closing associations at the verified published head/base pair. Make the Related Issues closing line name exactly the issues whose disposition is resolving: add new ones and demote a now-partial or related issue to a plain reference. Reconcile concurrent body edits before submitting the revised text. Once this gate passes, edit the PR and retain draft state:
 
 ```bash
-gh pr edit "$PR" --title "$TITLE" --body-file - --base "$PR_BASE" <<<"$BODY"
-gh pr ready "$PR" --undo
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-edit.ts" "$PR" --title "$TITLE" --body-file - --base "$PR_BASE" <<<"$BODY"
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR" --undo
 ```
 
 Read back the same metadata after an update and require the bound head/base pair, `state: OPEN`, and `isDraft: true`. A successful mutation command alone does not establish publication or draft state.
 
 #### Verify issue Development links
 
-For every selected issue disposition under [Resolve issue coverage](#resolve-issue-coverage), load `directions/issues.md` from `CODING_PR_SKILL_DIR` after the numeric PR and its head/base pair are verified. Add missing resolving links, preserve valid links, and verify that partial or merely related work has no selected stale closing association. An unresolved stale link or conversion blocks readiness. Read back each resulting relationship, and retain partial failures in the publication report. A link failure does not erase a successfully published PR or authorize a closing keyword fallback.
+For every selected issue disposition under [Resolve issue coverage](#resolve-issue-coverage), load `directions/issues.md` from `CODING_PR_SKILL_DIR` after the numeric PR and its head/base pair are verified. Add missing resolving links, preserve valid links, and verify that partial or merely related work has no selected stale closing association. An unresolved stale link or conversion blocks readiness. Read back each resulting relationship, and retain partial failures in the publication report. A link failure does not erase a successfully published PR; the closing line still carries each resolving association.
 
 #### Attach selected repository labels
 
@@ -292,7 +292,7 @@ After either path binds `PR`, add nonempty selections as JSON so commas remain i
 
 ```bash
 if jq -e 'length > 0' >/dev/null <<<"$SELECTED_LABELS"; then
-  PR_NUMBER=$(gh pr view "$PR" --repo "$HOST/$REPOSITORY" \
+  PR_NUMBER=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR" --repo "$HOST/$REPOSITORY" \
     --json number --jq .number)
   jq -ce '{labels: .}' <<<"$SELECTED_LABELS" |
     gh api --method POST --hostname "$HOST" \
@@ -302,7 +302,7 @@ fi
 
 Publish a genuinely necessary self-contained black-zone unit as a draft with specific `## ⚠️ Risk`, `## 🧭 Test Plan`, and `## 📐 Why This Size` evidence. The authoring body contains no reviewer or authorization tasks while draft. A ready PR gains an unchecked exact-revision black-zone verification task in its managed Verification block. No comment authorizes or gates AI review.
 
-Capture each PR number, URL, head, base, bookmark, and change ID. After the batch push, record `expected_head_oid` from each pushed bookmark and verify it against `gh pr view "$PR" --json headRefOid --jq .headRefOid`; a mismatch is not the published result and must be resolved before monitoring. After any accepted repair/history rewrite with downstream bookmarks, synchronize the affected stack before monitoring again. Reuse `ROOT_BASE` only when the selected heads and their base map are unchanged; otherwise restart discovery and recompute it first:
+Capture each PR number, URL, head, base, bookmark, and change ID. After the batch push, record `expected_head_oid` from each pushed bookmark and verify it against `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR" --json headRefOid --jq .headRefOid`; a mismatch is not the published result and must be resolved before monitoring. After any accepted repair/history rewrite with downstream bookmarks, synchronize the affected stack before monitoring again. Reuse `ROOT_BASE` only when the selected heads and their base map are unchanged; otherwise restart discovery and recompute it first:
 
 ```bash
 if SYNC_RECEIPT=$(bash "${CODING_PR_SKILL_DIR}/scripts/sync-pr-stack.sh" \
@@ -358,7 +358,7 @@ Supply every selected bookmark explicitly in bottom-up order with the exact loca
 | `pr_head_mismatch` | Preserve the observed PR head, reconcile it with the remote, and restart discovery. |
 | `pr_base_name_mismatch` | Read the numeric PR, resolve its actual base, and restart discovery. |
 | `pr_base_oid_mismatch` | Preserve the advanced base, re-evaluate topology, and bind a new snapshot. |
-| `gh pr create` authentication failure | Run `gh auth status`; report a user/external blocker. |
+| PR creation authentication failure | Run `gh api user --jq .login`; report a user/external blocker. |
 | Bookmark or branch conflict | Confirm the intended change, then rerun the selected action against that exact head. |
 | Conventional title invalid | Reword through `coding:commit`, then restart that iteration. |
 
@@ -460,7 +460,7 @@ PR_CHECKS=$(bun run "${CODING_PR_SKILL_DIR}/scripts/review-publication.ts" check
   --head "$EXPECTED_HEAD_OID") || exit 1
 jq -e 'type == "array" and all(.[]; (.bucket == "pass" or .bucket == "skipping") and .completedAt != null)' \
   >/dev/null <<<"$PR_CHECKS" || exit 1
-PR_METADATA=$(gh pr view "$PR_URL" --repo "$HOST/$REPOSITORY" \
+PR_METADATA=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-view.ts" "$PR_URL" --repo "$HOST/$REPOSITORY" \
   --json state,headRefOid,baseRefName,baseRefOid,isDraft) || exit 1
 jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
   --arg base_oid "$EXPECTED_BASE_OID" '
@@ -469,16 +469,16 @@ jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
 ' >/dev/null <<<"$PR_METADATA" || exit 1
 ```
 
-Classify the fresh `PR_CHECKS` with the step 5 expected-check and source evidence for `EXPECTED_HEAD_OID`; require green. The following metadata read pins the head and base after the check fetch. If the check rollup is pending, red, incomplete, or inaccessible, return to CI convergence instead of calling `gh pr ready`.
+Classify the fresh `PR_CHECKS` with the step 5 expected-check and source evidence for `EXPECTED_HEAD_OID`; require green. The following metadata read pins the head and base after the check fetch. If the check rollup is pending, red, incomplete, or inaccessible, return to CI convergence instead of marking the PR ready.
 
-If the pinned PR metadata reports `isDraft: true`, run `gh pr ready "$PR_NUMBER" --repo "$HOST/$REPOSITORY"`; if it is already ready, skip that transition and continue task attachment. Then call the same generator with `--apply`. GitHub may assign CODEOWNERS during the ready transition, so the apply invocation resolves reviewers again and its returned block is authoritative. It rereads the live PR, refuses a draft or changed head/base, and replaces one managed task block under Verification. Read back the exact body and ready state; require the managed block to equal the apply invocation's returned block and the entire body to equal its returned `body` on the pinned revision. If attachment or readback fails, reread the pinned PR body before changing draft state. Undo readiness with `gh pr ready "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --undo` only when the managed block is confirmed absent; then verify the draft body still has no reviewer tasks. If the block is present or body state cannot be read, keep the PR ready, report the partial outcome, and reconcile the body before any later draft transition. No reviewer tasks are published in a draft. Do not check whether a human checked a task, approved a review, or left an authorization comment.
+If the pinned PR metadata reports `isDraft: true`, run `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY"`; if it is already ready, skip that transition and continue task attachment. Then call the same generator with `--apply`. GitHub may assign CODEOWNERS during the ready transition, so the apply invocation resolves reviewers again and its returned block is authoritative. It rereads the live PR, refuses a draft or changed head/base, and replaces one managed task block under Verification. Read back the exact body and ready state; require the managed block to equal the apply invocation's returned block and the entire body to equal its returned `body` on the pinned revision. If attachment or readback fails, reread the pinned PR body before changing draft state. Undo readiness with `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --undo` only when the managed block is confirmed absent; then verify the draft body still has no reviewer tasks. If the block is present or body state cannot be read, keep the PR ready, report the partial outcome, and reconcile the body before any later draft transition. No reviewer tasks are published in a draft. Do not check whether a human checked a task, approved a review, or left an authorization comment.
 
 ### Author the PR text
 
 Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 passes its base; text-only callers default to the first parent. Never invoke `gh`.
 
 1. Resolve the commit ref, defaulting to `@` after the functional jj check and to `HEAD` otherwise. Resolve an optional base, defaulting to the first parent or, for a root commit, the empty tree from `git hash-object -t tree /dev/null`. Try `jj log -r <ref> --no-graph -T 'description'`, then `git log -1 --format=%B <ref>`. Unknown refs exit 2; neither tool exits 3. Record the resolved head/base OIDs for step 4.
-2. Extract the subject (first non-empty line) and body (everything after the first blank line). Recognize reference, breaking-change, and verification trailers for routing in step 6. When historical input contains issue-closing directives, retain the issue identities as plain references in the new PR text; never copy the directives or rewrite the historical commit. Extracting an identity does not establish that the current PR resolves it.
+2. Extract the subject (first non-empty line) and body (everything after the first blank line). Recognize reference, breaking-change, and verification trailers for routing in step 6. When historical input contains issue-closing directives, carry the issue identities into Related Issues without copying the directives or rewriting the historical commit. Extracting an identity does not establish that the current PR resolves it; only a resolving disposition puts it on the closing line.
 3. Validate the subject against the canonical regex and type allowlist in the [commit-message standard](../../../standards/commit/write.md), which owns both. Read it at this step rather than restating it here. On mismatch, exit 2 with the failing token, the regex read from the standard, and the offending subject.
 4. For every non-root commit, resolve the review surface from the merge base: use `jj log --no-graph -T 'commit_id' -r "heads(::<head-oid> & ::<base-oid>)"` on the jj path or `git merge-base <base-oid> <head-oid>` on the git path. Use the empty tree only for the root-commit fallback. Calculate the active size zone from that exact surface under `GIT-PR-SIZE-*`. Run the classifier only after binding the exact base and head OIDs; it derives the zone for this authoring step and is not a policy authority:
 
@@ -526,7 +526,7 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
    - `{{additional_notes_body}}` — deviations from the specification or original request (what changed and why), known limitations, and follow-ups; empty when absent. Preserve the template's visible separate-review instruction even when this placeholder is empty.
 
    Drop an optional section that resolves to "None." rather than leaving a stub. Never publish a generic or missing always-, zone-, archetype-, or diff-required section; stop and report the missing evidence when it cannot be derived specifically. Strip every author-facing guidance comment and `[ Optional ]` heading marker from the rendered body; keep Summary, Goal, Requirements, Context, Verification, and Additional Notes always.
-7. After rendering and before emission or publication, inspect the entire title/body for issue-closing directives, including inflected keywords with qualified references or URLs. Replace directives in authored text with plain references. A repository template that requires forbidden directives conflicts with this contract: report the conflict rather than silently changing the template or publishing its directives. Scan the body against its selected template and active standard conditions. Build repeated `--generated-file` arguments from every generated path in `SIZE_JSON`, then run:
+7. After rendering and before emission or publication, inspect the entire title/body for issue-closing directives, including inflected keywords with qualified references or URLs. Directives belong only on the Related Issues closing line and only for resolving issues; replace any other directive with a plain reference. A repository template that places directives elsewhere conflicts with this contract: report the conflict rather than silently changing the template or publishing its directives. Scan the body against its selected template and active standard conditions. Build repeated `--generated-file` arguments from every generated path in `SIZE_JSON`, then run:
 
    ```bash
    if ! MESSAGE_SCAN=$(bun run "${CODING_PR_SKILL_DIR}/scripts/scan-pr-message.ts" \

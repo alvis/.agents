@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# gh pr/repo calls go through the coding plugin's routing wrappers, which
+# keep gh's interface and reroute over REST where GraphQL is blocked
+CODING_SCRIPTS=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../../scripts" && pwd)
 
 usage() {
   echo "usage: resolve-pr.sh <pr-number-or-url> [--repo <owner/name>]" >&2
@@ -16,7 +19,7 @@ fi
 
 # macOS ships bash 3.2, where "${repo_args[@]}" is an unbound-variable error
 # under set -u when the array is empty; this expansion stays safe on both.
-metadata=$(gh pr view "$pr_input" ${repo_args[@]+"${repo_args[@]}"} \
+metadata=$(bun "$CODING_SCRIPTS/gh-pr-view.ts" "$pr_input" ${repo_args[@]+"${repo_args[@]}"} \
   --json number,url,title,body,state,isDraft,baseRefName,baseRefOid,\
 headRefName,headRefOid,headRepositoryOwner,changedFiles,additions,deletions,\
 author,statusCheckRollup)

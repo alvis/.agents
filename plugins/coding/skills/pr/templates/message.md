@@ -31,7 +31,7 @@ Placeholders (for non-LLM callers performing literal substitution):
   verification_body          yes       Checklist of the checks that must pass before sign-off, ticked as each is confirmed.
   boundary_body              no        Related work the instruction placed outside this change. Drop section if empty.
   additional_notes_body      no        Deviations from the spec or original request (what changed and why), known limitations, follow-ups. Keep the section and its review instruction when empty.
-  related_issues_body        no        Plain issue and discussion references; no issue-closing directives. Drop section if empty.
+  related_issues_body        no        One closing line for resolving issues (`Closes #<n>, closes #<m>`), then plain issue and discussion references. Drop section if empty.
 
 Substitution rules:
 - All placeholders are literal `{{name}}` tokens; no nesting, no expressions.
@@ -131,5 +131,5 @@ Publish review findings and the verdict as a separate PR review or comment. Neve
 
 ## 🔗 Related Issues [ Optional ]
 
-<!-- plain references to related tickets, issues, RFCs, and discussions; resolving relationships are verified GitHub Development links, never closing directives in message text -->
+<!-- first, one closing line naming every resolving issue with its own keyword (`Closes #<n>, closes #<m>`); then plain references to related tickets, issues, RFCs, and discussions -->
 {{related_issues_body}}
