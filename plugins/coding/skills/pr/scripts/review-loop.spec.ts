@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -140,11 +146,18 @@ function runBlock(
 set -eu
 case "$1 $2" in
   "pr view") [ "$IS_MISSING" = false ] || exit 1; cat "$METADATA" ;;
-  "pr checks") cat "$CHECKS_FILE" ;;
   *) exit 2 ;;
 esac
 `,
       { mode: 0o755 },
+    );
+    // the readiness gate reads checks through the publisher's REST `checks`
+    // action, whose output shape review-publication.spec.ts owns; this stub
+    // replays the fixture so the gate's own classification stays under test
+    mkdirSync(join(root, "scripts"));
+    writeFileSync(
+      join(root, "scripts/review-publication.ts"),
+      'process.stdout.write(require("node:fs").readFileSync(process.env.CHECKS_FILE, "utf8"));\n',
     );
     const completed = spawnSync(
       "bash",
@@ -156,6 +169,7 @@ esac
           PATH: `${root}:${process.env.PATH}`,
           METADATA: metadata,
           CHECKS_FILE: checks,
+          CODING_PR_SKILL_DIR: root,
           CI_STATE: options.ciState ?? "green",
           REPOSITORY: "example/repo",
           IS_MISSING: String(options.isMissing ?? false),
