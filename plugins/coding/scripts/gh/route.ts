@@ -218,3 +218,33 @@ export function requestedFields(fields: string, available: readonly string[]): s
     );
   return names;
 }
+
+/** a REST implementation of one subcommand */
+export type Handler = (argv: readonly string[]) => Promise<number>;
+
+/**
+ * runs one `gh-<group>-<subcommand>.ts` drop-in: native passthrough, or the
+ * REST handler for the subcommand
+ * @param group - the `gh` command group, such as `pr`
+ * @param subcommand - the drop-in's subcommand, a key of `handlers`
+ * @param handlers - REST handlers by subcommand
+ * @param argv - arguments after the subcommand
+ * @param env - process environment
+ * @returns the exit code
+ */
+export async function runWrapper(
+  group: string,
+  subcommand: string,
+  handlers: Readonly<Record<string, Handler>>,
+  argv: readonly string[],
+  env: Record<string, string | undefined>,
+): Promise<number> {
+  if (detectRoute(env) === "native") return await passthrough(group, [subcommand, ...argv]);
+  try {
+    return await handlers[subcommand]!(argv);
+  } catch (error) {
+    if (!(error instanceof WrapperError)) throw error;
+    process.stderr.write(`gh-${group}-${subcommand}: ${error.message}\n`);
+    return error.exitCode;
+  }
+}
