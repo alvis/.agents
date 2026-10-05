@@ -2,7 +2,9 @@
 
 ## Intent
 
-Every permanent mechanical test must verify a new behavior path or branch, distinct supported behavior, or meaningful edge case relative to the current suite. A new path or branch can improve coverage; a different observable behavior or real edge case can protect against drift without changing coverage. A coverage percentage alone does not identify the behavior path the test verifies. Remove an existing or proposed test that meets none of these criteria.
+Retain a permanent test when it adds behavioral coverage relative to the current suite, protects distinct supported behavior, or exercises a meaningful edge case. Coverage-contributing behavior tests need no separate lasting-value justification; zero-coverage-gain tests may still protect a distinct behavior or edge case, including compiler behavior permitted by [TST-CORE-10](tst-core-10.md). A coverage percentage alone does not identify the behavior the assertions protect. Remove proposed and existing tests within scope that meet none of these criteria, along with helpers left unused by their removal.
+
+A test whose only value is proving that a one-time edit happened does not belong permanently when it adds neither behavioral coverage nor distinct supported behavior or a meaningful edge case. Record that proof in validation notes instead. Judge the executed path and assertions, not the test's name, wording, age, or the fact that it passes. TST-CORE-10 still excludes static/content pinning regardless of coverage; the criteria above do not waive other testing rules.
 
 A test's description and assertions must match the behavior it exercises. A name that claims a path its input never reaches does not establish value. An initially passing regression case still needs the sensitivity proof and restored green run required by `TST-CORE-02`; meeting this value rule does not waive that requirement. `TST-COVR-01` separately requires at least one behavioral test for each exported runtime function.
 

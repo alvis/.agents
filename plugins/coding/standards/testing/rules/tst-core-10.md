@@ -153,7 +153,7 @@ expect(output.plugins).toEqual(
 
 ## Edge Cases
 
-- Runtime messages, error envelopes, exit status, and emitted JSON are behavior, even when their assertions contain literals.
+- Runtime messages, error envelopes, exit status, and emitted JSON are behavior. Assert the supported effect: emission or suppression, channel/level, structured fields, ordering, or error category as applicable. Pin exact warning, log, error, or other output wording only when it is an explicit supported contract; otherwise use behavioral or structural assertions that tolerate incidental wording changes. A request to change wording or suppress output does not by itself make that wording a permanent contract. TST-CORE-04 separately decides whether the test adds value.
 - A temporary workspace may deliberately omit or corrupt a file when absence or malformed input is the scenario supplied to the consumer.
 - Two implementations may receive the same generated input and have their results compared; this is runtime parity, not checked-in-file parity.
 - `satisfies` and `as const` may encode source constraints beside declarations; type tests remain limited to generic inference, generic-parameter default application when a representative consumer omits that type argument, constraint enforcement, representative contextual typing supplied by public callback parameters, representative assignability or substitutability, representative consumer-call overload resolution, representative control-flow narrowing after a public type predicate or assertion function is called or within a public discriminated-union consumer branch, and conditional, mapped, indexed-access, `keyof`-driven, or template-literal type transformations exercised through representative consumer inputs and outputs.

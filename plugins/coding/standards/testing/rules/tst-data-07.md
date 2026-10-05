@@ -2,7 +2,7 @@
 
 ## Intent
 
-Assert a caught/thrown error in one structural comparison — `expect(error).toEqual(new Error('msg'))` — instead of splitting it across a `toBeInstanceOf` check plus separate `.message` (and `.cause`/`.name`) assertions. vitest's `toEqual` already compares the error's constructor and `message`, so the split adds lines without adding coverage (same principle as TST-DATA-02, specialized to `Error`).
+Assert a caught/thrown error in one structural comparison — `expect(error).toEqual(new Error('msg'))` — instead of splitting it across a `toBeInstanceOf` check plus separate `.message` (and `.cause`/`.name`) assertions. Exact message wording requires the explicit supported contract in [TST-CORE-10](tst-core-10.md); otherwise use one structural assertion with appropriate asymmetric matchers for the supported error category and fields. vitest's `toEqual` already compares the error's constructor and `message`, so the split adds lines without adding coverage (same principle as TST-DATA-02, specialized to `Error`).
 
 ## Fix
 
@@ -28,7 +28,7 @@ vitest's `toEqual` compares `name` + `message` but NOT `cause`, so a separate `e
 ```typescript
 expect(new Error('hi', { cause: 'x' })).toEqual(new Error('hi')); // ✅ passes
 ```
-If a test genuinely must pin `cause`, assert it explicitly with one extra line — but the default is a single `toEqual(new Error('…'))`.
+If a test genuinely must pin `cause`, assert it explicitly with one extra line — use the same whole-error structural comparison and apply TST-CORE-10 to incidental wording.
 
 ## Banned Patterns
 
@@ -49,4 +49,4 @@ expect(error.message).toBe('bad input');
 
 ## Related
 
-TST-DATA-01, TST-DATA-02, TST-DATA-03
+TST-DATA-01, TST-DATA-02, TST-DATA-03, TST-CORE-10
