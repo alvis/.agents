@@ -12,6 +12,22 @@ Use the lightest process that still protects the outcome. Low-risk, reversible, 
 
 Validation depth follows the risk and claims; ceremony cannot substitute for evidence. [ALLAGENT.md](../hooks/ALLAGENT.md) owns mandatory gates and changed-premise handling.
 
+## Shape the plan before presenting
+
+A subagent planner returns its removed items, precedents, and architecture draft to its assigner, who asks the user under [subagent.md](subagent.md).
+
+### Cut to the core
+
+Every plan delivers only the core work that achieves its Goal and Requirements. After drafting, try to remove each task, deliverable, file, abstraction, dependency, and check under the [need test](../references/working-attitude.md#choose-the-first-sufficient-option). Record every removed item under Out of Scope. Before presenting, ask the user in one multi-select question that follows [questions.md](questions.md) which removed items to add back, splitting it into consecutive questions only when the harness caps options and asking a single item as yes or no; restore each chosen item as a task and record the user's decision on the rest. Skip the question when nothing was removed or the user already excluded every removed item. Items excluded by a charter, specification, or accepted decision need no question.
+
+### Follow precedent
+
+For material work, search the same repository before designing for how similar work was carried out: version-control history and merged pull requests touching the affected paths, sibling modules of the same kind, and their tests. Build the design on that precedent, list it under Context's **Precedents**, and state the reason for any departure.
+
+### Confirm the architecture
+
+For material work that adds or restructures code or file layout, confirm the architecture with the user before presenting the plan; other material work records `Confirmed architecture: not applicable — <reason>`. Before the first round, unless this work already has a plan-interview round marked ready, ask whether they want the rounds run as visual pages through the discovery skill's [plan interview](../skills/discover/directions/plan.md); a ready round confirms only the calls the user answered, and its untouched recommendations and notes go into another round. Each round shows an example tree of the affected paths, marking new and changed ones, and representative code — key types, signatures, and one call site — that follows the precedents, then asks the user under [questions.md](questions.md) to confirm or change it. Revise and repeat until the user confirms a round without changes. After three unconfirmed rounds, ask whether to reopen Goal or Requirements, keep refining, or proceed with the latest draft; recommend reopening, because disagreement that persists for three rounds usually concerns the goal rather than the layout. Record the confirmed result under Direction as **Confirmed architecture**.
+
 ## Required ingredients
 
 Every presented plan, including main-agent, delegated, conversational, and sample plans, uses the headings below in order, with an emoji prefix on each main section heading. Keep small plans concise; do not create a plan artifact for formatting alone. When another artifact owns an ingredient, give its exact path and only the summary needed to navigate it. Progress checklists are not plan presentations.
@@ -28,6 +44,7 @@ Include these labeled entries and any other context needed to understand the pla
 - **Current state** — a brief, revision-aware status and the immediate next action or blocker.
 - **Related decisions** — zero or more record items, one per directly related decision. Each summary uses at most 19 words, excludes decision detail, and links the file containing the full decision.
 - **Related recent work** — zero or more record items, one per directly related work record. Each summary uses at most 19 words, excludes decisions, and links the file containing the full journey.
+- **Precedents** — for material work, zero or more record items, one per similar past change found under [Follow precedent](#follow-precedent). Each summary uses at most 19 words, says whether the plan follows or departs from it, and links the commit, pull request, or path. Use `None — no similar work found` only after searching.
 
 - **Assumptions** — a separate numbered list with stable assumption IDs, falsifiable statements, and task IDs that verify each through a documentation check or focused code test. Distinguish accepted assumptions from unknowns and defaults. Schedule verification before dependent work; already verified assumptions cite their task and evidence.
 - **Known issues** — a separate numbered list with stable issue IDs and task IDs that rectify each. Verification alone does not discharge a corrective obligation. If correction is outside the plan's authority, name its owning task and blocker before presenting the plan as executable.
@@ -44,7 +61,11 @@ When concrete deliverables are already established during planning, list them un
 
 ### 🚧 Boundary
 
-Name what is inside the plan, what is deliberately outside it, and any limit on authority, time, systems, data, or validation that changes execution. Reference Context's assumption IDs when they constrain the boundary instead of restating them.
+Name what is inside the plan and any limit on authority, time, systems, data, or validation that changes execution; Out of Scope owns what is excluded. Reference Context's assumption IDs when they constrain the boundary instead of restating them.
+
+### ✂️ Out of Scope
+
+List only items that were in the draft or the request and then removed under [Cut to the core](#cut-to-the-core), or that the user, a charter, a specification, or an accepted decision explicitly excluded. Never list work nobody proposed: naming it spends review attention and invites it back into scope, so the list stays no larger than what was drafted or asked. One line each: the item, why the outcome does not need it, and its disposition — the user's `declined` or `deferred to <owner>`, or `excluded by <link to the authority>`. Write `None — nothing removed` when empty.
 
 ### 📍 Working environment
 
@@ -67,7 +88,7 @@ Identify the last approved plan by revision or content hash and compare every ro
 
 ### 🛠️ Direction
 
-State the route by task ID: dependencies, verification at each meaningful boundary, and stop or pivot signals. Name applicable skills beside the tasks and agents that use them; do not assign every skill to every agent. State when a task needs no skill. Link material choices to their decision records; do not reopen accepted decisions in the plan.
+State the route by task ID: dependencies, verification at each meaningful boundary, and stop or pivot signals. Name applicable skills beside the tasks and agents that use them; do not assign every skill to every agent. State when a task needs no skill. Link material choices to their decision records; do not reopen accepted decisions in the plan. For material work, include the **Confirmed architecture** from [Confirm the architecture](#confirm-the-architecture).
 
 ## Material-work additions
 
@@ -75,7 +96,7 @@ Where the risk warrants it, add only these details to the ingredients above. Ada
 
 <report>
 
-- Under Boundary, cover relevant failure modes, permissions, non-goals, and validation limits, referencing Context's assumptions.
+- Under Boundary, cover relevant failure modes, permissions, and validation limits, referencing Context's assumptions.
 - Under Direction, name the evidence that validates each material step and the rejected alternative for each material choice, with its reason in one clause.
 - At the end of the plan, list only blocking questions whose wrong answer would throw work away, with a recommended default; write `0 — none` when there are none.
 
@@ -85,7 +106,7 @@ Where the risk warrants it, add only these details to the ingredients above. Ada
 
 For a lifecycle-managed work stream, the shared ingredients are distributed without duplication:
 
-- `goal.md` supplies Goal, Requirements, and Boundary through the charter link;
+- `goal.md` supplies Goal, Requirements, Boundary, and Out of Scope through the charter link;
 - root `state.md` task definitions, assignments, status, and dependency edges supply Tasks and execution order under [the state contract](../references/state.md);
 - root `plan.md` supplies approved Direction and remaining detail; and
 - root status plus links to `decisions/` and `state/journal.md` supply Context.
@@ -94,6 +115,6 @@ Non-authoritative detail such as `state/plan.md` may expand an existing task ID,
 
 ## Revision and verification
 
-When evidence changes the route but Goal, Requirements, and Boundary remain fixed, the owning workflow may authorize a Direction adjustment without operator approval. Record that adjustment in mutable `state/` detail keyed by existing task IDs, link it from `state.md`, and journal its reason; preserve the approved remainder under [complete-plan reads](../references/state.md#complete-plan-reads). Surface any proposed contract change to its owner before continuing.
+When evidence changes the route but Goal, Requirements, Boundary, and Out of Scope remain fixed, the owning workflow may authorize a Direction adjustment without operator approval. Record that adjustment in mutable `state/` detail keyed by existing task IDs, link it from `state.md`, and journal its reason; preserve the approved remainder under [complete-plan reads](../references/state.md#complete-plan-reads). Surface any proposed contract change to its owner before continuing.
 
-Before handing off, approving, or executing a plan, check these sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.
+Before handing off, approving, or executing a plan, check these sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Check that Out of Scope lists only drafted, requested, or explicitly excluded items, each with a disposition, and that material plans list Precedents and a Confirmed architecture or its not-applicable reason. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.

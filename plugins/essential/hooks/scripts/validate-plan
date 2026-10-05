@@ -64,7 +64,7 @@ if [[ -n "$plan_path" ]]; then
 fi
 
 missing=""
-for heading in Goal Requirements Boundary "Working environment" Tasks Direction Context; do
+for heading in Goal Requirements Boundary "Out of Scope" "Working environment" Tasks Direction Context; do
   if ! printf '%s\n' "$plan" | grep -Ei "^#{1,6}[[:space:]]*([^[:alnum:][:space:]#]+[[:space:]]+)?${heading}\\b" >/dev/null; then
     if [[ -n "$missing" ]]; then
       missing="${missing}, ${heading}"
