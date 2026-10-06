@@ -3,7 +3,7 @@
     "(?:^|\\s)/?production:",
     "\\b(?:register|approve|review|record)\\b[^.!?\\n]*\\b(?:assets?|renders?|render feedback)\\b",
     "\\bproduction assets?\\b",
-    "\\b(?:make|create|produce|craft|design|animate)\\b[^.!?\\n]*\\b(?:motion (?:videos?|graphics?|design)|(?:social )?reels?|(?:fun|short|launch|brand|promo|birthday|greeting|explainer|animated|music|motion|lyric) videos?|video greetings?)\\b",
+    "\\b(?:make|create|produce|craft|design|animate)\\b[^.!?\\n]*\\b(?:motion (?:videos?|graphics?|design)|(?:social|instagram) reels?|(?:fun|launch|brand|promo|birthday|greeting|explainer|animated|music|motion|lyric) videos?|video greetings?)\\b",
     "\\b(?:hyperframes?|motion design)\\b"
   ],
   "tool_patterns": [

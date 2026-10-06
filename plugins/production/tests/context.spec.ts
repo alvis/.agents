@@ -27,6 +27,8 @@ describe("production request patterns", () => {
     "create a video player component",
     "design the video upload endpoint",
     "make the video autoplay on mobile",
+    "make a short video clip of the bug for the issue",
+    "create a reel component",
   ])("should leave %j to other plugins", (prompt) => {
     expect(matches(prompt)).toBe(false);
   });
