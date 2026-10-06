@@ -2,13 +2,13 @@
 
 Read from `directions/motion-design.md` step 7. The picture leads: the storyboard's bar grid fixes where sections, hits, and catchphrases fall, and the music is composed to that grid, then measured and the cut refit to what was actually generated. Read the [ElevenLabs `music` skill](https://github.com/elevenlabs/skills/blob/main/music/SKILL.md) for call shapes, models, limits, and content restrictions; this direction owns only the fitting.
 
-When the user supplied the song, skip generation: measure it as in step 5 below and cut the picture to it through HyperFrames' `music-to-video` workflow.
+When the user supplied the song, skip generation and hand the song to HyperFrames' `music-to-video` workflow: its analyzer and `audiomap.json` own the beat grid, so take every sync time from that audio map rather than from `hyperframes beats`.
 
 ## Choose the path
 
 | Sound | Path |
 | --- | --- |
-| Instrumental bed, no section control needed | Render a picture-locked draft and generate with the music skill's video-to-music endpoint, passing the mood as description and tags. It follows the cut by itself; then run step 5 to confirm the hits. |
+| Instrumental bed, no section control needed | Render a picture-locked draft and generate with the music skill's video-to-music endpoint, passing the mood as description and tags, then run steps 5 and 6. This endpoint cannot regenerate one section, so when step 6 would regenerate, switch to a composition plan (steps 1–4) instead of retrying the endpoint. |
 | Vocals, lyrics, or hits that must land on named moments | Steps 1–6 below with a composition plan. |
 
 ## Steps

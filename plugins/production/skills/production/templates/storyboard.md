@@ -5,7 +5,7 @@ The storyboard the `motion-design` action presents for approval and then writes 
 ```markdown
 ---
 format: 1080x1920
-duration: 32s
+duration: 30s
 message: <the one thing the viewer must take away>
 arc: Hook → Build → Turn → Payoff → Sign-off
 audience: <who watches, where>

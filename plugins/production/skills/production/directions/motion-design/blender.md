@@ -13,11 +13,11 @@ Read from `directions/motion-design.md` step 6 for shots the storyboard marks `r
 Keep scene setup (camera, lights, materials, colour management, output resolution) saved in the `.blend` file and drive the render with command-line flags only:
 
 ```bash
-blender -b shots/<shot>.blend -s <start> -e <end> -o //renders/<shot>/frame_#### -F PNG -x 1 -a
+blender -b shots/<shot>.blend -s <start> -e <end> -o //../renders/<shot>/frame_#### -F PNG -x 1 -a
 ffmpeg -framerate <fps> -start_number <start> -i renders/<shot>/frame_%04d.png -c:v libx264 -pix_fmt yuv420p -crf 16 assets/<shot>.mp4
 ```
 
-Render a PNG sequence rather than a video so an interrupted render resumes from the last frame.
+Run both from the project root; Blender resolves `//` against the `.blend` file's directory, so `//../renders/` lands in the root's `renders/`. Render a PNG sequence rather than a video, with Output > Overwrite off (and Placeholders on when several machines share a shot) saved in the `.blend`, so rerunning the same command after an interruption skips frames already written.
 
 ## Layering
 
