@@ -13,7 +13,7 @@
 
 ### Rendered Message (`GIT-PR-02`)
 
-- **GIT-PR-02**: Render the selected template without unresolved guidance, missing Goal or behavioral Requirements, invalid emoji/optional headings, missing evidence, unknown sections, or out-of-order sections.
+- **GIT-PR-02**: Render the selected template without unresolved guidance, missing Goal or behavioral Requirements, invalid emoji/optional headings, missing evidence, tool provenance lines, unknown sections, or out-of-order sections.
 
 ### Size (`GIT-PR-SIZE`)
 

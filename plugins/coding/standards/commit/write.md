@@ -103,6 +103,7 @@ A breaking change MUST be documented in the body under a `BREAKING CHANGE:` foot
 - Wrap every body line at 72 characters; this is a hard limit.
 - Explain **WHY**, not WHAT. The diff shows what; the body explains the reasoning, trade-offs, alternatives considered.
 - Commit text never contains issue-closing directives; `coding:pr create|update` owns verified GitHub Development links for resolving PRs.
+- Carry no tool provenance line or agent co-author trailer; `coding:directions/authorship.md` owns that rule.
 - For `revert`, include a `Reverts <sha>` line.
 - For `BREAKING CHANGE`, include a `BREAKING CHANGE:` paragraph describing migration.
 

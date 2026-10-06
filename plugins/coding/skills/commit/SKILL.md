@@ -32,7 +32,7 @@ This skill owns commit, branch, and local-history directions. The PR action refe
 
 ## Commit and branch directions
 
-Inspect the working tree, branch or bookmark graph, remote refs, and open PRs before mutation. Plan domain-coherent changes that compile, pass applicable tests, and remain reviewable without forward references; preserve unrelated dirty paths.
+Before the first commit in a checkout, and before naming a branch or writing a message, follow `coding:directions/authorship.md`. Inspect the working tree, branch or bookmark graph, remote refs, and open PRs before mutation. Plan domain-coherent changes that compile, pass applicable tests, and remain reviewable without forward references; preserve unrelated dirty paths.
 
 Use lowercase kebab-case branch segments. An ordinary branch is `<type>/<kebab-summary>`; preserve an established `<type>/<scope>/<topic>` shape when the repository uses scoped branches. A work stream uses exactly the single-PR or numbered-stack shape from `essential:references/naming.md`; its work ID is an identity, not a commit scope. Delete merged branches.
 
