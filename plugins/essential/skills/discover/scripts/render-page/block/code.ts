@@ -13,6 +13,7 @@ import {
   readHighlight,
   readTies,
   readTokens,
+  rowsOf,
 } from "./code-read.ts";
 import { placeSelections } from "./code-select.ts";
 
@@ -93,7 +94,7 @@ export function renderCodePair(
  * @param path JSON path of `panels`, named verbatim by any refusal
  * @returns the two panels
  */
-function requirePanels(panels: unknown, path: string): CodeExcerpt[] {
+export function requirePanels(panels: unknown, path: string): CodeExcerpt[] {
   const read = requireArray<CodeExcerpt>(panels, path);
   if (read.length !== 2)
     throw new RenderError(
@@ -183,10 +184,7 @@ function drawLines(
   tokens: Span[],
   placed: PlacedSelection[],
 ): string {
-  // each row carries its own line break, so a line is what the author wrote
-  // rather than what a split left behind: `"a\nb\n"` is two lines, and
-  // splitting on the break makes it three, the last of them empty
-  const rows = code.match(/[^\n]*\n|[^\n]+/gu) ?? [];
+  const rows = rowsOf(code);
   const marked = readHighlight(excerpt.highlight ?? [], `${path}.highlight`, rows.length);
   const tied = readTies(excerpt.ties ?? [], `${path}.ties`, rows.length);
   const commented = readComments(excerpt.comments ?? [], `${path}.comments`, rows.length);

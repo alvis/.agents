@@ -10,6 +10,19 @@ export const BLOCK_CSS = `
    a static ancestor is not their containing block, so they escape the scroller */
 .table-wrap{position:relative; overflow-x:auto; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised)}
 table{width:100%; border-collapse:collapse; font-size:.95rem}
+/* a diff splits its width evenly between the two sides and wraps inside each,
+   so a long paragraph grows the row rather than the page */
+table.diff{table-layout:fixed}
+table.diff.has-place th.diff-at{width:22%}
+table.diff td{white-space:pre-wrap; overflow-wrap:anywhere; vertical-align:top}
+table.diff th[scope="row"]{color:var(--ui-ink); font:600 .9rem/1.5 var(--font-body); letter-spacing:normal; text-transform:none}
+/* both sides of a change wear the same tint, as a reviewer marks a draft; the
+   underline is what keeps the change legible in greyscale */
+.diff-change{background:var(--ui-amber-soft); color:inherit; text-decoration:none; box-shadow:inset 0 -2px 0 var(--ui-amber)}
+.diff-none{color:var(--ui-muted); font-style:italic}
+table.diff tr.is-same td{color:var(--ui-muted)}
+.diff-figure{margin:0; display:grid; gap:.5rem}
+.diff-figure figcaption{font-weight:650}
 th,td{padding:.8rem 1rem; text-align:left; border-bottom:1px solid var(--ui-border); vertical-align:top}
 th{font:700 .74rem/1.2 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
 tbody tr:last-child td{border-bottom:0}

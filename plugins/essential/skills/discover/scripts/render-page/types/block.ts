@@ -24,6 +24,16 @@ import type { Rich } from "./inline.ts";
 import type { LedgerGroup } from "./ledger.ts";
 import type { QuestionBlock } from "./question.ts";
 
+/** one paragraph as it was and as it is; an empty side is an insertion or a removal. */
+export interface DiffPair {
+  /** the paragraph as it was */
+  before: string;
+  /** the paragraph as it is */
+  after: string;
+  /** where the paragraph sits, drawn in the location column */
+  label?: string;
+}
+
 /** the content units a section body can hold in the walking skeleton. */
 export type Block =
   /** a paragraph, capped to a comfortable reading measure */
@@ -72,6 +82,35 @@ export type Block =
       caption?: string;
       /** the two panels, left first */
       panels: CodeExcerpt[];
+    }
+  /**
+   * a before-and-after comparison whose changes the renderer finds itself.
+   *
+   * authored in exactly one of three shapes: `pairs` of paragraphs, two whole
+   * texts in `before` and `after` that the renderer pairs by paragraph, or two
+   * code `panels` drawn as a pair with every changed line highlighted. Prose is
+   * word-diffed into a table, so the author never hand-marks a change and the
+   * marks can never disagree with the text.
+   */
+  | {
+      type: "diff";
+      /** a caption read as the comparison's title */
+      title?: string;
+      /** the two column headings, before first; defaults to Before and After */
+      columns?: string[];
+      /**
+       * the heading of a leading column saying where each change sits, in
+       * whatever terms locate it best: a section, a line, a clause
+       */
+      location?: string;
+      /** paragraph pairs, each optionally located */
+      pairs?: DiffPair[];
+      /** the whole earlier text, paired with `after` by paragraph */
+      before?: string;
+      /** the whole later text */
+      after?: string;
+      /** the earlier and the later excerpt, for code or a data contract */
+      panels?: CodeExcerpt[];
     }
   /** anticipated reviewer questions, each answer able to carry provenance */
   | { type: "faq"; items: Definition[] }

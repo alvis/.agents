@@ -91,6 +91,19 @@ export function readComments(
 }
 
 /**
+ * splits an excerpt into the lines its line numbers count.
+ *
+ * each row carries its own line break, so a line is what the author wrote
+ * rather than what a split left behind: `"a\nb\n"` is two lines, and
+ * splitting on the break makes it three, the last of them empty
+ * @param code the excerpt
+ * @returns its lines, each with its own break
+ */
+export function rowsOf(code: string): string[] {
+  return code.match(/[^\n]*\n|[^\n]+/gu) ?? [];
+}
+
+/**
  * reads which lines the author is drawing the eye to
  * @param highlight the author-supplied line numbers
  * @param path JSON path of `highlight`, named verbatim by any refusal
