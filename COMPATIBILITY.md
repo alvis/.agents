@@ -1,6 +1,6 @@
 # Harness compatibility
 
-This manually maintained matrix covers the 55 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
+This manually maintained matrix covers the 54 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
 
 Claude Code, Codex, and Grok Build are native targets. OpenCode support targets stable V1 through `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
 
@@ -84,8 +84,7 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `governance:update-agent` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `governance-update-agent`. Source: [SKILL.md](plugins/governance/skills/update-agent/SKILL.md). |
 | `governance:update-standard` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `governance-update-standard`. Source: [SKILL.md](plugins/governance/skills/update-standard/SKILL.md). |
 | `governance:write-skill` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `governance-write-skill`. Source: [SKILL.md](plugins/governance/skills/write-skill/SKILL.md). |
-| `production:review-render` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `production-review-render`. Source: [SKILL.md](plugins/production/skills/review-render/SKILL.md). |
-| `production:track-assets` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `production-track-assets`. Source: [SKILL.md](plugins/production/skills/track-assets/SKILL.md). |
+| `production:production` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `production-production`. The `motion-design` action 🔌 requires the HyperFrames CLI, an ElevenLabs API key, and Blender for 3D shots. Source: [SKILL.md](plugins/production/skills/production/SKILL.md). |
 | `react:lint` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `react-lint`. Source: [SKILL.md](plugins/react/skills/lint/SKILL.md). |
 | `react:react` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `react-react`. Source: [SKILL.md](plugins/react/skills/react/SKILL.md). |
 | `specification:implement-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `specification-implement-code`. Source: [SKILL.md](plugins/specification/skills/implement-code/SKILL.md). |

@@ -1,15 +1,15 @@
 {
   "name": "production",
   "version": "1.0.0",
-  "description": "Media and creative production lifecycle: asset provenance, render manifests, and revision-bound review",
+  "description": "Media and creative production lifecycle: motion-video creation, asset provenance, render manifests, and revision-bound review",
   "author": {
     "name": "Alvis"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Production",
-    "shortDescription": "Media asset provenance, rendering, and review workflows.",
-    "longDescription": "Manage creative-production assets, render manifests, provenance, and revision-bound review.",
+    "shortDescription": "Motion-video creation, media asset provenance, and review workflows.",
+    "longDescription": "Craft motion videos from a blank idea, and manage creative-production assets, render manifests, provenance, and revision-bound review.",
     "developerName": "Alvis",
     "category": "productivity",
     "capabilities": ["Skills", "Hooks"],

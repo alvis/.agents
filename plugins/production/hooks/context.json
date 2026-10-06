@@ -2,10 +2,13 @@
   "request_patterns": [
     "(?:^|\\s)/?production:",
     "\\b(?:register|approve|review|record)\\b[^.!?\\n]*\\b(?:assets?|renders?|render feedback)\\b",
-    "\\bproduction assets?\\b"
+    "\\bproduction assets?\\b",
+    "\\b(?:make|create|produce|craft|design|animate)\\b[^.!?\\n]*\\b(?:motion (?:videos?|graphics?|design)|music videos?|(?:social )?reels?|animated videos?|video greetings?|explainer videos?|videos?)\\b",
+    "\\b(?:hyperframes?|motion design)\\b"
   ],
   "tool_patterns": [
-    "\\bproduction:"
+    "\\bproduction:",
+    "\\bhyperframes\\b"
   ],
   "agent_patterns": [
     "production"
