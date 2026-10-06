@@ -2,6 +2,8 @@
 
 These mandates apply to all seven areas in local and PR reviews; area ownership prevents duplicate findings. Apply `coding:standards/code-review/`: `CRV-FDBK-01` requires evidence for blockers and specific context for non-blocking feedback; `CRV-FDBK-02` preserves settled dispositions absent new invalidating evidence; `CRV-PRIO-02` stops review when required checks pass and evidenced defects are resolved.
 
+Every review performs the simplification pass and the semantic-proxy pass below within its resolved scope and relevant supporting checks. Scanner output cannot complete either pass. Assign each finding to its owning area; when explicit coverage excludes that area, report the coverage limit rather than claim the pass is complete.
+
 ## Contract alignment belongs to alignment
 
 Root `state.md` (`plan_source: state.md`) plus linked approved specification/design/decision artifacts is the implementation contract. Its explicit ID-keyed implementation detail may be consulted but cannot duplicate or override IDs, edges, requiredness, targets, or acceptance mappings. A caller-supplied plan may assert but never override root state. Bind every result to the exact `plan_source: state.md` and relevant full task IDs. `alignment.md` alone reports additions, omissions, unjustified drift, stale spec derivations, and missing promotion/sync work. Other reviewers route pure drift there rather than duplicating it.
@@ -10,11 +12,19 @@ Root `state.md` (`plan_source: state.md`) plus linked approved specification/des
 
 Trace supported behavior rather than trusting code shape. Wrong control flow/operators, swapped arguments, silent errors, races, unhandled async work, leaks, and boundary validation defects belong in `correctness.md` unless security-specific. Apply the standard's evidence threshold even without a feature-specific requirement; a merely plausible failure path is insufficient.
 
-## Redundancy and sibling consistency belong to quality
+## Simplification, redundancy, and sibling consistency belong to quality
+
+Perform a semantic simplification pass under [GEN-CONS-03](../standards/universal/rules/gen-cons-03.md). Inspect control flow and data construction, trace supported producers and consumers, and request removal of unnecessary complexity when a concrete clearer alternative preserves behavior. Findings identify that alternative, establish equivalence, and explain the unnecessary maintenance burden under the shared evidence threshold. Code that works can still violate this rule; syntax resemblance alone cannot establish the violation.
 
 Review work beyond the minimum sufficient solution and unexplained differences from comparable existing work under the standard's evidence threshold. Search siblings with the same role and compare naming, parameter and return shape, error/log/retry/cache behavior, and logic flow. Establish comparability and missing justification before flagging divergence. Identify removable work and its cost when reporting behavior-free wrappers, duplicate logic, impossible defensive checks, or parallel compatibility paths; abstraction or a single caller alone is insufficient. For a defensive-check finding, trace value provenance and show that no public, external, dynamic, unsafe, persistence, or deserialization boundary exists and that supported execution cannot invalidate the condition independently, applying `GEN-SAFE-03`'s trust-boundary validation rule. A first-party producer postcondition does not justify the check merely because the type cannot fully express it. Cite the exact producer test that proves the checked postcondition; broad coverage and the helper's name are not evidence. Tool-detectable dead/unused code stays with lint.
 
-## Mechanical checks stay mechanical
+## Semantic proxies require removal requests
+
+Inspect tests, validators, scanners, and CI gates in scope and the supporting checks they invoke. For each check, compare the requirement it claims to establish with what it actually observes. Request removal of every check that substitutes wording, source shape, branch counts, or another inadequate proxy for readability, intent, correctness, or policy meaning; include helpers left unused by its removal. State the claimed requirement, actual observation, and why that observation cannot establish the claim. Do not replace the check with an equivalent proxy or treat a passing gate as semantic proof.
+
+Preserve checks of executed behavior, compiler behavior permitted by [TST-CORE-10](../standards/testing/rules/tst-core-10.md), syntax, and genuinely machine-checkable structural contracts. [TST-CORE-04](../standards/testing/rules/tst-core-04.md) and TST-CORE-10 own test validity; a structural check still has to satisfy those rules when implemented as a test. Test findings belong to testing; findings about other gates belong to quality. Reuse this pass's findings instead of duplicating them across areas.
+
+## Mechanical diagnostics stay mechanical
 
 Do not spend semantic-review effort on type errors, unused imports/variables, formatting, import ordering, or other compiler/linter facts. `style.md` may report actual command results; remediation belongs to `coding:lint` or `coding:fix` as appropriate.
 

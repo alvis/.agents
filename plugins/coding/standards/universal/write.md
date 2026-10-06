@@ -28,7 +28,7 @@
 
 - **GEN-CONS-01**: Match established architecture/style before introducing new patterns. One-off changes require explicit migration decision.
 - **GEN-CONS-02**: Use American English spelling in symbols, filenames, and comments. (→ TYP-CORE-06)
-- **GEN-CONS-03**: Prefer straightforward constructs that optimize maintainability and onboarding.
+- **GEN-CONS-03**: Prefer concrete clearer alternatives that preserve supported behavior; apply the [clarity rule](rules/gen-cons-03.md) to unnecessary complexity and terseness alike.
 - **GEN-CONS-04**: Prefer declarative defaults (spread, `??`, parameter defaults, destructuring defaults) over conditional overrides.
 
 ### Scalability (GEN-SCAL)

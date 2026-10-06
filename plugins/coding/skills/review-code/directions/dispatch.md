@@ -2,7 +2,7 @@
 
 ## Coverage and staffing
 
-Resolve coverage through [specifier-resolution.md](directions/specifier-resolution.md) before choosing reviewers. Preserve explicit `--area`, file-based defaults, and caller-required areas. Never narrow coverage to reduce starts. The seven areas below are report responsibilities, not seven agent assignments.
+Resolve coverage through [specifier-resolution.md](specifier-resolution.md) before choosing reviewers. Preserve explicit `--area`, file-based defaults, and caller-required areas. Never narrow coverage to reduce starts. The seven areas below are report responsibilities, not seven agent assignments.
 
 `coding:directions/WORKFLOW.md` owns implementation tiers; `coding:directions/validation.md` owns when independent review is required. Once this review is required or explicitly requested, the main-agent caller selects staffing by the reviewed change's semantic risk:
 
@@ -28,7 +28,7 @@ Give the holistic reviewer these inputs, with file paths rather than source cont
 - full resolved coverage, retained reports, and the bounded recheck mission: changed inputs, affected findings/areas, and discovered source/test/doc dependency paths;
 - advisory mechanical-scan results and applicable deterministic-check evidence, bound to the checked revision and inputs;
 - specialist scopes and evidence, or the caller's pending handback that must arrive before finalization;
-- [review.md](templates/review.md) and `coding:directions/review.md`;
+- [review.md](../templates/review.md) and `coding:directions/review.md`;
 - instruction to write only its assigned reports, leave reviewed code and `.state` untouched, run no builds/tests/linters, delegate no further, and preserve stable finding IDs/statuses. Keep evidence, plan binding, and reviewed task IDs in each report; return only paths, per-area verdicts/counts, and a short summary for the main agent.
 
 The capsule is sufficient by default. Give `state.md` when alignment is selected or resume/cross-slice evidence requires it; give `state/working.md` only when navigation is otherwise missing. Review each shared input once rather than reopening it for each area.
@@ -65,6 +65,7 @@ Surface a hard Bun runtime failure. Candidate output enters the local finding re
 ### quality
 
 - Check sibling consistency, non-mechanical redundancy, structure, naming posture, complexity, DRY, error-handling posture, performance, accessibility, and architecture. Route semantic bugs to correctness and plan drift to alignment.
+- Perform the simplification and semantic-proxy passes in `coding:directions/review.md`; apply their area ownership and coverage limits.
 - Write the assigned report for `reviews/quality.md`, prefix `QUAL`.
 
 ### testing

@@ -21,6 +21,7 @@ This standard enforces requirements beyond common team conventions:
 | Defensive runtime checks added routinely | **Runtime checks require a trust boundary or independently mutable invariant** |
 | Optimize while implementing             | **Profile first, optimize second**                                 |
 | Mixed style tolerated                   | **Must match established project patterns**                        |
+| Bulky working code accepted             | **A concrete clearer equivalent is required when complexity adds no behavior or readability** |
 | Quick fixes accepted                    | **Root-cause remediation required**                                |
 
 ## Exception Policy
