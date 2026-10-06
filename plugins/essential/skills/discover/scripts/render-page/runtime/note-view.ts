@@ -1,6 +1,7 @@
 import { excerptsOf } from "./annotation.ts";
+import { cardName } from "./reply.ts";
 
-import type { SavedState } from "./store.ts";
+import type { Card, SavedState } from "./store.ts";
 
 /** one row in a notes list, whichever kind of note it came from. */
 export interface NoteRow {
@@ -8,6 +9,10 @@ export interface NoteRow {
   sectionId: string;
   /** the section's own label, for the drawer where sections are not visible */
   sectionLabel: string;
+  /** the section's heading, which the reply names so a reader can find it */
+  sectionTitle?: string;
+  /** the question or card the passage sits in, for an excerpt that has one */
+  card?: Card;
   /** the passage, or null for a whole-section note */
   quote: string | null;
   /** what the reader wrote */
@@ -20,23 +25,29 @@ export interface NoteRow {
  * lists every note the reader holds, section notes before their excerpts
  * @param state the state to read
  * @param labels each section's label, keyed by section id, in document order
+ * @param titles each section's heading, keyed by section id
  * @returns the rows, in section order
  */
 export function rowsOf(
   state: SavedState,
   labels: Map<string, string>,
+  titles: Map<string, string> = new Map(),
 ): NoteRow[] {
   return [...labels].flatMap(([sectionId, sectionLabel]) => {
+    const title = titles.get(sectionId);
+    const named = title ? { sectionTitle: title } : {};
     const note = state.annotations[sectionId] ?? "";
-    const own = note.trim()
-      ? [{ sectionId, sectionLabel, quote: null, note, excerptId: null }]
+    const own: NoteRow[] = note.trim()
+      ? [{ sectionId, sectionLabel, ...named, quote: null, note, excerptId: null }]
       : [];
 
     return [
       ...own,
-      ...excerptsOf(state, sectionId).map(({ id, quote, note: text }) => ({
+      ...excerptsOf(state, sectionId).map(({ id, quote, note: text, card }) => ({
         sectionId,
         sectionLabel,
+        ...named,
+        ...(card ? { card } : {}),
         quote,
         note: text,
         excerptId: id,
@@ -64,6 +75,13 @@ export function rowItem(row: NoteRow, inSection: boolean): HTMLLIElement {
     where.href = `#s-${row.sectionId}`;
     where.textContent = row.sectionLabel;
     item.append(where);
+  }
+
+  if (row.card) {
+    const card = document.createElement("span");
+    card.className = "note-card";
+    card.textContent = cardName(row.card);
+    item.append(card);
   }
 
   if (row.quote !== null) {

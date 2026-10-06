@@ -208,7 +208,7 @@ describe("fn:renderPage", () => {
   it("should render each section title directly above its content", async () => {
     const html = render(await loadExample());
     const heading = html.indexOf('<div class="section-heading">');
-    const body = html.indexOf('<div class="section-body">');
+    const body = html.indexOf('<div class="section-body" data-section-body>');
 
     // SC-3: the heading precedes the body as its sibling in normal flow
     expect(heading).toBeGreaterThan(-1);
@@ -2169,8 +2169,10 @@ describe("fn:renderPage examples", () => {
       ["watch", "Watch"],
       ["clear", "Clear"],
     ])
-      expect(html).toContain(
-        `<li class="finding" data-severity="${severity}" data-filter-item="${severity}"><p class="finding-head"><span class="finding-severity">${word}</span>`,
+      expect(html).toMatch(
+        new RegExp(
+          `<li class="finding" data-severity="${severity}" data-filter-item="${severity}" data-card data-card-label="[^"]*"><p class="finding-head"><span class="finding-severity">${word}</span>`,
+        ),
       );
     // plus a verdict-bearing table and a checklist launch gate
     expect(html).toMatch(/<td data-verdict="bad"><span class="sr-only">costly: /);

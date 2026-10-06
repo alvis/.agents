@@ -25,7 +25,7 @@ Per **card** (any card carrying a recommendation, verdict, or decision):
 
 Per **section**:
 - [ ] Annotation trigger (`✎ Add note`) with the same dialog
-- [ ] **Selection-scoped note**: selecting text inside a section offers an `Annotate` pill at the selection (plus keyboard `n`); the dialog quotes the passage, and the note reaches the generated prompt nested under that section's note
+- [ ] **Selection-scoped note**: selecting text inside a section — prose, a table, code — offers an `Annotate` pill at the selection (plus keyboard `n`); the dialog quotes the passage; the passage stays marked, and pressing the mark or the note's row reopens it to edit or remove; the note reaches the generated prompt with its section, heading, enclosing card, and quote
 
 Board level:
 - [ ] Live counters in the docnav update on every accept/choice/note

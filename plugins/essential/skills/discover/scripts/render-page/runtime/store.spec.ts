@@ -464,3 +464,38 @@ describe("fn:saveState orders", () => {
     expect(parseState('{"answers":{},"touched":["q"]}').orders).toStrictEqual({});
   });
 });
+
+describe("fn:parseState excerpt location", () => {
+  it("should keep where a passage sits and the card holding it across a reload", () => {
+    const { excerpts } = parseState(
+      JSON.stringify({
+        excerpts: {
+          diffs: [{ id: "e1", quote: "five", note: "n", at: { start: 40, end: 44 }, card: { ref: "P04", label: "Step order" } }],
+        },
+      }),
+    );
+
+    expect(excerpts.diffs).toStrictEqual([
+      { id: "e1", quote: "five", note: "n", at: { start: 40, end: 44 }, card: { ref: "P04", label: "Step order" } },
+    ]);
+  });
+
+  it.each([
+    ["a reversed span", { start: 9, end: 3 }],
+    ["a fractional offset", { start: 1.5, end: 3 }],
+    ["a negative offset", { start: -1, end: 3 }],
+    ["a span of the wrong shape", "3-9"],
+  ])("should drop %s while keeping the note", (_, at) => {
+    const { excerpts } = parseState(JSON.stringify({ excerpts: { s: [{ id: "e1", quote: "q", note: "n", at }] } }));
+
+    expect(excerpts.s).toStrictEqual([{ id: "e1", quote: "q", note: "n" }]);
+  });
+
+  it("should drop a card with no label while keeping the note", () => {
+    const { excerpts } = parseState(
+      JSON.stringify({ excerpts: { s: [{ id: "e1", quote: "q", note: "n", card: { ref: "P04" } }] } }),
+    );
+
+    expect(excerpts.s).toStrictEqual([{ id: "e1", quote: "q", note: "n" }]);
+  });
+});

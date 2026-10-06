@@ -33,6 +33,32 @@ export interface SavedExcerpt {
   quote: string;
   /** what the reader wrote */
   note: string;
+  /**
+   * where the passage sits, as character offsets into the section body's text.
+   *
+   * the quote alone cannot tell two equal passages apart, and cannot be marked
+   * again on reload when it is truncated; absent for a passage selected outside
+   * the body, which is then found by its quote
+   */
+  at?: Anchor;
+  /** the question or card the passage sits in, so the reply can say so */
+  card?: Card;
+}
+
+/** a span of a section body's text, end exclusive. */
+export interface Anchor {
+  /** the first character covered */
+  start: number;
+  /** the first character past the span */
+  end: number;
+}
+
+/** the question or card enclosing a passage. */
+export interface Card {
+  /** the citation code, such as `P04`, where the card carries one */
+  ref?: string;
+  /** the card's own label */
+  label: string;
 }
 
 /** the shape a page keeps in storage. */

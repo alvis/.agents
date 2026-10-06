@@ -1,4 +1,4 @@
-import type { SavedExcerpt, SavedState } from "./store.ts";
+import type { Anchor, Card, SavedExcerpt, SavedState } from "./store.ts";
 
 /** mints an id for a new excerpt; injected so a test can make it predictable. */
 export type Mint = () => string;
@@ -53,14 +53,15 @@ export function setNote(state: SavedState, sectionId: string, note: string): voi
  * passage are a thing a reader may legitimately want.
  * @param state the state to change, in place
  * @param sectionId the section the passage sits in
- * @param excerpt the quote, the note, and the id being edited if there is one
+ * @param excerpt the quote, the note, the id being edited if there is one, and
+ *   for a new passage where it sits and the card holding it
  * @param mint how to name a new excerpt
  * @returns the id the excerpt now has
  */
 export function putExcerpt(
   state: SavedState,
   sectionId: string,
-  excerpt: { quote: string; note: string; id: string | null },
+  excerpt: { quote: string; note: string; id: string | null; at?: Anchor; card?: Card },
   mint: Mint = mintKey,
 ): string {
   const list = [...excerptsOf(state, sectionId)];
@@ -77,6 +78,8 @@ export function putExcerpt(
       id: excerpt.id ?? mint(),
       quote: excerpt.quote,
       note: excerpt.note,
+      ...(excerpt.at ? { at: excerpt.at } : {}),
+      ...(excerpt.card ? { card: excerpt.card } : {}),
     });
   }
 

@@ -83,7 +83,7 @@ describe("fn:renderObservations", () => {
     const drawn = draw();
 
     expect(drawn).toContain('<ol class="observations">');
-    expect((drawn.match(/<li class="observation">/g) ?? []).length).toEqual(2);
+    expect((drawn.match(/<li class="observation" data-card data-card-label="[^"]*">/g) ?? []).length).toEqual(2);
     expect(drawn).not.toMatch(/observation-number/);
   });
 
