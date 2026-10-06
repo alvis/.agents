@@ -2,7 +2,7 @@
 
 ## Key Principles
 
-- 100% statements, branches, functions, and lines; at least one behavioral test per exported runtime function; each permanent test verifies a different behavior path, distinct supported behavior, or meaningful edge case
+- 100% statements, branches, functions, and lines; at least one behavioral test per exported runtime function; retain behavioral coverage and distinct supported behavior/edge cases under [TST-CORE-04](rules/tst-core-04.md)
 - A performance-only improvement may use a one-off local before/after measurement when existing tests cover its behavior and the change introduces no new behavior path or meaningful edge case
 - For new supported behavior, write a failing test -> implement -> refactor; for already-correct behavior, prove an initially passing oracle's sensitivity through a temporary mutation or equivalent controlled proof, restore the implementation, and rerun green before retaining it
 - Test descriptions: `it("should ...")`, runtime-symbol or allowed-type-subject suites: `describe("fn:symbol")` / `describe("ty:symbol")`, general suites: plain description
@@ -57,13 +57,13 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-CORE-01**: Test code inherits full TypeScript constraints: no `any`, proper import separation, safe narrowing, typed contracts.
 - **TST-CORE-02**: Write failing tests before implementing new supported behavior, then implement and refactor. For already-correct behavior that lacks an oracle, retain an initially passing regression case only after recorded sensitivity proof, implementation restoration, and a green rerun. A performance-only improvement may use a one-off local measurement under `TST-CORE-04`.
 - **TST-CORE-03**: Every `it(...)` starts with `should`. `describe(...)` titles scoped to a runtime symbol or a compiler-observable type behavior permitted by `TST-CORE-10` use approved prefixes; general-purpose `describe(...)` titles use plain descriptions without prefixes.
-- **TST-CORE-04**: Keep a permanent test only when it verifies a different behavior path, distinct supported behavior, or meaningful edge case; remove existing or proposed tests that do none. A one-off local performance measurement need not be committed.
+- **TST-CORE-04**: Retain tests adding behavioral coverage without a separate lasting-value justification, and zero-gain tests protecting distinct supported behavior or meaningful edge cases. Remove scoped existing/proposed tests meeting none of these criteria and orphaned helpers; keep one-time edit proof in validation notes.
 - **TST-CORE-05**: Do not add tests that only vary arbitrary numbers/strings without changing behavior.
 - **TST-CORE-06**: Do not test only that dependencies were called. Assert behavior and outcome.
 - **TST-CORE-07**: Do not spy on internals when external behavior can be tested.
 - **TST-CORE-08**: Avoid `await import(...)` in tests. Keep imports static and predictable.
-- **TST-CORE-09**: For log-observable behavior, capture the logger as `vi.fn<LogFn>()` or `{ info: vi.fn<Logger['info']>() } satisfies Partial<Logger>` and assert the full call record with `expect(log.mock.calls).toEqual([...])` — the array pins how many lines were logged and each line's content (one call `[[...]]` or many). Do not use `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs, count-only assertions, or `log.mock.calls[N]` indexing. Prefer the SUT's exported `Log` type; a local alias is acceptable only when no real type is exported.
-- **TST-CORE-10**: Never pin an exact declaration inventory/layout, including generic parameters, defaults, or signatures, or checked-in content. This rule is the sole whitelist for compiler-observable type-test subjects; a focused representative compiler case may observe a generic parameter's default only when the consumer omits that type argument, while ordinary declarations need no test merely because they exist, so use type diagnostics and affected-consumer builds for other declaration changes.
+- **TST-CORE-09**: For log-observable behavior, capture the logger as `vi.fn<LogFn>()` or `{ info: vi.fn<Logger['info']>() } satisfies Partial<Logger>` and assert the full call record with `expect(log.mock.calls).toEqual([...])` — the array asserts the complete sequence and supported argument structure (one call `[[...]]` or many); match incidental wording asymmetrically under `TST-CORE-10`. Do not use `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs, count-only assertions, or `log.mock.calls[N]` indexing. Prefer the SUT's exported `Log` type; a local alias is acceptable only when no real type is exported.
+- **TST-CORE-10**: Assert supported output effects and structure; exact wording requires an explicit supported contract. Never pin an exact declaration inventory/layout, including generic parameters, defaults, or signatures, or checked-in content. This rule is the sole whitelist for compiler-observable type-test subjects; a focused representative compiler case may observe a generic parameter's default only when the consumer omits that type argument, while ordinary declarations need no test merely because they exist, so use type diagnostics and affected-consumer builds for other declaration changes.
 - **TST-CORE-11**: Tests must run or hard-fail. Never gate with `describe.runIf`/`it.skipIf`/`if (!env.X) return`. Required env vars are validated at file load with `throw new Error(...)` so missing config breaks the suite loudly.
 
 ### Coverage (TST-COVR)
@@ -80,7 +80,8 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-DATA-03**: No zero-argument factories. Use factories only when multiple valid variants are required.
 - **TST-DATA-04**: Do not pass explicit `undefined` in override objects. Omit the field or argument.
 - **TST-DATA-05**: Create instances at file/describe level by default. Per-test only when tests mutate state.
-- **TST-DATA-07**: Assert errors as a whole — `expect(error).toEqual(new Error('msg'))`. Never split into `toBeInstanceOf` + a separate `.message`/`.cause` check (`toEqual` ignores `cause`).
+- **TST-DATA-06**: Compare structural values with `toEqual`; reserve `toBe` for primitives or deliberate referential identity under [the rule](rules/tst-data-06.md).
+- **TST-DATA-07**: Match incidental message wording asymmetrically under `TST-CORE-10`; assert errors as a whole — `expect(error).toEqual(new Error('msg'))`. Never split into `toBeInstanceOf` + a separate `.message`/`.cause` check (`toEqual` ignores `cause`).
 
 ### Mocks (TST-MOCK)
 
@@ -100,11 +101,14 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-MOCK-14**: Use `InstanceType<typeof import("...")["ClassName"]>` for class instance typing, not module-level `typeof import(...)`.
 - **TST-MOCK-15**: Return existing mock instances directly from `vi.mock()` factories. Never re-wrap with `vi.fn((...args) => existing(...args))`.
 
+- **TST-MOCK-16**: Preserve existing `vi.fn<T>()` generics under [the rule](rules/tst-mock-16.md).
+
 ### Structure (TST-STRU)
 
 - **TST-STRU-01**: `*.spec.ts` for runtime unit, `*.spec.int.ts` for integration, and `*.spec.e2e.ts` for e2e; configured compiler tests keep their discovered convention such as tsd's `*.test-d.ts`. Unit tests are isolated; integration tests must not use unit-style mocks.
 - **TST-STRU-02**: Canonical order: imports, constants/fixtures/mocks, setup hooks, then `describe`. No `describe` before setup.
 - **TST-STRU-03**: AAA with blank-line separation. Comments explain why, stay concise, lowercase style.
+- **TST-STRU-04**: Inspect every lifecycle hook against [the narrow allowed uses](rules/tst-stru-04.md).
 - **TST-STRU-05**: One-time async setup lives in the runner `globalSetup`; expose serializable handles via `project.provide` and read them with `inject` into a `const`. No `beforeAll`/`afterAll`, no `let`.
 
 ## Mock Patterns
@@ -174,7 +178,7 @@ Patterns derive from [`TST-STRU-01`].
 
 ## Quick Decision Tree
 
-1. Will a permanent test verify a different behavior path, distinct supported behavior, or meaningful edge case? If none, do not add it; remove an existing duplicate (`TST-CORE-04`).
+1. Does the test add behavioral coverage, protect distinct supported behavior, or exercise a meaningful edge case? If none, remove the proposed/existing test and orphaned helpers; keep one-time proof in validation notes (`TST-CORE-04`). Exact output wording requires an explicit supported contract (`TST-CORE-10`).
 2. Are you testing only call-through behavior? Assert business outcome instead (`TST-CORE-06`).
 3. Need a mock? Only if dependency is IO/external/control-sensitive (`TST-MOCK-01`).
 4. Need hoisted mocks? Use only for call spying or error-path overrides (`TST-MOCK-02`).

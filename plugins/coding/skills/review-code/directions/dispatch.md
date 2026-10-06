@@ -70,7 +70,7 @@ Surface a hard Bun runtime failure. Candidate output enters the local finding re
 
 ### testing
 
-- Check meaningful behavior/edge/failure/integration coverage, assertion strength, per-source coverage, isolation, determinism, fixture/mock ownership, complexity, and redundancy.
+- Perform the permanent-test-value pass in `coding:directions/review.md`; check meaningful behavior/edge/failure/integration coverage, assertion strength, per-source coverage, isolation, determinism, fixture/mock ownership, complexity, and redundancy.
 - Write the assigned report for `reviews/testing.md`, prefix `TEST`.
 
 ### docs

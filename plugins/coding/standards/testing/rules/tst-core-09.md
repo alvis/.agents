@@ -2,7 +2,7 @@
 
 ## Intent
 
-When a unit's observable behavior includes writing to a logger, the test MUST capture the logger as a typed `vi.fn<LogFn>()` (or `{ info: vi.fn<Logger['info']>(), ... } satisfies Partial<Logger>`) and assert the **full call record** via `expect(log.mock.calls).toEqual([...])` — the array pins both how many lines were logged and each line's exact content. This replaces `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs and makes log output a structural contract.
+When a unit's observable behavior includes writing to a logger, the test MUST capture the logger as a typed `vi.fn<LogFn>()` (or `{ info: vi.fn<Logger['info']>(), ... } satisfies Partial<Logger>`) and assert the **full call record** via `expect(log.mock.calls).toEqual([...])` — the array asserts the complete call sequence and supported argument structure. Use asymmetric matchers for incidental wording; exact text requires the explicit supported contract in [TST-CORE-10](tst-core-10.md). This replaces `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs without making all wording a contract.
 
 This holds whether the unit logs once (`[[...]]`) or many times — log output is a complete-record contract either way. Never index into the recorded array (`log.mock.calls[N]`); assert the whole array. See TST-DATA-02 for the general boundary across all mocks: bare `toHaveBeenCalledWith(...)` when you only assert that a call happened with given args, `mock.calls.toEqual([...])` when you assert the complete record.
 

@@ -60,7 +60,7 @@ The plan groups candidates by file, marks each `safe_to_remove` | `uncertain` | 
 1. Pre-removal check: run the mirrored source file's focused coverage; it must read 100%.
 2. Remove the single test and save.
 3. Re-run the focused coverage and compare.
-4. Decide: mirrored coverage maintained → keep removed; dropped (even 1%) → RESTORE immediately and mark `essential`. **Do not restore a checked-in repository-content assertion** (`TST-CORE-10`): where it was the only cover, exercise the content's consumer or generator and assert runtime behavior or generated-result structure. Report any remaining gap. Before removing other tests, verify the test does not document a unique behavioral aspect (distinct semantic concept, invariant, or edge case) — if it does, keep it.
+4. Decide: mirrored coverage maintained AND no distinct supported behavior or meaningful edge case is lost → keep removed and delete orphaned helpers; otherwise RESTORE immediately and mark `essential`. Coverage alone cannot establish redundancy. **Do not restore a checked-in repository-content assertion** (`TST-CORE-10`): where it was the only cover, exercise the content's consumer or generator and assert runtime behavior or generated-result structure. Report any remaining gap. Apply the proposed/existing test-value and output-assertion criteria in SKILL.md before removal; record one-time edit proof in validation notes.
 
 Aggregate removal reports, verify 100% is maintained per mirrored source file, and compute redundancy metrics (removed, kept-as-essential, redundancy %).
 

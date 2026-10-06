@@ -2,7 +2,7 @@
 
 These mandates apply to all seven areas in local and PR reviews; area ownership prevents duplicate findings. Apply `coding:standards/code-review/`: `CRV-FDBK-01` requires evidence for blockers and specific context for non-blocking feedback; `CRV-FDBK-02` preserves settled dispositions absent new invalidating evidence; `CRV-PRIO-02` stops review when required checks pass and evidenced defects are resolved.
 
-Every review performs the simplification pass and the semantic-proxy pass below within its resolved scope and relevant supporting checks. Scanner output cannot complete either pass. Assign each finding to its owning area; when explicit coverage excludes that area, report the coverage limit rather than claim the pass is complete.
+Every review performs the simplification, permanent-test-value, and semantic-proxy passes below within its resolved scope and relevant supporting checks. Scanner output cannot complete any pass. Assign each finding to its owning area; when explicit coverage excludes that area, report the coverage limit rather than claim the pass is complete.
 
 ## Contract alignment belongs to alignment
 
@@ -17,6 +17,12 @@ Trace supported behavior rather than trusting code shape. Wrong control flow/ope
 Perform a semantic simplification pass under [GEN-CONS-03](../standards/universal/rules/gen-cons-03.md). Inspect control flow and data construction, trace supported producers and consumers, and request removal of unnecessary complexity when a concrete clearer alternative preserves behavior. Findings identify that alternative, establish equivalence, and explain the unnecessary maintenance burden under the shared evidence threshold. Code that works can still violate this rule; syntax resemblance alone cannot establish the violation.
 
 Review work beyond the minimum sufficient solution and unexplained differences from comparable existing work under the standard's evidence threshold. Search siblings with the same role and compare naming, parameter and return shape, error/log/retry/cache behavior, and logic flow. Establish comparability and missing justification before flagging divergence. Identify removable work and its cost when reporting behavior-free wrappers, duplicate logic, impossible defensive checks, or parallel compatibility paths; abstraction or a single caller alone is insufficient. For a defensive-check finding, trace value provenance and show that no public, external, dynamic, unsafe, persistence, or deserialization boundary exists and that supported execution cannot invalidate the condition independently, applying `GEN-SAFE-03`'s trust-boundary validation rule. A first-party producer postcondition does not justify the check merely because the type cannot fully express it. Cite the exact producer test that proves the checked postcondition; broad coverage and the helper's name are not evidence. Tool-detectable dead/unused code stays with lint.
+
+## Permanent-test value belongs to testing
+
+Review proposed and existing tests within the resolved scope under [TST-CORE-04](../standards/testing/rules/tst-core-04.md). Retain tests contributing behavioral coverage without a separate lasting-value justification; preserve zero-gain tests that protect distinct supported behavior or meaningful edge cases, including compiler behavior permitted by TST-CORE-10. Request removal of every test meeting none of those criteria and its orphaned helpers; one-time edit proof belongs in validation notes. Findings identify what the assertions protect, the coverage contribution or retained-suite evidence, and why no distinct supported behavior or meaningful edge case is lost.
+
+Check output assertions under [TST-CORE-10](../standards/testing/rules/tst-core-10.md): require observable effects or structure, with exact warning/log/error wording only for an explicit supported contract. When wording is incidental but the test adds value, request behavior-preserving assertion changes rather than deleting the useful test. Coverage reports and scanner output cannot decide these semantic questions.
 
 ## Semantic proxies require removal requests
 
