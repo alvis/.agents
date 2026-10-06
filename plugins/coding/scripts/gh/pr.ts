@@ -96,6 +96,15 @@ const PR_FIELDS = [
 const DETAIL_FIELDS = new Set(["changedFiles", "additions", "deletions", "mergeStateStatus"]);
 
 /**
+ * names a pull request's state as `gh` does, which REST reports as `closed` for merged ones
+ * @param pull - REST pull request
+ * @returns OPEN, CLOSED or MERGED
+ */
+function displayState(pull: Pull): string {
+  return pull.merged_at ? "MERGED" : String(pull.state).toUpperCase();
+}
+
+/**
  * projects one REST pull request onto `gh`'s field names
  * @param repository - target repository
  * @param pull - REST pull request
@@ -116,7 +125,7 @@ async function project(
     url: () => detail.html_url,
     title: () => detail.title,
     body: () => detail.body ?? "",
-    state: () => (detail.merged_at ? "MERGED" : String(detail.state).toUpperCase()),
+    state: () => displayState(detail),
     isDraft: () => detail.draft === true,
     baseRefName: () => detail.base.ref,
     baseRefOid: () => detail.base.sha,
@@ -218,7 +227,7 @@ async function view(argv: readonly string[]): Promise<number> {
   const fields = value(parsed, "json");
   if (fields === undefined) {
     process.stdout.write(
-      `${pull.title} #${pull.number}\n${pull.merged_at ? "MERGED" : String(pull.state).toUpperCase()}${pull.draft ? " (draft)" : ""} • ${pull.user?.login} wants to merge into ${pull.base.ref} from ${pull.head.ref}\n\n${pull.body ?? ""}\n\nView this pull request on GitHub: ${pull.html_url}\n`,
+      `${pull.title} #${pull.number}\n${displayState(pull)}${pull.draft ? " (draft)" : ""} • ${pull.user?.login} wants to merge into ${pull.base.ref} from ${pull.head.ref}\n\n${pull.body ?? ""}\n\nView this pull request on GitHub: ${pull.html_url}\n`,
     );
     return 0;
   }
@@ -251,7 +260,7 @@ async function listPulls(argv: readonly string[]): Promise<number> {
   const fields = value(parsed, "json");
   if (fields === undefined) {
     for (const pull of pulls)
-      process.stdout.write(`${pull.number}\t${pull.title}\t${pull.head.ref}\t${String(pull.state).toUpperCase()}\n`);
+      process.stdout.write(`${pull.number}\t${pull.title}\t${pull.head.ref}\t${displayState(pull)}\n`);
     return 0;
   }
   const names = requestedFields(fields, PR_FIELDS);

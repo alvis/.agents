@@ -176,6 +176,15 @@ describe("cmd:gh-pr-<subcommand>", () => {
     expect(restCalls(result)).toEqual([`GET ${project}/pulls?state=all&per_page=100&page=1`]);
   });
 
+  it("should print merged pull requests as MERGED like gh", () => {
+    const merged = { ...pull, state: "closed", merged_at: "2026-09-29T10:00:00Z" };
+    const result = run(["list", "--repo", "example/project", "--state", "all"], {
+      env: cloud,
+      routes: { [`${project}/pulls?`]: { body: [merged, { ...pull, number: 8, state: "closed" }] } },
+    });
+    expect(result.stdout).toBe("7\tAdd widgets\tfeat/widgets\tMERGED\n8\tAdd widgets\tfeat/widgets\tCLOSED\n");
+  });
+
   it("should stop reading pages once --limit pull requests are found", () => {
     const page = Array.from({ length: 100 }, (_, index) => ({ ...pull, number: index + 1 }));
     const result = run(["list", "--repo", "example/project", "--limit", "100", "--json", "number"], {
