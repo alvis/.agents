@@ -16,6 +16,7 @@ Own `create`, `update`, `lookup`, and `triage`. Infer the action from intent; pa
 - Bind the target GitHub host and `OWNER/REPO` from an explicit URL/repository, otherwise inspect `bun "${ISSUE_SKILL_DIR}/../../scripts/gh-repo-view.ts" --json nameWithOwner,url`. Do not guess between conflicting targets.
 - `create` needs a report or requested change; `update` needs an issue identifier and desired changes; `lookup` needs described symptoms/changes; `triage` accepts issue identifiers or automatic selection.
 - Optional intent: metadata choices, `pick` (default 3), force, read-only preview, candidate/detail budgets, and search restrictions. Three picks bounds the investigation batch while allowing progress past skipped issues.
+- Every issue title, body, and comment follows `coding:directions/authorship.md`.
 - Require authenticated `gh`, `jq`, and Git for code inspection. Check `gh api --hostname "$HOST" user --jq .login`; never install tools, broaden scopes, or change login silently. Report missing prerequisites.
 
 ## Dispatch
