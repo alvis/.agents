@@ -426,7 +426,7 @@ export function classifyReviewPublicationCommand(
     resolve(pluginRoot, "skills/pr/scripts/review-publication.ts"),
   );
   if (
-    (command.includes("$(") || command.includes("`")) &&
+    /\$\(|`|[<>]\(/.test(command) &&
     looksLikeReviewWrite(command)
   ) {
     return {
@@ -439,13 +439,26 @@ export function classifyReviewPublicationCommand(
   try {
     words = unwrapCommand(parseShellWords(command));
   } catch {
-    return looksLikeReviewWrite(command)
-      ? {
+    if (!looksLikeReviewWrite(command))
+      return { decision: "ignore", reason: "unrelated command" };
+    const compoundWrite = classifyCompoundCommand(command);
+    return compoundWrite === null
+      ? { decision: "ignore", reason: "unrelated command" }
+      : {
           decision: "deny",
-          reason:
-            "Review publication blocked: the supported GitHub write command could not be classified safely.",
-        }
-      : { decision: "ignore", reason: "unrelated command" };
+          reason: `Review publication blocked: ${compoundWrite}.`,
+        };
+  }
+  if (looksLikeReviewWrite(command)) {
+    try {
+      splitShellSegments(command);
+    } catch {
+      return {
+        decision: "deny",
+        reason:
+          "Review publication blocked: the supported GitHub write command could not be classified safely.",
+      };
+    }
   }
   if (isCanonicalPublisher(words, expectedScript)) {
     return {
@@ -2625,6 +2638,143 @@ function parseShellWords(command: string): readonly string[] {
   if (escaped || quote !== null) throw new Error("unterminated shell token");
   if (current !== "") words.push(current);
   return words;
+}
+
+/** commands that only search text, so write-shaped text in their arguments is a pattern, not a call */
+const TEXT_SEARCHERS = new Set(["grep", "egrep", "fgrep", "rg"]);
+
+/** commands that only reshape piped text and never run it */
+const TEXT_FILTERS = new Set(["head", "tail", "wc", "uniq", "cut", "tr", "nl", "cat"]);
+
+/** commands that run nothing and read no command text, safe beside a search */
+const INERT_COMMANDS = new Set(["cd", "ls", "pwd"]);
+
+/**
+ * classifies a compound command whose text looks like a review write, segment by segment,
+ * so a text search for write-shaped words beside other commands is not mistaken for a write;
+ * every segment must be a bare text search, a text filter or an inert command, because any
+ * other segment could assemble the write from variables, loops or positional parameters
+ * @param command exact command string supplied to the shell tool
+ * @returns the denial reason, or null when no segment can reach a review write
+ */
+function classifyCompoundCommand(command: string): string | null {
+  const unclassifiable = "the supported GitHub write command could not be classified safely";
+  let segments: readonly ShellSegment[];
+  try {
+    segments = splitShellSegments(command);
+  } catch {
+    return unclassifiable;
+  }
+  for (const segment of segments) {
+    let words: readonly string[];
+    let unwrapped: readonly string[];
+    try {
+      words = parseShellWords(segment.text);
+      unwrapped = unwrapCommand(words);
+    } catch {
+      return unclassifiable;
+    }
+    if (words.length === 0) continue;
+    const protectedWrite = classifyProtectedGitHubWrite(unwrapped);
+    if (protectedWrite !== null) return `${protectedWrite}; use coding:pr's canonical review-publication approval and publisher`;
+    if (segment.redirectsOutput) return "an output redirection could carry the review write to a file";
+    const program = words[0]!;
+    if (TEXT_SEARCHERS.has(program)) {
+      if (words.some((word) => word.startsWith("--pre"))) return `${program} --pre could run the review write`;
+      continue;
+    }
+    if (TEXT_FILTERS.has(program)) continue;
+    if (INERT_COMMANDS.has(program) && !segment.piped) continue;
+    return unclassifiable;
+  }
+  return null;
+}
+
+/** the `&1` or `&-` tail of a `>&1`-style descriptor duplication, which writes no file */
+const DESCRIPTOR_DUPLICATION = /^&(?:[0-9]+|-)(?![^\s;|&<>()])/;
+
+/** the `/dev/null` target of a discarding redirection, which writes no file */
+const DISCARD_TARGET = /^>?\s*\/dev\/null(?![^\s;|&<>()])/;
+
+/** one simple command of a compound shell command */
+interface ShellSegment {
+  readonly text: string;
+  /** whether the segment reads the previous segment's output through a pipe */
+  readonly piped: boolean;
+  /** whether the segment writes output to a file */
+  readonly redirectsOutput: boolean;
+}
+
+/**
+ * splits a command on unquoted `;`, `&`, `|`, `|&`, `&&`, `||` and newlines, dropping
+ * `2>&1`-style descriptor duplications and flagging redirections to anything but `/dev/null`; rejects comments, heredocs, subshells, function definitions, process substitution
+ * and ANSI-C quoting, whose quote and word rules this splitter does not model
+ * @param command shell command without command substitutions
+ * @returns the segments in order
+ */
+function splitShellSegments(command: string): readonly ShellSegment[] {
+  const segments: ShellSegment[] = [];
+  let current = "";
+  let piped = false;
+  let redirectsOutput = false;
+  let quote: "'" | '"' | null = null;
+  let escaped = false;
+  const flush = (nextPiped: boolean): void => {
+    segments.push({ text: current, piped, redirectsOutput });
+    current = "";
+    piped = nextPiped;
+    redirectsOutput = false;
+  };
+  for (let index = 0; index < command.length; index += 1) {
+    const character = command[index]!;
+    if (escaped || quote !== null) {
+      if (!escaped && character === quote) quote = null;
+      escaped = !escaped && character === "\\" && quote !== "'";
+      current += character;
+      continue;
+    }
+    const previous = command[index - 1];
+    const next = command[index + 1];
+    if (character === "\\") escaped = true;
+    if (character === "'" || character === '"') {
+      if (previous === "$") throw new Error("ANSI-C or locale quoting is unsupported");
+      quote = character;
+    }
+    if ((character === "<" || character === ">") && next === "(") throw new Error("process substitution is unsupported");
+    if (character === "(" || character === ")") throw new Error("subshells and function definitions are unsupported");
+    if (character === "<" && next === "<") throw new Error("heredocs and here-strings are unsupported");
+    if (character === "#" && (previous === undefined || /[\s;|&()<>]/.test(previous))) throw new Error("comments are unsupported");
+    if (character === "&" && next === ">") {
+      redirectsOutput = true;
+      continue;
+    }
+    if (character === "&" && (previous === ">" || previous === "<")) {
+      if (DESCRIPTOR_DUPLICATION.test(command.slice(index))) {
+        current = current.replace(/[0-9]*[<>]$/, "");
+        while (/[0-9-]/.test(command[index + 1] ?? "")) index += 1;
+      }
+      continue;
+    }
+    if (character === ">") {
+      const target = command.slice(index + 1);
+      if (!DESCRIPTOR_DUPLICATION.test(target) && !DISCARD_TARGET.test(target)) redirectsOutput = true;
+      if (next === "|") index += 1;
+    }
+    if (character === "|" && next !== "|") {
+      if (next === "&") index += 1;
+      flush(true);
+      continue;
+    }
+    if (character === "\n" || character === "\r" || character === ";" || character === "|" || character === "&") {
+      if (next === character) index += 1;
+      flush(false);
+      continue;
+    }
+    current += character;
+  }
+  if (escaped || quote !== null) throw new Error("unterminated shell token");
+  flush(false);
+  return segments;
 }
 
 function looksLikeReviewWrite(command: string): boolean {
