@@ -40,6 +40,9 @@ const pull = {
   updated_at: "2026-09-28T11:00:00Z",
   closed_at: null,
   merged_at: null,
+  merge_commit_sha: "3".repeat(40),
+  labels: [{ node_id: "L_1", name: "implementation", description: null, color: "ededed" }],
+  assignees: [{ node_id: "U_3", login: "assignee" }],
 };
 const passingRun = {
   name: "test",
@@ -136,6 +139,43 @@ describe("cmd:gh-pr-<subcommand>", () => {
       routes: { [`${project}/pulls/7`]: { body: { ...pull, state: "closed", merged_at: "2026-09-29T00:00:00Z" } } },
     });
     expect(result.stdout).toBe("MERGED\n");
+  });
+
+  it("should project timestamps, merge details, labels and assignees", () => {
+    const merged = { ...pull, state: "closed", closed_at: "2026-09-29T00:00:00Z", merged_at: "2026-09-29T00:00:00Z", merged_by: { login: "merger" } };
+    const result = run(
+      ["view", "7", "--repo", "example/project", "--json", "createdAt,updatedAt,closed,closedAt,mergedAt,mergedBy,mergeCommit,labels,assignees"],
+      { env: cloud, routes: { [`${project}/pulls/7`]: { body: merged } } },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      createdAt: "2026-09-28T10:00:00Z",
+      updatedAt: "2026-09-28T11:00:00Z",
+      closed: true,
+      closedAt: "2026-09-29T00:00:00Z",
+      mergedAt: "2026-09-29T00:00:00Z",
+      mergedBy: { login: "merger" },
+      mergeCommit: { oid: "3".repeat(40) },
+      labels: [{ id: "L_1", name: "implementation", description: "", color: "ededed" }],
+      assignees: [{ id: "U_3", login: "assignee" }],
+    });
+  });
+
+  it("should leave the merge commit null on an unmerged pull request", () => {
+    const result = run(["view", "7", "--repo", "example/project", "--json", "mergeCommit,mergedAt,closed"], {
+      env: cloud,
+      routes: pullRoutes,
+    });
+    expect(JSON.parse(result.stdout)).toEqual({ mergeCommit: null, mergedAt: null, closed: false });
+  });
+
+  it("should list the accepted flags for --help without calling GitHub", () => {
+    const result = run(["list", "--help"], { env: cloud });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("usage: gh-pr-list.ts");
+    expect(result.stdout).toContain("-s, --state <value>");
+    expect(result.stdout).toContain("-R, --repo <value>");
+    expect(result.calls).toEqual([]);
   });
 
   it("should select a pull request by its head branch in any fork, preferring an open one", () => {

@@ -1,4 +1,4 @@
-import { WrapperError } from "./route.ts";
+import { HelpRequest, WrapperError } from "./route.ts";
 
 /** the flags one REST-routed subcommand accepts, in `gh`'s spelling */
 export interface FlagSpec {
@@ -33,7 +33,7 @@ export const JSON_FLAGS = {
 /**
  * parses `gh`-style arguments. unknown flags are refused by name rather than
  * ignored, so a caller never believes a flag took effect when the REST route
- * cannot honor it
+ * cannot honor it; `--help` or `-h` lists the flags this route accepts
  * @param argv - the arguments after the subcommand
  * @param spec - the subcommand's own flags
  * @returns positionals, repeatable values, and boolean flags
@@ -55,6 +55,7 @@ export function parseArgs(argv: readonly string[], spec: FlagSpec): ParsedArgs {
       positionals.push(argument);
       continue;
     }
+    if (argument === "--help" || argument === "-h") throw new HelpRequest(usageLines(valueFlags, booleanFlags, aliases));
     const long = argument.startsWith("--");
     const [rawName, inline] = argument.slice(long ? 2 : 1).split(/=(.*)/su, 2) as [
       string,
@@ -86,4 +87,23 @@ export function parseArgs(argv: readonly string[], spec: FlagSpec): ParsedArgs {
  */
 export function value(parsed: ParsedArgs, name: string): string | undefined {
   return parsed.values.get(name)?.at(-1);
+}
+
+/**
+ * lists the accepted flags, one per line, in `gh`'s `-s, --long <value>` shape
+ * @param valueFlags - long flags that take a value
+ * @param booleanFlags - long flags that take no value
+ * @param aliases - short aliases by letter
+ * @returns the flag lines, sorted by long name
+ */
+function usageLines(
+  valueFlags: ReadonlySet<string>,
+  booleanFlags: ReadonlySet<string>,
+  aliases: Readonly<Record<string, string>>,
+): string[] {
+  const shortFor = new Map(Object.entries(aliases).map(([short, long]) => [long, short]));
+  return [...valueFlags, ...booleanFlags].sort().map((name) => {
+    const short = shortFor.get(name);
+    return `  ${short ? `-${short}, ` : "    "}--${name}${valueFlags.has(name) ? " <value>" : ""}`;
+  });
 }

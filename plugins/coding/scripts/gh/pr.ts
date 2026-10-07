@@ -54,7 +54,14 @@ interface Pull {
   readonly additions?: number;
   readonly deletions?: number;
   readonly mergeable_state?: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly closed_at: string | null;
   readonly merged_at: string | null;
+  readonly merge_commit_sha: string | null;
+  readonly merged_by?: { readonly login: string } | null;
+  readonly labels: readonly { readonly node_id: string; readonly name: string; readonly description: string | null; readonly color: string }[];
+  readonly assignees: readonly { readonly node_id: string; readonly login: string }[];
 }
 
 /**
@@ -90,10 +97,19 @@ const PR_FIELDS = [
   "deletions",
   "mergeStateStatus",
   "statusCheckRollup",
+  "createdAt",
+  "updatedAt",
+  "closed",
+  "closedAt",
+  "mergedAt",
+  "mergedBy",
+  "mergeCommit",
+  "labels",
+  "assignees",
 ] as const;
 
 /** fields the list endpoint omits, which need the per-PR detail read */
-const DETAIL_FIELDS = new Set(["changedFiles", "additions", "deletions", "mergeStateStatus"]);
+const DETAIL_FIELDS = new Set(["changedFiles", "additions", "deletions", "mergeStateStatus", "mergedBy"]);
 
 /**
  * names a pull request's state as `gh` does, which REST reports as `closed` for merged ones
@@ -138,6 +154,16 @@ async function project(
     additions: () => detail.additions,
     deletions: () => detail.deletions,
     mergeStateStatus: () => String(detail.mergeable_state ?? "unknown").toUpperCase(),
+    createdAt: () => detail.created_at,
+    updatedAt: () => detail.updated_at,
+    closed: () => detail.state === "closed",
+    closedAt: () => detail.closed_at,
+    mergedAt: () => detail.merged_at,
+    mergedBy: () => (detail.merged_by ? { login: detail.merged_by.login } : null),
+    mergeCommit: () => (detail.merged_at && detail.merge_commit_sha ? { oid: detail.merge_commit_sha } : null),
+    labels: () =>
+      detail.labels.map((label) => ({ id: label.node_id, name: label.name, description: label.description ?? "", color: label.color })),
+    assignees: () => detail.assignees.map((assignee) => ({ id: assignee.node_id, login: assignee.login })),
   };
   const entries: [string, unknown][] = [];
   for (const field of fields) {
