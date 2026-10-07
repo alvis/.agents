@@ -55,6 +55,37 @@
             { "name": "src/alert/dispatch.ts", "note": "changed — the only caller" },
             { "name": "src/alert/dispatch.spec.ts", "note": "changed — six new cases" }
           ]
+        },
+        {
+          "type": "disclosure",
+          "summary": "What the on-call runbook says now — 3 paragraphs changed",
+          "blocks": [
+            {
+              "type": "diff",
+              "location": "Runbook section",
+              "columns": [
+                "Before this change",
+                "After this change"
+              ],
+              "pairs": [
+                {
+                  "label": "Paging",
+                  "before": "Every firing of an alert pages the on-call engineer, including a refire of an alert that resolved a moment ago.",
+                  "after": "Every firing of an alert pages the on-call engineer, except a refire within ten minutes of resolving, which opens its incident without a page."
+                },
+                {
+                  "label": "Paging › Escalation",
+                  "before": "",
+                  "after": "A refire at a higher severity than the firing it follows always pages, whatever the window says."
+                },
+                {
+                  "label": "Silencing",
+                  "before": "To stop a flapping alert, silence it by hand for an hour and file a ticket against its rule.",
+                  "after": "A flapping alert silences itself; silence it by hand only when it flaps for longer than the window."
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -95,6 +126,24 @@
               "at": "escalated",
               "severity": "medium",
               "text": "Nothing calls this yet. It is used in suppress.ts below, but the ordering means a reader meets it without a reason — consider moving it there."
+            }
+          ]
+        },
+        {
+          "type": "diff",
+          "title": "The alert record the window keeps, before and after",
+          "columns": [
+            "Published now",
+            "Proposed"
+          ],
+          "panels": [
+            {
+              "language": "typescript",
+              "code": "/** one alert as the rule engine produced it */\ninterface Alert {\n  rule: string;\n  service: string;\n  instance: string;\n  severity: Severity;\n}\n"
+            },
+            {
+              "language": "typescript",
+              "code": "/** one alert as the rule engine produced it */\ninterface Alert {\n  rule: string;\n  service: string;\n  instance: string;\n  severity: Severity;\n  /** when the alert last resolved, in epoch ms; null until it first resolves */\n  resolvedAt: number | null;\n}\n"
             }
           ]
         }

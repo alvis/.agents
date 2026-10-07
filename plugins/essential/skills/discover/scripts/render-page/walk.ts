@@ -95,7 +95,8 @@ export interface PlacedCode {
 export function codeExcerpts(data: PageData): PlacedCode[] {
   return pageBlocks(data).flatMap(({ block, path }) => {
     if (block?.type === "code") return [{ excerpt: block, path }];
-    if (block?.type !== "codepair") return [];
+    // a code diff is a pair whose highlighting the renderer works out itself
+    if (block?.type !== "codepair" && block?.type !== "diff") return [];
     const panels = Array.isArray(block.panels) ? block.panels : [];
 
     return panels.map((excerpt, index) => ({

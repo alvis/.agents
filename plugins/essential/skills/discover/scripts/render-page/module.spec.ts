@@ -72,7 +72,7 @@ const AMBIENT = [
 const COMMENT = /\/\*[\s\S]*?\*\/|^[ \t]*\/\/[^\n]*$/gmu;
 
 /** how many edges the tree holds, as a graph read the way a bundler reads one. */
-const EDGES = 478;
+const EDGES = 488;
 
 /** one module against another. */
 interface Edge {

@@ -12,7 +12,7 @@
 export { CHOICE_TAGS } from "./types/answer.ts";
 export { PAGE_KINDS } from "./types/page.ts";
 
-export type { Block } from "./types/block.ts";
+export type { Block, DiffPair } from "./types/block.ts";
 export type { QuestionBlock, Response } from "./types/question.ts";
 export type {
   CodeComment,

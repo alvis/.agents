@@ -41,7 +41,7 @@ Nothing here is markup. There is no HTML pass-through anywhere in the format —
 
 A board that asks a question must carry a `reply` and is refused without it. A board that asks nothing draws no reply half at all — no count, no reply, no copy button — because a drawer offering to copy an empty reply invites the reader to send one.
 
-The template's markers are filled in as the reader works: `{{summary}}` becomes one paragraph saying where the board stands, `{{answers}}` the questions grouped by whether each was confirmed, changed, answered or left unmarked, and `{{notes}}` the passages the reader annotated. `{{provenance}}` and `{{caveats}}` are filled once at render time, because neither moves as the reader answers.
+The template's markers are filled in as the reader works: `{{summary}}` becomes one paragraph saying where the board stands, `{{answers}}` the questions grouped by whether each was confirmed, changed, answered or left unmarked, and `{{notes}}` the passages the reader annotated, each named by its section, the section's heading, and the question or card holding it, so the reply locates every passage without the page. `{{provenance}}` and `{{caveats}}` are filled once at render time, because neither moves as the reader answers.
 
 ## The section
 
@@ -227,6 +227,25 @@ A `selection` names the code it covers by its own `text`, verbatim as it reads *
 #### `codepair`
 
 Two excerpts read against each other, sharing one annotation sequence. Takes `eyebrow`, `caption` and `panels` — the two excerpts, left first.
+
+#### `diff`
+
+A before-and-after comparison whose changes the builder finds, so no change is hand-marked and no mark can disagree with the text. Author exactly one shape:
+
+- `pairs` of `{ before, after, label? }` paragraphs, each word-diffed into one row; an empty side reads as `(new)` or `(removed)`;
+- `before` and `after` as two whole texts, paired by paragraph at their blank lines;
+- `panels`, two code excerpts as a `codepair` takes them, drawn as a pair with every changed line highlighted — use it for code and for a data contract, written as two interfaces whose doc comments say what each field means.
+
+```json
+{
+  "type": "diff",
+  "location": "Section of the page",
+  "columns": ["Round 3", "Round 4"],
+  "pairs": [{ "label": "ACID Profile", "before": "within timeoutThreshold", "after": "within TIMEOUT_THRESHOLD (5 minutes)" }]
+}
+```
+
+`location` heads a leading column saying where each change sits, in whatever terms locate it best — a section heading, a line number, a clause. A pair's `label` fills it; whole texts under a `location` are numbered by paragraph. `columns` renames the two sides and, for `panels`, labels a panel that names no `label` of its own. `title` captions the comparison.
 
 ### Findings and readings
 
@@ -427,6 +446,7 @@ Every refusal names the problem *and* the JSON path it is at, so an author never
 - two code selections overlapping, since neither can wrap the other's characters
 - a code line number past the end of the excerpt
 - a `codepair` that does not hold exactly two panels
+- a `diff` holding none or more than one of `pairs`, `before`/`after` and `panels`, a pair with no text on either side, or `columns` that are not two headings
 - a choice tag outside the closed vocabulary
 - a link whose scheme is not `http`, `https` or `mailto`
 - a board that asks a question and carries no `reply`
