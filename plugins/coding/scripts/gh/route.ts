@@ -36,6 +36,16 @@ export class WrapperError extends Error {
   }
 }
 
+/** a `--help` request, carrying the flag lines of the subcommand that received it */
+export class HelpRequest extends Error {
+  /**
+   * @param flags - one line per accepted flag
+   */
+  constructor(readonly flags: readonly string[]) {
+    super("help requested");
+  }
+}
+
 /**
  * runs the real `gh` with the caller's exact arguments and terminal
  * @param group - the `gh` command group, such as `pr`
@@ -206,12 +216,15 @@ export function requestedFields(fields: string, available: readonly string[]): s
   return names;
 }
 
-/** a REST implementation of one subcommand */
-export type Handler = (argv: readonly string[]) => Promise<number>;
+/**
+ * a REST implementation of one subcommand; one marked `routesItself` also
+ * serves the native route, because it validates its input before either
+ */
+export type Handler = ((argv: readonly string[]) => Promise<number>) & { readonly routesItself?: boolean };
 
 /**
  * runs one `gh-<group>-<subcommand>.ts` drop-in: native passthrough, or the
- * REST handler for the subcommand
+ * REST handler for the subcommand, which answers `--help` with its own flags
  * @param group - the `gh` command group, such as `pr`
  * @param subcommand - the drop-in's subcommand, a key of `handlers`
  * @param handlers - REST handlers by subcommand
@@ -226,10 +239,15 @@ export async function runWrapper(
   argv: readonly string[],
   env: Record<string, string | undefined>,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough(group, [subcommand, ...argv]);
+  const handler = handlers[subcommand]!;
+  if (detectRoute(env) === "native" && !handler.routesItself) return await passthrough(group, [subcommand, ...argv]);
   try {
-    return await handlers[subcommand]!(argv);
+    return await handler(argv);
   } catch (error) {
+    if (error instanceof HelpRequest) {
+      process.stdout.write(`usage: gh-${group}-${subcommand}.ts [arguments] [flags]\n\nflags:\n${error.flags.join("\n")}\n`);
+      return 0;
+    }
     if (!(error instanceof WrapperError)) throw error;
     process.stderr.write(`gh-${group}-${subcommand}: ${error.message}\n`);
     return error.exitCode;

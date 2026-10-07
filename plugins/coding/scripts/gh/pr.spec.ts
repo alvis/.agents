@@ -40,6 +40,9 @@ const pull = {
   updated_at: "2026-09-28T11:00:00Z",
   closed_at: null,
   merged_at: null,
+  merge_commit_sha: "3".repeat(40),
+  labels: [{ node_id: "L_1", name: "implementation", description: null, color: "ededed" }],
+  assignees: [{ node_id: "U_3", login: "assignee" }],
 };
 const passingRun = {
   name: "test",
@@ -138,6 +141,83 @@ describe("cmd:gh-pr-<subcommand>", () => {
     expect(result.stdout).toBe("MERGED\n");
   });
 
+  it("should project timestamps, merge details, labels and assignees", () => {
+    const merged = { ...pull, state: "closed", closed_at: "2026-09-29T00:00:00Z", merged_at: "2026-09-29T00:00:00Z", merged_by: { login: "merger" } };
+    const result = run(
+      ["view", "7", "--repo", "example/project", "--json", "createdAt,updatedAt,closed,closedAt,mergedAt,mergedBy,mergeCommit,labels,assignees"],
+      { env: cloud, routes: { [`${project}/pulls/7`]: { body: merged } } },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      createdAt: "2026-09-28T10:00:00Z",
+      updatedAt: "2026-09-28T11:00:00Z",
+      closed: true,
+      closedAt: "2026-09-29T00:00:00Z",
+      mergedAt: "2026-09-29T00:00:00Z",
+      mergedBy: { login: "merger" },
+      mergeCommit: { oid: "3".repeat(40) },
+      labels: [{ id: "L_1", name: "implementation", description: "", color: "ededed" }],
+      assignees: [{ id: "U_3", login: "assignee" }],
+    });
+  });
+
+  it("should leave the merge commit null on an unmerged pull request", () => {
+    const result = run(["view", "7", "--repo", "example/project", "--json", "mergeCommit,mergedAt,closed"], {
+      env: cloud,
+      routes: pullRoutes,
+    });
+    expect(JSON.parse(result.stdout)).toEqual({ mergeCommit: null, mergedAt: null, closed: false });
+  });
+
+  it("should list the accepted flags for --help without calling GitHub", () => {
+    const result = run(["list", "--help"], { env: cloud });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("usage: gh-pr-list.ts");
+    expect(result.stdout).toContain("-s, --state <value>");
+    expect(result.stdout).toContain("-R, --repo <value>");
+    expect(result.calls).toEqual([]);
+  });
+
+  it("should post a plain comment on a pull request as an issue comment", () => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body", "Rebased onto main."], {
+      env: cloud,
+      routes: {
+        ...pullRoutes,
+        [`${project}/issues/7/comments`]: { body: { html_url: "https://github.com/example/project/pull/7#issuecomment-1" } },
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("https://github.com/example/project/pull/7#issuecomment-1\n");
+    expect(restCalls(result)).toEqual([`GET ${project}/pulls/7`, `POST ${project}/issues/7/comments`]);
+    expect(JSON.parse(result.calls.at(-1)!.stdin)).toEqual({ body: "Rebased onto main." });
+  });
+
+  it.each([
+    ["cloud", cloud],
+    ["native", {}],
+  ] as const)("should refuse a review verdict before calling GitHub on the %s route", (_, env) => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body", "Approved, ship it."], { env });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("review verdict");
+    expect(result.calls).toEqual([]);
+  });
+
+  it("should pass a plain comment to gh pr comment on the native route", () => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body-file", "-"], {
+      stdin: "Rebased onto main.",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.calls).toEqual([
+      { args: ["pr", "comment", "7", "--repo", "example/project", "--body-file", "-"], stdin: "Rebased onto main." },
+    ]);
+  });
+
+  it("should require exactly one comment body source", () => {
+    const result = run(["comment", "7", "--repo", "example/project"], { env: cloud });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("exactly one of --body or --body-file");
+  });
+
   it("should select a pull request by its head branch in any fork, preferring an open one", () => {
     const fork = { ...pull, number: 8, head: { ...pull.head, repo: { ...pull.head.repo, owner: { login: "contributor", node_id: "U_2" } } } };
     const result = run(["view", "feat/widgets", "--repo", "example/project", "--json", "number"], {
@@ -174,6 +254,15 @@ describe("cmd:gh-pr-<subcommand>", () => {
       { number: 7, headRepositoryOwner: { id: "U_1", login: "example" } },
     ]);
     expect(restCalls(result)).toEqual([`GET ${project}/pulls?state=all&per_page=100&page=1`]);
+  });
+
+  it("should print merged pull requests as MERGED like gh", () => {
+    const merged = { ...pull, state: "closed", merged_at: "2026-09-29T10:00:00Z" };
+    const result = run(["list", "--repo", "example/project", "--state", "all"], {
+      env: cloud,
+      routes: { [`${project}/pulls?`]: { body: [merged, { ...pull, number: 8, state: "closed" }] } },
+    });
+    expect(result.stdout).toBe("7\tAdd widgets\tfeat/widgets\tMERGED\n8\tAdd widgets\tfeat/widgets\tCLOSED\n");
   });
 
   it("should stop reading pages once --limit pull requests are found", () => {

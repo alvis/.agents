@@ -12,6 +12,8 @@ import {
   rollupFromRun,
   rollupFromStatus,
 } from "./checks.ts";
+import { detectRoute } from "./detect.ts";
+import { REVIEW_LANGUAGE_PATTERN } from "./review-language.ts";
 import {
   api,
   apiItems,
@@ -54,7 +56,14 @@ interface Pull {
   readonly additions?: number;
   readonly deletions?: number;
   readonly mergeable_state?: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly closed_at: string | null;
   readonly merged_at: string | null;
+  readonly merge_commit_sha: string | null;
+  readonly merged_by?: { readonly login: string } | null;
+  readonly labels: readonly { readonly node_id: string; readonly name: string; readonly description: string | null; readonly color: string }[];
+  readonly assignees: readonly { readonly node_id: string; readonly login: string }[];
 }
 
 /**
@@ -90,10 +99,28 @@ const PR_FIELDS = [
   "deletions",
   "mergeStateStatus",
   "statusCheckRollup",
+  "createdAt",
+  "updatedAt",
+  "closed",
+  "closedAt",
+  "mergedAt",
+  "mergedBy",
+  "mergeCommit",
+  "labels",
+  "assignees",
 ] as const;
 
 /** fields the list endpoint omits, which need the per-PR detail read */
-const DETAIL_FIELDS = new Set(["changedFiles", "additions", "deletions", "mergeStateStatus"]);
+const DETAIL_FIELDS = new Set(["changedFiles", "additions", "deletions", "mergeStateStatus", "mergedBy"]);
+
+/**
+ * names a pull request's state as `gh` does, which REST reports as `closed` for merged ones
+ * @param pull - REST pull request
+ * @returns OPEN, CLOSED or MERGED
+ */
+function displayState(pull: Pull): string {
+  return pull.merged_at ? "MERGED" : String(pull.state).toUpperCase();
+}
 
 /**
  * projects one REST pull request onto `gh`'s field names
@@ -116,7 +143,7 @@ async function project(
     url: () => detail.html_url,
     title: () => detail.title,
     body: () => detail.body ?? "",
-    state: () => (detail.merged_at ? "MERGED" : String(detail.state).toUpperCase()),
+    state: () => displayState(detail),
     isDraft: () => detail.draft === true,
     baseRefName: () => detail.base.ref,
     baseRefOid: () => detail.base.sha,
@@ -129,6 +156,16 @@ async function project(
     additions: () => detail.additions,
     deletions: () => detail.deletions,
     mergeStateStatus: () => String(detail.mergeable_state ?? "unknown").toUpperCase(),
+    createdAt: () => detail.created_at,
+    updatedAt: () => detail.updated_at,
+    closed: () => detail.state === "closed",
+    closedAt: () => detail.closed_at,
+    mergedAt: () => detail.merged_at,
+    mergedBy: () => (detail.merged_by ? { login: detail.merged_by.login } : null),
+    mergeCommit: () => (detail.merged_at && detail.merge_commit_sha ? { oid: detail.merge_commit_sha } : null),
+    labels: () =>
+      detail.labels.map((label) => ({ id: label.node_id, name: label.name, description: label.description ?? "", color: label.color })),
+    assignees: () => detail.assignees.map((assignee) => ({ id: assignee.node_id, login: assignee.login })),
   };
   const entries: [string, unknown][] = [];
   for (const field of fields) {
@@ -218,7 +255,7 @@ async function view(argv: readonly string[]): Promise<number> {
   const fields = value(parsed, "json");
   if (fields === undefined) {
     process.stdout.write(
-      `${pull.title} #${pull.number}\n${pull.merged_at ? "MERGED" : String(pull.state).toUpperCase()}${pull.draft ? " (draft)" : ""} • ${pull.user?.login} wants to merge into ${pull.base.ref} from ${pull.head.ref}\n\n${pull.body ?? ""}\n\nView this pull request on GitHub: ${pull.html_url}\n`,
+      `${pull.title} #${pull.number}\n${displayState(pull)}${pull.draft ? " (draft)" : ""} • ${pull.user?.login} wants to merge into ${pull.base.ref} from ${pull.head.ref}\n\n${pull.body ?? ""}\n\nView this pull request on GitHub: ${pull.html_url}\n`,
     );
     return 0;
   }
@@ -251,7 +288,7 @@ async function listPulls(argv: readonly string[]): Promise<number> {
   const fields = value(parsed, "json");
   if (fields === undefined) {
     for (const pull of pulls)
-      process.stdout.write(`${pull.number}\t${pull.title}\t${pull.head.ref}\t${String(pull.state).toUpperCase()}\n`);
+      process.stdout.write(`${pull.number}\t${pull.title}\t${pull.head.ref}\t${displayState(pull)}\n`);
     return 0;
   }
   const names = requestedFields(fields, PR_FIELDS);
@@ -333,6 +370,43 @@ async function merge(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
+/**
+ * posts one plain comment on a pull request. review verdicts belong to
+ * coding:pr's revision-bound review publisher, so a body using verdict language
+ * is refused on both routes before anything is sent
+ * @param argv - arguments after the subcommand
+ * @returns the exit code
+ */
+async function comment(argv: readonly string[]): Promise<number> {
+  const parsed = parseArgs(argv, { values: ["body", "body-file"], aliases: { b: "body", F: "body-file" } });
+  const inline = value(parsed, "body");
+  const file = value(parsed, "body-file");
+  if ((inline === undefined) === (file === undefined)) throw new WrapperError("specify exactly one of --body or --body-file");
+  const body = inline ?? (await readBody(file))!;
+  if (body.trim() === "") throw new WrapperError("the comment body is empty");
+  if (REVIEW_LANGUAGE_PATTERN.test(body))
+    throw new WrapperError("the body reads as a review verdict; publish reviews through coding:pr's review publisher instead");
+  if (detectRoute(process.env) === "native") {
+    const selector = parsed.positionals[0];
+    const repo = value(parsed, "repo");
+    const child = Bun.spawn(
+      ["gh", "pr", "comment", ...(selector === undefined ? [] : [selector]), ...(repo === undefined ? [] : ["--repo", repo]), "--body-file", "-"],
+      { stdin: new Response(body), stdout: "inherit", stderr: "inherit" },
+    );
+    return await child.exited;
+  }
+  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
+  // a pull request's conversation comments are issue comments in REST
+  const created = await api<{ html_url: string }>(
+    repository,
+    `repos/${repository.owner}/${repository.repo}/issues/${pull.number}/comments`,
+    { method: "POST", body: { body } },
+  );
+  process.stdout.write(`${created.html_url}\n`);
+  return 0;
+}
+comment.routesItself = true;
+
 async function checks(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {});
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
@@ -355,6 +429,7 @@ export const SUBCOMMANDS: Readonly<Record<string, Handler>> = {
   ready,
   merge,
   checks,
+  comment,
 };
 
 /**

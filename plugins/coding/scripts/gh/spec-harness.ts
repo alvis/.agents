@@ -41,7 +41,7 @@ export const cloud = { CLAUDE_CODE_REMOTE: "true" };
 const FAKE_GH = `#!/usr/bin/env bun
 import { appendFileSync, readFileSync } from "node:fs";
 const args = process.argv.slice(2);
-const stdin = args.includes("--input") ? readFileSync(0, "utf8") : "";
+const stdin = args.includes("--input") || args[args.indexOf("--body-file") + 1] === "-" ? readFileSync(0, "utf8") : "";
 appendFileSync(process.env.FAKE_RECORD, JSON.stringify({ args, stdin }) + "\\n");
 if (args[0] !== "api") { process.stdout.write("native " + args.join(" ") + "\\n"); process.exit(Number(process.env.FAKE_NATIVE_EXIT)); }
 const path = args.find((arg) => arg.startsWith("repos/")) ?? (args.includes("graphql") ? "graphql" : "");
