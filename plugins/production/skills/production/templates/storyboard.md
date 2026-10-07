@@ -7,7 +7,10 @@ The storyboard the `motion-design` action presents for approval and then writes 
 format: 1080x1920
 duration: 30s
 message: <the one thing the viewer must take away>
-arc: Hook → Build → Turn → Payoff → Sign-off
+reward: <what the viewer should learn, feel, recognise, or enjoy>
+recipe: <main recipe code; supporting code and which wins on conflict>
+lead: <picture | track | lyrics | narration>   # the timing authority
+arc: Hook → Build → Turn → Payoff → Sign-off   # the chosen recipe's method; a music video or loop may need no plot
 audience: <who watches, where>
 platform: <social reel | website hero | ...>
 fps: 30
@@ -45,6 +48,7 @@ sound: <instrumental | vocals: character, language>
 - render: web          # web | three | blender
 - transition_in: cut
 - scene: <one-line contact-sheet caption>
+- attention: <what the viewer understands here and what leads the eye>
 - sync: 1.1 hook text slams in; 3.1 camera whip
 - lyric: <line sung over this frame, if any>
 

@@ -8,7 +8,7 @@ Why: `Interview-final-final-2.mov` is not a provenance system. A filesystem path
 
 | Skill action | Use when |
 | --- | --- |
-| `production:production` `motion-design` | Making a motion video from a blank or half-formed idea: a direction interview (goal, platform, references, format, mood), a style and storybook board through `essential:discover`, an approved storyboard, a HyperFrames build with optional Blender shots, and an ElevenLabs score fitted to the cut. |
+| `production:production` `motion-design` | Making a motion video from a blank or half-formed idea: a direction interview (goal, platform, references, format, mood, subject), five concepts drafted from a recipe library, a style, character, and story board through `essential:discover`, an approved storyboard, a HyperFrames build with optional Blender shots, and an ElevenLabs score fitted to the cut. |
 | `production:production` `track` | Registering assets (footage, audio, fonts, LUTs, templates, generated media) with content hashes, rights, and consent refs; recording each render with its exact inputs, settings, and output hash; marking entries stale when a decision invalidates them. Manifest shape: `production:skills/production/templates/asset-manifest.md`. |
 | `production:production` `review` | Capturing stakeholder feedback and approvals bound to an exact render revision and timecode range; deciding which approvals survive a new revision (none carry forward automatically; a decision's `preserves` list may keep named aspects current). |
 

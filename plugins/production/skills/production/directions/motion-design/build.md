@@ -12,7 +12,8 @@ Read from `directions/motion-design.md` step 6, after `BRIEF.md` and `STORYBOARD
 
 These rules come from music videos built this way, where the first cuts were rejected for sitting still:
 
-- One action per shot, and something moves in every shot. A frame that holds static for longer than one bar reads as a stall against the pulse.
+- One action per shot, and something moves in every shot. A frame that holds fully still for longer than one bar reads as a stall against the pulse; a held reaction or comic pause keeps a breath, blink, or camera drift alive inside the hold. Performance and ambient forms (V1, V7, MUS7) let gestures finish and change little by design; there the light, camera, or environment carries the motion.
+- Lay out each shot with [composition](directions/motion-design/composition.md): it says what leads the eye and how attention hands over across a cut.
 - Cuts and hits land on beats; big changes land on downbeats or section boundaries.
 - Every transition is motivated: an object, colour, or camera move from the outgoing shot carries into the incoming one.
 - Keep the camera alive with slow pushes, drifts, or parallax when nothing else moves.

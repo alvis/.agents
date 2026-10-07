@@ -10,7 +10,7 @@ Read from `directions/motion-design.md` step 6 for shots the storyboard marks `r
 
 ## Render
 
-Keep scene setup (camera, lights, materials, colour management, output resolution) saved in the `.blend` file and drive the render with command-line flags only:
+Keep scene setup (camera, lights, materials, colour management, output resolution) saved in the `.blend` file and drive the render with command-line flags only; a Blender connector that runs Python breaks the workflow's no-Python rule, so do not use one:
 
 ```bash
 blender -b shots/<shot>.blend -s <start> -e <end> -o //../renders/<shot>/frame_#### -F PNG -x 1 -a
@@ -24,6 +24,8 @@ Run both from the project root; Blender resolves `//` against the `.blend` file'
 - **3D behind web motion** (preferred): place the encoded plate as a HyperFrames video clip and animate HTML layers over it. HTML layers carry alpha natively.
 - **3D over web motion**: render the HyperFrames layer with transparency (`npx hyperframes render --format mov`) and composite it under the Blender PNG sequence with ffmpeg's `overlay` filter at the same frame rate. Do not feed alpha WebM into a composition; Chromium's VP8/VP9 alpha playback is unreliable.
 - Match the style sheet: take palette, light temperature, and grain from it so the plate and the web layers read as one film.
+- Check colour at every handoff: render the plate in the view transform the style sheet's palette was picked under (Standard for flat brand colours) and compare one frame's swatches against the web layer, because a filmic transform shifts brand hexes.
+- Keep words, prices, and anything that may change in HyperFrames layers over the plate, so a copy fix never re-renders Blender.
 
 ## Provenance
 
