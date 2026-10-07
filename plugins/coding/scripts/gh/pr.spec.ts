@@ -178,6 +178,46 @@ describe("cmd:gh-pr-<subcommand>", () => {
     expect(result.calls).toEqual([]);
   });
 
+  it("should post a plain comment on a pull request as an issue comment", () => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body", "Rebased onto main."], {
+      env: cloud,
+      routes: {
+        ...pullRoutes,
+        [`${project}/issues/7/comments`]: { body: { html_url: "https://github.com/example/project/pull/7#issuecomment-1" } },
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("https://github.com/example/project/pull/7#issuecomment-1\n");
+    expect(restCalls(result)).toEqual([`GET ${project}/pulls/7`, `POST ${project}/issues/7/comments`]);
+    expect(JSON.parse(result.calls.at(-1)!.stdin)).toEqual({ body: "Rebased onto main." });
+  });
+
+  it.each([
+    ["cloud", cloud],
+    ["native", {}],
+  ] as const)("should refuse a review verdict before calling GitHub on the %s route", (_, env) => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body", "Approved, ship it."], { env });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("review verdict");
+    expect(result.calls).toEqual([]);
+  });
+
+  it("should pass a plain comment to gh pr comment on the native route", () => {
+    const result = run(["comment", "7", "--repo", "example/project", "--body-file", "-"], {
+      stdin: "Rebased onto main.",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.calls).toEqual([
+      { args: ["pr", "comment", "7", "--repo", "example/project", "--body-file", "-"], stdin: "Rebased onto main." },
+    ]);
+  });
+
+  it("should require exactly one comment body source", () => {
+    const result = run(["comment", "7", "--repo", "example/project"], { env: cloud });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("exactly one of --body or --body-file");
+  });
+
   it("should select a pull request by its head branch in any fork, preferring an open one", () => {
     const fork = { ...pull, number: 8, head: { ...pull.head, repo: { ...pull.head.repo, owner: { login: "contributor", node_id: "U_2" } } } };
     const result = run(["view", "feat/widgets", "--repo", "example/project", "--json", "number"], {

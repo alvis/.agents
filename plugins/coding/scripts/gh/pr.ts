@@ -12,6 +12,8 @@ import {
   rollupFromRun,
   rollupFromStatus,
 } from "./checks.ts";
+import { detectRoute } from "./detect.ts";
+import { REVIEW_LANGUAGE_PATTERN } from "./review-language.ts";
 import {
   api,
   apiItems,
@@ -368,6 +370,43 @@ async function merge(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
+/**
+ * posts one plain comment on a pull request. review verdicts belong to
+ * coding:pr's revision-bound review publisher, so a body using verdict language
+ * is refused on both routes before anything is sent
+ * @param argv - arguments after the subcommand
+ * @returns the exit code
+ */
+async function comment(argv: readonly string[]): Promise<number> {
+  const parsed = parseArgs(argv, { values: ["body", "body-file"], aliases: { b: "body", F: "body-file" } });
+  const inline = value(parsed, "body");
+  const file = value(parsed, "body-file");
+  if ((inline === undefined) === (file === undefined)) throw new WrapperError("specify exactly one of --body or --body-file");
+  const body = inline ?? (await readBody(file))!;
+  if (body.trim() === "") throw new WrapperError("the comment body is empty");
+  if (REVIEW_LANGUAGE_PATTERN.test(body))
+    throw new WrapperError("the body reads as a review verdict; publish reviews through coding:pr's review publisher instead");
+  if (detectRoute(process.env) === "native") {
+    const selector = parsed.positionals[0];
+    const repo = value(parsed, "repo");
+    const child = Bun.spawn(
+      ["gh", "pr", "comment", ...(selector === undefined ? [] : [selector]), ...(repo === undefined ? [] : ["--repo", repo]), "--body-file", "-"],
+      { stdin: new Response(body), stdout: "inherit", stderr: "inherit" },
+    );
+    return await child.exited;
+  }
+  const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
+  // a pull request's conversation comments are issue comments in REST
+  const created = await api<{ html_url: string }>(
+    repository,
+    `repos/${repository.owner}/${repository.repo}/issues/${pull.number}/comments`,
+    { method: "POST", body: { body } },
+  );
+  process.stdout.write(`${created.html_url}\n`);
+  return 0;
+}
+comment.routesItself = true;
+
 async function checks(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {});
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
@@ -390,6 +429,7 @@ export const SUBCOMMANDS: Readonly<Record<string, Handler>> = {
   ready,
   merge,
   checks,
+  comment,
 };
 
 /**

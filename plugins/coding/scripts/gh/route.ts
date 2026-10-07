@@ -216,8 +216,11 @@ export function requestedFields(fields: string, available: readonly string[]): s
   return names;
 }
 
-/** a REST implementation of one subcommand */
-export type Handler = (argv: readonly string[]) => Promise<number>;
+/**
+ * a REST implementation of one subcommand; one marked `routesItself` also
+ * serves the native route, because it validates its input before either
+ */
+export type Handler = ((argv: readonly string[]) => Promise<number>) & { readonly routesItself?: boolean };
 
 /**
  * runs one `gh-<group>-<subcommand>.ts` drop-in: native passthrough, or the
@@ -236,9 +239,10 @@ export async function runWrapper(
   argv: readonly string[],
   env: Record<string, string | undefined>,
 ): Promise<number> {
-  if (detectRoute(env) === "native") return await passthrough(group, [subcommand, ...argv]);
+  const handler = handlers[subcommand]!;
+  if (detectRoute(env) === "native" && !handler.routesItself) return await passthrough(group, [subcommand, ...argv]);
   try {
-    return await handlers[subcommand]!(argv);
+    return await handler(argv);
   } catch (error) {
     if (error instanceof HelpRequest) {
       process.stdout.write(`usage: gh-${group}-${subcommand}.ts [arguments] [flags]\n\nflags:\n${error.flags.join("\n")}\n`);

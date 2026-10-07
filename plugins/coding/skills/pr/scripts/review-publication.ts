@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { checkFromRun, checkFromStatus } from "../../../scripts/gh/checks.ts";
 import { detectRoute } from "../../../scripts/gh/detect.ts";
+import { REVIEW_LANGUAGE_PATTERN } from "../../../scripts/gh/review-language.ts";
 import { threadResolutionRequest } from "../../../scripts/gh/threads.ts";
 
 type JsonObject = Record<string, unknown>;
@@ -289,8 +290,6 @@ const STATUS_TEXT: Readonly<Record<StatusAssessment["status"], string>> = {
   "review-in-progress": "Independent review is in progress.",
   "review-started": "Independent review has started.",
 };
-const REVIEW_LANGUAGE_PATTERN =
-  /(?:^|\b)(?:approve(?:d|s)?|request(?:ed|s)? changes|review verdict|substantive verdict|must change|not reviewed|goal and requirements|overall review)(?:\b|:)/i;
 const PROTECTED_REST_PATTERN = new RegExp(
   String.raw`^repos/[^/]+/[^/]+/(?:issues/(?:\d+/comments|comments/\d+)|pulls/(?:\d+/(?:comments(?:/\d+/replies)?|reviews(?:/\d+(?:/events)?)?|ccr/comments/\d+/(?:un)?resolve)|comments/\d+|reviews/\d+))(?:\?.*)?$`,
 );
@@ -2317,6 +2316,19 @@ function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
   // REST, so it is guarded exactly like raw gh issue comment
   if (words.some((word) => basename(word) === "gh-issue-comment.ts"))
     return "gh-issue-comment.ts can target a pull request";
+  // gh-pr-comment.ts posts plain comments and refuses verdict language itself;
+  // an inline verdict is refused here too, before the command runs
+  const prComment = words.findIndex((word) => basename(word) === "gh-pr-comment.ts");
+  if (prComment !== -1) {
+    const bodies = words.slice(prComment + 1).flatMap((word, index, rest) => {
+      const inline = /^(?:--body|-b)=(.*)$/su.exec(word);
+      if (inline) return [inline[1]!];
+      return word === "--body" || word === "-b" ? [rest[index + 1] ?? ""] : [];
+    });
+    return bodies.some((body) => REVIEW_LANGUAGE_PATTERN.test(body))
+      ? "gh-pr-comment.ts posts plain comments only, and this body reads as a review verdict"
+      : null;
+  }
   const ghIndex = words.findIndex((word) => basename(word) === "gh");
   if (ghIndex === -1) return null;
   const arguments_ = [...words.slice(ghIndex + 1)];
