@@ -171,14 +171,18 @@ describe("fn:renderBlock finding citation anchors", () => {
   it("should draw the id as a mono badge and an anchor target", () => {
     const drawn = html({ type: "findings", items: [{ ...item, id: "F-3" }] });
 
-    expect(drawn).toContain('<li class="finding" id="f-F-3" data-severity="elevated" data-filter-item="elevated">');
+    expect(drawn).toContain(
+      '<li class="finding" id="f-F-3" data-severity="elevated" data-filter-item="elevated" data-card data-card-ref="F-3" data-card-label="Retries amplify load">',
+    );
     expect(drawn).toContain('<span class="finding-id">F-3</span>');
   });
 
   it("should leave a finding without an id unmarked", () => {
     const drawn = html({ type: "findings", items: [item] });
 
-    expect(drawn).toContain('<li class="finding" data-severity="elevated" data-filter-item="elevated">');
+    expect(drawn).toContain(
+      '<li class="finding" data-severity="elevated" data-filter-item="elevated" data-card data-card-label="Retries amplify load">',
+    );
     expect(drawn).not.toContain("finding-id");
   });
 

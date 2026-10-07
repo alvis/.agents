@@ -1,6 +1,6 @@
 import { SCHEMA, emptyState } from "./store-state.ts";
 
-import type { SavedAnswer, SavedExcerpt, SavedState } from "./store-state.ts";
+import type { Anchor, Card, SavedAnswer, SavedExcerpt, SavedState } from "./store-state.ts";
 
 /**
  * reads one saved answer, or nothing when its shape is not usable
@@ -47,17 +47,52 @@ function readExcerpts(saved: unknown): SavedExcerpt[] {
 
   return saved.flatMap((entry) => {
     if (!entry || typeof entry !== "object") return [];
-    const { id, quote, note } = entry as Record<string, unknown>;
+    const { id, quote, note, at, card } = entry as Record<string, unknown>;
     if (typeof id !== "string" || !id) return [];
+    const span = readAnchor(at);
+    const held = readCard(card);
 
     return [
       {
         id,
         quote: typeof quote === "string" ? quote : "",
         note: typeof note === "string" ? note : "",
+        ...(span ? { at: span } : {}),
+        ...(held ? { card: held } : {}),
       },
     ];
   });
+}
+
+/**
+ * reads where a passage sits, or nothing when the span cannot be trusted; the
+ * note survives either way, since its quote can still find the passage
+ * @param saved the entry as parsed, of unknown shape
+ * @returns the span, or undefined
+ */
+function readAnchor(saved: unknown): Anchor | undefined {
+  if (!saved || typeof saved !== "object") return undefined;
+  const { start, end } = saved as Record<string, unknown>;
+
+  return Number.isInteger(start) &&
+    Number.isInteger(end) &&
+    (start as number) >= 0 &&
+    (end as number) > (start as number)
+    ? { start: start as number, end: end as number }
+    : undefined;
+}
+
+/**
+ * reads the card a passage sits in, or nothing when it names no label
+ * @param saved the entry as parsed, of unknown shape
+ * @returns the card, or undefined
+ */
+function readCard(saved: unknown): Card | undefined {
+  if (!saved || typeof saved !== "object") return undefined;
+  const { ref, label } = saved as Record<string, unknown>;
+  if (typeof label !== "string" || !label) return undefined;
+
+  return typeof ref === "string" && ref ? { ref, label } : { label };
 }
 
 /**

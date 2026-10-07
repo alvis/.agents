@@ -153,6 +153,38 @@ describe("fn:formatNotes", () => {
   });
 });
 
+describe("fn:formatNotes location", () => {
+  it("should say which section title and question a selection note sits in", () => {
+    // the reply is read away from the page, so a note has to carry enough to
+    // find its passage again without it
+    expect(
+      formatNotes([
+        {
+          sectionLabel: "Plan",
+          sectionTitle: "What is proposed, in order.",
+          card: { ref: "P04", label: "Step order" },
+          quote: "before step three",
+          note: "why?",
+        },
+      ]),
+    ).toBe("- Plan › What is proposed, in order. › P04 · Step order: why?\n  > before step three");
+  });
+
+  it("should name a card that carries no ref by its label alone", () => {
+    expect(
+      formatNotes([
+        { sectionLabel: "Risks", sectionTitle: "What can go wrong", card: { label: "Retry storm" }, quote: "five", note: "n" },
+      ]),
+    ).toBe("- Risks › What can go wrong › Retry storm: n\n  > five");
+  });
+
+  it("should not repeat a title that only restates the label", () => {
+    expect(
+      formatNotes([{ sectionLabel: "Code", sectionTitle: "Code", quote: "x", note: "n" }]),
+    ).toBe("- Code: n\n  > x");
+  });
+});
+
 describe("fn:fillTemplate notes", () => {
   it("should not expand a note containing a replacement pattern", () => {
     // the whole reason every replacement is a function rather than a string

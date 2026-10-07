@@ -67,7 +67,8 @@ function renderCard(
     : "";
 
   const html = [
-    `<li class="observation">`,
+    // named as a card, so a selection note can say which observation it is in
+    `<li class="observation" data-card data-card-label="${escapeHtml(title)}">`,
     `<div class="observation-head"><h4 class="observation-title">${escapeHtml(title)}</h4>${badge}</div>`,
     file ? `<p class="observation-file">${escapeHtml(file)}</p>` : "",
     `<dl class="observation-detail">`,

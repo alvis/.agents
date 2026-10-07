@@ -6,6 +6,7 @@ import { emptyState } from "./store.ts";
 
 import type { NoteRequest, NoteResult } from "./note-dialog.ts";
 import type { NotesHost } from "./notes.ts";
+import type { Passages } from "./passage-dom.ts";
 
 /** the selection pill, with the layout surface `placePill` reads. */
 class StubPill extends StubElement {
@@ -116,6 +117,10 @@ interface Wired {
   clear: StubElement;
   /** how many times the state was persisted */
   saves: () => number;
+  /** each section's excerpts, as the last mark paint drew them */
+  painted: Map<string, string[]>;
+  /** every excerpt the page was asked to reveal */
+  revealed: string[];
 }
 
 /**
@@ -130,8 +135,20 @@ function wire(state = emptyState()): Wired {
   const asked: NoteRequest[] = [];
   let saved = 0;
   let next: NoteResult | null = null;
+  const painted = new Map<string, string[]>();
+  const revealed: string[] = [];
+  const passages: Passages = {
+    anchor: () => ({ start: 3, end: 12 }),
+    paint: (root, excerpts) => {
+      painted.set(root.dataset.sectionId ?? "", excerpts.map(({ id }) => id));
+    },
+    reveal: (_, excerptId) => {
+      revealed.push(excerptId);
+    },
+  };
 
   const host = {
+    passages,
     state,
     save: () => {
       saved += 1;
@@ -158,6 +175,8 @@ function wire(state = emptyState()): Wired {
     count,
     clear,
     saves: () => saved,
+    painted,
+    revealed,
   };
 }
 
@@ -171,10 +190,16 @@ function selectPassage(text: string, inside: StubElement): void {
     isCollapsed: false,
     rangeCount: 1,
     toString: () => text,
-    getRangeAt: () => ({
-      commonAncestorContainer: inside,
-      getBoundingClientRect: () => ({ left: 10, bottom: 20 }),
-    }),
+    getRangeAt: () => {
+      const live = {
+        commonAncestorContainer: inside,
+        startContainer: inside,
+        endContainer: inside,
+        getBoundingClientRect: () => ({ left: 10, bottom: 20 }),
+      };
+
+      return { ...live, cloneRange: () => live };
+    },
   };
   settle();
 }
@@ -462,5 +487,111 @@ describe("fn:installNotes", () => {
     expect(host.state.annotations).toStrictEqual({});
     expect(host.state.excerpts).toStrictEqual({});
     expect(count.textContent).toBe("0 notes");
+  });
+});
+
+describe("fn:installNotes marked passages", () => {
+  /** one saved selection note on the risks section */
+  const held = () => ({
+    ...emptyState(),
+    excerpts: { risks: [{ id: "e1", quote: "a passage", note: "why" }] },
+  });
+
+  it("should mark every saved passage as the board loads", () => {
+    section("risks", "Risks");
+
+    const { painted } = wire(held());
+
+    expect(painted.get("risks")).toStrictEqual(["e1"]);
+  });
+
+  it("should reopen a selection note from its marked passage, prefilled and removable", async () => {
+    const risks = section("risks", "Risks");
+    const mark = new StubElement("mark", { "data-note-mark": "e1" });
+    risks.passage.append(mark);
+    const { asked } = wire(held());
+
+    risks.root.dispatch("click", { target: mark });
+    await flush();
+
+    expect(asked).toStrictEqual([
+      { title: "Note on Risks", quote: "a passage", note: "why", removable: true },
+    ]);
+  });
+
+  it("should reopen a marked passage from the keyboard", async () => {
+    const risks = section("risks", "Risks");
+    const mark = new StubElement("mark", { "data-note-mark": "e1" });
+    risks.passage.append(mark);
+    const { asked } = wire(held());
+
+    risks.root.dispatch("keydown", { target: mark, key: "Enter", preventDefault: () => undefined });
+    await flush();
+
+    expect(asked[0]).toMatchObject({ note: "why", removable: true });
+  });
+
+  it("should not reopen a note while the reader is selecting across its mark", async () => {
+    // a drag that starts and ends on the mark raises a click too, and opening
+    // the editor then would take the selection the reader is making
+    const risks = section("risks", "Risks");
+    const mark = new StubElement("mark", { "data-note-mark": "e1" });
+    risks.passage.append(mark);
+    const { asked } = wire(held());
+    picked = { isCollapsed: false, rangeCount: 1, toString: () => "pass" };
+
+    risks.root.dispatch("click", { target: mark });
+    await flush();
+
+    expect(asked).toHaveLength(0);
+  });
+
+  it("should remove a selection note reopened from its passage and unmark it", async () => {
+    const risks = section("risks", "Risks");
+    const mark = new StubElement("mark", { "data-note-mark": "e1" });
+    risks.passage.append(mark);
+    const { answer, host, painted } = wire(held());
+    answer({ note: "why", removed: true });
+
+    risks.root.dispatch("click", { target: mark });
+    await flush();
+
+    expect(host.state.excerpts).toStrictEqual({});
+    expect(painted.get("risks")).toStrictEqual([]);
+  });
+
+  it("should reopen a note, and reveal its passage, from anywhere on its row", async () => {
+    section("risks", "Risks");
+    const { panel, asked, revealed } = wire(held());
+    const quote = panel.querySelector(".note-quote-text")!;
+
+    panel.dispatch("click", { target: quote });
+    await flush();
+
+    expect(asked[0]).toMatchObject({ quote: "a passage", note: "why", removable: true });
+    expect(revealed).toStrictEqual(["e1"]);
+  });
+
+  it("should save where the passage sits and the card that holds it", async () => {
+    const risks = section("risks", "Risks");
+    const field = new StubElement(
+      "fieldset",
+      { "data-question": "", "data-question-ref": "P04", "data-question-label": "Step order" },
+      [],
+    );
+    risks.passage.append(field);
+    const inner = new StubElement("p");
+    field.append(inner);
+    const { answer, host, painted } = wire();
+    answer({ note: "why", removed: false });
+    selectPassage("a passage", inner);
+
+    risks.trigger.dispatch("click");
+    await flush();
+
+    expect(host.state.excerpts.risks).toMatchObject([
+      { quote: "a passage", note: "why", at: { start: 3, end: 12 }, card: { ref: "P04", label: "Step order" } },
+    ]);
+    expect(painted.get("risks")).toHaveLength(1);
   });
 });

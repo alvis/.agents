@@ -21,6 +21,10 @@ export const NOTE_CSS = `
 /* the quote is what the note points at, so it is set apart from the note itself
    rather than reading as more of the reader's own words */
 .note-quote-text{color:var(--ui-muted); font:italic .82rem/1.5 var(--font-body); quotes:'"' '"'}
+.note-card{color:var(--ui-ink); font:700 .74rem/1.4 var(--font-mono)}
+/* the whole row reopens its note, so it says so to a pointer */
+.note-row{cursor:pointer}
+.note-row:hover{border-color:var(--ui-border-strong)}
 .note-text{margin:0; color:var(--ui-ink); font:.86rem/1.55 var(--font-body); white-space:pre-wrap}
 .note-text.is-empty{color:var(--ui-muted); font-style:italic}
 .note-row-actions{display:flex; gap:.4rem}
@@ -30,6 +34,13 @@ export const NOTE_CSS = `
 .drawer-notes{display:grid; gap:.5rem; align-content:start}
 .note-count{padding:.1rem .5rem; border:1px solid var(--ui-border); border-radius:999px; color:var(--ui-muted); font:700 .72rem/1.5 var(--font-mono)}
 .note-clear{justify-self:start; padding:.3rem .6rem; border:1px solid var(--ui-critical); border-radius:var(--radius-control); background:var(--ui-critical-soft); color:var(--ui-critical-ink); font:650 .74rem/1.4 var(--font-body); cursor:pointer}
+
+/* a noted passage stays marked where it reads, in the accent the notes list
+   wears so the two read as one thing, and underlined so the mark survives
+   greyscale; amber is left to the changes a diff draws */
+.note-mark{background:var(--ui-accent-soft); color:inherit; box-shadow:inset 0 -2px 0 var(--ui-accent); cursor:pointer}
+.note-mark:hover{box-shadow:inset 0 -3px 0 var(--ui-accent-ink)}
+.note-mark:focus-visible{outline:2px solid var(--ui-accent-ink); outline-offset:1px}
 
 /* the pill follows the selection in document coordinates, so it is positioned
    absolutely against the page rather than fixed to the viewport */

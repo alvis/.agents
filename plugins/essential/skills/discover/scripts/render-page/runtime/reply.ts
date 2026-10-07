@@ -1,3 +1,5 @@
+import type { Card } from "./store.ts";
+
 /**
  * fills a reply template's markers with the blocks they stand for.
  *
@@ -22,6 +24,10 @@ export function fillTemplate(
 export interface ReplyNote {
   /** the section the note belongs to */
   sectionLabel: string;
+  /** the section's heading, named where it says more than the label */
+  sectionTitle?: string;
+  /** the question or card the passage sits in, where there is one */
+  card?: Card;
   /** the passage it is about, or null for a whole-section note */
   quote: string | null;
   /** what the note says */
@@ -148,11 +154,24 @@ export function countUnanswered(lines: AnswerLine[]): number {
 }
 
 /**
+ * names a card as the page cites it
+ * @param card the card to name
+ * @param card.ref its citation code, where it carries one
+ * @param card.label its own label
+ * @returns its ref and label, or its label alone where it carries no ref
+ */
+export function cardName(card: Card): string {
+  return card.ref ? `${card.ref} · ${card.label}` : card.label;
+}
+
+/**
  * renders the notes block a reply carries.
  *
  * the quote is what makes a note answerable by whoever reads the reply — a
  * note without the passage it is about arrives as an opinion with no subject,
- * so the two travel together or not at all.
+ * so the two travel together or not at all. The reply is read away from the
+ * page, so each note also says where it sits: the section, its heading, and
+ * the question or card holding the passage.
  * @param rows every note the reader holds, in section order
  * @returns the block, or a plain marker when the reader noted nothing
  */
@@ -160,9 +179,14 @@ export function formatNotes(rows: ReplyNote[]): string {
   if (!rows.length) return "(no notes)";
 
   return rows
-    .map(({ sectionLabel, quote, note }) => {
+    .map(({ sectionLabel, sectionTitle, card, quote, note }) => {
       const said = note.trim() || "(highlighted, no note)";
-      const head = `- ${sectionLabel}: ${said}`;
+      const where = [
+        sectionLabel,
+        sectionTitle && sectionTitle !== sectionLabel ? sectionTitle : "",
+        card ? cardName(card) : "",
+      ].filter(Boolean);
+      const head = `- ${where.join(" › ")}: ${said}`;
 
       return quote === null ? head : `${head}\n  > ${quote}`;
     })

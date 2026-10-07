@@ -50,9 +50,12 @@ export function renderFindings(
           ? `<div><dt>Evidence</dt><dd>${escapeHtml(evidence)}</dd></div>`
           : "",
       ].join("");
+      const title = escapeHtml(requireString(item.title, `${at}.title`));
+      // the card attributes are what a selection note quotes back to say
+      // which finding its passage sits in.
       // the severity word is visible text, not .sr-only: a card has the room,
       // and reading it is what survives both greyscale and a colour-blind eye
-      return `<li class="finding"${id ? ` id="f-${id}"` : ""} data-severity="${severity}" data-filter-item="${severity}"><p class="finding-head">${id ? `<span class="finding-id">${escapeHtml(id)}</span>` : ""}<span class="finding-severity">${SEVERITY_LABEL[severity]}</span><span class="finding-title">${escapeHtml(requireString(item.title, `${at}.title`))}</span></p><p class="finding-text">${escapeHtml(requireString(item.text, `${at}.text`))}</p>${meta ? `<dl class="finding-meta">${meta}</dl>` : ""}</li>`;
+      return `<li class="finding"${id ? ` id="f-${id}"` : ""} data-severity="${severity}" data-filter-item="${severity}" data-card${id ? ` data-card-ref="${escapeHtml(id)}"` : ""} data-card-label="${title}"><p class="finding-head">${id ? `<span class="finding-id">${escapeHtml(id)}</span>` : ""}<span class="finding-severity">${SEVERITY_LABEL[severity]}</span><span class="finding-title">${title}</span></p><p class="finding-text">${escapeHtml(requireString(item.text, `${at}.text`))}</p>${meta ? `<dl class="finding-meta">${meta}</dl>` : ""}</li>`;
     })
     .join("")}</ol>`;
 }

@@ -26,13 +26,14 @@ export function renderSection(section: Section, index: number, page: PageContext
   const id = requireFreshId(section.id, at, "section", page.ids);
   const eyebrow = optionalString(section.eyebrow, `${at}.eyebrow`);
   const label = escapeHtml(requireString(section.label, `${at}.label`));
+  const title = escapeHtml(requireString(section.title, `${at}.title`));
   const body = requireArray<Block>(section.blocks, `${at}.blocks`)
     .map((block, position) =>
       renderBlock(block, `${at}.blocks[${position}]`, page),
     )
     .join("");
 
-  return `<section class="section" id="s-${escapeHtml(id)}" data-section data-section-id="${escapeHtml(id)}" data-section-label="${label}"><div class="section-heading"><p class="section-no">${number}${eyebrow ? ` · ${escapeHtml(eyebrow)}` : ""}</p><h2>${escapeHtml(requireString(section.title, `${at}.title`))}</h2>${noteControl(label)}</div><div class="section-body">${body}</div><ul class="note-list" data-note-list aria-label="Notes on ${label}"></ul></section>`;
+  return `<section class="section" id="s-${escapeHtml(id)}" data-section data-section-id="${escapeHtml(id)}" data-section-label="${label}" data-section-title="${title}"><div class="section-heading"><p class="section-no">${number}${eyebrow ? ` · ${escapeHtml(eyebrow)}` : ""}</p><h2>${title}</h2>${noteControl(label)}</div><div class="section-body" data-section-body>${body}</div><ul class="note-list" data-note-list aria-label="Notes on ${label}"></ul></section>`;
 }
 
 /**

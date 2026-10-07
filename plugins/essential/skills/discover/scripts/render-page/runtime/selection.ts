@@ -1,5 +1,7 @@
 import { collapse, truncate } from "./quote.ts";
 
+import type { Card } from "./store.ts";
+
 /** a usable selection inside a section. */
 export interface Picked {
   /** the section the passage sits in */
@@ -8,6 +10,10 @@ export interface Picked {
   quote: string;
   /** where it sits on screen, for placing the pill */
   rect: DOMRect;
+  /** the selection, cut to its section, so its place can be measured */
+  range: Range;
+  /** the question or card the passage starts in, where there is one */
+  card?: Card;
 }
 
 /** how far the pill sits from the selection and from the viewport edge. */
@@ -23,30 +29,73 @@ function isEditing(element: Element | null): boolean {
 }
 
 /**
- * reads the current selection, if it is a passage inside a section
+ * finds the element a range boundary sits in
+ * @param node the boundary's container
+ * @returns the element, or null for a node outside any
+ */
+function elementOf(node: Node | null): Element | null {
+  if (!node) return null;
+
+  return node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+}
+
+/**
+ * names the question or card a passage starts in
+ * @param element where the passage starts
+ * @returns the innermost card's ref and label, or undefined in plain prose
+ */
+function cardOf(element: Element): Card | undefined {
+  const held = element.closest<HTMLElement>("[data-question], [data-card]");
+  if (!held) return undefined;
+
+  const ref = held.dataset.questionRef ?? held.dataset.cardRef ?? "";
+  const label = held.dataset.questionLabel ?? held.dataset.cardLabel ?? "";
+  if (!label) return undefined;
+
+  return ref ? { ref, label } : { label };
+}
+
+/**
+ * reads the current selection, if it is a passage inside a section.
+ *
+ * the passage belongs to the section it starts in. A triple-click on a table
+ * cell or on the last line of a code block ends the range in whatever follows
+ * the section, so a range that runs out is cut at the section body's end
+ * rather than refused.
  * @returns what was selected, or null when nothing usable is
  */
 export function readSelection(): Picked | null {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || !selection.rangeCount) return null;
 
-  const quote = collapse(selection.toString());
-  if (!quote) return null;
-
-  const range = selection.getRangeAt(0);
-  const node = range.commonAncestorContainer;
-  const element =
-    node.nodeType === Node.ELEMENT_NODE
-      ? (node as Element)
-      : node.parentElement;
-
+  const live = selection.getRangeAt(0);
+  const element = elementOf(live.startContainer);
   if (!element || isEditing(element)) return null;
 
-  const sectionId = element.closest<HTMLElement>("[data-section]")?.dataset
-    .sectionId;
-  if (!sectionId) return null;
+  const section = element.closest<HTMLElement>("[data-section]");
+  const sectionId = section?.dataset.sectionId;
+  if (!section || !sectionId) return null;
 
-  return { sectionId, quote: truncate(quote), rect: range.getBoundingClientRect() };
+  const body = section.querySelector<HTMLElement>("[data-section-body]");
+  const runsOut = elementOf(live.endContainer)?.closest("[data-section]") !== section;
+  // a copy, since the live range follows the selection: a touch selection can
+  // collapse before the press that saves its note lands
+  const range = live.cloneRange();
+  const cut = runsOut && body !== null;
+  if (cut) range.setEnd(body, body.childNodes.length);
+
+  // the selection's own text keeps the breaks between cells and lines that a
+  // range's text drops, so it is preferred wherever the range was not cut
+  const quote = collapse(cut ? range.toString() : selection.toString());
+  if (!quote) return null;
+
+  return {
+    sectionId,
+    quote: truncate(quote),
+    rect: range.getBoundingClientRect(),
+    range,
+    card: cardOf(element),
+  };
 }
 
 /**

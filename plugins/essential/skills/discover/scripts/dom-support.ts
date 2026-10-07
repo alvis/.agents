@@ -274,6 +274,15 @@ export class StubElement {
     this.dataset = datasetOf(this.attributes);
   }
 
+  /**
+   * the children as the DOM's node list names them; the stub holds no text
+   * nodes, so the two lists are the same
+   * @returns the children, in document order
+   */
+  get childNodes(): StubElement[] {
+    return this.children;
+  }
+
   /** the element that holds this one, under the name the DOM gives it */
   get parentElement(): StubElement | null {
     return this.parent;

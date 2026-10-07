@@ -87,10 +87,16 @@ function select(
     isCollapsed: false,
     rangeCount: 1,
     toString: () => text,
-    getRangeAt: () => ({
-      commonAncestorContainer: node,
-      getBoundingClientRect: () => rect,
-    }),
+    getRangeAt: () => {
+      const live = {
+        commonAncestorContainer: node,
+        startContainer: node,
+        endContainer: node,
+        getBoundingClientRect: () => rect,
+      };
+
+      return { ...live, cloneRange: () => ({ ...live, copied: true }) };
+    },
   };
 }
 
@@ -179,6 +185,12 @@ describe("fn:readSelection", () => {
     });
   });
 
+  it("should hand back a copy of the range, which stays put when the selection collapses", () => {
+    select("a quote", passage("risks"));
+
+    expect(readSelection()?.range).toMatchObject({ copied: true });
+  });
+
   it("should resolve the section from a text node's parent", () => {
     // a selection inside one paragraph has a text node as its common
     // ancestor, which is the ordinary case rather than the exception
@@ -224,6 +236,66 @@ describe("fn:readSelection", () => {
     select("a quote", new StubElement("p"));
 
     expect(readSelection()).toBeNull();
+  });
+
+  it("should keep a selection that runs out of its section, cut at the section's end", () => {
+    // a triple-click on a table cell, or on the last line of a code block,
+    // ends the range in whatever follows the section: the passage is still
+    // the reader's, and refusing it is what left those blocks un-notable
+    const body = new StubElement("div", { "data-section-body": "" });
+    const cell = new StubElement("td");
+    body.append(cell);
+    new StubElement("section", { "data-section": "", "data-section-id": "diffs" }, [body]);
+    const next = new StubElement("p");
+    new StubElement("section", { "data-section": "", "data-section-id": "code" }, [next]);
+    const cut: unknown[] = [];
+    picked = {
+      isCollapsed: false,
+      rangeCount: 1,
+      toString: () => "five times\nCode",
+      getRangeAt: () => ({
+        commonAncestorContainer: new StubElement("main"),
+        startContainer: cell,
+        endContainer: next,
+        getBoundingClientRect: () => ({ left: 0, bottom: 0 }),
+        cloneRange: () => ({
+          setEnd: (node: unknown, offset: number) => cut.push(node, offset),
+          toString: () => "five times",
+          getBoundingClientRect: () => ({ left: 0, bottom: 0 }),
+        }),
+      }),
+    };
+
+    expect(readSelection()).toMatchObject({ sectionId: "diffs", quote: "five times" });
+    expect(cut).toStrictEqual([body, 1]);
+  });
+
+  it("should name the question the passage sits in", () => {
+    const held = new StubElement("p");
+    const card = new StubElement(
+      "fieldset",
+      { "data-question": "", "data-question-ref": "P04", "data-question-label": "Step order" },
+      [held],
+    );
+    new StubElement("section", { "data-section": "", "data-section-id": "plan" }, [card]);
+    select("a quote", held);
+
+    expect(readSelection()?.card).toStrictEqual({ ref: "P04", label: "Step order" });
+  });
+
+  it("should name a card that carries a label but no ref", () => {
+    const held = new StubElement("p");
+    const card = new StubElement("li", { "data-card": "", "data-card-label": "Retry storm" }, [held]);
+    new StubElement("section", { "data-section": "", "data-section-id": "risks" }, [card]);
+    select("a quote", held);
+
+    expect(readSelection()?.card).toStrictEqual({ label: "Retry storm" });
+  });
+
+  it("should name no card for a passage in plain prose", () => {
+    select("a quote", passage());
+
+    expect(readSelection()?.card).toBeUndefined();
   });
 });
 

@@ -145,4 +145,4 @@ export function safeStore(): Store {
 }
 
 export { SCHEMA, emptyState, storageKey } from "./store-state.ts";
-export type { SavedAnswer, SavedExcerpt, SavedState, Store } from "./store-state.ts";
+export type { Anchor, Card, SavedAnswer, SavedExcerpt, SavedState, Store } from "./store-state.ts";

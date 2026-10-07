@@ -18,6 +18,7 @@ import { installKeys } from "./keys.ts";
 import { installNoteDialog } from "./note-dialog.ts";
 import { rowsOf } from "./note-view.ts";
 import { installNotes } from "./notes.ts";
+import { domPassages } from "./passage-dom.ts";
 import { installProbes } from "./probe.ts";
 import { installQuiz } from "./quiz.ts";
 import { installReplyDialog } from "./reply-dialog.ts";
@@ -61,6 +62,12 @@ export function start(): void {
     [...document.querySelectorAll<HTMLElement>("[data-section]")].map((section) => [
       section.dataset.sectionId ?? "",
       section.dataset.sectionLabel ?? "",
+    ]),
+  );
+  const sectionTitles = new Map(
+    [...document.querySelectorAll<HTMLElement>("[data-section]")].map((section) => [
+      section.dataset.sectionId ?? "",
+      section.dataset.sectionTitle ?? "",
     ]),
   );
   const fields = [...document.querySelectorAll<HTMLElement>("[data-question]")];
@@ -147,7 +154,7 @@ export function start(): void {
       lines,
       touched,
       ids,
-      rowsOf(saved, sectionLabels),
+      rowsOf(saved, sectionLabels, sectionTitles),
       orders,
     );
     // the bar's chips carry the same dispositions the drawer's rows do, drawn
@@ -233,6 +240,7 @@ export function start(): void {
     panel: drawerRoot.querySelector<HTMLElement>("[data-notes]")!,
     count: drawerRoot.querySelector<HTMLElement>("[data-note-count]")!,
     clear: drawerRoot.querySelector<HTMLButtonElement>("[data-note-clear]")!,
+    passages: domPassages,
   });
   if (targets.reply) {
     installReplyDialog(

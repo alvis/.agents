@@ -228,3 +228,27 @@ describe("fn:paintRows", () => {
     expect(list.children).toStrictEqual([]);
   });
 });
+
+describe("fn:rowsOf location", () => {
+  it("should carry each section's title and each excerpt's card into its rows", () => {
+    const rows = rowsOf(
+      state({
+        annotations: { risks: "watch" },
+        excerpts: { risks: [{ id: "e1", quote: "q", note: "n", card: { ref: "P04", label: "Step order" } }] },
+      }),
+      new Map([["risks", "Risks"]]),
+      new Map([["risks", "What can go wrong"]]),
+    );
+
+    expect(rows).toMatchObject([
+      { sectionTitle: "What can go wrong" },
+      { sectionTitle: "What can go wrong", card: { ref: "P04", label: "Step order" } },
+    ]);
+  });
+
+  it("should draw an excerpt's card on its row", () => {
+    const item = rowItem(row({ quote: "q", excerptId: "e1", card: { ref: "P04", label: "Step order" } }), true);
+
+    expect(texts(item as unknown as StubElement)).toContain("P04 · Step order");
+  });
+});
