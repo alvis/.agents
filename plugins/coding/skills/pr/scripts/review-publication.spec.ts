@@ -1299,7 +1299,15 @@ describe("cmd:review-publication", () => {
         "",
         review.assessment.reuse,
         "",
-        payload.body.split(`${review.assessment.reuse}\n\n`)[1].split("\n\n### 🧾 Verdict")[0],
+        "Approved scope: Task requirement: empty sequences return an empty result.",
+        "",
+        "Scope: within_scope. The input guard implements the requested empty-sequence boundary.",
+        "",
+        "Implementation: minimal. The existing parser needs only the boundary guard.",
+        "",
+        "- **src/sequence.ts:12 and sequence.spec.ts:24** — Handle and verify empty input.",
+        "  Basis: Task requirement: support empty sequences.",
+        "  Removal impact: Empty sequences would throw instead of returning an empty result.",
         "",
         "### 🧾 Verdict",
         "",
@@ -1311,6 +1319,32 @@ describe("cmd:review-publication", () => {
     expect(payload.comments[0].body).toBe(
       `**📝 ${finding.title}** — ${finding.body}\n\nEvidence: ${finding.evidence}\n`,
     );
+  });
+
+  it("should separate minimality unit fragments without adding punctuation", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: {
+        ...review.assessment,
+        minimality: {
+          ...review.assessment.minimality,
+          units: [{
+            location: "src/sequence.ts:12",
+            purpose: "Empty-input guard",
+            basis: "Requested empty-sequence support",
+            removal_impact: "Empty input throws",
+          }],
+        },
+      },
+    });
+
+    expect(approvedBody(approval, "green")).toContain([
+      "- **src/sequence.ts:12** — Empty-input guard",
+      "  Basis: Requested empty-sequence support",
+      "  Removal impact: Empty input throws",
+      "",
+      "### 🧾 Verdict",
+    ].join("\n"));
   });
 
   it("should substitute review input literally without expanding tokens or replacement patterns", () => {

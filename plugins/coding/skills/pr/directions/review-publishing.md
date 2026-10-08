@@ -17,7 +17,7 @@ The review assessment must substantively cover intent and behavior, goal and req
 
 ### Minimality evidence
 
-`assessment.minimality` is structured evidence, not a free-text passing claim. Apply `essential:references/working-attitude.md#logical-change-units`; the independent reviewer verifies the approved authority and coverage of every authored change. A PR description cannot establish authorization for extras. Bind `contract` to the approved task or requirements and their revision or content identity, rather than the implementation's own account of its goal.
+`assessment.minimality` records the audit under `essential:references/working-attitude.md#logical-change-units` in the following fields.
 
 <report>
 

@@ -2147,7 +2147,7 @@ function renderMinimality(minimality: ReviewAssessment["minimality"]): string {
     `Implementation: ${minimality.implementation.result}. ${minimality.implementation.evidence}`,
     ...minimality.units.map(
       (unit) =>
-        `- **${unit.location}** — ${unit.purpose}. Basis: ${unit.basis ?? "unverified"}. Removal impact: ${unit.removal_impact ?? "not established"}.`,
+        `- **${unit.location}** — ${unit.purpose}\n  Basis: ${unit.basis ?? "unverified"}\n  Removal impact: ${unit.removal_impact ?? "not established"}`,
     ),
   ].join("\n\n");
 }
