@@ -67,7 +67,7 @@ class Harness {
   baseRev: string;
 
   constructor(
-    workspace: "primary" | "linked-git" | "jj" = "primary",
+    workspace: "primary" | "linked-git" | "jj" | "jj-uncolocated" = "primary",
     trackedCache = false,
   ) {
     const repo = resolve(this.root, "target");
@@ -103,7 +103,7 @@ class Harness {
       const linked = join(this.root, "linked");
       this.git("worktree", "add", "-q", "-b", "feat/scoped-save", linked);
       this.repo = realpathSync(linked);
-    } else if (workspace === "jj") {
+    } else if (workspace === "jj" || workspace === "jj-uncolocated") {
       const initialized = spawnSync(
         "jj",
         ["git", "init", "--colocate", this.repo],
@@ -111,7 +111,15 @@ class Harness {
       );
       expect(initialized.status, initialized.stderr).toBe(0);
       const linked = join(this.root, "linked");
-      this.jj("workspace", "add", "--name", "scoped-save", linked);
+      this.jj(
+        "--config",
+        `git.colocate=${workspace === "jj"}`,
+        "workspace",
+        "add",
+        "--name",
+        "scoped-save",
+        linked,
+      );
       this.repo = realpathSync(linked);
       writeFileSync(join(this.repo, "tests.txt"), "workspace parent\n");
       this.jj("commit", "-m", "test: establish workspace parent");
@@ -723,8 +731,8 @@ describe("centralized workspace saving", () => {
     }
   }, 30_000);
 
-  it("should save a native jj workspace against its own parent without changing the primary checkout", () => {
-    const fixture = new Harness("jj");
+  it.each(["jj", "jj-uncolocated"] as const)("should save a %s workspace against its own parent without changing the primary checkout", (workspace) => {
+    const fixture = new Harness(workspace);
     try {
       writeFileSync(
         join(fixture.primaryRepo, "developer.txt"),

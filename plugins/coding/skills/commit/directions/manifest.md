@@ -146,7 +146,7 @@ Before describing or emitting the Git commit, verify that the selected change's 
 
 ### Registered jj workspace
 
-Use `jj-workspace` only when the registered active workspace and backing Git object store are proven. Never substitute the default checkout's HEAD, index, or status for active-workspace state. Snapshot only the active `@`, then pin identity and tree reads to its operation. Require a unique mutable, conflict-free, non-divergent working-copy change with one parent and a physical workspace matching that snapshot; files omitted by tracking limits block sealing.
+Use `jj-workspace` only when the registered active workspace and backing Git object store are proven. A child workspace may have no local Git worktree or a linked Git worktree; when Git is present, require its root to equal the jj workspace root and its common directory to equal `jj git root`. Never substitute the default checkout's HEAD, index, or status for active-workspace state. Snapshot only the active `@`, then pin identity and tree reads to its operation. Require a unique mutable, conflict-free, non-divergent working-copy change with one parent and a physical workspace matching that snapshot; files omitted by tracking limits block sealing.
 
 Use the pinned parent and working-copy trees for source inventory. Read backing Git only for immutable objects and explicitly scoped configuration, ignore, and attribute queries. Artifacts remain under the canonical state root. Capture the default workspace's identity and primary Git HEAD, index, and physical inventory as preservation evidence, never as the selected source.
 

@@ -906,12 +906,8 @@ function repositoryIdentity(
           .stdout,
       ),
     );
-    if (directory !== common)
-      throw new ContractError(
-        "jj scoped save does not support a linked Git worktree; use a jj workspace",
-      );
     if (
-      jjGit !== directory ||
+      jjGit !== common ||
       decodeTrimmedPath(
         runGit(local, ["rev-parse", "--is-bare-repository"]).stdout,
       ) !== "false"
@@ -920,7 +916,7 @@ function repositoryIdentity(
         "jj Git root differs from the non-bare colocated Git repository",
       );
     runJj(local, ["git", "colocation", "status"], { ignoreWorkingCopy: true });
-    vcs = "jj-colocated";
+    vcs = directory === common ? "jj-colocated" : "jj-workspace";
   } else if (jjRoot) vcs = "jj-workspace";
   const identity: JsonObject = {
     canonical_root: root,
