@@ -5,7 +5,7 @@
 - Verify correctness and security before lower-impact concerns.
 - Treat every correction as evidence that improves the result, not as personal criticism.
 - Separate code quality from personal worth while holding the quality bar.
-- Qualify blockers against approved requirements, applicable standards, or evidenced likely production failures; label speculation as non-blocking.
+- Qualify blockers against approved requirements, applicable standards, or evidenced likely production failures; a race or edge-case claim must also be realistic under `GEN-SAFE-04`; label speculation as non-blocking.
 - Support each claim with appropriate evidence; blockers need a governing source, applicability proof, impact, and practical next action.
 - Match review depth to change size and risk; stop when required checks pass and evidenced defects are resolved.
 - Apply `GEN-SAFE-01` exactly when a suppression appears.
@@ -33,7 +33,7 @@
 ### Evidence Threshold
 
 <IMPORTANT>
-Qualify a blocker before recording it, assigning blocking priority, or requiring work. A blocker requires a demonstrated violation of an approved requirement or applicable standard, or an overlooked defect evidenced as highly likely in supported production use. For a logic defect without a feature-specific requirement, cite the supported-behavior correctness rule (`CRV-CORR-01`) and the actual caller, producer, or production evidence establishing the failure. An applicable standard violation needs no separate likelihood estimate.
+Qualify a blocker before recording it, assigning blocking priority, or requiring work. A blocker requires a demonstrated violation of an approved requirement or applicable standard, or an overlooked defect evidenced as highly likely in supported production use. For a logic defect without a feature-specific requirement, cite the supported-behavior correctness rule (`CRV-CORR-01`) and the actual caller, producer, or production evidence establishing the failure. An applicable standard violation needs no separate likelihood estimate, except that every race, timing, edge-case, or failure-path claim must be realistic under the [realistic-failure rule](../universal/rules/gen-safe-04.md) (`GEN-SAFE-04`), whichever standard it cites.
 
 Work beyond the minimum sufficient solution under `essential:references/working-attitude.md` and unexplained differences from comparable existing work under the established-pattern rule (`GEN-CONS-01` in `universal/`) remain reviewable violations. Identify removable work that adds no required behavior or readability, or comparable artifacts whose relevant constraints match and whose divergence lacks justification. Cite the affected artifact and concrete unnecessary maintenance burden or convention violation; no runtime failure is required. Abstraction or caller count alone proves neither violation.
 
@@ -41,11 +41,11 @@ Every blocker carries all three:
 
 1. **Governing source:** the exact approved requirement or applicable rule, with its source reference and a brief explanation of what it requires; a bare rule ID is insufficient.
 2. **Applicability and proof:** the supported trigger and a source trace, failing check, reproduction, or production evidence bound to the reviewed inputs. For structural standards, cite the affected artifact and rule trigger instead of inventing a runtime scenario.
-3. **Concrete impact:** what fails, who or what is affected, and why it matters; for an overlooked production defect, explain why the supported path makes occurrence highly likely without inventing a numerical threshold.
+3. **Concrete impact:** what fails, who or what is affected, and why it matters; for a race, timing, edge-case, or failure-path claim, give the `GEN-SAFE-04` classification or occurrence estimate; for any other overlooked production defect, explain why the supported path makes occurrence highly likely.
 
-Support comes from the approved contract, actual callers or producers, or established production use. Parser permissiveness and a reproduction using an invented input establish possible behavior, not support. Malicious inputs at a real trust boundary remain reviewable under applicable security standards. Never expand scope or demand tests for unsupported hypothetical inputs. A conclusive source trace is sufficient evidence; a runtime reproduction is not mandatory for every finding.
+Support comes from the approved contract, actual callers or producers, or established production use. Parser permissiveness and a reproduction using an invented input establish possible behavior, not support. Malicious inputs at a real trust boundary remain reviewable under applicable security standards. Never expand scope or demand tests for unsupported hypothetical inputs. A conclusive source trace is sufficient evidence; a runtime reproduction is not mandatory for every finding. A trace showing that an interleaving or edge case can occur proves possibility, not realistic occurrence.
 
-Specific speculation may appear as an explicitly non-blocking thought, with its assumptions stated and no request attached. Questions, thoughts, notes, praise, and optional suggestions need context and evidence appropriate to their claims, not proof of a violation or failure impact. They never become blockers, mandatory chores, required tests, or approval caps merely because uncertainty remains. Whenever feedback cites a rule ID, briefly explain the rule.
+Specific speculation, including a race or edge case below the `GEN-SAFE-04` bar, may appear as an explicitly non-blocking thought, with its assumptions stated and no request attached. Questions, thoughts, notes, praise, and optional suggestions need context and evidence appropriate to their claims, not proof of a violation or failure impact. They never become blockers, mandatory chores, required tests, or approval caps merely because uncertainty remains. Whenever feedback cites a rule ID, briefly explain the rule.
 </IMPORTANT>
 
 ### Review Focus
@@ -54,12 +54,12 @@ Check these areas in order, without treating later areas as optional:
 
 | Priority | Focus | Typical evidence |
 |---|---|---|
-| Critical | Correctness and security | Failing edge case, race, injection, missing authorization |
+| Critical | Correctness and security | Realistic failing edge case or race (`GEN-SAFE-04`), injection, missing authorization |
 | Important | Performance and architecture | N+1 query, leak, unnecessary O(n²), misplaced responsibility |
 | Important | Maintainability and testing | Unclear naming, duplicated responsibility, missing failure tests |
 | Optional | Style | A non-blocking readability preference not owned by another rule |
 
-Use efficient structures where the evidence warrants them, such as a `Map` for repeated keyed lookup. Request error-scenario tests only when an applicable requirement or standard calls for them and the supported failure path and missing protection are evidenced.
+Use efficient structures where the evidence warrants them, such as a `Map` for repeated keyed lookup. Request error-scenario tests only when an applicable requirement or standard calls for them and the supported failure path is realistic under `GEN-SAFE-04` and the missing protection is evidenced.
 
 ### Suppression Review
 

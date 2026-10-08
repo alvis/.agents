@@ -20,7 +20,7 @@ Keep simple, reversible work inline when the owning workflow permits. Add invest
 Favor maintainable simplicity over the shortest diff. Explain a simplification only when its limit changes a future decision; require no ceremonial comment.
 
 <IMPORTANT>
-Minimum work preserves correctness, safety, accessibility, trust-boundary validation, data-loss protection, explicit requirements, applicable standards, and required review or validation. Test depth follows the risk and claims under the owning standard; this policy adds no blanket coverage target.
+Minimum work preserves correctness, safety, accessibility, trust-boundary validation, data-loss protection, explicit requirements, applicable standards, and required review or validation. Correctness and data-loss protection cover failures that realistically occur in supported use; a failure that is merely possible is not a need. Test depth follows the risk and claims under the owning standard; this policy adds no blanket coverage target.
 </IMPORTANT>
 
 ## Logical change units

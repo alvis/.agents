@@ -2,7 +2,7 @@
 
 ## Intent
 
-For complex changes, perform a deliberate "what am I missing" pass before finalizing. Explicitly check for blindspots, document key decisions and uncertainties, and assess risk.
+For complex changes, perform a deliberate "what am I missing" pass before finalizing. Explicitly check for blindspots, document key decisions and uncertainties, and assess risk. A failure the pass surfaces becomes code, tests, or review work only when it is realistic under [GEN-SAFE-04](gen-safe-04.md); concluding that nothing realistic is missing completes the pass.
 
 ## Fix
 
@@ -28,7 +28,7 @@ For complex changes, perform a deliberate "what am I missing" pass before finali
 
 - What assumptions am I making?
 - What information don't I have?
-- What could go wrong that I haven't considered?
+- What could realistically go wrong that I haven't considered?
 - Who else should weigh in?
 - What are the unintended consequences?
 
@@ -49,4 +49,4 @@ For complex changes, perform a deliberate "what am I missing" pass before finali
 
 ## Related
 
-GEN-SCAL-01, GEN-SCAL-02, GEN-CONS-01
+GEN-SCAL-01, GEN-SCAL-02, GEN-SAFE-04, GEN-CONS-01

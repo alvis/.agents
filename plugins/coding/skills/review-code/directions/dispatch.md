@@ -54,7 +54,7 @@ Surface a hard Bun runtime failure. Candidate output enters the local finding re
 
 ### correctness
 
-- Trace control flow, boundaries, async/resource behavior, errors, operators, arguments, invariants, and plausible failure paths. Do not duplicate alignment, quality, or mechanical findings.
+- Trace control flow, boundaries, async/resource behavior, errors, operators, arguments, invariants, and failure paths realistic under `coding:standards/universal/rules/gen-safe-04.md`. Do not duplicate alignment, quality, or mechanical findings.
 - Write the assigned report for `reviews/correctness.md`, prefix `CORR`.
 
 ### security

@@ -10,7 +10,7 @@ Root `state.md` (`plan_source: state.md`) plus linked approved specification/des
 
 ## Semantic errors belong to correctness
 
-Trace supported behavior rather than trusting code shape. Wrong control flow/operators, swapped arguments, silent errors, races, unhandled async work, leaks, and boundary validation defects belong in `correctness.md` unless security-specific. Apply the standard's evidence threshold even without a feature-specific requirement; a merely plausible failure path is insufficient.
+Trace supported behavior rather than trusting code shape. Wrong control flow/operators, swapped arguments, silent errors, races, unhandled async work, leaks, and boundary validation defects belong in `correctness.md` unless security-specific. Apply the standard's evidence threshold even without a feature-specific requirement; a merely plausible failure path is insufficient, and a race or edge case must be realistic under [GEN-SAFE-04](../standards/universal/rules/gen-safe-04.md).
 
 ## Simplification, redundancy, and sibling consistency belong to quality
 

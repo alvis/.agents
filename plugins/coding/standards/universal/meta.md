@@ -18,7 +18,8 @@ This standard enforces requirements beyond common team conventions:
 |-----------------------------------------|--------------------------------------------------------------------|
 | Suppression comments used pragmatically | **Suppression is exceptional and requires explicit user approval** |
 | Wrapper functions often tolerated       | **Zero wrapper tolerance unless value is added**                   |
-| Defensive runtime checks added routinely | **Runtime checks require a trust boundary or independently mutable invariant** |
+| Defensive runtime checks added routinely | **Runtime checks require a trust boundary or an invariant that supported execution realistically invalidates** |
+| Every possible edge case handled | **Only realistic failures are handled; a race needs an occurrence estimate under `GEN-SAFE-04`** |
 | Optimize while implementing             | **Profile first, optimize second**                                 |
 | Mixed style tolerated                   | **Must match established project patterns**                        |
 | Bulky working code accepted             | **A concrete clearer equivalent is required when complexity adds no behavior or readability** |

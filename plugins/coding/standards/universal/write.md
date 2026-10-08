@@ -5,7 +5,8 @@
 - Fix root causes, never suppress diagnostics without explicit user approval
 - Keep functions/modules focused on one clear purpose (single responsibility)
 - Eliminate duplication by consolidating semantically identical logic
-- Wrappers must add concrete value; validation counts only at a trust boundary or for a condition supported execution can invalidate independently
+- Wrappers must add concrete value; validation counts only at a trust boundary or for a condition supported execution realistically invalidates independently
+- Build the happy path; handle only failures that realistically occur, and accept finding none
 - Match established architecture and style patterns in the codebase
 - Profile before optimizing; choose data structures that avoid predictable bottlenecks
 - Use American English spelling in symbols, filenames, and comments
@@ -17,6 +18,7 @@
 - **GEN-SAFE-01**: No suppression comments (`@ts-ignore`, `eslint-disable`, etc.) without explicit user approval and a root-cause note. (→ TYP-CORE-04)
 - **GEN-SAFE-02**: Fix the root defect, not symptoms. No silent catches, blanket retries, or noop fallbacks.
 - **GEN-SAFE-03**: Validate genuine trust-boundary inputs; remove closed first-party producer postcondition rechecks only after tracing provenance and citing the exact producer test.
+- **GEN-SAFE-04**: Handle external availability, attacker-timed races, irreversible loss, and races that meet the [occurrence bar](rules/gen-safe-04.md); nothing merely possible.
 
 ### Design (GEN-DESN)
 
@@ -35,7 +37,7 @@
 
 - **GEN-SCAL-01**: Use profiling evidence before introducing optimization complexity.
 - **GEN-SCAL-02**: Choose data structures and boundaries that avoid predictable bottlenecks.
-- **GEN-SCAL-03**: For complex changes, perform a deliberate "what am I missing" pass before finalizing.
+- **GEN-SCAL-03**: For complex changes, perform a deliberate "what am I missing" pass before finalizing; a risk it surfaces becomes work only after passing `GEN-SAFE-04`.
 
 ## Patterns
 
@@ -62,7 +64,7 @@ const parsedConfig = configSchema.parse(rawConfig);
 startServer(parsedConfig);
 ```
 
-Do not repeat that validation after a typed, first-party call. Before adding a guard, name the value's provenance and who can violate the condition during supported execution. Runtime validation is justified for deserialization, user or network input, external SDKs, public plugin implementations, persistence reads, unsafe casts, or mutable, concurrent, and security-sensitive state that can change after a trusted producer returns. A postcondition of code shipped and tested in the same repository belongs in producer tests even when the type system cannot express it fully; an interface alone does not create a boundary.
+Do not repeat that validation after a typed, first-party call. Before adding a guard, name the value's provenance and who can violate the condition during supported execution. Runtime validation is justified for deserialization, user or network input, external SDKs, public plugin implementations, persistence reads, unsafe casts, or mutable, concurrent, and security-sensitive state that realistically changes after a trusted producer returns under `GEN-SAFE-04`. A postcondition of code shipped and tested in the same repository belongs in producer tests even when the type system cannot express it fully; an interface alone does not create a boundary.
 
 ### Wrapper Value Test
 
@@ -104,6 +106,7 @@ Before introducing a new pattern, inspect nearby code and match the established 
 - Architecture drift from ad-hoc local patterns.
 - Unnecessary indirection and abstraction layering.
 - Defensive guards that only reassert a trusted first-party return type.
+- Handling, testing, or requesting fixes for races and edge cases that are possible but not realistic.
 - Premature generalization of unproven requirements.
 - Replacing declarative defaults with conditional imperative logic.
 - Optimizing without profiling evidence.
@@ -114,7 +117,8 @@ Before introducing a new pattern, inspect nearby code and match the established 
 2. If considering suppression, stop and get explicit user approval (`GEN-SAFE-01`).
 3. If adding abstraction, verify measurable value (`GEN-DESN-03`).
 4. If adding or removing runtime validation, apply the provenance, independent-invalidation, and exact-producer-test decision contract (`GEN-SAFE-03`).
-5. If changing style/patterns, align with current architecture (`GEN-CONS-01`).
-6. If optimizing, provide profiling evidence (`GEN-SCAL-01`).
-7. For complex changes, run "what am I missing" check (`GEN-SCAL-03`).
-8. If replacing a declarative default with a conditional, revert to the declarative form (`GEN-CONS-04`).
+5. If adding or requesting failure handling, classify the failure and estimate a race's occurrence first (`GEN-SAFE-04`).
+6. If changing style/patterns, align with current architecture (`GEN-CONS-01`).
+7. If optimizing, provide profiling evidence (`GEN-SCAL-01`).
+8. For complex changes, run "what am I missing" check (`GEN-SCAL-03`).
+9. If replacing a declarative default with a conditional, revert to the declarative form (`GEN-CONS-04`).
