@@ -448,7 +448,12 @@ describe("review publication shell guard", () => {
             requirements_alignment: "Empty input remains supported.",
             intent_behavior: "The guard precedes indexing.",
             limitations: { entries: [], review_complete: true },
-            minimality: "Only the guard changes.",
+            minimality: {
+              contract: "Task requirement: support empty input.",
+              scope: { result: "within_scope", evidence: "Only the requested boundary changes." },
+              implementation: { result: "minimal", evidence: "One guard is sufficient." },
+              units: [{ location: "src/sequence.ts", purpose: "Handle empty input.", basis: "Task requirement: support empty input.", removal_impact: "Empty input would throw." }],
+            },
             reuse: "Uses the existing parser.",
             standards: [
               {

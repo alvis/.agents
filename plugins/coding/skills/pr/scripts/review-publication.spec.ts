@@ -173,7 +173,17 @@ const review = {
     intent_behavior:
       "The guard precedes all indexing and preserves nonempty inputs.",
     limitations: { entries: [], review_complete: true },
-    minimality: "Only the sequence boundary changes.",
+    minimality: {
+      contract: "Task requirement: empty sequences return an empty result.",
+      scope: { result: "within_scope", evidence: "The input guard implements the requested empty-sequence boundary." },
+      implementation: { result: "minimal", evidence: "The existing parser needs only the boundary guard." },
+      units: [{
+        location: "src/sequence.ts:12 and sequence.spec.ts:24",
+        purpose: "Handle and verify empty input.",
+        basis: "Task requirement: support empty sequences.",
+        removal_impact: "Empty sequences would throw instead of returning an empty result.",
+      }],
+    },
     requirements_alignment:
       "Both empty and nonempty inputs satisfy the stated contract.",
     reuse: "The existing sequence parser remains the entrypoint.",
@@ -235,6 +245,97 @@ function reviewStructure(body: string): {
 }
 
 describe("cmd:review-publication", () => {
+  it("should publish the governing evidence for every minimality unit", () => {
+    const body = approvedBody(receipt, "green");
+    const minimality = review.assessment.minimality;
+    for (const evidence of [minimality.contract, minimality.scope.result,
+      minimality.scope.evidence, minimality.implementation.result,
+      minimality.implementation.evidence, ...minimality.units.flatMap(unit =>
+        [unit.location, unit.purpose, unit.basis, unit.removal_impact])]) {
+      expect(body).toContain(evidence);
+    }
+  });
+
+  it.each([
+    "Only the sequence boundary changes.",
+    null,
+    {},
+    { ...review.assessment.minimality, scope: { result: "unverified" } },
+    { ...review.assessment.minimality, implementation: { result: "small", evidence: "One guard." } },
+    { ...review.assessment.minimality, contract: null },
+    { ...review.assessment.minimality, units: [] },
+    { ...review.assessment.minimality, scope: { result: "within_scope", evidence: " " } },
+    { ...review.assessment.minimality, implementation: { result: "minimal", evidence: "" } },
+    ...["location", "purpose", "basis", "removal_impact"].map(field => ({
+      ...review.assessment.minimality,
+      units: [{ ...review.assessment.minimality.units[0], [field]: null }],
+    })),
+  ])("should reject unsupported or malformed minimality evidence %#", (minimality) => {
+    expect(() => createReviewPublicationReceipt({
+      ...review, assessment: { ...review.assessment, minimality },
+    })).toThrow();
+  });
+
+  it.each(["scope", "implementation"] as const)(
+    "should reject an uncapped unverified %s assessment", (axis) => {
+      expect(() => createReviewPublicationReceipt({
+        ...review, assessment: { ...review.assessment, minimality: {
+          ...review.assessment.minimality,
+          [axis]: { result: "unverified", evidence: "The governing evidence is unavailable." },
+        } },
+      })).toThrow();
+    },
+  );
+
+  it("should cap and render uncertainty when the task contract and unit evidence are unavailable", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review, assessment: { ...review.assessment,
+        minimality: {
+          contract: null,
+          scope: { result: "unverified", evidence: "The task contract is unavailable." },
+          implementation: { result: "unverified", evidence: "Removal impact could not be assessed." },
+          units: [{ ...review.assessment.minimality.units[0], basis: null, removal_impact: null }],
+        },
+        trust_caps: ["partial-review"],
+        limitations: { review_complete: false, entries: [{ path: "src/sequence.ts", reason: "The task contract is unavailable." }] },
+      },
+    });
+    expect(approval.binding.trust_caps).toEqual(["partial-review"]);
+    const body = approvedBody(approval, "green");
+    expect(body).toContain("unverified");
+    expect(body).toContain("The task contract is unavailable.");
+    expect(body).toContain("Removal impact could not be assessed.");
+    expect(body).not.toMatch(/\b(?:null|undefined)\b/);
+    expect(reviewStructure(body)).toEqual({ summary: "⚠️", alert: "WARNING" });
+  });
+
+  it.each([
+    { scope: { result: "extra_scope", evidence: "The guard includes an unrelated cleanup." } },
+    { implementation: { result: "removable", evidence: "The helper can be removed without affecting empty input." } },
+  ])("should require a blocker for excess scope or removable implementation %#", (change) => {
+    expect(() => createReviewPublicationReceipt({
+      ...review, assessment: { ...review.assessment,
+        minimality: { ...review.assessment.minimality, ...change },
+      },
+    })).toThrow();
+  });
+
+  it.each([
+    { scope: { result: "extra_scope", evidence: "The guard includes an unrelated cleanup." }, blocker: { kind: null, priority: "P1" } },
+    { implementation: { result: "removable", evidence: "The helper can be removed without affecting empty input." }, blocker: { kind: "chore", priority: null } },
+  ])("should publish excess minimality evidence with a blocking finding %#", ({ blocker, ...change }) => {
+    const approval = createReviewPublicationReceipt({
+      ...review, assessment: { ...review.assessment,
+        minimality: { ...review.assessment.minimality, ...change },
+        findings: [{ ...finding, ...blocker }],
+        substantive_verdict: "REQUEST_CHANGES",
+        alerts: { must_change: "Remove the unnecessary change.", worth_considering: null, unanchored: null },
+      },
+    });
+    expect(approval.binding.substantive_verdict).toBe("REQUEST_CHANGES");
+    expect(reviewStructure(approvedBody(approval, "green"))).toEqual({ summary: "❌", alert: "CAUTION" });
+  });
+
   it.each(["head", "base"])(
     "should refuse initial publication when %s changes during CI lookup",
     (revision) => {
@@ -1198,7 +1299,15 @@ describe("cmd:review-publication", () => {
         "",
         review.assessment.reuse,
         "",
-        review.assessment.minimality,
+        "Approved scope: Task requirement: empty sequences return an empty result.",
+        "",
+        "Scope: within_scope. The input guard implements the requested empty-sequence boundary.",
+        "",
+        "Implementation: minimal. The existing parser needs only the boundary guard.",
+        "",
+        "- **src/sequence.ts:12 and sequence.spec.ts:24** — Handle and verify empty input.",
+        "  Basis: Task requirement: support empty sequences.",
+        "  Removal impact: Empty sequences would throw instead of returning an empty result.",
         "",
         "### 🧾 Verdict",
         "",
@@ -1210,6 +1319,32 @@ describe("cmd:review-publication", () => {
     expect(payload.comments[0].body).toBe(
       `**📝 ${finding.title}** — ${finding.body}\n\nEvidence: ${finding.evidence}\n`,
     );
+  });
+
+  it("should separate minimality unit fragments without adding punctuation", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: {
+        ...review.assessment,
+        minimality: {
+          ...review.assessment.minimality,
+          units: [{
+            location: "src/sequence.ts:12",
+            purpose: "Empty-input guard",
+            basis: "Requested empty-sequence support",
+            removal_impact: "Empty input throws",
+          }],
+        },
+      },
+    });
+
+    expect(approvedBody(approval, "green")).toContain([
+      "- **src/sequence.ts:12** — Empty-input guard",
+      "  Basis: Requested empty-sequence support",
+      "  Removal impact: Empty input throws",
+      "",
+      "### 🧾 Verdict",
+    ].join("\n"));
   });
 
   it("should substitute review input literally without expanding tokens or replacement patterns", () => {

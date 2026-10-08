@@ -23,7 +23,7 @@ These are the findings a diff-only reader cannot make, and they are usually the 
 - **Is this the right place?** A correct change in the wrong location is still a finding. Watch for a guard repeated at every call site that belongs in the callee, validation in a controller that belongs in the domain layer, a constant copied locally that belongs in shared constants, and a symptom patched downstream of the function that actually produced the bad value. Propose the destination by exact path in `alternative`, and explain what moving it buys — usually that the other callers get the fix too. Root-cause-versus-symptom placement is P1, because the bug stays live everywhere else; ordinary layering misplacement is P2. When the right home is a lower PR in the stack, say so and point at `coding:commit --reorder`, which owns reparenting; never reshape history from here.
 - **Callers of what changed.** Follow a changed signature, return shape, or thrown error into its actual call sites. A caller that now receives `undefined`, ignores a new error, or breaks on a renamed field is a verified finding — anchor it to the changed line that breaks it, and name the call site in the body.
 - **Siblings the new file should resemble.** Open the files with the same role in the same directory and compare naming, parameter and return shape, error, log, retry, and cache behavior. Unexplained divergence from an established local pattern is the most common real finding in a PR review.
-- **Scope against the stated goal.** The PR title, body, and any resolvable goal/spec are the contract. Report what the PR claims but does not do, and what it does without claiming — scope creep is a finding, not a bonus.
+- **Scope against the approved task.** Audit the checked-out delivery under `essential:references/working-attitude.md#logical-change-units`; report unmet requirements and additional work.
 - **Read the linked specification before grading alignment.** A resolvable spec makes `goal_spec_alignment: skipped_unknown` unavailable: confirm every deviation from it is captured under Additional Notes, and raise each uncaptured deviation as an unanchored merge-blocking chore. Treat an unticked `- [ ] Specification deviations approved:` task in Verification as the same process chore owed against the PR body — the deviations it records stay unapproved until that task is ticked.
 - **Does it follow every applicable standard?** Review file placement against `file-structure/`, behavior and APIs against `universal/` and `function/`, tests against `testing/`, docs and comments against `documentation/`, and each changed language against its language-specific standard. Cite the exact rule for a violation.
 - **Can anything be removed without changing the result?** Flag code, content, tests, helpers, wrappers, assertions, or repeated prose whose removal leaves required behavior and readability unchanged; abstraction alone is not evidence of removable work. Repetition is justified only when it materially improves readability or preserves a required boundary.
@@ -32,6 +32,8 @@ These are the findings a diff-only reader cannot make, and they are usually the 
 - **Docs the change makes wrong.** Read the README, API doc, or example the changed surface belongs to, and flag it when the diff contradicts it.
 
 `style` reports only what the candidate scan surfaced plus naming-policy gaps, each with its rule id. Never run project lint — `coding:lint` owns that.
+
+Record the delivery audit under [Minimality evidence](review-publishing.md#minimality-evidence). Reuse task-delivery evidence only when its bindings still match.
 
 ## Finding schema
 
@@ -58,7 +60,7 @@ spec_deviations: captured | missing | skipped
 intent_behavior: matches | diverges | skipped
 standards_alignment: matches | diverges | skipped
 reuse: no_missed_reuse | missed_reuse | skipped
-minimality: lean | removable_content | skipped
+minimality: <structured assessment under review-publishing.md>
 not_reviewed:
   - path: <path>
     reason: <binary, generated, vendored, deleted, or too large>

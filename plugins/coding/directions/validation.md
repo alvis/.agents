@@ -14,6 +14,12 @@ edit → verify delivery → affected gates → save
 
 Confirm every stated requirement shipped against the code, tests, and documentation. Fix anything unmet, then reassess delivery and rerun failed or invalidated gates under the evidence contract below; retain unaffected passes.
 
+### Verify task delivery
+
+Before marking a planned coding task done, count its cumulative delivery using `essential:references/working-attitude.md#logical-change-units`. More than 10 code units triggers a quick independent delivery review because that many distinct purposes warrants a second check for scope drift; this is a scrutiny trigger, not a maximum or a proven complexity boundary. At or below that count, risk-based review requirements still apply.
+
+With a valid [review_ownership assignment](review-evidence.md#one-delivery-owner), the child returns its unit inventory with the task evidence; the named owner performs this check at integration before closing the integrated delivery. Otherwise, give the independent reviewer the approved task, acceptance criteria, exact delivery checkout, base/head, and author's unit inventory. Resolve evidenced excess work before closure; unresolved authority or coverage leaves the task blocked with its missing evidence named. Keep the result in the existing task evidence: required units, removal or deferral findings, and unresolved scope questions. Reuse a matching independent review rather than dispatching twice; later integrated and PR reviews carry that evidence forward and examine changed inputs and coverage gaps. Do not automate purpose counting with diff hunks or line thresholds.
+
 ## Reuse deterministic-check evidence
 
 Before scheduling a check, compare its current inputs with the original successful execution. Reuse an existing check receipt or QA record; do not introduce a second cache. Record:

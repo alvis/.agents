@@ -15,6 +15,32 @@ Use exactly one discriminated message class:
 
 The review assessment must substantively cover intent and behavior, goal and requirement alignment, every applicable static standard with evidence, test-sensitivity reasoning, executed test evidence or a scoped runtime-test waiver, reuse, minimality, limitations or an explicit complete-review state, findings, trust caps, and a substantive verdict. The independent reviewer—not heading detection or the publication agent—owns the quality of that reasoning. A runtime-test waiver replaces only execution evidence; all static, sensitivity, limitation, finding, and verdict fields remain mandatory.
 
+### Minimality evidence
+
+`assessment.minimality` records the audit under `essential:references/working-attitude.md#logical-change-units` in the following fields.
+
+<report>
+
+```yaml
+minimality:
+  contract: <approved scope reference and revision, or null if unresolved>
+  scope:
+    result: within_scope | extra_scope | unverified
+    evidence: <comparison against approved scope, or missing authority/coverage>
+  implementation:
+    result: minimal | removable | unverified
+    evidence: <simpler alternatives considered and necessity, or coverage gap>
+  units:
+    - location: <affected paths and code/content locations>
+      purpose: <one cohesive purpose>
+      basis: <approved requirement, demonstrated defect, or applicable standard; null if unestablished>
+      removal_impact: <required outcome, readability, boundary, or validation lost on removal; null if none established>
+```
+
+</report>
+
+Verified scope requires a resolved contract and nonempty inventory; `within_scope` requires a governing basis for every unit, and `minimal` requires every removal impact. `extra_scope` or `removable` requires a blocking finding under the code-review evidence threshold. An unresolved contract requires `scope.result: unverified`. Either unverified verdict requires `partial-review`, incomplete limitations, and a named missing authority or coverage gap; it cannot publish an uncapped passing review. The executable enforces these structural relationships and renders the evidence. It cannot prove that a stated basis is approved, a removal impact is true, or the inventory is complete; those remain the independent reviewer's responsibility. Versioned receipts from the prior free-text contract must be replaced, never relabeled.
+
 ## Approve
 
 Set `REVIEW_PUBLICATION` to the absolute path of `scripts/review-publication.ts` only while preparing artifacts. Materialize the complete assessment shape declared by that executable, filling every field from the pinned review evidence. The templates map their presentation to these assessment inputs:

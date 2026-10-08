@@ -74,7 +74,23 @@ interface ReviewAssessment {
     }[];
     readonly review_complete: boolean;
   };
-  readonly minimality: string;
+  readonly minimality: {
+    readonly contract: string | null;
+    readonly implementation: {
+      readonly evidence: string;
+      readonly result: "minimal" | "removable" | "unverified";
+    };
+    readonly scope: {
+      readonly evidence: string;
+      readonly result: "within_scope" | "extra_scope" | "unverified";
+    };
+    readonly units: readonly {
+      readonly basis: string | null;
+      readonly location: string;
+      readonly purpose: string;
+      readonly removal_impact: string | null;
+    }[];
+  };
   readonly previous_reports: readonly {
     readonly evidence: string;
     readonly label: string;
@@ -265,7 +281,7 @@ interface PublishOptions {
   readonly executable?: string;
 }
 
-export const CONTRACT_VERSION = "coding-pr-review-publication/v3" as const;
+export const CONTRACT_VERSION = "coding-pr-review-publication/v4" as const;
 export const RECEIPT_VERSION = 3 as const;
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
@@ -1331,7 +1347,7 @@ function parseReviewJudgment(input: unknown): ReviewAssessment {
       entries,
       review_complete: reviewComplete,
     },
-    minimality: nonemptyString(value.minimality, "minimality assessment"),
+    minimality: parseMinimality(value.minimality),
     previous_reports: previousReports,
     requirements_alignment: nonemptyString(
       value.requirements_alignment,
@@ -1367,6 +1383,79 @@ function parseReviewJudgment(input: unknown): ReviewAssessment {
       "review verdict sentence",
     ),
   };
+}
+
+function parseMinimality(input: unknown): ReviewAssessment["minimality"] {
+  const value = objectValue(input, "minimality assessment");
+  const scope = objectValue(value.scope, "minimality scope");
+  const implementation = objectValue(
+    value.implementation,
+    "minimality implementation",
+  );
+  const minimality: ReviewAssessment["minimality"] = {
+    contract: nullableString(value.contract, "minimality contract"),
+    implementation: {
+      evidence: nonemptyString(
+        implementation.evidence,
+        "minimality implementation evidence",
+      ),
+      result: enumValue(
+        implementation.result,
+        ["minimal", "removable", "unverified"] as const,
+        "minimality implementation result",
+      ),
+    },
+    scope: {
+      evidence: nonemptyString(scope.evidence, "minimality scope evidence"),
+      result: enumValue(
+        scope.result,
+        ["within_scope", "extra_scope", "unverified"] as const,
+        "minimality scope result",
+      ),
+    },
+    units: arrayValue(value.units, "minimality units").map((entry) => {
+      const unit = objectValue(entry, "minimality unit");
+      return {
+        basis: nullableString(unit.basis, "minimality unit basis"),
+        location: nonemptyString(unit.location, "minimality unit location"),
+        purpose: nonemptyString(unit.purpose, "minimality unit purpose"),
+        removal_impact: nullableString(
+          unit.removal_impact,
+          "minimality unit removal impact",
+        ),
+      };
+    }),
+  };
+  if (
+    minimality.contract === null &&
+    minimality.scope.result !== "unverified"
+  ) {
+    throw new Error("unresolved minimality contract requires unverified scope");
+  }
+  if (
+    (minimality.scope.result !== "unverified" ||
+      minimality.implementation.result !== "unverified") &&
+    minimality.units.length === 0
+  ) {
+    throw new Error("verified minimality requires a nonempty unit inventory");
+  }
+  if (
+    minimality.scope.result === "within_scope" &&
+    minimality.units.some((unit) => unit.basis === null)
+  ) {
+    throw new Error(
+      "within-scope minimality requires a governing basis for every unit",
+    );
+  }
+  if (
+    minimality.implementation.result === "minimal" &&
+    minimality.units.some((unit) => unit.removal_impact === null)
+  ) {
+    throw new Error(
+      "minimal implementation requires a removal impact for every unit",
+    );
+  }
+  return minimality;
 }
 
 function validateReviewAlerts(
@@ -1615,6 +1704,15 @@ function validateVerdict(assessment: ReviewAssessment): void {
       finding.kind === "chore",
   );
   const expected = hasBlocker ? "REQUEST_CHANGES" : "PASS";
+  if (
+    (assessment.minimality.scope.result === "extra_scope" ||
+      assessment.minimality.implementation.result === "removable") &&
+    !hasBlocker
+  ) {
+    throw new Error(
+      "extra scope or removable implementation requires a blocking finding",
+    );
+  }
   if (assessment.substantive_verdict !== expected) {
     throw new Error(
       `substantive verdict must be ${expected} for the recorded findings`,
@@ -1624,6 +1722,15 @@ function validateVerdict(assessment: ReviewAssessment): void {
 
 function validateTrustCaps(assessment: ReviewAssessment): void {
   const caps = new Set(assessment.trust_caps);
+  if (
+    (assessment.minimality.scope.result === "unverified" ||
+      assessment.minimality.implementation.result === "unverified") &&
+    !caps.has("partial-review")
+  ) {
+    throw new Error(
+      "unverified minimality requires the partial-review trust cap",
+    );
+  }
   if (
     caps.has("tests-unconvincing") !==
     (assessment.tests.confidence === "unconvincing")
@@ -1991,7 +2098,7 @@ function renderOverallReview(
       ].join("\n\n"),
       head_sha_short: target.head_oid.slice(0, 7),
       intent_behavior_verdict: assessment.intent_behavior,
-      minimality_verdict: assessment.minimality,
+      minimality_verdict: renderMinimality(assessment.minimality),
       one_paragraph_read: assessment.summary,
       reuse_verdict: assessment.reuse,
       standards_verdict: standards,
@@ -2031,6 +2138,18 @@ function renderOverallReview(
     },
     "overall-review",
   );
+}
+
+function renderMinimality(minimality: ReviewAssessment["minimality"]): string {
+  return [
+    `Approved scope: ${minimality.contract ?? "unverified"}`,
+    `Scope: ${minimality.scope.result}. ${minimality.scope.evidence}`,
+    `Implementation: ${minimality.implementation.result}. ${minimality.implementation.evidence}`,
+    ...minimality.units.map(
+      (unit) =>
+        `- **${unit.location}** — ${unit.purpose}\n  Basis: ${unit.basis ?? "unverified"}\n  Removal impact: ${unit.removal_impact ?? "not established"}`,
+    ),
+  ].join("\n\n");
 }
 
 function findingBlocks(

@@ -22,3 +22,9 @@ Favor maintainable simplicity over the shortest diff. Explain a simplification o
 <IMPORTANT>
 Minimum work preserves correctness, safety, accessibility, trust-boundary validation, data-loss protection, explicit requirements, applicable standards, and required review or validation. Test depth follows the risk and claims under the owning standard; this policy adds no blanket coverage target.
 </IMPORTANT>
+
+## Logical change units
+
+A logical change unit is a cohesive code change serving one purpose, regardless of line count, diff hunks, files, or commits. Group implementation with its directly supporting tests; count independently motivated helpers, fallbacks, configuration options, and cleanup separately. Exclude formatting-only and generated output from the count. Count the cumulative delivery of the approved task, never each commit separately; do not split tasks or bundle unrelated purposes to evade review. Apply the same purpose grouping to authored non-code content when assessing minimality.
+
+Reviewers inspect the exact delivery checkout and complete base-to-head diff, independently inventory every unit, and compare the inventory with the author's account to spot extra or unannounced work. An author-supplied inventory is not proof of coverage; PR prose cannot authorize scope. Assess scope and implementation simplicity separately: does every unit serve an approved requirement, demonstrated defect, or applicable standard, and could the required result be delivered with less machinery? Usefulness or possible future use alone establishes neither necessity nor authorization. Missing approved scope or incomplete coverage leaves minimality unverified.
