@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# PreToolUse gate for ExitPlanMode: enforces the required headings documented in
-# directions/plan.md. Presence only — decorative prefixes, order, and content
-# are not judged. Compatible with bash 3.2+
+# PreToolUse gate for plan headings and Git-backed working branch names.
+# Compatible with bash 3.2+
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=/dev/null
 source "$SCRIPTS_DIR/context.sh"
+# shellcheck source=/dev/null
+source "$SCRIPTS_DIR/../../scripts/branch-naming.sh"
 deny() {
   output_pretooluse_decision "deny" "$1 Read essential:directions/plan.md before correcting the plan."
 }
@@ -76,6 +77,59 @@ done
 
 if [[ -n "$missing" ]]; then
   deny "missing headings: ${missing}."
+fi
+
+working_directory="$(jq -r '.cwd | select(type == "string" and length > 0) // empty' <<<"$input")"
+working_directory="${working_directory:-$PWD}"
+if [[ ! -d "$working_directory" ]]; then
+  deny "Plan validation is unavailable: the working directory cannot be read."
+fi
+
+if git -C "$working_directory" rev-parse --git-dir >/dev/null 2>&1 ||
+   (cd "$working_directory" && command -v jj >/dev/null 2>&1 &&
+    jj --ignore-working-copy git root >/dev/null 2>&1); then
+  working_environment="$(printf '%s\n' "$plan" | awk '
+    /^#+[[:space:]]/ {
+      match($0, /^#+/)
+      level = RLENGTH
+      if (level <= 6) {
+        title = tolower(substr($0, level + 1))
+        sub(/^[[:space:]]*([^[:alnum:][:space:]#]+[[:space:]]+)?/, "", title)
+        if (title ~ /^working environment([^[:alnum:]_]|$)/) {
+          in_environment = 1
+          depth = level
+        } else if (level <= depth) {
+          in_environment = 0
+        }
+        next
+      }
+    }
+    in_environment { print }
+  ')"
+  ref_entries="$(printf '%s' "$working_environment" | jq -Rsc '
+    def entry: "^[[:space:]]*([-*+][[:space:]]+)?(\\*\\*)?(?<kind>Branch\\(es\\)|Bookmark\\(s\\))(\\*\\*)?:[[:space:]]*(\\*\\*)?[[:space:]]*";
+    split("\n")
+    | map(select(test(entry; "i"))
+      | capture(entry; "i") as $entry
+      | sub(entry; ""; "i") as $value
+      | ([ $value | capture("^(?<names>.*?)[[:space:]]+\\((?<vcs>git|jj)\\)[[:space:]]*$"; "i") ][0]
+          // {names: $value, vcs: ""})
+      | .kind = ($entry.kind | ascii_downcase)
+      | .vcs |= ascii_downcase
+      | .names |= (split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; "")
+          | if test("^`[^`]*`$") then .[1:-1] else . end)))
+  ')"
+  if [[ "$(jq 'length' <<<"$ref_entries")" == "0" ]]; then
+    deny "Git-backed plans require Branch(es): <names> (git) or Bookmark(s): <names> (jj) in Working environment. Follow essential:references/naming.md#branch."
+  fi
+  if ! jq -e 'all(.[]; (.kind == "branch(es)" and .vcs == "git") or (.kind == "bookmark(s)" and .vcs == "jj"))' <<<"$ref_entries" >/dev/null; then
+    deny "Use comma-separated proposed refs with matching VCS markers: Branch(es): <names> (git) or Bookmark(s): <names> (jj). Follow essential:references/naming.md#branch."
+  fi
+  while IFS= read -r branch_name; do
+    if [[ ! "$branch_name" =~ $canonical_branch_pattern ]]; then
+      deny "Invalid proposed branch or bookmark '$branch_name'. Follow essential:references/naming.md#branch."
+    fi
+  done < <(jq -r '.[].names[]' <<<"$ref_entries")
 fi
 
 allow

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPTS_DIR/branch-naming.sh"
+
 usage() {
   cat >&2 <<'EOF'
 usage: resolve-state-workspace [--work-id <id>|--work-id=<id>] \
@@ -350,7 +354,7 @@ if [[ -n "$workspace_label" ]]; then
       fi
       ;;
     2 | 3)
-      if [[ "${label_segments[0]}" =~ ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)$ ]] &&
+      if [[ "${label_segments[0]}" =~ ^${conventional_type_pattern}$ ]] &&
          { [[ "${#label_segments[@]}" -eq 2 ]] ||
            [[ "${label_segments[2]}" =~ ^(0[1-9]|[1-9][0-9])-[a-z0-9]+(-[a-z0-9]+)*$ ]]; }; then
         candidate_from_label="${label_segments[1]}"

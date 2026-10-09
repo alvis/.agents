@@ -53,10 +53,12 @@ if ! printf '%s' "$input" | jq -se 'length == 1 and (.[0] | type == "object")' >
   stop_system_message "Plan validation is unavailable: expected a JSON Stop event object."
 fi
 
-active="$(jq -r '(.stop_hook_active // .stopHookActive // false) == true' <<<"$input")"
-session_id="$(jq -r '(.session_id // .sessionId) | select(type == "string") // empty' <<<"$input")"
-turn_id="$(jq -r '(.turn_id // .turnId) | select(type == "string") // empty' <<<"$input")"
-transcript_path="$(jq -r '(.transcript_path // .transcriptPath) | select(type == "string") // empty' <<<"$input")"
+# keep repeated metadata reads independent of a large direct final response
+metadata="$(jq -c 'del(.last_assistant_message)' <<<"$input")"
+active="$(jq -r '(.stop_hook_active // .stopHookActive // false) == true' <<<"$metadata")"
+session_id="$(jq -r '(.session_id // .sessionId) | select(type == "string") // empty' <<<"$metadata")"
+turn_id="$(jq -r '(.turn_id // .turnId) | select(type == "string") // empty' <<<"$metadata")"
+transcript_path="$(jq -r '(.transcript_path // .transcriptPath) | select(type == "string") // empty' <<<"$metadata")"
 unavailable_reason="Plan validation is unavailable for this turn: the current assistant response could not be read."
 if ! retry_digest="$(printf '%s\0%s' "$session_id" "$turn_id" | git hash-object --stdin 2>/dev/null)"; then
   exit 1
@@ -126,7 +128,8 @@ if [[ "$opening_count" != "1" || "$closing_count" != "1" ]] ||
 fi
 
 plan="$(jq -r '.lines[.opening[0] + 1:.closing[0]][]' <<<"$candidate")"
-validator_input="$(printf '%s' "$plan" | jq -Rsc '{tool_input: {plan: .}}')"
+working_directory="$(jq -r '.cwd | select(type == "string" and length > 0) // empty' <<<"$metadata")"
+validator_input="$(printf '%s' "$plan" | jq -Rsc --arg cwd "$working_directory" '{cwd: $cwd, tool_input: {plan: .}}')"
 if ! validator_output="$(printf '%s' "$validator_input" | "$SCRIPTS_DIR/validate-plan")" ||
    ! printf '%s' "$validator_output" | jq -se '
      length == 1 and (.[0] | type == "object" and

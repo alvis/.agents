@@ -36,7 +36,7 @@ A Work ID is an identity and is never reused — a rule nothing enforces, so it 
 
 ## Branch
 
-The branch is the work ID under a conventional-commit type: `<type>/<work-id>`. A stream that is one pull request is that branch alone; a stream split into a stack or into sub-tasks is a set of numbered branches beneath it, ordinals always exactly two digits:
+The branch is the work ID under a conventional-commit type from [branch-naming.sh](../scripts/branch-naming.sh): `<type>/<work-id>`. A stream that is one pull request is that branch alone; a stream split into a stack or into sub-tasks is a set of numbered branches beneath it, ordinals always exactly two digits:
 
 ```text
 feat/<work-id>                    # the whole stream, one PR

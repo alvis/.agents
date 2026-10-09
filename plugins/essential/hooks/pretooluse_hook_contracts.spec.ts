@@ -59,6 +59,8 @@ Inside: the three hook scripts.
 
 Directory: /work/plan-validation. Version control: jj workspace.
 
+Branch(es): \`fix/plan-validation\` (git)
+
 ## 🗂️ Tasks
 
 - TST: Validate the plan.
@@ -141,6 +143,27 @@ function runCamelHook(
   variable: string,
 ): Envelope {
   return runHookWithKey("toolInput", matcher, toolInput, variable);
+}
+
+function runPlanInWorkspace({
+  plan,
+  cwd = process.cwd(),
+  eventCwd,
+  variable = "CLAUDE_PLUGIN_ROOT",
+}: {
+  readonly plan: string;
+  readonly cwd?: string;
+  readonly eventCwd?: string;
+  readonly variable?: string;
+}): Envelope {
+  const completed = spawnSync("bash", ["-c", commandFor(plans)], {
+    cwd,
+    encoding: "utf8",
+    env: harnessEnvironment(variable),
+    input: JSON.stringify({ cwd: eventCwd, tool_input: { plan } }),
+  });
+  expect(completed.status, completed.stderr).toBe(0);
+  return JSON.parse(completed.stdout) as Envelope;
 }
 
 function runHookWithVariables(
@@ -413,6 +436,126 @@ describe("question validator", () => {
 });
 
 describe("plan validator", () => {
+  it("should require a proposed branch or bookmark in a Git-backed working environment", () => {
+    const plan = compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", "");
+    const reason = denialReason(runHook(plans, { plan }));
+
+    expect(reason).toContain("essential:references/naming.md");
+  });
+
+  it.each(["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test"])(
+    "should accept proposed %s branch names without existing refs",
+    (type) => {
+      for (const name of [`${type}/proposed-work`, `${type}/proposed-work/01-first-slice`, `${type}/proposed-work/99-last-slice`]) {
+        expectAllowed(runHook(plans, { plan: compliantPlan.replace("fix/plan-validation", name) }));
+      }
+    },
+  );
+
+  it.each([
+    "Branch(es): fix/proposed-work (git)",
+    "Bookmark(s): `feat/proposed-work/02-parser` (jj)",
+    "- **Branch(es):** `fix/proposed-work` (git)",
+    "* **Bookmark(s)**: refactor/proposed-work (jj)",
+    "Branch(es): fix/proposed-work (git)\nBookmark(s): feat/proposed-work/01-parser (jj)",
+    "### Workspace details\n\nBookmark(s): feat/proposed-work (jj)",
+    "Branch(es): fix/proposed-work/01-parser, fix/proposed-work/02-tests (git)",
+    "Bookmark(s): `feat/proposed-work/01-parser`, feat/proposed-work/02-tests, `feat/proposed-work/99-final` (jj)",
+  ])("should accept a working ref declaration formatted as %s", (declaration) => {
+    expectAllowed(runHook(plans, { plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", declaration) }));
+  });
+
+  it.each([
+    "feature/proposed-work", "main", "fix/", "fix/Uppercase", "fix/under_score", "fix/two--hyphens",
+    "fix/-leading", "fix/trailing-", "fix/work/00-zero", "fix/work/1-single", "fix/work/100-three",
+    "fix/work/01-", "fix/work/01-bad_slice", "fix/work/01-slice/extra", "fix/work/ab-slice",
+  ])("should deny a malformed proposed name %s", (name) => {
+    const reason = denialReason(runHook(plans, { plan: compliantPlan.replace("fix/plan-validation", name) }));
+
+    expect(reason).toContain(name);
+    expect(reason).toContain("essential:references/naming.md");
+  });
+
+  it.each([
+    "Branch(es): (git)", "Bookmark(s): `` (jj)",
+    "Branch(es): `fix/valid` (git)\nBookmark(s): invalid/work (jj)",
+    "Branch(es): `fix/valid` (git)\nBookmark(s): `feat/unclosed (jj)",
+    "Branch(es): fix/valid, feature/invalid (git)",
+    "Bookmark(s): feat/valid/01-parser, feat/valid/00-invalid (jj)",
+    "Branch(es): , fix/valid (git)", "Branch(es): fix/valid, (git)",
+    "Bookmark(s): fix/valid,,feat/valid (jj)",
+    "Branch(es): `fix/one, fix/two` (git)",
+  ])("should deny missing or invalid names among all list entries: %s", (declaration) => {
+    expect(denialReason(runHook(plans, { plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", declaration) }))).toContain("essential:references/naming.md");
+  });
+
+  it.each([
+    "Branch(es): fix/work (jj)", "Bookmark(s): fix/work (git)",
+    "Branch(es): fix/work", "Bookmark(s): fix/work (hg)",
+    "Branch(es): fix/work (git) ignored/work",
+  ])("should deny a missing or mismatched VCS marker: %s", (declaration) => {
+    expect(denialReason(runHook(plans, { plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", declaration) }))).toContain("essential:directions/plan.md");
+  });
+
+  it.each(["## 🗂️ Tasks", "# Enforce the documented formats"])(
+    "should not use a declaration outside Working environment at %s",
+    (heading) => {
+      const plan = compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", "").replace(heading, `${heading}\n\nBranch(es): fix/elsewhere (git)`);
+      expect(denialReason(runHook(plans, { plan }))).toContain("essential:references/naming.md");
+    },
+  );
+
+  it("should prefer the event repository over a non-Git process directory", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "plan-event-git-"));
+    try {
+      expect(denialReason(runPlanInWorkspace({
+        cwd: root,
+        eventCwd: process.cwd(),
+        plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", ""),
+      }))).toContain("essential:references/naming.md");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should fall back to the Git process directory for an empty event directory", () => {
+    expect(denialReason(runPlanInWorkspace({ eventCwd: "", plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", "") }))).toContain("essential:references/naming.md");
+  });
+
+  it("should exempt a non-Git event directory even when the process is in Git", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "plan-event-non-git-"));
+    try {
+      for (const declaration of ["", "Branch(es): invalid/work (git)"]) {
+        expectAllowed(runPlanInWorkspace({ eventCwd: root, plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", declaration) }));
+      }
+      expectAllowed(runPlanInWorkspace({ cwd: root, plan: compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", "") }));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should require bookmarks in non-colocated Git-backed jj workspaces", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "plan-jj-git-"));
+    try {
+      const initialized = spawnSync("jj", ["git", "init", "--no-colocate", root], { encoding: "utf8" });
+      expect(initialized.status, initialized.stderr).toBe(0);
+      const plan = compliantPlan.replace("Branch(es): `fix/plan-validation` (git)", "");
+      expect(denialReason(runPlanInWorkspace({ eventCwd: root, plan }))).toContain("essential:references/naming.md");
+      expectAllowed(runPlanInWorkspace({ eventCwd: root, plan: compliantPlan.replace("Branch(es):", "Bookmark(s):").replace("(git)", "(jj)") }));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(["CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT", "GROK_PLUGIN_ROOT"])(
+    "should enforce ref names through the native %s envelope",
+    (variable) => {
+      const output = runPlanInWorkspace({ variable, plan: compliantPlan.replace("fix/plan-validation", "invalid/work") });
+      const reason = variable === "GROK_PLUGIN_ROOT" ? grokDenialReason(output) : denialReason(output);
+      expect(reason).toContain("essential:references/naming.md");
+    },
+  );
+
   it("should allow a plan whose body exceeds pipe buffering after its first heading", () => {
     const plan = compliantPlan + "Detailed rationale.\n".repeat(20_000);
     expectAllowed(runHook(plans, { plan }));
@@ -528,13 +671,13 @@ describe("plan validator", () => {
   it("should match headings at any depth and case", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## out of scope\nNone.\n## WORKING ENVIRONMENT\n/work; jj workspace.\n## Tasks\nf\n## direction\nd\n### context\ne\n",
+        plan: "# goal\na\n#### REQUIREMENTS\nb\n### Boundary\nc\n## out of scope\nNone.\n## WORKING ENVIRONMENT\n/work; jj workspace.\nBranch(es): fix/plan-validation (git)\n## Tasks\nf\n## direction\nd\n### context\ne\n",
       }),
     ));
   it("should recognize compound emoji prefixes at different heading depths", () =>
     expectAllowed(
       runHook(plans, {
-        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n#### ✂️ OUT OF SCOPE\nNone.\n### 📍 Working environment\n/work; jj workspace.\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
+        plan: "# 🎯 goal\na\n#### 🧑🏽‍💻 CONTEXT\nb\n### 📋 Requirements\nc\n## 🚧 boundary\nd\n#### ✂️ OUT OF SCOPE\nNone.\n### 📍 Working environment\n/work; jj workspace.\nBranch(es): fix/plan-validation (git)\n### 🗂️ Tasks\nf\n### 🛠️ direction\ne\n",
       }),
     ));
   it("should not treat prefixed words or longer names as required headings", () =>
