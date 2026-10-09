@@ -1,12 +1,11 @@
 # Blender shots
 
-Read from `directions/motion-design.md` step 6 for shots the storyboard marks `render: blender`. Use Blender only when a shot needs what HyperFrames' Three.js adapter cannot deliver well, such as physically based materials, simulation, heavy geometry, or path-traced light. A Three.js scene stays on the HyperFrames timeline and refits with the music for free; a Blender plate must be re-rendered when its timing changes.
+Read from `directions/motion-design.md` step 7 for shots the storyboard marks `render: blender`. Use Blender only when a shot needs what HyperFrames' Three.js adapter cannot deliver well, such as physically based materials, simulation, heavy geometry, or path-traced light. A Three.js scene stays on the HyperFrames timeline and follows a timing change for free; a Blender plate must be re-rendered when its timing changes.
 
 ## Timing
 
 - Set the Blender scene frame rate to the composition frame rate.
-- Derive each shot's frame range from the storyboard bar grid: `start = round(start_seconds × fps)`, `end = round(end_seconds × fps) − 1`.
-- Render Blender shots after the music refit in `directions/motion-design/music.md` has settled their boundaries, or accept a re-render when the refit moves them.
+- Derive each shot's frame range from the locked timing data object: `start = round(start_seconds × fps)`, `end = round(end_seconds × fps) − 1`. Its boundaries are measured from the accepted take in `directions/motion-design/music.md` step 6, so a plate rendered from them needs re-rendering only when the take is revised.
 
 ## Render
 

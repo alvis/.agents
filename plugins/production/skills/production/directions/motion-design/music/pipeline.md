@@ -39,7 +39,7 @@ Before every paid call, confirm:
 ## Compare takes
 
 - Freeze the words, brief, and constraints before generating, and give each variant the same number of outputs; tuning one variant repeatedly while another keeps its first attempt is not a comparison.
-- Apply hard gates before preference: permitted use, usable export, required words present, timing refittable within the [music](directions/motion-design/music.md) tolerance, authorised references.
+- Apply hard gates before preference: permitted use, usable export, required words present, sections within the [music](directions/motion-design/music.md) tolerance of the approved plan, authorised references.
 - Loudness-match takes before the user compares them, because the louder take reliably sounds better. Play them unlabelled when practical.
 - Judge preference, constraint adherence, revision success, and cost separately. Cost per accepted take counts every rejected output, billed retry, revision, stem operation, and finishing hour; a cheaper first take can cost more to finish.
 - For a target language other than English, have a speaker of it review pronunciation; English demos say nothing about it.

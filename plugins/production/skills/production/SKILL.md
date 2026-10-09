@@ -1,6 +1,6 @@
 ---
 name: production
-description: Media production in three actions. motion-design crafts a motion video from zero with HyperFrames, optional Blender, and an ElevenLabs score fitted to the cut; track records asset and render provenance; review binds feedback and approval to exact render revisions. Use when making a video, registering assets or renders, or recording feedback or approval.
+description: Media production in three actions. motion-design crafts a motion video from zero with HyperFrames, optional Blender, and an ElevenLabs song composed to the approved storyboard; track records asset and render provenance; review binds feedback and approval to exact render revisions. Use when making a video, registering assets or renders, or recording feedback or approval.
 requirements:
   model: capable
   effort: deliberate
