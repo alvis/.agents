@@ -69,7 +69,7 @@ List only items that were in the draft or the request and then removed under [Cu
 
 ### 📍 Working environment
 
-Name the working directory and version-control arrangement, such as a separate jj workspace, Git worktree, or explicitly selected current checkout. Distinguish the current directory from a proposed one until creation is verified; name the intended base when relevant. Follow [workspace selection](establish-work-stream.md#select-the-workspace) before dependent work. This section is presentation metadata: retain it in immutable approval evidence, omit the entire section from saved root `plan.md`, and keep necessary workspace anchors in their canonical state locations under [approved-plan persistence](approve-plan.md).
+Name the working directory and version-control arrangement, such as a separate jj workspace, Git worktree, or explicitly selected current checkout. For a Git-backed repository, list every proposed working branch or jj bookmark on its own `Branch: <name>` or `Bookmark: <name>` line; plain names or inline code are accepted. Each name must follow [branch naming](../references/naming.md#branch); a repository without Git backing needs neither entry. Distinguish current directories and refs from proposed ones until creation is verified; name the intended base when relevant. Follow [workspace selection](establish-work-stream.md#select-the-workspace) before dependent work. This section is presentation metadata: retain it in immutable approval evidence, omit the entire section from saved root `plan.md`, and keep necessary workspace anchors in their canonical state locations under [approved-plan persistence](approve-plan.md).
 
 ### 🗂️ Tasks
 

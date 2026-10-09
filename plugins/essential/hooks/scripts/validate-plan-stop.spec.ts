@@ -47,6 +47,8 @@ None — nothing removed.
 
 Directory: /work/plan-validation. Version control: jj workspace.
 
+Branch: \`fix/plan-validation\`
+
 ## 🗂️ Tasks
 
 - TST: Validate the plan.
@@ -87,6 +89,8 @@ function runHook({
   lastAssistantMessage,
   runtimeRoot,
   transcriptPath,
+  cwd,
+  eventCwd,
 }: {
   readonly active?: boolean;
   readonly eventInput?: string;
@@ -98,6 +102,8 @@ function runHook({
   readonly lastAssistantMessage?: string;
   readonly runtimeRoot?: string;
   readonly transcriptPath?: string;
+  readonly cwd?: string;
+  readonly eventCwd?: string;
 } = {}): ReturnType<typeof spawnSync> {
   const ownsRoot = runtimeRoot === undefined;
   const root = runtimeRoot ?? mkdtempSync(resolve(tmpdir(), "validate-plan-stop-"));
@@ -122,9 +128,11 @@ function runHook({
     if (compatibilityRoot) environmentVariables.CLAUDE_PLUGIN_ROOT = pluginRoot;
 
     return spawnSync("/bin/bash", ["-c", stopCommand], {
+      cwd,
       encoding: "utf8",
       env: environmentVariables,
       input: eventInput ?? JSON.stringify({
+        cwd: eventCwd,
         last_assistant_message: lastAssistantMessage,
         hook_event_name: "Stop",
         permission_mode: permissionMode,
@@ -154,6 +162,36 @@ function parseHookOutput(
 }
 
 describe("Codex plan Stop validator", () => {
+  it("should forward the Git event directory when Stop runs outside Git", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "validate-plan-stop-cwd-"));
+    try {
+      expect(parseHookOutput(runHook({
+        cwd: root,
+        eventCwd: process.cwd(),
+        lastAssistantMessage: validPlan.replace("Branch: `fix/plan-validation`", ""),
+      }))).toMatchObject({
+        decision: "block",
+        reason: expect.stringContaining("essential:references/naming.md"),
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should forward the non-Git event directory when Stop runs inside Git", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "validate-plan-stop-non-git-"));
+    try {
+      const result = runHook({
+        eventCwd: root,
+        lastAssistantMessage: validPlan.replace("Branch: `fix/plan-validation`", ""),
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("should allow a plan body larger than the operating system argument limit", () => {
     // Two MB exceeds the observed macOS 1 MiB argv ceiling and Linux per-argument limit.
     const presentation = validPlan.replace("</proposed_plan>", `${"Detailed rationale.\n".repeat(100_000)}</proposed_plan>`);
@@ -161,6 +199,14 @@ describe("Codex plan Stop validator", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toBe("");
   }, 15_000); // The 2 MB subprocess path took 3.9s locally; allow CI contention.
+
+  it("should allow a direct final plan larger than the operating system argument limit", () => {
+    const presentation = validPlan.replace("</proposed_plan>", `${"Detailed rationale.\n".repeat(100_000)}</proposed_plan>`);
+    const result = runHook({ lastAssistantMessage: presentation });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+  }, 15_000); // Match the existing 2 MB transport regression's CI contention budget.
 
   it("should block a plan missing its working environment", () => {
     expect(parseHookOutput(runHook({ lastAssistantMessage: validPlan.replace("## 📍 Working environment", "") }))).toMatchObject({

@@ -338,6 +338,29 @@ describe("opencode adapter manifest validation", () => {
     )).rejects.toThrow(/missing headings: Working environment\./);
   });
 
+  it("should require a compliant proposed ref in an OpenCode Git project", async () => {
+    const directory = await createTemporaryDirectory("opencode-plan-ref-");
+    try {
+      execFileSync("git", ["init", "--quiet", directory]);
+      const { AlvisMarketplace } = await loadAdapter();
+      const hooks = await AlvisMarketplace({ client: {}, directory });
+      const plan = "# Goal\nShip.\n## Context\nCurrent.\n## Requirements\nVerify.\n## Boundary\nHooks.\n## Out of Scope\nNone.\n## Working environment\nDirectory: proposed workspace.\n## Tasks\nValidate.\n## Direction\nTest.\n";
+
+      for (const declaration of ["", "Branch: feature/proposed-work\n"]) {
+        await expect(hooks["tool.execute.before"](
+          { callID: `invalid-ref-${declaration.length}`, sessionID: "ref-session", tool: "exit_plan_mode" },
+          { args: { plan: plan.replace("## Tasks", `${declaration}## Tasks`) } },
+        )).rejects.toThrow(/essential:references\/naming\.md/);
+      }
+      await expect(hooks["tool.execute.before"](
+        { callID: "valid-ref", sessionID: "ref-session", tool: "exit_plan_mode" },
+        { args: { plan: plan.replace("## Tasks", "Bookmark: fix/proposed-work/01-parser\n## Tasks") } },
+      )).resolves.toBeUndefined();
+    } finally {
+      await removeTemporaryDirectory(directory);
+    }
+  });
+
   it("should accept a large plan presentation through OpenCode plan exit", async () => {
     const { AlvisMarketplace } = await loadAdapter();
     const hooks = await AlvisMarketplace({ client: {}, directory: sandbox.project });
