@@ -31,4 +31,4 @@ When one initiative spans multiple streams (product change, landing page, launch
 - milestones with the streams they gate;
 - `last_verified` / `revalidate_on` front matter per `approvals.md`.
 
-Each stream stays authoritative in its own tree; the item's `README.md` maps readers to that authority, while the manifest tells the main agent which streams a decision's blast radius crosses. Asset-heavy streams version an asset manifest from `plugins/production/templates/asset-manifest.md` — media bytes stay outside Git, their identity and lineage do not.
+Each stream stays authoritative in its own tree; the item's `README.md` maps readers to that authority, while the manifest tells the main agent which streams a decision's blast radius crosses. Asset-heavy streams version an asset manifest from `production:skills/production/templates/asset-manifest.md` — media bytes stay outside Git, their identity and lineage do not.

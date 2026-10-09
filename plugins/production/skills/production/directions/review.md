@@ -1,20 +1,11 @@
----
-name: review-render
-description: Capture stakeholder feedback and approvals on a specific render or cut, bound to its exact revision and timecode ranges, and determine which approvals survive a new revision or a changed decision. Use when a cut is reviewed, feedback like "approved" or "make the text larger" arrives, or someone asks whether an existing approval still applies; this skill records review truth, never edits media.
-requirements:
-  model: capable
-  effort: deliberate
-argument-hint: "<render-id> [--work-id=<id>]"
----
+# Action: review
 
-# Review Render
-
-Turn conversational feedback into review records that name exactly what was reviewed. "Approved" is meaningless without *approved what*: every disposition binds to one render id at one immutable revision, and an approval of v7 never carries to v8 merely because v8 was derived from it.
+Loaded by `SKILL.md` when the requested action is `review`. Turn conversational feedback into review records that name exactly what was reviewed. "Approved" is meaningless without *approved what*: every disposition binds to one render id at one immutable revision, and an approval of v7 never carries to v8 merely because v8 was derived from it.
 
 ## Boundaries
 
 - Use for recording feedback, approvals, and rejections against renders/cuts, and for judging whether prior approvals survive a new revision.
-- Do not edit media, do not update the asset manifest beyond validity marks routed through `production:track-assets`, and do not manage work-stream state (Essential owns the lifecycle).
+- Do not edit media, do not update the asset manifest beyond validity marks routed through the `track` action, and do not manage work-stream state (Essential owns the lifecycle).
 - Never upgrade partial or scoped feedback into a full approval.
 
 ## State gate
@@ -25,9 +16,9 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 1. Resolve the subject: the render id and its immutable revision from the asset manifest. If the feedback names no revision ("the latest cut"), confirm the exact render entry with the user before recording anything.
 2. Prepare each piece of feedback as a finding bound to the render revision and, when positional, its timecode range. Classify: change request, question, observation, or approval/rejection.
-3. Propose an approval record only with the full binding tuple: render id + revision, reviewer and their authority, scope approved (whole cut, or named aspects such as pacing or grade — scoped approval is not full approval), timestamp, and unresolved exceptions. Ask the user to fill a missing tuple field rather than inferring it. An approval is a journaled state change: return it in the reconciliation payload so the main agent records it at once.
+3. Propose an approval record only with the full binding tuple: render id + revision, reviewer and their authority, scope approved (whole cut, or named aspects such as pacing, grade, or music sync — scoped approval is not full approval), timestamp, and unresolved exceptions. Ask the user to fill a missing tuple field rather than inferring it. An approval is a journaled state change: return it in the reconciliation payload so the main agent records it at once.
 4. On a new render revision, evaluate each prior approval: it does **not** carry forward. Report which approvals lapsed and what scope must be re-reviewed; a superseding decision's `preserves` list may keep named aspects (brand palette, CTA) current — cite it when so.
-5. When feedback or a decision invalidates an approved render, route the `validity: stale` mark to `production:track-assets` and record the review consequence here; never rewrite the historical approval.
+5. When feedback or a decision invalidates an approved render, route the `validity: stale` mark to the `track` action and record the review consequence here; never rewrite the historical approval.
 6. Return proposed review content and reconciliation deltas. Only the main agent writes it and then includes the final path in `generated_files`.
 
 ## Verification

@@ -2,6 +2,6 @@
   "name": "production",
   "author": {"name": "Alvis"},
   "dependencies": ["essential"],
-  "description": "Media and creative production lifecycle: asset provenance, render manifests, and revision-bound review for video, audio, and campaign deliverables",
+  "description": "Media and creative production lifecycle: motion-video creation, asset provenance, render manifests, and revision-bound review for video, audio, and campaign deliverables",
   "version": "1.0.0"
 }

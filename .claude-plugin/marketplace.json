@@ -53,7 +53,7 @@
     {
       "name": "production",
       "source": "./plugins/production",
-      "description": "Media and creative production lifecycle: asset provenance, render manifests, and revision-bound review",
+      "description": "Media and creative production lifecycle: motion-video creation, asset provenance, render manifests, and revision-bound review",
       "category": "productivity"
     }
   ]
