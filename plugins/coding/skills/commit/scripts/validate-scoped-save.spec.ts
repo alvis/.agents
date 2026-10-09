@@ -324,6 +324,8 @@ describe("centralized workspace saving", () => {
       expect(unignored.output.error).toEqual(
         expect.stringMatching(/ignored work root|resolver/),
       );
+      const failedResolver = join(realpathSync(fixture.root), "failed-resolver");
+      writeFileSync(failedResolver, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
       const failed = fixture.helper(
         "build",
         {
@@ -331,7 +333,7 @@ describe("centralized workspace saving", () => {
           "--work-root": fixture.workRoot,
           "--base-rev": fixture.baseRev,
           "--scope": scope,
-          "--state-resolver": "/usr/bin/false",
+          "--state-resolver": failedResolver,
         },
         false,
       );
