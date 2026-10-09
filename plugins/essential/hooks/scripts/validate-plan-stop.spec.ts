@@ -47,7 +47,7 @@ None — nothing removed.
 
 Directory: /work/plan-validation. Version control: jj workspace.
 
-Branch: \`fix/plan-validation\`
+Branch(es): \`fix/plan-validation\` (git)
 
 ## 🗂️ Tasks
 
@@ -162,13 +162,25 @@ function parseHookOutput(
 }
 
 describe("Codex plan Stop validator", () => {
+  it("should validate every name in a proposed bookmark list", () => {
+    const declaration = "Bookmark(s): `fix/work/01-parser`, `fix/work/02-tests` (jj)";
+    const plan = validPlan.replace("Branch(es): `fix/plan-validation` (git)", declaration);
+    const allowed = runHook({ lastAssistantMessage: plan });
+    expect(allowed.status, allowed.stderr).toBe(0);
+    expect(allowed.stdout).toBe("");
+    expect(parseHookOutput(runHook({ lastAssistantMessage: plan.replace("fix/work/02-tests", "feature/invalid") }))).toMatchObject({
+      decision: "block",
+      reason: expect.stringContaining("feature/invalid"),
+    });
+  });
+
   it("should forward the Git event directory when Stop runs outside Git", () => {
     const root = mkdtempSync(resolve(tmpdir(), "validate-plan-stop-cwd-"));
     try {
       expect(parseHookOutput(runHook({
         cwd: root,
         eventCwd: process.cwd(),
-        lastAssistantMessage: validPlan.replace("Branch: `fix/plan-validation`", ""),
+        lastAssistantMessage: validPlan.replace("Branch(es): `fix/plan-validation` (git)", ""),
       }))).toMatchObject({
         decision: "block",
         reason: expect.stringContaining("essential:references/naming.md"),
@@ -183,7 +195,7 @@ describe("Codex plan Stop validator", () => {
     try {
       const result = runHook({
         eventCwd: root,
-        lastAssistantMessage: validPlan.replace("Branch: `fix/plan-validation`", ""),
+        lastAssistantMessage: validPlan.replace("Branch(es): `fix/plan-validation` (git)", ""),
       });
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toBe("");

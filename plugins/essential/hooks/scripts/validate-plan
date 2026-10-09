@@ -106,22 +106,30 @@ if git -C "$working_directory" rev-parse --git-dir >/dev/null 2>&1 ||
     }
     in_environment { print }
   ')"
-  branch_names="$(printf '%s' "$working_environment" | jq -Rsc '
-    def entry: "^[[:space:]]*([-*+][[:space:]]+)?(\\*\\*)?(Branch|Bookmark)(\\*\\*)?:[[:space:]]*(\\*\\*)?[[:space:]]*";
+  ref_entries="$(printf '%s' "$working_environment" | jq -Rsc '
+    def entry: "^[[:space:]]*([-*+][[:space:]]+)?(\\*\\*)?(?<kind>Branch\\(es\\)|Bookmark\\(s\\))(\\*\\*)?:[[:space:]]*(\\*\\*)?[[:space:]]*";
     split("\n")
-    | map(select(test(entry; "i")) | sub(entry; ""; "i")
-      | if startswith("`") then
-          . as $value | ([capture("^`(?<name>[^`]*)`").name][0] // $value)
-        else capture("^(?<name>[^[:space:]]*)").name end)
+    | map(select(test(entry; "i"))
+      | capture(entry; "i") as $entry
+      | sub(entry; ""; "i") as $value
+      | ([ $value | capture("^(?<names>.*?)[[:space:]]+\\((?<vcs>git|jj)\\)[[:space:]]*$"; "i") ][0]
+          // {names: $value, vcs: ""})
+      | .kind = ($entry.kind | ascii_downcase)
+      | .vcs |= ascii_downcase
+      | .names |= (split(",") | map(gsub("^[[:space:]]+|[[:space:]]+$"; "")
+          | if test("^`[^`]*`$") then .[1:-1] else . end)))
   ')"
-  if [[ "$(jq 'length' <<<"$branch_names")" == "0" ]]; then
-    deny "Git-backed plans require a proposed Branch: <name> or Bookmark: <name> entry in Working environment. Follow essential:references/naming.md#branch."
+  if [[ "$(jq 'length' <<<"$ref_entries")" == "0" ]]; then
+    deny "Git-backed plans require Branch(es): <names> (git) or Bookmark(s): <names> (jj) in Working environment. Follow essential:references/naming.md#branch."
+  fi
+  if ! jq -e 'all(.[]; (.kind == "branch(es)" and .vcs == "git") or (.kind == "bookmark(s)" and .vcs == "jj"))' <<<"$ref_entries" >/dev/null; then
+    deny "Use comma-separated proposed refs with matching VCS markers: Branch(es): <names> (git) or Bookmark(s): <names> (jj). Follow essential:references/naming.md#branch."
   fi
   while IFS= read -r branch_name; do
     if [[ ! "$branch_name" =~ $canonical_branch_pattern ]]; then
       deny "Invalid proposed branch or bookmark '$branch_name'. Follow essential:references/naming.md#branch."
     fi
-  done < <(jq -r '.[]' <<<"$branch_names")
+  done < <(jq -r '.[].names[]' <<<"$ref_entries")
 fi
 
 allow
