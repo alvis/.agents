@@ -6,6 +6,7 @@ Judge the piece by its own form: a lesson must be usable, a music video must wor
 
 ## Quality gate
 
+- **Message lands**: a viewer new to the piece can say the storyboard's `message` in their own words when it ends, without being told it; if they cannot, find the scene whose beat fails to carry it, as [directing](directions/motion-design/directing.md#aim-at-the-message) describes.
 - **Clear for its purpose**: the intended viewer follows what must be understood. A tutorial's required action is legible; a poem may keep its ambiguity; a music video is judged with its music.
 - **Specific**: the characters, observations, objects or benefit could not be swapped for a generic example.
 - **Coherent in its form**: a narrative has causal continuity, an explanation sound reasoning, a music video an authored sound–image relation, an essay defensible connections, a poem intentional associations, a loop a coherent cycle.

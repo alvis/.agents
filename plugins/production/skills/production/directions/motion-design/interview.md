@@ -10,16 +10,17 @@ List which direction questions the request clearly answers. A clear statement sk
 
 Ask with the harness's standard question tool, one at a time, two to four options each, recommended option first, free text always allowed. Use plain chat only when the harness has no question tool. Do not open an HTML board for these.
 
-1. **Goal and message**: what the video should achieve and the one thing a viewer must take away. Offer messages inferred from the request.
+1. **Goal and message**: what the video should achieve and the one thing a viewer must be able to say when it ends, written as [directing](directions/motion-design/directing.md#aim-at-the-message) describes. Offer messages inferred from the request.
 2. **Platform**: where it will be watched. Map the answer to aspect, length, and sound behaviour with [platforms](references/platforms.md).
 3. **References and materials**: the user's photos, logos, footage, or brand files; assets to obtain by web search; videos, images, or styles to mimic. Collect paths and links; search for assets only after the user agrees, and record each found asset's source and licence.
 4. **Format**: suggest three or four formats from the [format catalogue](references/formats.md) that fit answers 1–3, each with a one-line reason.
 5. **Mood**: suggest three or four moods that fit the format and platform, each named with a tempo range and a colour temperature so the choice carries into music and palette.
 6. **Subject**: when a real person, pet, or brand figure is on screen, ask about them before designing anything: appearance and signature features, with photos; personality and catchphrases; places and eras of their life; the people around them; real anecdotes and in-jokes. Ask follow-ups until each story can be told from facts the user gave; never invent an anecdote and present it as real.
+7. **Product**: when the piece promotes a product, service, or event, ask for its tagline, facts, colour tone, and call to action as [directing](directions/motion-design/directing.md#product-pieces) defines them; a missing fact stays a question, never an invention.
 
 ## Board
 
-Run `essential:discover` in `interview` mode and present a guided-interview board as its presentation direction describes, carrying answers 1–6 and the drafted concepts as confirmed context. Each round demonstrates only the choice it asks the user to make, and every demo is code the build can reuse, so nothing is drawn for a choice already settled or redrawn once chosen.
+Run `essential:discover` in `interview` mode and present a guided-interview board as its presentation direction describes, carrying answers 1–7 and the drafted concepts as confirmed context. Each round demonstrates only the choice it asks the user to make, and every demo is code the build can reuse, so nothing is drawn for a choice already settled or redrawn once chosen.
 
 The first round confirms:
 

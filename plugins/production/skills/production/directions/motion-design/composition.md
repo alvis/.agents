@@ -84,7 +84,7 @@ Before deciding how anything moves, decide what the viewer must understand first
 
 ## Sequence, not slideshow
 
-For each storyboard frame, write two things beside its action: what the viewer now understands and what leads attention (one person, object or relation). Opening frames start on a situation already in progress; the turn is optional when the form has none. An explainer's frames are concept steps, a music video's are track sections, a loop's are phases of the cycle.
+For each storyboard scene, write two things beside its action: what the viewer now understands and what leads attention (one person, object or relation). Opening frames start on a situation already in progress; the turn is optional when the form has none. An explainer's frames are concept steps, a music video's are track sections, a loop's are phases of the cycle.
 
 - Change the shot when the viewer needs a new relation, not because an interval has passed.
 - Reserve contrast: a pause after busy action does more than another burst, provided the pause has a subject (recognition, consequence, invitation).
