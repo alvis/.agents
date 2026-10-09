@@ -35,7 +35,7 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 2. **Frame the decision.** State what is being decided, why a naive answer is unsafe, the constraints that bind it, and what a bad outcome looks like.
 3. **Compare approaches.** Produce two or three materially distinct options, always including the smallest viable change. For each, state evidence, cost/complexity, reversibility, accepted tradeoffs, and what it breaks or ignores. Recommend one option.
 4. **Challenge the recommendation.** Give the two or three strongest objections. State whether each changes the recommendation and name the falsification signal that would make another option win.
-5. **Validate completeness.** Require identified dependencies, at least one edge case or failure mode, a rollback path or explicit reason none is needed, and no hidden material decision. Explicitly deferred matters name an owner and decision deadline; blockers prevent approval.
+5. **Validate completeness.** Require identified dependencies, the realistic edge cases or failure modes considered — recording none when none is expected in supported use rather than inventing one — a rollback path or explicit reason none is needed, and no hidden material decision. Explicitly deferred matters name an owner and decision deadline; blockers prevent approval.
 6. **Present and stop.** Ask the user to approve, revise, or reject:
 
    <report>

@@ -14,9 +14,9 @@ Before adding, retaining, or removing a runtime check, answer all five questions
 4. Is the condition only a postcondition of the trusted producer?
 5. Which exact producer test proves that postcondition?
 
-Keep the check for user input, deserialization, network or persistence data, external SDKs, public plugin or adapter implementations, unsafe code, and other genuine trust boundaries. Also keep checks for mutable, concurrent, or security-sensitive state that supported execution can invalidate after a trusted producer returns. A call between trusted modules does not make external or persisted data trusted; follow the value's provenance.
+Keep the check for user input, deserialization, network or persistence data, external SDKs, public plugin or adapter implementations, unsafe code, and other genuine trust boundaries. Also keep checks for mutable, concurrent, or security-sensitive state that supported execution realistically invalidates after a trusted producer returns; [GEN-SAFE-04](gen-safe-04.md) decides whether an invalidating race is realistic. A call between trusted modules does not make external or persisted data trusted; follow the value's provenance.
 
-Remove a check only when the producer is closed first-party typed and tested code, no external implementation path exists, supported execution cannot invalidate the condition independently, and the check only repeats a producer postcondition. Removal requires an existing producer test for that exact postcondition; broad coverage is insufficient. If provenance is ambiguous or the exact test is absent, report the candidate without removing it and route missing producer coverage through the test-owning workflow.
+Remove a check only when the producer is closed first-party typed and tested code, no external implementation path exists, supported execution cannot realistically invalidate the condition independently, and the check only repeats a producer postcondition. Removal requires an existing producer test for that exact postcondition; broad coverage is insufficient. If provenance is ambiguous or the exact test is absent, report the candidate without removing it and route missing producer coverage through the test-owning workflow.
 
 ## Fix
 
@@ -74,8 +74,8 @@ function handleWebhook(payload: unknown): void {
 - An interface is not automatically trusted; retain validation when callers can register implementations or load them dynamically.
 - Package-private injection of a closed set of shipped adapters remains trusted when no public or external construction path exists and the exact postcondition has a producer test.
 - A custom error or redaction does not justify a guard for an impossible internal state; it only changes how a programmer defect would be reported.
-- Do not remove assertions that protect security boundaries, persisted data, concurrency invariants, or mutable states supported execution can enter.
+- Do not remove assertions that protect security boundaries or persisted data, or concurrency invariants and mutable states that supported execution realistically violates under `GEN-SAFE-04`.
 
 ## Related
 
-GEN-SAFE-01, GEN-SAFE-02, GEN-DESN-03, FUNC-ARCH-03, TYP-TYPE-06
+GEN-SAFE-01, GEN-SAFE-02, GEN-SAFE-04, GEN-DESN-03, FUNC-ARCH-03, TYP-TYPE-06

@@ -14,10 +14,11 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT keep symbols with no consumer — pre-scan with `fallow dead-code --production`, then deep-dive each candidate case by case [`GEN-DESN-04`]
 - DO NOT add suppression comments without approval, such as `// @ts-ignore` or `/* eslint-disable */` [`GEN-SAFE-01`] (→ TYP-CORE-04)
 - DO NOT patch symptoms instead of fixing root cause, such as `catch { return }` that hides failures [`GEN-SAFE-02`]
-- DO NOT omit validation at a real trust boundary or revalidate a closed first-party producer postcondition whose exact producer test exists and supported execution cannot invalidate independently [`GEN-SAFE-03`]
+- DO NOT omit validation at a real trust boundary or revalidate a closed first-party producer postcondition whose exact producer test exists and supported execution cannot realistically invalidate independently [`GEN-SAFE-03`]
+- DO NOT add, test, or request handling for a failure that is merely possible; handle external availability, attacker-timed races, irreversible loss, and races that meet the [occurrence bar](rules/gen-safe-04.md) [`GEN-SAFE-04`]
 - DO NOT optimize hot paths without profiling evidence [`GEN-SCAL-01`]
 - DO NOT use linear array scans in hot paths when collection size can grow large, such as `users.find((u)=>u.id===id)` on hundreds+ entries [`GEN-SCAL-02`]
-- DO NOT skip explicit risk and uncertainty checks for complex changes [`GEN-SCAL-03`]
+- DO NOT skip explicit risk and uncertainty checks for complex changes, or turn a risk they surface into work before it passes `GEN-SAFE-04` [`GEN-SCAL-03`]
 
 ## Rule Matrix
 
@@ -34,6 +35,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `GEN-SAFE-01` | Suppression comment used without approval | `// @ts-ignore`; `// @ts-ignore - types are broken here` |
 | `GEN-SAFE-02` | Symptom patched, root cause unresolved | `catch { return }` |
 | `GEN-SAFE-03` | Trust-boundary validation is missing or redundant | `const id = input.id` when `input: unknown`; `validateResult(await closedInternal.run())` despite an exact producer test |
+| `GEN-SAFE-04` | Merely possible failure handled | Re-fetching a key in case it is retired during a millisecond decrypt; queueing a webhook in case it arrives before our own save of the API response's resource ID |
 | `GEN-SCAL-01` | Optimization added without profiling | `optimizePath();`; `const cache = new WeakMap(); // "just in case" it's slow` |
 | `GEN-SCAL-02` | Non-scalable lookup in hot path | `users.find((u)=>u.id===id)` |
 | `GEN-SCAL-03` | No explicit risk/uncertainty check | `deployChange(); // no risk checklist, no rollback plan` |

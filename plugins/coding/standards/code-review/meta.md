@@ -6,7 +6,7 @@ _Requirements for accurate, constructive reviews that prioritize material risk a
 
 Relationships below explain the selection owned by [WORKFLOW.md](../../directions/WORKFLOW.md).
 
-- General Coding Principles (standard:universal) - Defines the implementation baseline and is the canonical authority for suppression policy, including `GEN-SAFE-01`.
+- General Coding Principles (standard:universal) - Defines the implementation baseline and is the canonical authority for suppression policy (`GEN-SAFE-01`) and for which races and edge cases are realistic (`GEN-SAFE-04`).
 
 ## What's Stricter Here
 
@@ -14,7 +14,7 @@ This standard enforces requirements beyond common review practice:
 
 | Standard Practice | Our Stricter Requirement |
 |---|---|
-| Reviewer discretion on blockers | **Only demonstrated approved-requirement or applicable-standard violations, or evidenced highly likely defects in supported production use, qualify; confirmed rule violations block unless their owning standard permits an exception** |
+| Reviewer discretion on blockers | **Only demonstrated approved-requirement or applicable-standard violations, or evidenced highly likely defects in supported production use, qualify; race and edge-case claims must also be realistic under `GEN-SAFE-04`; confirmed rule violations block unless their owning standard permits an exception** |
 | Informal suppression review | **Every suppression is checked against canonical `GEN-SAFE-01` approval and root-cause requirements** |
 | Unstructured feedback | **Every blocker cites its governing requirement or rule, applicability evidence, concrete impact, and disposition** |
 | Evidence means runtime failure | **Minimum sufficient solutions and consistency with comparable work remain standards; structural evidence can establish their violation** |
