@@ -55,4 +55,4 @@ sound: <instrumental | vocals: character, language>
 <One action, what moves, and what carries into the next frame.>
 ```
 
-The music plan is the song's specification: approving the storyboard approves each section's time, tone, rhythm, and lyrics before the song is generated. `sync` points are `bar.beat` positions until `directions/motion-design/music.md` step 6 replaces them with the accepted take's measured times. Every frame starts and ends on a whole bar.
+The music plan is the song's specification: approving the storyboard approves each section's time, tone, rhythm, and the lyric version the user picked or mixed, before the song is generated. `sync` points are `bar.beat` positions until `directions/motion-design/music.md` step 6 replaces them with the accepted take's measured times. Every frame starts and ends on a whole bar.

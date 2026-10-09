@@ -36,6 +36,6 @@ Transfer every answer and annotation back to the discovery ledger before continu
 
 Show a story, whether a storybook concept or the storyboard for approval, as one self-contained HTML `embed` the user steps through, because a scrolled strip of stills hides the order and pace the story depends on.
 
-- One slide per moment: its still or sketch, one line of action, and where it sits in the song. A storybook slide marks the hook; a storyboard slide shows the frame's time window, bars, music section, and lyric.
+- One slide per moment: its still or sketch, one line of action, and where it sits in the song. A storybook slide marks the hook; a storyboard slide shows the frame's time window, bars, music section, and the lyric versions for that section.
 - Controls: previous and next buttons, arrow keys, a position readout such as `3 / 7`, and a play button that advances each slide after its planned duration.
 - Reuse the board's demo art for the stills, make no network request, and cut between slides instead of animating when the viewer prefers reduced motion.
