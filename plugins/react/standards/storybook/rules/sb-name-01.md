@@ -10,6 +10,7 @@ Use consistent TypeScript naming for all story files so they're discoverable, ty
 - Use the `.stories` suffix with dot notation (not dash, not embedded in the basename)
 - Use `.tsx` (TypeScript), never `.js`
 - Reserve `.demo.stories.tsx` for complex multi-component scenarios
+- Distinguish story entries from helper and fixture modules governed by [SB-ORG-02](sb-org-02.md); support modules are not subject to the PascalCase `.stories.tsx` entry-file pattern
 
 ```plaintext
 ✅ GOOD: descriptive TypeScript story files
@@ -25,8 +26,8 @@ ButtonStories.tsx               # Missing .stories suffix
 
 ## Code Superpowers
 
-- `find . -name '*stories*'` and confirm every match uses the canonical pattern
-- ESLint / file-name lint rules to enforce PascalCase + `.stories.tsx`
+- Audit story entry filenames against the canonical pattern; classify helper and fixture modules separately under [SB-ORG-02](sb-org-02.md)
+- Scope ESLint / file-name lint rules for PascalCase + `.stories.tsx` to story entries
 
 ## Common Mistakes
 
