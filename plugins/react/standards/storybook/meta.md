@@ -25,6 +25,8 @@ ButtonStories.tsx               # Missing .stories suffix
 
 Story titles must reflect component file structure for clear navigation.
 
+[Story helper and fixture placement](rules/sb-org-02.md) keeps single-file setup readable in context and shared setup close to its consumers.
+
 ```typescript
 // ✅ GOOD: path reflects file location
 // File: components/forms/Button.stories.tsx
@@ -68,7 +70,7 @@ Declare `const meta = { ... } satisfies Meta<typeof Component>`, export it as de
 ## Rule Groups
 
 - `SB-NAME-*`: File naming — PascalCase with `.stories.tsx`, optional `.demo.stories.tsx` for complex scenarios.
-- `SB-ORG-*`: Title organization — path-based titles mirroring file location, directory alignment.
+- `SB-ORG-*`: Organization — path-based titles, directory alignment, and story helper and fixture placement.
 - `SB-COVERAGE-*`: Story coverage — all variants and states (default, disabled, loading, error, edge cases).
 - `SB-STRUCT-*`: Story structure — `Meta` / `StoryObj` typing, `tags: ['autodocs']`, demo stories for multi-component scenarios.
 - `SB-PLAY-*`: Interactive stories — `play` functions import from `@storybook/testing-library`, await interactions, and assert observable behavior.
