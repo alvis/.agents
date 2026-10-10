@@ -22,7 +22,7 @@ The user picks with their eyes, not from prose. Every board is rendered in Chrom
 
 ### A2. File Location & Constraints
 
-- Path: `<design-evidence-dir>/boards/<board-slug>.html` (`direction.html`, `hero.html`, `footer.html`, `connective-tissue.html`, …). Store the matching rendered image beside it as `<board-slug>.webp`.
+- Path: `<design-evidence-dir>/boards/<timestamped-board-stem>.html`, named under `essential:references/naming.md` with a descriptive slug such as `direction`, `hero`, `footer`, or `connective-tissue`. Store the matching rendered image beside it as `<timestamped-board-stem>.webp`.
 - ONE self-contained file per board: inline CSS only, no JS frameworks, no build step. Google Fonts `<link>` tags are allowed (boards are throwaway local files), but every tile declares system-stack fallbacks so it still reads without network.
 - REAL project content only — never lorem ipsum, never placeholder-gray boxes where the project has actual imagery or copy.
 - Honor `prefers-reduced-motion` on every board (blanket media-query kill switch).
@@ -41,7 +41,7 @@ Tiles appear on the board in rank order, best first.
 Present the rendered image — remote users cannot see the local Chrome window:
 
 1. `list_pages` → `new_page file://<absolute path>` → `take_screenshot` (full-page). **Look at the screenshot**: broken layout, missing fonts, clipped tiles, or unreadable rank badges get fixed BEFORE the user sees anything.
-2. Save or convert the screenshot to `<design-evidence-dir>/boards/<board-slug>.webp`, then `SendUserFile` with `files: [<screenshot image path>]`, `display: render`, and a caption naming each numbered candidate/variant. The screenshot IS the deliverable; optionally attach the board HTML as a secondary file for users who want live hover/motion.
+2. Save or convert the screenshot to `<design-evidence-dir>/boards/<timestamped-board-stem>.webp`, then `SendUserFile` with `files: [<screenshot image path>]`, `display: render`, and a caption naming each numbered candidate/variant. The screenshot IS the deliverable; optionally attach the board HTML as a secondary file for users who want live hover/motion.
 
 ### A5. Choice Capture — the graphical or structured user-input tool convention
 

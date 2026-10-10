@@ -35,7 +35,7 @@ For persistent discovery, follow `state-format.md` linked by the state contract.
 
 Use `DSC01 → {DSC02,DSC03} → DSC04` when the work maps to capture, independent intent/system probes, then synthesis. Otherwise encode the smallest truthful linear or branching sibling DAG; never force this example onto a different dependency shape. Root and child rows use the same immutable definition and mutable execution fields byte-for-byte at reconciliation. After each status transition, update the child, reconcile the complete root registry, re-read the root task definitions when immutable definition fields changed, and read `state.md` and `state/discovery.md` directly to determine runnable/ blocked tasks, owner, and next action from the task table; proceed on that reading — there is no separate validation step. Only the main agent edits root state.
 
-When structured comparison, explanation, or preference capture would be easier to understand interactively, follow [presentation](directions/presentation.md). Generated HTML is a temporary review surface, not a durable deliverable: always create it in a collision-safe OS temporary directory and discard it after its decisions and annotations have been transferred. A persisted discovery ledger may record the temporary path and extracted decisions, but must not treat the HTML as long-lived evidence.
+Name temporary review files, including non-HTML disposable prototypes, under `essential:references/naming.md`. When structured comparison, explanation, or preference capture would be easier to understand interactively, follow [presentation](directions/presentation.md). Generated HTML is a temporary review surface, not a durable deliverable: always create it in a collision-safe OS temporary directory and discard it after its decisions and annotations have been transferred. A persisted discovery ledger may record the temporary path and extracted decisions, but must not treat the HTML as long-lived evidence.
 
 The evidence ledger uses these fields:
 
@@ -79,7 +79,7 @@ The evidence ledger uses these fields:
    - **Design within the block vocabulary.** Section order, block choice, and the shape of each block are yours to design for the content at hand — approach it like a design lead, not a form-filler. The boards under `examples/data/` are the working catalogue of what the blocks can be asked to do. Where a card carries a real decision with alternatives, render the option set with reasons and a badged recommendation — never a bare accept. Then render the board, which is self-contained and makes no network request:
 
    ```bash
-   bun run scripts/render-page/cli.ts <board>.json -o <board>.html   # one board
+   bun run scripts/render-page/cli.ts <timestamped-board>.json -o <timestamped-board>.html   # one board
    bun run scripts/render-page/cli.ts --set run.json -o <dir>        # a set, cross-linked
    ```
 

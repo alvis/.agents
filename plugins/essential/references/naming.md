@@ -57,6 +57,7 @@ Naming the branch this way is what lets the workspace resolution step select the
 
 ## Documents
 
+- Temporary user-facing review artifacts use `YYYY-MM-DD-HH-MM-<name>.<ext>`: the creation time in the generating environment's local timezone, zero-padded through minutes, a descriptive slug under [Slugs](#slugs), and the artifact's extension. Apply this to explanation pages, decision boards, disposable prototypes, mockups, draft image variants, and sign-off previews in any format; canonical state files, shipped templates, and durable deliverables retain their prescribed names. Matching preview sources and renders share the timestamped stem. For a same-minute collision, append the next free ordinal to the slug before the extension (`2026-10-10-14-35-decision-board-2.html`); never overwrite an existing artifact or rename existing artifacts to apply this rule.
 - A durable directory entrypoint is the fixed uppercase filename `README.md`; operational indexes and semantic documents keep descriptive lowercase names.
 - Work-local specification files use `.state/works/<work-id>/spec/` and take the owning capability, never the task title.
 - ADRs use `adr-<n>-<decision-slug>.md`, where `<n>` is a positive, monotonically increasing integer without leading zeros (`docs/architecture/decisions/<domain>/adr-7-<decision-slug>.md`). The heading uses the same number: `# ADR-7: <decision title>`. ADRs are never renumbered; superseded ADRs keep their filename, with archive placement governed by [ADR supersession](../directions/adr-supersession.md).

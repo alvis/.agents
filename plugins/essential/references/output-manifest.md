@@ -4,6 +4,8 @@ Read this when returning an artifact-writing skill's manifest, or when writing a
 
 Every artifact-writing skill returns explicit final paths it generated or materially rewrote:
 
+Name generated artifacts under [naming.md](naming.md), including temporary user-facing review files.
+
 <report>
 
 ```yaml
