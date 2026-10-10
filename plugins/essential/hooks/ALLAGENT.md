@@ -18,4 +18,6 @@ If ineligible, transfer identity, evidence, constraints, acceptance criteria, an
 
 ## Work artifacts
 
+Names follow `{{PLUGIN_DIR}}/references/naming.md`.
+
 For project state, read `{{PLUGIN_DIR}}/references/state-systems.md`; for lifecycle work, follow `{{PLUGIN_DIR}}/references/state.md` and its resolver. Never invent Work IDs. For ADRs, read `{{PLUGIN_DIR}}/directions/adr-authoring.md` to write/index, `{{PLUGIN_DIR}}/directions/adr-supersession.md` to replace, or `{{PLUGIN_DIR}}/directions/adr-review.md` to check/read history.

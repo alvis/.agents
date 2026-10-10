@@ -84,20 +84,18 @@ workspace_dir = tempfile.mkdtemp(
 )
 ```
 
-One workspace holds every board produced during the session, so boards can
-cross-link with session-relative hrefs (`./sibling.html`). This resolves through <!-- doc-path-gate: ignore -->
-the operating system (`$TMPDIR` on macOS, the configured temp root such as `/tmp` on Linux, and `%TEMP%` on Windows) without a shared filename collision. Write each board's JSON and any assets it cites inside that workspace; asset paths resolve against the data file's own directory and may not escape it. Artifacts stay ephemeral — durable, bookmarkable, and cross-linked only within the session, never a permanent deliverable.
+One workspace holds every board produced during the session. Name user-specific boards and matching JSON under `essential:references/naming.md`; a unique workspace does not replace the filename convention. Cross-link using the actual output filenames with session-relative hrefs. The workspace resolves through the operating system (`$TMPDIR` on macOS, the configured temp root such as `/tmp` on Linux, and `%TEMP%` on Windows) without a shared filename collision. Write each board's JSON and any assets it cites inside that workspace; asset paths resolve against the data file's own directory and may not escape it. Artifacts stay ephemeral — durable, bookmarkable, and cross-linked only within the session, never a permanent deliverable.
 
 The presentation flow is always the same: write the data into the session workspace and render it.
 
 ```bash
 # one board
-bun run scripts/render-page/cli.ts <board>.json -o <board>.html
+bun run scripts/render-page/cli.ts <timestamped-board>.json -o <timestamped-board>.html
 # a whole run, every board carrying the same set list
 bun run scripts/render-page/cli.ts --set <run>.json -o <dir>
 ```
 
-A run file names each board's data, its output, and the label and blurb the set list shows for it, so the cross-links are derived once rather than repeated in twenty places. The set block appears in every board's drawer, not only on a hub, and stays hidden below two entries — so a single-board run shows nothing and the author does nothing differently.
+A run file names each board's data, its output, and the label and blurb the set list shows for it. Set each user-specific board's output to its timestamped filename before rendering so the renderer derives matching cross-links; do not rename outputs afterward. The set block appears in every board's drawer, not only on a hub, and stays hidden below two entries — so a single-board run shows nothing and the author does nothing differently.
 
 The output is one self-contained document that makes no network request: the stylesheet and runtime are emitted inline, images arrive base64, SVG arrives as markup, and a prototype arrives packed into a sandboxed `srcdoc`. A remote URL is refused rather than fetched. Mermaid is the one heavy inclusion, and it is inlined **only** into a board that carries a `mermaid` block, because the bundle is several megabytes; a board without one weighs a few hundred kilobytes. That is the trade the figure buys, taken per board.
 
