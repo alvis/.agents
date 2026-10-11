@@ -7,7 +7,7 @@ Read through the situation guide for shared setup and safety, then read only the
 <IMPORTANT>
 Never rewrite published or merged history — squashing, rebasing, abandoning, or describing a change that has already been pushed or landed. Correct it with a new change unless explicit authority permits rewriting shared history. This applies to every operation below, not only the merged-work row of the situation guide.
 
-Never use `--all` for routine publication. Push all and only the bookmarks selected by the PR workflow, then verify every remote head and PR base. After every rewrite, verify the stack is linear, conflict-free, and self-contained; run the affected lint, type, test, and build gates before publication.
+Never use `--all` for routine publication. Push all and only the bookmarks selected by the PR workflow, then verify every remote head and PR base. After every rewrite, verify the stack is linear, conflict-free, and self-contained; run [applicable affected gates](validation.md#classify-documentation-only-changes) before publication.
 </IMPORTANT>
 
 ## Setup when first using `jj`
@@ -140,7 +140,7 @@ jj run --ignore-changes --root -r '<revision>' -- <test-or-lint-command>
 
 Higher-level workflows own the revision set, execution order, failure attribution, and any explicit skip. Follow their reference instead of choosing an ad hoc revset or inferring a skip from another flag.
 
-`coding:pr create|update` requires this runner for its local publication gate: it validates the selected tip first, then each PR bookmark bottom-up through the tip. It stops at the earliest failing surface so the owning bookmark/PR is fixed before publication. Only that action's explicit `--no-verify` skips the gate.
+`coding:pr create|update` requires this runner for its local publication gate: it validates the selected tip first, then each PR bookmark bottom-up through the tip. It stops at the earliest failing surface so the owning bookmark/PR is fixed before publication. The [documentation-only exemption](validation.md#classify-documentation-only-changes) makes the local gate inapplicable; otherwise only that action's explicit `--no-verify` skips it.
 
 ## Fix a review bug in a stack
 

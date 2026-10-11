@@ -1,6 +1,6 @@
 # Auto-Squash Fixups — detect + squash (jj + git)
 
-Referenced from SKILL.md Step 6. Folds fixup-style commits into their targets before QA so each commit reads as one authored change. Detection here is read-only; the squash itself is applied by `coding:commit` after approval, guarded by its `backup.sh` / `verify.sh` pair.
+Referenced from SKILL.md Step 6. Folds fixup-style commits into their targets before QA so each commit reads as one authored change. Detection here is read-only; the squash itself is applied by `coding:commit` after approval, guarded by its [VCS-specific backup and recovery](../../commit/SKILL.md#backup-and-recovery).
 
 ## Detect
 
@@ -45,7 +45,7 @@ For an explicit `fixup!`-described commit, resolve `<dst>` from the referenced s
 
 ## After squashing
 
-- `coding:commit` runs its integrity verify; on failure it rolls back (`jj op restore` / `git reset --hard ORIG_HEAD`) and the run STOPs.
+- `coding:commit` runs its VCS-specific integrity verification; on failure it rolls back (`jj op restore` / `git reset --hard ORIG_HEAD`) and the run STOPs.
 - Re-enumerate targets (per SKILL.md Step 1) so the QA loop walks the post-squash stack.
-- Reassess the affected commit and all dependent later commits through the per-commit QA reference. Under [deterministic evidence reuse](../../../directions/validation.md#reuse-deterministic-check-evidence), rerun failed, missing, or invalidated legs; retain unaffected passes with their original evidence. Neither a new commit ID nor an unchanged patch ID decides validity alone. Required isolated install/lock and current publication gates still execute.
+- Reassess the affected commit and all dependent later commits through the per-commit QA reference. Under [deterministic evidence reuse](../../../directions/validation.md#reuse-deterministic-check-evidence), rerun failed, missing, or invalidated legs; retain unaffected passes with their original evidence. Neither a new commit ID nor an unchanged patch ID decides validity alone. Applicable isolated install/lock and current publication gates still execute; classify documentation-only changes before mechanical setup under the owning QA reference.
 - The squashed commit's message must still describe its full contents — if the fold changed what the commit does, message conformance in `qa-loop.md` Step 6 will catch and reword it.

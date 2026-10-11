@@ -10,6 +10,10 @@ Run the test and lint commands defined by applicable `pull_request` workflows on
 
 Reject unresolved refs, an unknown kind, or an empty input. A changed target, base, or applicable workflow input invalidates all evidence and restarts the gate. These inputs intentionally provide neither the pull request's base ref nor its create/update event type.
 
+## Documentation-only classification
+
+Before requiring JJ, opening a disposable worktree, discovering setup, or dispatching a tester, inspect the complete immutable `TARGET_BASE..TARGET_SHA` diff under the [documentation-only policy](../../../directions/validation.md#classify-documentation-only-changes). When it qualifies, return `local_verification: not_applicable_documentation_only` with the exact target/base/kind, changed paths, and classification basis; run no local mechanical command and create no CI parity receipt. This is neither a test pass nor a user waiver. Mixed or executable changes continue below. Current hosted check discovery and CI remain the publication caller's obligation.
+
 ## Workflow
 
 Resolve the target repository's main source checkout first:
@@ -168,4 +172,4 @@ On local failure, diagnose captured output without editing and return the root c
 
 ## Verification
 
-Return `pass` only when every test and lint command from every included `pull_request` workflow, run once in the local environment, exits zero at the exact target/base surface and the complete receipt records the exact target revision ID, base revision ID, kind, `conservative_pull_request` applicability, the `jj-run` execution engine, and canonical workflow command/result set. A pass additionally proves `--clean --ignore-changes --root -r "$TARGET_SHA"` was used for every task and that `JJ_COMMIT_ID` matched the target. The sole alternative is a complete `approved_without_local_run` receipt with those same fields plus the exact target revision ID and lexically sorted names in `missing_secret_approval`. Always close the retained lease before returning.
+For a documentation-only surface return the classification record above without a parity receipt. Otherwise return `pass` only when every test and lint command from every included `pull_request` workflow, run once in the local environment, exits zero at the exact target/base surface and the complete receipt records the exact target revision ID, base revision ID, kind, `conservative_pull_request` applicability, the `jj-run` execution engine, and canonical workflow command/result set. A pass additionally proves `--clean --ignore-changes --root -r "$TARGET_SHA"` was used for every task and that `JJ_COMMIT_ID` matched the target. The sole alternative is a complete `approved_without_local_run` receipt with those same fields plus the exact target revision ID and lexically sorted names in `missing_secret_approval`. Always close the retained lease before returning.

@@ -62,7 +62,7 @@ For every defect record `consumer`, `artifact` (symbol | spec | behavior), `reso
 
 ## Remedy operations (delegated to `coding:commit`)
 
-Once the recommended order is approved, request each move from `coding:commit` — never run these directly from this skill or its workers. Name the exact operation and targets; `coding:commit` guards every rewrite with its `backup.sh` / `verify.sh` pair and rolls back on integrity failure. The operations to request:
+Once the recommended order is approved, request each move from `coding:commit` — never run these directly from this skill or its workers. Name the exact operation and targets; `coding:commit` applies its [VCS-specific backup and recovery](../../commit/SKILL.md#backup-and-recovery) and rolls back on integrity failure. The operations to request:
 
 ### Reorder the resolving commit before the consumer
 

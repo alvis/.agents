@@ -49,7 +49,7 @@ Never rewrite a commit already merged into a shared destination. Fix merged work
 - This skill never opens, updates, or polls PRs. Its only pushes are the explicit, single-bookmark sync steps in `directions/merged.md` Option 2 and `directions/partial.md`; `coding:pr create` owns PR publication and CI convergence.
 - Before either sanctioned direct push, bind the exact pushed Git SHA and base, then invoke `coding:pr verify --target <sha> --base <sha> --kind standalone`. `--no-verify` never skips this direct-sync gate. Passing it does not make a direct bookmark sync PR publication.
 - NEVER rewrite merged-on-origin history without explicit consent. For a detected target, prompt through the graphical or structured user-input tool; default to the corrective-PR route in [merged.md](directions/merged.md). `--allow-rewrite-merged` skips the prompt.
-- Every change MUST be self-contained: compile/type diagnostics + lint + applicable tests and affected-consumer builds pass for each change in isolation. Runtime tests apply to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. A declaration-only change with neither test kind still runs its configured typecheck or equivalent diagnostics and affected-consumer builds; it must not receive a static-shape test. Shared files (package.json, tsconfig, lockfiles) evolve incrementally — no forward references.
+- Every change MUST be self-contained. Apply the [documentation-only exemption](../../directions/validation.md#classify-documentation-only-changes) first; otherwise compile/type diagnostics + lint + applicable tests and affected-consumer builds pass for each change in isolation. Runtime tests apply to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. A declaration-only change with neither test kind still runs its configured typecheck or equivalent diagnostics and affected-consumer builds; it must not receive a static-shape test. Shared files (package.json, tsconfig, lockfiles) evolve incrementally — no forward references.
 - `--paths-from` is a closed-set save, not a path suggestion. Never save, stage, reset, stash, or rewrite a non-selected dirty path, and never continue when exact isolation or the before/after preservation proof is unavailable.
 - The Conventional Commits subject regex MUST match BEFORE any mutation (see [commit-message standard](../../standards/commit/write.md)); no emoji prefixes in commit subjects.
 - Follow the shared guide's linked-Git-worktree guard before editing or mutating history.
@@ -66,7 +66,7 @@ Never rewrite a commit already merged into a shared destination. Fix merged work
 | `--paths-from=<manifest>` | Save only the manifest's exact dirty `selected_paths`; validate the ignored work-artifacts manifest and use [./directions/manifest.md](directions/manifest.md). Requires `--manifest-sha256`. |
 | `--manifest-sha256=<sha256>` | Expected SHA-256 of the exact manifest bytes. Valid only with `--paths-from`; prevents a path or manifest swap between lifecycle handoff and save. |
 | `--retrospective` | Distribute pending edits into their owning prior changes. See `./directions/retrospective.md` and the shared Jujutsu guide. |
-| `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard via `verify.sh`. See `./directions/reorder.md`. |
+| `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard uses the selected VCS's verification. See `./directions/reorder.md`. |
 | `--create-pr` | Compatibility entrypoint: finish the selected save/history route, then invoke `coding:pr create` with the resolved change or stack. |
 | `--branch-prefix <name>` | Forward the branch/bookmark prefix to `coding:pr create` when `--create-pr` is present. |
 | `--no-review` | Valid only with `--create-pr`; forward it under [PR creation inputs](../pr/directions/create-update.md#inputs). |
@@ -98,28 +98,7 @@ The skill self-routes by reading the working-copy diff, the changes since the pa
 
 Before writing any new code, plan the change structure so commits/PRs end up independent — see `./directions/plan.md`. End-to-end transcripts of every flag and auto-detected route: `./examples/transcripts.md`.
 
-1. **Pre-flight.** Backup only runs for history-rewriting routes; plain saves (default, split, parallel, empty) do not touch prior changes and skip `backup.sh` entirely:
-
-   | Route | Rewrites history? | Backup |
-   |---|---|---|
-   | Manifest-scoped save | No prior history | capture sealed VCS state plus the route's immutable exact-index backup and rollback handle |
-   | Default save | No | skip |
-   | Split current change | No | skip |
-   | Parallel workspace | No | skip |
-   | Empty / divergent | No | skip |
-   | Edit prior change | Yes | run |
-   | `--retrospective` | Yes | run |
-   | `--reorder` | Yes | run |
-   | Partial hunks → existing branch | Yes (ref movement, possibly backward) | run |
-   | Correct merged target (`git rebase` fallback) | Yes | run |
-
-   When backup runs, the PreToolUse hook fires it on the first rewriting op and injects `Auto-backup: GIT_TREE_SHA=... CONTENT_HASH=... BACKUP_PATH=...` into context. If the route rewrites history but the hook didn't fire, run manually:
-
-   ```bash
-   bash "${CODING_COMMIT_SKILL_DIR}/scripts/backup.sh"
-   ```
-
-   For every `jj` rewrite route, capture the rollback handle specified by the shared Jujutsu guide.
+1. **Pre-flight.** Apply [backup and recovery](#backup-and-recovery) for the selected VCS operation. Ordinary saves skip `backup.sh`; the manifest-scoped route retains its exact-index transaction copy and preservation proof.
 
 2. **Detect mode.** `--prepare-paths-from` runs only the producer contract and returns before proposing or mutating history; it cannot combine with another operation flag. A valid `--paths-from`/`--manifest-sha256` pair forces the manifest-scoped route and cannot be combined with `--retrospective`, `--reorder`, a named partial-to-branch target, or `--create-pr`. Otherwise, read working-copy state with the shared Jujutsu guide's inspection commands (or the route's Git equivalents) and pick exactly one route from the table above. A history-operation flag forces its route; `--create-pr` adds the post-save publication handoff.
 
@@ -129,11 +108,23 @@ Before writing any new code, plan the change structure so commits/PRs end up ind
 
 5. Run the verification below; when a check fails, fix the cause (or take the integrity table's prescribed action) and re-run that check. Repeat until every check passes or a concrete blocker remains — an integrity STOP awaiting the user, or a failure outside this skill's scope — then report the blocker instead of looping.
 
-6. **Synchronize or hand off after local work is complete.** The correct-merged Option 2 and partial-to-branch references perform their own direct bookmark sync only after `coding:pr verify`; those syncs are not PR publication. With `--create-pr` on every other route, invoke `coding:pr create <resolved-change-or-stack>` and forward `--branch-prefix <name>`, `--no-review`, and `--dry-run` when present. Route an equivalent natural-language opt-out through [PR creation inputs](../pr/directions/create-update.md#inputs). Never forward `--no-verify`: the PR workflow runs its own exact-revision test and lint gate, and only it may ask for user approval when a required secret is missing. After another local rewrite affects an unmerged PR stack, report its resolved metadata and current PR states to the caller; do not invoke `coding:pr update`. A separately authorized PR action owns publication, restacking, base repair, and CI convergence.
+6. **Synchronize or hand off after local work is complete.** The correct-merged Option 2 and partial-to-branch references perform their own direct bookmark sync only after `coding:pr verify`; those syncs are not PR publication. With `--create-pr` on every other route, invoke `coding:pr create <resolved-change-or-stack>` and forward `--branch-prefix <name>`, `--no-review`, and `--dry-run` when present. Route an equivalent natural-language opt-out through [PR creation inputs](../pr/directions/create-update.md#inputs). Never forward `--no-verify`: the PR workflow applies the [documentation-only classification](../../directions/validation.md#classify-documentation-only-changes) before its exact-revision test and lint gate, and only it may ask for user approval when a required secret is missing. After another local rewrite affects an unmerged PR stack, report its resolved metadata and current PR states to the caller; do not invoke `coding:pr update`. A separately authorized PR action owns publication, restacking, base repair, and CI convergence.
+
+## Backup and recovery
+
+Ordinary commits require no working-tree backup. Back up before rewriting existing history with Git, including amendments, rebases, and commit reordering. JJ operations use their operation log for recovery and require no separate backup; capture the operation ID under `coding:directions/jj.md`. A JJ repository backed by Git still follows the JJ rule when JJ performs the operation.
+
+For Git rewrites, the PreToolUse hook recognizes direct `git rebase` and `git commit --amend` commands, including `rtk` and `rtk proxy` wrappers, and injects `Auto-backup: GIT_TREE_SHA=... CONTENT_HASH=... BACKUP_PATH=...`. Before an unrecognized Git rewrite or when no hook checkpoint was captured, run manually and retain the returned checkpoint:
+
+```bash
+bash "${CODING_COMMIT_SKILL_DIR}/scripts/backup.sh"
+```
+
+The small immutable Git-index copy in the manifest-scoped save route is transaction recovery for unrelated staged work, not a working-tree backup; retain it.
 
 ## Verification
 
-For history-rewriting routes that captured a backup, the PostToolUse hook runs `verify.sh` and prints `── Integrity Check ──` to stderr. If it did not fire for that rewrite, run the script manually and read the table:
+For Git history-rewriting routes that captured a backup, the PostToolUse hook runs `verify.sh` and prints `── Integrity Check ──` to stderr. If it did not fire for that rewrite, run the script manually and read the table:
 
 | `GIT_TREE_MATCH` | `CONTENT_MATCH` | Action |
 |---|---|---|
@@ -148,7 +139,9 @@ bash "${CODING_COMMIT_SKILL_DIR}/scripts/verify.sh"
 
 For manifest-scoped saves, the required integrity gate is the manifest workflow's `verify` action and immutable PASS preservation receipt. Do not run the rewrite checker: scoped saves create no rewrite checkpoint, and that checker compares current HEAD against the full-tree backup checkpoint. Ordinary non-rewriting saves use their selected route's verification.
 
-Then run the project's own applicable lint, typecheck/diagnostics, affected-consumer build, test, and build commands (skip if `--no-verify`) and confirm the final chain is linear with each change self-contained. Runtime tests apply only to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with neither test kind, run its configured typecheck or equivalent diagnostics and affected-consumer builds, then record runtime and compiler tests as `SKIP (not applicable)` rather than running or inventing a test. Use configured project commands where they exist and the equivalents its language standard mandates otherwise.
+For JJ rewrites, inspect the operation diff, final graph, and conflicts; use the route's native tree-equivalence proof when content must remain unchanged. Do not invoke the backup-based `verify.sh` or consume an old Git checkpoint for a JJ operation. Restore the captured JJ operation when a native integrity proof fails.
+
+Apply the [documentation-only exemption](../../directions/validation.md#classify-documentation-only-changes) before project-script checks. Otherwise run the project's own applicable lint, typecheck/diagnostics, affected-consumer build, test, and build commands (skip if `--no-verify`) and confirm the final chain is linear with each change self-contained. Runtime tests apply only to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with neither test kind, run its configured typecheck or equivalent diagnostics and affected-consumer builds, then record runtime and compiler tests as `SKIP (not applicable)` rather than running or inventing a test. Use configured project commands where they exist and the equivalents its language standard mandates otherwise.
 
 The direct-sync publication gate in the two sanctioned push references is separate from these ordinary checks and remains mandatory with `--no-verify`.
 

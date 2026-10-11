@@ -1,6 +1,6 @@
 # `--reorder [--up-to <rev>]` — re-linearise history with content-equivalence guard
 
-Deliver a clean linear chain up to a target rev, preserving the merged tree exactly. The user's hard requirement: **"ensure the content remain the same at the end"** — implemented via the dual-checksum guard in [verify.sh](../scripts/verify.sh). See [SKILL.md](../SKILL.md).
+Deliver a clean linear chain up to a target rev, preserving the merged tree exactly. The user's hard requirement: **"ensure the content remain the same at the end"** — verified through JJ's native tree comparison. See [SKILL.md](../SKILL.md).
 
 ## When triggered
 
@@ -13,12 +13,14 @@ Deliver a clean linear chain up to a target rev, preserving the merged tree exac
 ### 1. Snapshot rollback handle
 
 ```bash
+jj status
 jj op log -n1 --no-graph -T 'self.id().short()'
+ORIGINAL_TREE_REV=$(jj log -r @ --no-graph -T 'commit_id')
 ```
 
 Record the op id. `jj op restore <id>` rewinds the entire reorder if anything goes wrong.
 
-The PreToolUse hook also fires `backup.sh` on the first rewriting op, capturing both `GIT_TREE_SHA` (git's `write-tree` of the working copy) and `CONTENT_HASH` (covers untracked files jj/git don't track). Both feed Step 5 verify. `CONTENT_HASH` covers untracked files no VCS snapshot records, so the operation log cannot reconstruct them afterwards.
+The captured immutable working-copy revision is the content baseline for Step 5. Apply [backup and recovery](../SKILL.md#backup-and-recovery); JJ needs no filesystem backup.
 
 ### 2. Identify the range
 
@@ -82,22 +84,13 @@ Use when reordering a single change without disturbing others. v0.40+ supports t
 
 ### 5. Content-equivalence guard
 
-After all rebases, the merged tree at `@` MUST match the pre-state. Run:
+After all rebases, the merged tree at `@` MUST match the captured immutable working-copy revision. Inspect the native comparison:
 
 ```bash
-bash "${CODING_COMMIT_SKILL_DIR}/scripts/verify.sh"
+jj diff --from "$ORIGINAL_TREE_REV" --to @ --summary
 ```
 
-Read the `── Integrity Check ──` table:
-
-| `GIT_TREE_MATCH` | `CONTENT_MATCH` | Meaning | Action |
-|---|---|---|---|
-| PASS | PASS | Reorder preserved everything | Proceed to Step 6 |
-| FAIL | PASS | Git tree drift — reorder corrupted history | STOP, show `git diff <backup_tree> HEAD`, await user |
-| PASS | FAIL | Untracked filesystem drift | STOP, show drift list, await user |
-| FAIL | FAIL | Corruption | STOP, recover: `jj op restore <op_id_from_step_1>` |
-
-The whole point of this guard is that `jj op restore` rewinds jj state but does NOT restore untracked files or build artifacts; the dual-checksum backup catches both.
+An empty diff proves the versioned tree is unchanged. A nonempty diff or unresolved conflict blocks success: inspect the full native diff, restore the captured operation with `jj op restore <op_id_from_step_1>`, and replan. Do not run `backup.sh` or the backup-based `verify.sh` for this JJ route.
 
 ### 6. Re-emit git refs
 
@@ -120,8 +113,8 @@ The git log should reflect the new order with the same descriptions.
 
 - If any unmerged bookmark sits inside the reordered range, follow the [SKILL.md](../SKILL.md) publication handoff with the resolved stack metadata after local integrity passes. Discover open PRs for the selected heads and report their states without mutating them. The caller separately authorizes any publication or restacking through the [publication workflow](../../pr/directions/create-update.md#3-publish-bottom-up) that owns pushing and PR-base repair.
 
-- Per-change build: `jj edit <each_change> && npm run build` to confirm each compiles in its new position.
-- Final integrity + project scripts.
+- Classify each change through the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes). Run applicable configured project gates for executable changes in their new positions; documentation-only changes receive no local mechanical checks.
+- Final native tree equivalence and applicable project gates.
 
 ## Error / edge cases
 

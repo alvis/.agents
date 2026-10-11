@@ -12,7 +12,7 @@ If `@` mixes concerns but they all belong on the same new change → [split.md](
 
 ## Pre-flight
 
-This route can rewrite history when an existing bookmark moves backward. The PreToolUse backup hook fires per [SKILL.md](../SKILL.md) Step 1 for that case; a new bookmark does not rewind history.
+This route can move an existing bookmark backward. Apply [backup and recovery](../SKILL.md#backup-and-recovery) to the actual VCS operation; JJ bookmark movement uses its operation log and needs no filesystem backup.
 
 ```bash
 jj git fetch
@@ -170,13 +170,13 @@ Invoke the public parity action for this standalone surface:
 coding:pr verify --target "$TARGET_SHA" --base "$TARGET_BASE" --kind "$TARGET_KIND"
 ```
 
-Capture the action's complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`, then consume them before the push:
+When the action returns `local_verification: not_applicable_documentation_only`, retain and recheck its exact target/base/kind and semantic classification record before pushing; create no parity receipt and do not call its validator. Otherwise capture the action's complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`, then consume them before the push:
 
 ```bash
 source "${CODING_COMMIT_SKILL_DIR}/../../scripts/validate-ci-parity-receipt.sh"
 ```
 
-On the exception path, its `sha` equals the exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch cannot form a complete receipt and stops before the push. `--no-verify` does not skip this gate. This is a direct bookmark sync, not PR publication; do not invoke a publication action.
+On the missing-variable exception path for a mechanically applicable surface, its `sha` equals the exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch cannot form a complete receipt and stops before the push. `--no-verify` does not skip this gate. This is a direct bookmark sync, not PR publication; do not invoke a publication action.
 
 Choose one push from `TARGET_ROUTE`; an unknown route stops without publishing:
 
@@ -211,7 +211,9 @@ The unstaged hunks remain on `@` untouched — verify they match the user's expe
 
 ## Verification
 
-The PostToolUse hook fires `verify.sh` after the rewrite ops. Read the `── Integrity Check ──` block per [SKILL.md](../SKILL.md) Verification. `GIT_TREE_MATCH` reflects the new HEAD on the target branch, not `@`.
+Apply the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes) before local project checks; use [VCS-specific verification](../SKILL.md#verification) for history integrity.
+
+Inspect the saved target commit, selected diff, remainder, and bookmark against the bound pre-state under [SKILL.md](../SKILL.md#verification). This JJ route creates no backup checkpoint; do not invoke `verify.sh`.
 
 Run applicable project scripts (unless `--no-verify`), including configured typecheck or equivalent diagnostics for all changed code, plus affected-consumer builds for changed public shape. Runtime tests apply only to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with neither test kind, run the diagnostics and consumer-build gates, then record both test gates as `SKIP (not applicable)`; do not run or invent a test. For example, a runtime-producing npm project may require:
 

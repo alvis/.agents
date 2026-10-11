@@ -107,13 +107,13 @@ Before any push, invoke the public parity action for this standalone surface:
 coding:pr verify --target "$TARGET_SHA" --base "$TARGET_BASE" --kind "$TARGET_KIND"
 ```
 
-Capture the action's complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`, then consume them before the push:
+When the action returns `local_verification: not_applicable_documentation_only`, retain and recheck its exact target/base/kind and semantic classification record before pushing; create no parity receipt and do not call its validator. Otherwise capture the action's complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`, then consume them before the push:
 
 ```bash
 source "${CODING_COMMIT_SKILL_DIR}/../../scripts/validate-ci-parity-receipt.sh"
 ```
 
-On the exception path, its `sha` equals the exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch cannot form a complete receipt and stops before the push. Neither `--no-verify` nor `--allow-rewrite-merged` skips this gate. This is direct synchronization of the already-authorized bookmark, not PR publication; do not invoke a publication action.
+On the missing-variable exception path for a mechanically applicable surface, its `sha` equals the exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch cannot form a complete receipt and stops before the push. Neither `--no-verify` nor `--allow-rewrite-merged` skips this gate. This is direct synchronization of the already-authorized bookmark, not PR publication; do not invoke a publication action.
 
 Synchronize only the existing bookmark whose rewrite the user authorized:
 
@@ -125,7 +125,7 @@ The tracked remote bookmark gives `jj git push` force-with-lease semantics: a re
 
 If open downstream PRs remain, inspect their current checks read-only with `bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-checks.ts"`; do not invoke mutating `coding:pr update` as a monitor. Updating or restacking descendants requires separate explicit user consent. With no relevant downstream PR, skip monitoring.
 
-Verify the integrity guard in [SKILL.md](../SKILL.md) passes.
+Verify the VCS-specific integrity guard in [SKILL.md](../SKILL.md#verification) passes.
 
 ### 4. Communicate to reviewers (Option 2 only)
 

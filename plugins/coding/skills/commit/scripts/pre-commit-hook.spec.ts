@@ -1,5 +1,15 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
@@ -7,7 +17,7 @@ import { describe, expect, it, onTestFinished } from "vitest";
 
 import { HARNESS_ROOT_VARIABLES } from "../../../../../scripts/harness_contract.ts";
 
-const hook = resolve(import.meta.dirname, "pre-commit-hook.sh");
+import type { SpawnSyncReturns } from "node:child_process";
 
 interface ClaudeEnvelope {
   readonly hookSpecificOutput?: {
@@ -21,7 +31,176 @@ interface GrokEnvelope {
 }
 type Envelope = ClaudeEnvelope & GrokEnvelope;
 
-function fixture(): string {
+const hook = resolve(import.meta.dirname, "pre-commit-hook.sh");
+
+const rewritingSnake = JSON.stringify({
+  tool_name: "Bash",
+  tool_input: { command: "git rebase main" },
+});
+const rewritingCamel = JSON.stringify({
+  tool_name: "Bash",
+  toolInput: { command: "git rebase main" },
+});
+
+describe("commit pre-commit hook", () => {
+  it.each(HARNESS_ROOT_VARIABLES)(
+    "should emit the native allow envelope for a rewrite under %s",
+    (variable) => {
+      const completed = runHook(createFixture(), rewritingSnake, variable);
+      expect(completed.status, completed.stderr).toBe(0);
+      const output = JSON.parse(completed.stdout) as Envelope;
+      if (variable === "GROK_PLUGIN_ROOT") expectGrokAllow(output);
+      else expectClaudeAllow(output);
+    },
+  );
+
+  it.each(HARNESS_ROOT_VARIABLES)(
+    "should read the rewrite command from camelCase toolInput under %s",
+    (variable) => {
+      const completed = runHook(createFixture(), rewritingCamel, variable);
+      expect(completed.status, completed.stderr).toBe(0);
+      const output = JSON.parse(completed.stdout) as Envelope;
+      if (variable === "GROK_PLUGIN_ROOT") expectGrokAllow(output);
+      else expectClaudeAllow(output);
+    },
+  );
+
+  it.each([
+    "git rebase main",
+    "rtk git rebase main",
+    "rtk proxy git rebase main",
+    "git commit --amend --no-edit",
+    'git commit -m "message" --amend',
+    "rtk git commit --amend --no-edit",
+    "rtk proxy git commit --amend --no-edit",
+  ])("should preserve working-tree files before %s", (command) => {
+    const root = createFixture();
+    const completed = runHook(root, JSON.stringify({ tool_input: { command } }));
+    expect(completed.status, completed.stderr).toBe(0);
+    expect(completed.stdout).not.toBe("");
+    const checkpoint = readFileSync(
+      resolve(root, "checkpoints/git-backups/repo/.checkpoint"),
+      "utf8",
+    );
+    const backup = checkpoint.match(/^BACKUP_PATH=(.+)$/m)?.[1] ?? "";
+    expect(backup).not.toBe("");
+    expect(readFileSync(resolve(backup, "untracked.txt"), "utf8")).toBe(
+      "working copy\n",
+    );
+    expect(existsSync(resolve(backup, ".git"))).toBe(true);
+  });
+
+  it("should preserve a linked worktree's live index during an amendment backup", () => {
+    const root = createFixture();
+    const repo = resolve(root, "repo");
+    const main = resolve(root, "main");
+    writeFileSync(resolve(repo, "selected.txt"), "selected baseline\n");
+    writeFileSync(resolve(repo, "unstaged.txt"), "unstaged baseline\n");
+    runGit(repo, ["add", "selected.txt", "unstaged.txt"]);
+    const commitArguments = [
+      "-c",
+      "user.name=Hook Test",
+      "-c",
+      "user.email=hook@example.test",
+      "commit",
+      "--no-gpg-sign",
+      "-qm",
+      "initial",
+    ];
+    runGit(repo, commitArguments);
+    renameSync(repo, main);
+    runGit(main, ["worktree", "add", "-b", "rewrite", repo]);
+    runGit(repo, [...commitArguments, "--allow-empty"]);
+    writeFileSync(resolve(repo, "selected.txt"), "selected change\n");
+    runGit(repo, ["add", "selected.txt"]);
+    writeFileSync(resolve(repo, "unstaged.txt"), "unstaged change\n");
+    writeFileSync(resolve(repo, "untracked.txt"), "untracked change\n");
+    const index = resolve(
+      repo,
+      runGit(repo, ["rev-parse", "--git-path", "index"]).trim(),
+    );
+    const originalIndex = readFileSync(index);
+    const originalStatus = runGit(repo, ["status", "--porcelain=v1", "-z"]);
+    const originalHead = runGit(repo, ["rev-parse", "HEAD"]);
+
+    const completed = runHook(
+      root,
+      JSON.stringify({ tool_input: { command: "git commit --amend --no-edit" } }),
+    );
+
+    expect(completed.status, completed.stderr).toBe(0);
+    expect(completed.stdout, completed.stderr).not.toBe("");
+    expect.soft(readFileSync(index).equals(originalIndex)).toBe(true);
+    expect.soft(runGit(repo, ["status", "--porcelain=v1", "-z"])).toBe(
+      originalStatus,
+    );
+    expect.soft(runGit(repo, ["rev-parse", "HEAD"])).toBe(originalHead);
+    const checkpoint = readFileSync(
+      resolve(root, "checkpoints/git-backups/repo/.checkpoint"),
+      "utf8",
+    );
+    const backup = checkpoint.match(/^BACKUP_PATH=(.+)$/m)?.[1] ?? "";
+    expect(backup).not.toBe("");
+    expect([
+      readFileSync(resolve(backup, "selected.txt"), "utf8"),
+      readFileSync(resolve(backup, "unstaged.txt"), "utf8"),
+      readFileSync(resolve(backup, "untracked.txt"), "utf8"),
+    ]).toEqual(["selected change\n", "unstaged change\n", "untracked change\n"]);
+    expect.soft(statSync(resolve(backup, ".git")).isDirectory()).toBe(true);
+    renameSync(main, resolve(root, "disconnected-main"));
+    expect(runGit(backup, ["rev-parse", "HEAD"])).toBe(originalHead);
+    expect(runGit(backup, ["show", "HEAD:selected.txt"])).toBe(
+      "selected baseline\n",
+    );
+    expect(readFileSync(resolve(backup, ".git/index")).equals(originalIndex)).toBe(true);
+    expect(runGit(backup, ["status", "--porcelain=v1", "-z"])).toBe(originalStatus);
+  });
+
+  it.each([
+    "git commit -m save",
+    "git commit --amendment",
+    'git commit -m "mention --amend"',
+    "git commit -m 'mention --amend'",
+    String.raw`git commit -m "mention \" --amend \""`,
+
+    "jj describe -m save",
+    "jj new",
+    "jj split",
+    "jj rebase -d main",
+    "jj squash",
+    "jj absorb",
+    "jj abandon",
+    "jj edit @-",
+    "jj undo",
+    "jj op restore previous",
+  ].flatMap((command) => [command, `rtk ${command}`, `rtk proxy ${command}`]))(
+    "should leave existing backups untouched and stay silent before %s",
+    (command) => {
+      const root = createFixture();
+      const checkpointRoot = resolve(root, "checkpoints/git-backups/repo");
+      mkdirSync(checkpointRoot, { recursive: true });
+      writeFileSync(resolve(checkpointRoot, ".checkpoint"), "stale checkpoint\n");
+      const completed = runHook(root, JSON.stringify({ tool_input: { command } }));
+      expect({
+        status: completed.status,
+        stdout: completed.stdout,
+        stderr: completed.stderr,
+      }).toEqual({ status: 0, stdout: "", stderr: "" });
+      expect(readdirSync(checkpointRoot)).toEqual([".checkpoint"]);
+      expect(readFileSync(resolve(checkpointRoot, ".checkpoint"), "utf8")).toBe(
+        "stale checkpoint\n",
+      );
+    },
+  );
+
+  it("should keep the Claude envelope when no harness variable resolves", () => {
+    const completed = runHook(createFixture(), rewritingSnake);
+    expect(completed.status, completed.stderr).toBe(0);
+    expectClaudeAllow(JSON.parse(completed.stdout) as Envelope);
+  });
+});
+
+function createFixture(): string {
   const root = mkdtempSync(resolve(tmpdir(), "pre-commit-hook-"));
   onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(resolve(root, "checkpoints"));
@@ -29,10 +208,25 @@ function fixture(): string {
   mkdirSync(repo);
   const init = spawnSync("git", ["init", "-q", repo], { encoding: "utf8" });
   expect(init.status, init.stderr).toBe(0);
+  writeFileSync(resolve(repo, "untracked.txt"), "working copy\n");
   return root;
 }
 
-function runHook(root: string, input: string, variable?: string) {
+function runGit(repo: string, arguments_: readonly string[]): string {
+  const completed = spawnSync("git", arguments_, {
+    cwd: repo,
+    encoding: "utf8",
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
+  });
+  expect(completed.status, completed.stderr).toBe(0);
+  return completed.stdout;
+}
+
+function runHook(
+  root: string,
+  input: string,
+  variable?: string,
+): SpawnSyncReturns<string> {
   const environment = { ...process.env };
   for (const name of HARNESS_ROOT_VARIABLES) delete environment[name];
   if (variable !== undefined) environment[variable] = "/plugins/coding";
@@ -43,15 +237,6 @@ function runHook(root: string, input: string, variable?: string) {
     input,
   });
 }
-
-const rewritingSnake = JSON.stringify({
-  tool_name: "Bash",
-  tool_input: { command: "jj rebase -d main" },
-});
-const rewritingCamel = JSON.stringify({
-  tool_name: "Bash",
-  toolInput: { command: "jj rebase -d main" },
-});
 
 function expectClaudeAllow(output: Envelope): void {
   expect(output.decision).toBeUndefined();
@@ -67,49 +252,3 @@ function expectGrokAllow(output: Envelope): void {
   expect(output.reason).toMatch(/^Auto-backup: /);
   expect(output.hookSpecificOutput).toBeUndefined();
 }
-
-describe("commit pre-commit hook", () => {
-  it.each(HARNESS_ROOT_VARIABLES)(
-    "should emit the native allow envelope for a rewrite under %s",
-    (variable) => {
-      const completed = runHook(fixture(), rewritingSnake, variable);
-      expect(completed.status, completed.stderr).toBe(0);
-      const output = JSON.parse(completed.stdout) as Envelope;
-      if (variable === "GROK_PLUGIN_ROOT") expectGrokAllow(output);
-      else expectClaudeAllow(output);
-    },
-  );
-
-  it.each(HARNESS_ROOT_VARIABLES)(
-    "should read the rewrite command from camelCase toolInput under %s",
-    (variable) => {
-      const completed = runHook(fixture(), rewritingCamel, variable);
-      expect(completed.status, completed.stderr).toBe(0);
-      const output = JSON.parse(completed.stdout) as Envelope;
-      if (variable === "GROK_PLUGIN_ROOT") expectGrokAllow(output);
-      else expectClaudeAllow(output);
-    },
-  );
-
-  it.each(HARNESS_ROOT_VARIABLES)(
-    "should stay silent for a plain save under %s",
-    (variable) => {
-      const completed = runHook(
-        fixture(),
-        JSON.stringify({
-          tool_name: "Bash",
-          tool_input: { command: "git commit -m feat: x" },
-        }),
-        variable,
-      );
-      expect(completed.status, completed.stderr).toBe(0);
-      expect(completed.stdout).toBe("");
-    },
-  );
-
-  it("should keep the Claude envelope when no harness variable resolves", () => {
-    const completed = runHook(fixture(), rewritingSnake);
-    expect(completed.status, completed.stderr).toBe(0);
-    expectClaudeAllow(JSON.parse(completed.stdout) as Envelope);
-  });
-});
