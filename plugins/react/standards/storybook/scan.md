@@ -8,9 +8,11 @@ Any single P0 violation blocks approval by default. Protocol: `essential:directi
 
 - DO NOT use lowercase, missing `.stories` suffix, or non-TS extensions for story files (`button.stories.js`, `ButtonStories.tsx`) [`SB-NAME-01`]
 
-### Title Organization
+### Organization
 
 - DO NOT use flat story titles (`title: 'Button'`) — titles must mirror the file path (`Components/Forms/Button`) [`SB-ORG-01`]
+- DO NOT extract helpers or fixtures used by only one story file, even when reused by its story exports or the file is long; keep them inline [`SB-ORG-02`](rules/sb-org-02.md)
+- DO NOT duplicate helpers or fixtures shared across story files, or place them outside `.stories.helpers.ts` / `.stories.fixtures.ts` in those files' nearest common parent directory [`SB-ORG-02`](rules/sb-org-02.md)
 
 ### Story Coverage
 
@@ -90,6 +92,7 @@ export const GoodData: Story = {
 
 | Rule ID | Violation | Bad Examples |
 |---|---|---|
+| [`SB-ORG-02`](rules/sb-org-02.md) | Story-only support extracted without cross-file reuse, duplicated across files, or placed incorrectly | Single-consumer `Button.helpers.ts`; shared data in a distant `fixtures/` directory |
 | `SB-STRUCT-01` | Meta is not declared with the canonical `satisfies` typing, or component stories omit autodocs/derived story typing | `export default { component: Button } as Meta<typeof Button>`; `type Story = StoryObj<typeof Button>` |
 | `SB-PLAY-01` | Play helpers use the wrong package, interactions are not awaited, or the result is not asserted | `import { userEvent } from '@storybook/test'`; `userEvent.click(button)`; a play function with no `expect(...)` |
 | `SB-CONTROLS-01` | A configurable prop lacks a suitable documented control, or a function/complex value exposes an unusable control | Enum prop without `options`; `onClick` without `control: false` |
@@ -125,5 +128,5 @@ export const GoodData: Story = {
 
 3. **Does it need context?**
    - If providers needed → Use decorators
-   - If mock data → Define in story args
+   - If mock data → Supply through story args; determine fixture placement with [`SB-ORG-02`](rules/sb-org-02.md)
    - If interactions → Use play functions

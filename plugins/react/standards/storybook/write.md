@@ -64,6 +64,31 @@ export const CompleteCheckout: Story = {
 
 ## Organization Structure
 
+### Helpers and Fixtures
+
+Follow [`SB-ORG-02`](rules/sb-org-02.md) to decide whether story-only support stays inline or is shared. In this example, both story files consume both support modules, so `Forms/` is their nearest common parent:
+
+```plaintext
+components/
+  Forms/
+    .stories.helpers.ts
+    .stories.fixtures.ts
+    PaymentForm/
+      PaymentForm.stories.tsx
+    OrderSummary/
+      OrderSummary.stories.tsx
+```
+
+```typescript
+// PaymentForm/PaymentForm.stories.tsx
+import { formatAmount } from '../.stories.helpers';
+import { orderFixture } from '../.stories.fixtures';
+
+// OrderSummary/OrderSummary.stories.tsx
+import { formatAmount } from '../.stories.helpers';
+import { orderFixture } from '../.stories.fixtures';
+```
+
 ### Directory Alignment
 
 ```plaintext

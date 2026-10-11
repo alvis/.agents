@@ -6,8 +6,8 @@ Stories must render existing components from the codebase, not anonymous compone
 
 ## Fix
 
-- Move any helper component into the regular component tree (`./components/...`) and import it
-- If the wrapper is truly story-only, factor it into a named helper inside the story file (still imported, still typed)
+- Move reusable production components into the regular component tree (`./components/...`) and import them
+- Keep story-only wrapper helpers typed and outside `render`; follow [SB-ORG-02](sb-org-02.md) for their placement
 - Reserve `render` for composition of *real* components; never for declaring brand new ones
 
 ```typescript
