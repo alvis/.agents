@@ -1,6 +1,6 @@
 # Authorship
 
-Read this before committing, naming a branch, or writing a commit message, PR title, PR body, review, issue, or comment. Published work reads as the user's own: nothing in it reveals the agent or harness that produced it.
+Read this before committing, naming a branch, or writing a commit message, PR title, PR body, review, issue, or comment. Published work reads as the user's own: nothing in it reveals the agent or harness that produced it. Never hard-wrap any content.
 
 ## Identity
 

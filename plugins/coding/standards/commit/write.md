@@ -100,7 +100,7 @@ A breaking change MUST be documented in the body under a `BREAKING CHANGE:` foot
 ## Body rules
 
 - Separate from subject by ONE blank line.
-- Wrap every body line at 72 characters; this is a hard limit.
+- Never hard-wrap any content.
 - Explain **WHY**, not WHAT. The diff shows what; the body explains the reasoning, trade-offs, alternatives considered.
 - Commit text never contains issue-closing directives; `coding:pr create|update` owns verified GitHub Development links for resolving PRs.
 - Carry no tool provenance line or agent co-author trailer; `coding:directions/authorship.md` owns that rule.
@@ -112,13 +112,9 @@ Example:
 ```text
 feat(user-profile): add avatar upload
 
-Adds the AvatarPicker component plus the upload endpoint and avatar
-field on the user model so the whole feature lands as one shippable
-change. Files in each layer compile in isolation per the
-self-containment rule.
+Adds the AvatarPicker component plus the upload endpoint and avatar field on the user model so the whole feature lands as one shippable change. Files in each layer compile in isolation per the self-containment rule.
 
-Image processing uses sharp instead of jimp because sharp's libvips
-backend is ~6x faster on benchmark fixtures.
+Image processing uses sharp instead of jimp because sharp's libvips backend is ~6x faster on benchmark fixtures.
 ```
 
 ## Core Rules Summary
@@ -129,5 +125,5 @@ backend is ~6x faster on benchmark fixtures.
 | `CMT-HEAD-02` | Scope names one kebab-case concern, or is omitted |
 | `CMT-HEAD-03` | `!` is paired with a `BREAKING CHANGE:` body footer |
 | `CMT-SUBJ-01` | Imperative, ≤72 characters, no trailing period, no emoji |
-| `CMT-BODY-01` | Blank-line separated, wrapped at 72, explains why |
+| `CMT-BODY-01` | Blank-line separated, never hard-wrapped, explains why |
 | `CMT-BODY-02` | Issue references carry no directives; `revert` carries `Reverts <sha>` |
