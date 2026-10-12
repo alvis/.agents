@@ -4,7 +4,7 @@ Read this before authoring, creating, updating, reviewing, or merging a pull req
 
 `coding:pr create|update` exclusively owns branch publication, pull-request bases, and CI. `coding:pr merge` owns merging and merges stacks bottom-up. Creating or updating a pull request must use those skills, never hand-written `git`, `jj`, or `gh` publication commands.
 
-The selected `coding:pr` action owns publication review and closure. Reuse applicable independent evidence under [review ownership and evidence](review-evidence.md), but always verify the actual head and base, all discussions and dispositions, required authorization, local exact-revision parity, and hosted CI. No current independent evidence means no approval.
+The selected `coding:pr` action owns publication review and closure. Reuse applicable independent evidence under [review ownership and evidence](review-evidence.md), but always verify the actual head and base, all discussions and dispositions, required authorization, [applicable local exact-revision parity](validation.md#classify-documentation-only-changes), and hosted CI. No current independent evidence means no approval.
 
 Apply [command output](output.md) to remote inventories, discussion, diffs, logs, checks, and JSON. Page complete remote collections into a retained artifact, then emit only the fields and failure evidence needed for the selected decision.
 

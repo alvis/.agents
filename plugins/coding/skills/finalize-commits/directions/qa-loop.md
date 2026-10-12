@@ -6,6 +6,8 @@ Ownership: this reference observes, gates, and **validates** corrections inside 
 
 Every edit must dissolve cleanly: a lint/test fix folds into the commit so it reads as originally authored, and a reworded subject describes the commit's real contents — never narrate the QA pass.
 
+Apply the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes) before entering this replay/QA loop. Documentation-only commits follow the owning skill's inspection route and never reach its mechanical setup.
+
 ## Isolation model
 
 - **jj**: `jj edit <rev>` — the working copy becomes that commit; validated edits are staged there. The original `@` change-id was captured at start (SKILL.md Step 1) and is restored at end. Every rule below still binds on this path: one atomic dispatch per commit, complete per-leg gate evidence, the lock fold mandatory, wrappers bypassed, exit codes captured directly. Generated artifacts (install output, build output) must be ignored so jj's automatic snapshot never sweeps them into the commit — a fold takes tracked edits only.

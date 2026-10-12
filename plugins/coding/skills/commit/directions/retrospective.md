@@ -12,6 +12,8 @@ Single flag, three-stage execution. Subsumes the old commit-old `--retrospective
 
 The skill tries the cheapest mechanism first and falls through.
 
+Classify affected changes through the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes) before project-script checks.
+
 ### Stage 1 — `jj absorb` (content-matching)
 
 `jj absorb` automatically distributes each hunk on `@` into the nearest mutable ancestor whose context matches that hunk. This handles the common "I made a typo in commit C" case with zero LLM reasoning.

@@ -170,13 +170,13 @@ Invoke the public parity action for this standalone surface:
 coding:pr verify --target "$TARGET_SHA" --base "$TARGET_BASE" --kind "$TARGET_KIND"
 ```
 
-Capture the action's complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`, then consume them before the push:
+When the action returns `local_verification: not_applicable_documentation_only`, retain and recheck its exact target/base/kind and semantic classification record before pushing; create no parity receipt and do not call its validator. Otherwise capture the action's complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`, then consume them before the push:
 
 ```bash
 source "${CODING_COMMIT_SKILL_DIR}/../../scripts/validate-ci-parity-receipt.sh"
 ```
 
-On the exception path, its `sha` equals the exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch cannot form a complete receipt and stops before the push. `--no-verify` does not skip this gate. This is a direct bookmark sync, not PR publication; do not invoke a publication action.
+On the missing-variable exception path for a mechanically applicable surface, its `sha` equals the exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch cannot form a complete receipt and stops before the push. `--no-verify` does not skip this gate. This is a direct bookmark sync, not PR publication; do not invoke a publication action.
 
 Choose one push from `TARGET_ROUTE`; an unknown route stops without publishing:
 
