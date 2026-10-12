@@ -48,7 +48,6 @@
       sampleYRatio: 0.5,
       selectorBackgrounds: [],
       ignoreSelectors: [],
-      failOnComplexSurfaces: true,
       manualReviewContrastBuffer: 0.75,
       minReliableSurfaceAlpha: 0.6,
       minCollapsedLineCount: 4,
@@ -243,6 +242,13 @@
     // -----------------------------------------------------------------------
 
     var isVisibleLeafTextElement = function (element) {
+      // Only consider true leaf elements (no child elements with text). This
+      // cheap check runs first because every div on the page reaches it.
+      for (var i = 0; i < element.children.length; i++) {
+        var child = element.children[i];
+        if ((child.textContent || '').trim() && (child.innerText || '').trim()) return false;
+      }
+
       var text = (element.innerText || element.textContent || '').trim().replace(/\s+/g, ' ');
       if (text.length < settings.minTextLength) return false;
 
@@ -252,12 +258,6 @@
 
       var rect = element.getBoundingClientRect();
       if (rect.width < 4 || rect.height < 8) return false;
-
-      // Only consider true leaf elements (no child elements with text)
-      for (var i = 0; i < element.children.length; i++) {
-        var childText = (element.children[i].innerText || element.children[i].textContent || '').trim();
-        if (childText) return false;
-      }
       return true;
     };
 
@@ -417,6 +417,16 @@
         if (hasOpaqueSolid) break;
         current = current.parentElement;
         depth++;
+      }
+
+      // An opaque surface hides what lies behind it, but opacity, filters, and
+      // blend modes above it still change the rendered result.
+      for (var outer = current && current.parentElement; outer && outer !== document.body && outer !== document.documentElement; outer = outer.parentElement) {
+        var outerStyle = getComputedStyle(outer);
+        var outerTag = outer.tagName.toLowerCase();
+        if (outerStyle.filter && outerStyle.filter !== 'none') flags.push('filter on ' + outerTag);
+        if (outerStyle.mixBlendMode && outerStyle.mixBlendMode !== 'normal') flags.push('mix-blend-mode on ' + outerTag);
+        if (parseFloat(outerStyle.opacity || '1') < 1) flags.push('opacity on ' + outerTag);
       }
 
       // Deduplicate
@@ -1182,7 +1192,7 @@
       var fillValue = candidate.style.webkitTextFillColor || candidate.style.color;
       var foreground = toSrgb(fillValue);
       if (!foreground || foreground.a === 0) {
-        var unmeasuredSelector = getSelectorHint(candidate.element);
+        var unmeasuredSelector = candidate.selector;
         var reason = foreground
           ? 'transparent text fill (gradient or image text): ' + fillValue
           : 'unparsed text color: ' + fillValue;
@@ -1280,7 +1290,7 @@
         allIssues.push(merged);
       });
 
-      if (settings.failOnComplexSurfaces && row.needsManualReview) {
+      if (row.needsManualReview) {
         manualReviewItems.push({
           selector: row.selector,
           summary: 'Complex surface behind text -- contrast may be unreliable.',
