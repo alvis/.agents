@@ -133,7 +133,7 @@
         }
         if (!colorCanvas) return null;
         var sentinels = ['#010203', '#040506'];
-        var accepted = sentinels.every(function (sentinel) {
+        var accepted = sentinels.some(function (sentinel) {
           colorCanvas.fillStyle = sentinel;
           colorCanvas.fillStyle = value;
           return colorCanvas.fillStyle !== sentinel;
@@ -438,10 +438,11 @@
       });
     };
 
-    // Translucent solid colors are composited into the measurement, so only they
-    // may still be measured; every other flag hides the real backdrop.
+    // Translucent element backgrounds are composited into the measurement, so only
+    // they may still be measured; every other flag, pseudo-element fills included,
+    // hides a backdrop that the hit-test stack never returns.
     var isCompositedFlag = function (flag) {
-      return /^(transparent background|::before background|::after background) on /.test(flag);
+      return /^transparent background on /.test(flag);
     };
 
     // -----------------------------------------------------------------------
