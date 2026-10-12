@@ -10,8 +10,8 @@ Illustrative only. These are worked instances of [the evaluation summary](../tem
 
 | Dimension | Target | Observed result | Target met |
 | --- | --- | --- | --- |
-| Product fit | Inherited | Inherited from `docs/design/system.md`; not reassessed | n/a |
-| Distinctiveness | Inherited | Not reassessed: a familiar settings pattern is correct here | n/a |
+| Product fit | None set | Inherited from `docs/design/system.md` | n/a |
+| Distinctiveness | None set | Not reassessed: a familiar settings pattern is correct here | n/a |
 | Coherence | Competent | Competent: the fix reuses the existing row component and spacing tokens | yes |
 | Craft | Competent | Competent: the label wraps to two lines without orphaning, and the toggle stays aligned to the first baseline | yes |
 | Task completion | Required checks verified | Ready: the toggle works at 320 px and at 200% zoom, keyboard order is unchanged, and the dark mode supported by the product passes contrast. Other settings screens are not rechecked | yes |

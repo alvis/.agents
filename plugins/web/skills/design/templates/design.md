@@ -34,7 +34,7 @@ Set these before reviewing any output, using the levels in `web:directions/evalu
 | Dimension | Target | Why this target fits the brief |
 | --- | --- | --- |
 | Product fit | {{LEVEL}} | {{REASON}} |
-| Distinctiveness | {{LEVEL|inherited}} | {{REASON}} |
+| Distinctiveness | {{LEVEL|none set}} | {{REASON}} |
 | Coherence | {{LEVEL}} | {{REASON}} |
 | Craft | {{LEVEL}} | {{REASON}} |
 | Task completion | Required readiness checks verified | {{JOURNEYS_SUPPORTED_MODES_VIEWPORTS_AND_STATES_IN_SCOPE}} |

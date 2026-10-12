@@ -77,7 +77,7 @@ Assess the user's outcome on each declared journey. Keep these readiness checks 
 | **State and recovery completeness** | Applicable loading, empty, error, success, permission, interrupted, returning-user, and domain states behave correctly; recovery preserves context and user work | DES-STAT-* |
 | **Accessibility and input access** | Applicable semantics, names, keyboard, focus, contrast, reflow and zoom, alternatives, target sizes, and motion requirements, verified by suitable methods | DES-A11Y-*, DES-COLR-02, DES-ICON-02 |
 | **Responsive and content resilience** | Supported modes, layouts, input methods, and realistic content extremes stay usable: clipping, wrapping, overlays, sticky regions, tables and charts, retained task priority | DES-RESP-*, CSS-MODE-* |
-| **Performance and stability** | Agreed loading, interaction, layout, asset and font, and animation budgets verified under documented conditions; lab, field, and perceived evidence kept apart | DES-ICON-02 |
+| **Performance and stability** | Agreed loading, interaction, layout, asset and font, and animation budgets verified under documented conditions; lab, field, and perceived evidence kept apart | DES-ICON-02 (animation only); loading, interaction, and layout budgets: **Performance** below |
 | **Truth, trust, and implementation integrity** | Claims, testimonials, metrics, and affordances are honest; in-scope logic, routes, data meaning, integrations, component ownership, and framework conventions stay sound; required build, type, format, and focused checks pass | DES-BRND-02, DES-CONS-*, WT-* |
 
 No level of Craft or Distinctiveness compensates for a failed required check.
@@ -120,7 +120,7 @@ Product fit, Distinctiveness, Coherence, and Craft use anchored levels:
 | **Strong** | Well-supported choices, confident composition, and careful execution beyond competence |
 | **Exceptional** | Specific evidence shows unusually accomplished work for this brief and context |
 
-Set targets before reviewing output and never lower them after seeing a weak candidate. Record achieved level and target attainment separately: `Craft: Strong · Target: Exceptional · Target met: No`. Do not require every surface to maximise every dimension, and avoid decimals or universal "10/10" demands. In a scoped refinement an unaffected judgment may be **inherited** or **not reassessed**, naming its source; missing applicable evidence is **unverified**. Never invent a fresh rating or confuse an inherited judgment with readiness N/A.
+Set targets before reviewing output and never lower them after seeing a weak candidate. Record achieved level and target attainment separately: `Craft: Strong · Target: Exceptional · Target met: No`. Do not require every surface to maximise every dimension, and avoid decimals or universal "10/10" demands. In a scoped refinement an unaffected judgment may be **inherited** or **not reassessed**, naming its source; such a dimension sets no target, so its target attainment is n/a. Missing applicable evidence is **unverified**. Never invent a fresh rating or confuse an inherited judgment with readiness N/A.
 
 Task completion reports each readiness check as:
 

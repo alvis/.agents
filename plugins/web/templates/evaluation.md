@@ -5,10 +5,10 @@ Use this layout to report a design or build evaluation under [the rubric](../dir
 ## Short form
 
 ```markdown
-**Product fit:** <level | inherited | not reassessed> · Target: <level> · Target met: <yes | no> — <one-line evidence, or the inherited source>
-**Distinctiveness:** <level | inherited | not reassessed> · Target: <level> · Target met: <yes | no> — <evidence>
-**Coherence:** <level | inherited | not reassessed> · Target: <level> · Target met: <yes | no> — <evidence>
-**Craft:** <level | inherited | not reassessed> · Target: <level> · Target met: <yes | no> — <evidence>
+**Product fit:** <level | inherited | not reassessed> · Target: <level | none set> · Target met: <yes | no | n/a when none set> — <one-line evidence, or the inherited source>
+**Distinctiveness:** <level | inherited | not reassessed> · Target: <level | none set> · Target met: <yes | no | n/a when none set> — <evidence>
+**Coherence:** <level | inherited | not reassessed> · Target: <level | none set> · Target met: <yes | no | n/a when none set> — <evidence>
+**Craft:** <level | inherited | not reassessed> · Target: <level | none set> · Target met: <yes | no | n/a when none set> — <evidence>
 **Task completion:** <Ready | Not ready> — <failed, unverified, or blocked checks by name; "all applicable checks pass" only with evidence>
 **Efficiency:** <proportionate | disproportionate> — <measured, estimated, or unavailable figures>
 
@@ -20,10 +20,10 @@ Use this layout to report a design or build evaluation under [the rubric](../dir
 ```markdown
 | Dimension | Target | Observed result | Target met |
 | --- | --- | --- | --- |
-| Product fit | <level> | <level | inherited | not reassessed>: <evidence> | <yes | no> |
-| Distinctiveness | <level> | <level | inherited | not reassessed>: <evidence> | <yes | no> |
-| Coherence | <level> | <level | inherited | not reassessed>: <evidence> | <yes | no> |
-| Craft | <level> | <level | inherited | not reassessed>: <evidence> | <yes | no> |
+| Product fit | <level | none set> | <level | inherited | not reassessed>: <evidence> | <yes | no | n/a when none set> |
+| Distinctiveness | <level | none set> | <level | inherited | not reassessed>: <evidence> | <yes | no | n/a when none set> |
+| Coherence | <level | none set> | <level | inherited | not reassessed>: <evidence> | <yes | no | n/a when none set> |
+| Craft | <level | none set> | <level | inherited | not reassessed>: <evidence> | <yes | no | n/a when none set> |
 | Task completion | Required checks verified | <Ready | **Not ready**>: <named failures and gaps> | <yes | no> |
 | Efficiency | Proportionate effort | <evidence, each figure labelled measured, estimated, or unavailable> | <yes | no> |
 
