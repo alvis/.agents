@@ -29,7 +29,7 @@ const fixturePath = resolve(
 );
 const jsAggregatorPath = resolve(
   import.meta.dirname,
-  "../../../../skills/audit/scripts/design-audit-aggregator.js",
+  "../../../audits/design-audit-aggregator.js",
 );
 
 function requireExecutable(name: string): string {

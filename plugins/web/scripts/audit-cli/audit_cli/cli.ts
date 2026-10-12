@@ -53,7 +53,7 @@ export const DEFAULT_VIEWPORTS: readonly ViewportSpec[] = [
 
 const SCRIPTS_DIR = resolve(
   import.meta.dirname,
-  "../../../skills/audit/scripts",
+  "../../audits",
 );
 const AGENT_BROWSER_INSTALL_HINT =
   "error: agent-browser is not installed or not on PATH.\n" +

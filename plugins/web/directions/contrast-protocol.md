@@ -10,7 +10,7 @@ Measure rendered, composited contrast in the browser. Never trust declared CSS: 
 
 ## Measure
 
-Use the canonical audit script, `web:skills/audit/scripts/wcag-text-audit.js`; never keep a private copy. Either run the full `web:audit` CLI, or inject that file's contents through `evaluate_script` and return `window.runWcagTextAudit({ quiet: true })`.
+Use the canonical audit script, `web:scripts/audits/wcag-text-audit.js`; never keep a private copy. Either run the full `web:audit` CLI, or inject that file's contents through `evaluate_script` and return `window.runWcagTextAudit({ quiet: true })`.
 
 The script walks visible leaf text, samples the stacked backgrounds at each element, composites translucent text and surfaces, converts any computed color syntax (including `oklch()`, `lab()`, and `color()`) to sRGB, and applies the DES-COLR-02 thresholds for normal and large text.
 

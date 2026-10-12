@@ -112,6 +112,6 @@ After sign-off, the main agent promotes only reviewed, reusable knowledge. Syste
 
 ## 8. Complete and report
 
-P0 and P1 findings block completion unless they are closed under the canonical disposition contract at `web:skills/audit/templates/review.md`. Missing inputs, an unavailable browser, failed builds, unresolved choices, or an exhausted budget with unmet requirements yield `partial` or `blocked` with the exact gap, never a pass. Use `essential:handover` to pause a coding session and `essential:handoff` for a context-complete cross-domain plan.
+P0 and P1 findings block completion unless they are closed under the canonical disposition contract at `web:templates/review.md`. Missing inputs, an unavailable browser, failed builds, unresolved choices, or an exhausted budget with unmet requirements yield `partial` or `blocked` with the exact gap, never a pass. Use `essential:handover` to pause a coding session and `essential:handoff` for a context-complete cross-domain plan.
 
 Summarize with `web:templates/evaluation.md`: the six headings, then delivery status, remaining gaps, and the next useful action. Return the target, authorization mode, direction, work, design, and evidence paths, changed source, verification evidence, promotions, and blockers. Return generated or materially rewritten final paths as `generated_files`; the main agent reconciles `design.md` and combines manifests after all writers finish, applying `essential:references/output-manifest.md` to the work Markdown it writes.
