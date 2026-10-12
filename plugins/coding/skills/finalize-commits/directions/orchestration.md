@@ -65,5 +65,5 @@ Same governance, same stop/resume semantics — the coordinator blocks on each `
 - One commit finalized fully before the next begins: documentation-only commits have current classification and semantic checks; other commits are green, folded, and marked. The walk never advances past a pending correction.
 - No commit is marked while a `pending_decision` is outstanding.
 - The branch head moves only after Gate B; mid-walk state lives entirely in the rebuild chain and the checkpoint refs, and a mid-walk abort leaves the original ref untouched.
-- Every history rewrite routes through `coding:commit`, which guards it with its `backup.sh` + `verify.sh` pair; integrity failure rolls back and STOPs.
+- Every history rewrite routes through `coding:commit`, which applies its [VCS-specific backup and recovery](../../commit/SKILL.md#backup-and-recovery); integrity failure rolls back and STOPs.
 - Working-copy restore (`qa-loop.md` step 0 / final) is an unconditional exit obligation — every exit path, including aborts, ends with the WIP bracket removed; the original `@` (jj) is restored at the end of the walk.

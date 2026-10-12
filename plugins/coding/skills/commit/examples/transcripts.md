@@ -31,7 +31,7 @@ Initial picker with drag-drop and crop preview."
 jj new
 ```
 
-Hook prints `── Integrity Check ── PASS / PASS`. Applicable lint, runtime or focused compiler test, and build gates are green; inapplicable test gates are reported `SKIP`. Report.
+Ordinary save creates no backup or rewrite integrity output. Applicable lint, runtime or focused compiler test, and build gates are green; inapplicable test gates are reported `SKIP`. Report.
 
 ---
 
@@ -272,15 +272,15 @@ jj log -r 'main@origin..@'
 Skill plans audit export → password reset → avatar upload. User confirms.
 
 ```bash
+jj status
 jj op log -n1 --no-graph -T 'self.id().short()'   # rollback: op88
+ORIGINAL_TREE_REV=$(jj log -r @ --no-graph -T 'commit_id')
 jj rebase -s ghi789 -d main@origin
 jj rebase -s def456 -d ghi789
 jj rebase -s abc123 -d def456
 
-bash "${CODING_COMMIT_SKILL_DIR}/scripts/verify.sh"
-# ── Integrity Check ──
-# GIT_TREE_MATCH: PASS
-# CONTENT_MATCH:  PASS
+jj diff --from "$ORIGINAL_TREE_REV" --to @ --summary
+# Empty diff: versioned content preserved; JJ operation log supplies recovery.
 ```
 
 Integrity passes locally, then report the reordered stack metadata and current PR states. The commit route does not republish or reparent the three open PRs.
@@ -311,7 +311,7 @@ coding:pr create <resolved-stack: ghi789..abc123> --branch-prefix platform-updat
 # Local `npm run lint/test/build` verification is skipped.
 # With --create-pr, --no-verify is not forwarded; coding:pr create runs its
 # independent exact-revision test and lint gate.
-# PostToolUse integrity hook STILL fires (independent of --no-verify).
+# Ordinary saves and JJ operations have no backup-based integrity hook.
 ```
 
 ### `--dry-run`

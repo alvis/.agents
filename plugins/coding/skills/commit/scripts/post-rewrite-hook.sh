@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # post-rewrite-hook.sh -- PostToolUse hook
-# Auto-verifies integrity after any successful history-rewriting op (git or jj).
+# Auto-verifies the captured checkpoint after a successful Git history rewrite.
 # Input:  JSON on stdin { tool_name, tool_input | toolInput: { command },
 #         tool_output | toolOutput, exit_code } -- Claude Code and Codex send
 #         snake_case tool_input/tool_output, Grok Build sends camelCase
@@ -42,12 +42,7 @@ extract_exit_code() {
 COMMAND="$(extract_command "$INPUT")"
 EXIT_CODE="$(extract_exit_code "$INPUT")"
 
-# Trigger on any history-rewriting op (git or jj)
-case "$COMMAND" in
-  git\ rebase*) ;;
-  jj\ rebase*|jj\ split*|jj\ edit*|jj\ squash*|jj\ absorb*|jj\ abandon*) ;;
-  *) exit 0 ;;
-esac
+is_git_history_rewrite "$COMMAND" || exit 0
 
 # Only on successful op
 if [ "${EXIT_CODE:-1}" != "0" ]; then

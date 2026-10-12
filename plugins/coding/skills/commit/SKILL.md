@@ -66,7 +66,7 @@ Never rewrite a commit already merged into a shared destination. Fix merged work
 | `--paths-from=<manifest>` | Save only the manifest's exact dirty `selected_paths`; validate the ignored work-artifacts manifest and use [./directions/manifest.md](directions/manifest.md). Requires `--manifest-sha256`. |
 | `--manifest-sha256=<sha256>` | Expected SHA-256 of the exact manifest bytes. Valid only with `--paths-from`; prevents a path or manifest swap between lifecycle handoff and save. |
 | `--retrospective` | Distribute pending edits into their owning prior changes. See `./directions/retrospective.md` and the shared Jujutsu guide. |
-| `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard via `verify.sh`. See `./directions/reorder.md`. |
+| `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard uses the selected VCS's verification. See `./directions/reorder.md`. |
 | `--create-pr` | Compatibility entrypoint: finish the selected save/history route, then invoke `coding:pr create` with the resolved change or stack. |
 | `--branch-prefix <name>` | Forward the branch/bookmark prefix to `coding:pr create` when `--create-pr` is present. |
 | `--no-review` | Valid only with `--create-pr`; forward it under [PR creation inputs](../pr/directions/create-update.md#inputs). |
@@ -75,6 +75,20 @@ Never rewrite a commit already merged into a shared destination. Fix merged work
 | `--allow-rewrite-merged` | Explicit consent to rewrite history already merged on origin (skips the graphical or structured user-input tool corrective-PR prompt). |
 
 - **Prerequisites**: a Git repository or registered jj workspace backed by Git. The manifest-scoped route additionally requires a checksum-bound manifest under the resolved work root's ignored artifacts directory. Producer receipts must use the strict generated-files schema and reconcile exactly to the publication set. The helper capability-probes the shared guide's required operations and structural colocation; no version string alone authorizes the scoped route. Publication prerequisites are checked by `coding:pr create`. The directions above bind branch naming, earliest-owner fix routing, and public-history safety. Pull-request size and implementation-composition standards are review inputs and informational here.
+
+## Backup and recovery
+
+Ordinary commits require no working-tree backup. Back up before rewriting existing history with Git, including amendments, rebases, and commit reordering. JJ operations use their operation log for recovery and require no separate backup; capture the operation ID under `coding:directions/jj.md`. A JJ repository backed by Git still follows the JJ rule when JJ performs the operation.
+
+For Git rewrites, the PreToolUse hook recognizes direct `git rebase` and `git commit --amend` commands, including `rtk` and `rtk proxy` wrappers, and injects `Auto-backup: GIT_TREE_SHA=... CONTENT_HASH=... BACKUP_PATH=...`. Before an unrecognized Git rewrite or when no hook checkpoint was captured, run manually and retain the returned checkpoint:
+
+```bash
+bash "${CODING_COMMIT_SKILL_DIR}/scripts/backup.sh"
+```
+
+The small immutable Git-index copy in the manifest-scoped save route is transaction recovery for unrelated staged work, not a working-tree backup; retain it.
+
+For JJ rewrites, inspect the operation diff, final graph, and conflicts; use the route's native tree-equivalence proof when content must remain unchanged. Do not invoke the backup-based `verify.sh` or consume an old Git checkpoint for a JJ operation. Restore the captured JJ operation when a native integrity proof fails.
 
 ## Workflow
 
@@ -98,28 +112,7 @@ The skill self-routes by reading the working-copy diff, the changes since the pa
 
 Before writing any new code, plan the change structure so commits/PRs end up independent — see `./directions/plan.md`. End-to-end transcripts of every flag and auto-detected route: `./examples/transcripts.md`.
 
-1. **Pre-flight.** Backup only runs for history-rewriting routes; plain saves (default, split, parallel, empty) do not touch prior changes and skip `backup.sh` entirely:
-
-   | Route | Rewrites history? | Backup |
-   |---|---|---|
-   | Manifest-scoped save | No prior history | capture sealed VCS state plus the route's immutable exact-index backup and rollback handle |
-   | Default save | No | skip |
-   | Split current change | No | skip |
-   | Parallel workspace | No | skip |
-   | Empty / divergent | No | skip |
-   | Edit prior change | Yes | run |
-   | `--retrospective` | Yes | run |
-   | `--reorder` | Yes | run |
-   | Partial hunks → existing branch | Yes (ref movement, possibly backward) | run |
-   | Correct merged target (`git rebase` fallback) | Yes | run |
-
-   When backup runs, the PreToolUse hook fires it on the first rewriting op and injects `Auto-backup: GIT_TREE_SHA=... CONTENT_HASH=... BACKUP_PATH=...` into context. If the route rewrites history but the hook didn't fire, run manually:
-
-   ```bash
-   bash "${CODING_COMMIT_SKILL_DIR}/scripts/backup.sh"
-   ```
-
-   For every `jj` rewrite route, capture the rollback handle specified by the shared Jujutsu guide.
+1. **Pre-flight.** Apply [backup and recovery](#backup-and-recovery) for the selected VCS operation. Ordinary saves skip `backup.sh`; the manifest-scoped route retains its exact-index transaction copy and preservation proof.
 
 2. **Detect mode.** `--prepare-paths-from` runs only the producer contract and returns before proposing or mutating history; it cannot combine with another operation flag. A valid `--paths-from`/`--manifest-sha256` pair forces the manifest-scoped route and cannot be combined with `--retrospective`, `--reorder`, a named partial-to-branch target, or `--create-pr`. Otherwise, read working-copy state with the shared Jujutsu guide's inspection commands (or the route's Git equivalents) and pick exactly one route from the table above. A history-operation flag forces its route; `--create-pr` adds the post-save publication handoff.
 
@@ -133,7 +126,7 @@ Before writing any new code, plan the change structure so commits/PRs end up ind
 
 ## Verification
 
-For history-rewriting routes that captured a backup, the PostToolUse hook runs `verify.sh` and prints `── Integrity Check ──` to stderr. If it did not fire for that rewrite, run the script manually and read the table:
+For Git history-rewriting routes that captured a backup, the PostToolUse hook runs `verify.sh` and prints `── Integrity Check ──` to stderr. If it did not fire for that rewrite, run the script manually and read the table:
 
 | `GIT_TREE_MATCH` | `CONTENT_MATCH` | Action |
 |---|---|---|

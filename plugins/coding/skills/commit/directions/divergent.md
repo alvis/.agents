@@ -79,7 +79,7 @@ If any unmerged bookmark sat at or below the divergent change, follow the [SKILL
 ## Mandatory follow-ups
 
 - Follow the publication handoff for affected downstream bookmarks per Step 5.
-- Integrity check ([SKILL.md](../SKILL.md) Verification) — the working copy may shift if `@` was a divergent side.
+- VCS-specific integrity check ([SKILL.md](../SKILL.md#verification)) — the working copy may shift if `@` was a divergent side.
 - Re-run project scripts if the canonical side replaced uncommitted work.
 
 ## Error / edge cases
