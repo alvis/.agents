@@ -125,7 +125,7 @@ The tracked remote bookmark gives `jj git push` force-with-lease semantics: a re
 
 If open downstream PRs remain, inspect their current checks read-only with `bun "${CODING_COMMIT_SKILL_DIR}/../../scripts/gh-pr-checks.ts"`; do not invoke mutating `coding:pr update` as a monitor. Updating or restacking descendants requires separate explicit user consent. With no relevant downstream PR, skip monitoring.
 
-Verify the integrity guard in [SKILL.md](../SKILL.md) passes.
+Verify the VCS-specific integrity guard in [SKILL.md](../SKILL.md#verification) passes.
 
 ### 4. Communicate to reviewers (Option 2 only)
 

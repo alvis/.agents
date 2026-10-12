@@ -76,7 +76,7 @@ This creates an empty `@` on top of the just-described change so subsequent edit
 
 ## Verification
 
-The PostToolUse hook fires `verify.sh` after `git commit`. Read the `── Integrity Check ──` stderr block per [SKILL.md](../SKILL.md) Verification.
+Ordinary saves create no rewrite backup and do not run `verify.sh`. Apply [SKILL.md](../SKILL.md#verification) before project checks.
 
 Run applicable project scripts (unless `--no-verify`): lint and build where the project defines them, configured typecheck or equivalent type diagnostics for all changed code, affected-consumer builds for changed public shape, runtime tests only for runtime behavior, and focused compile-time tests only for allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with no runtime behavior or allowed compiler-semantic promise, record those two test gates as `SKIP (not applicable)` after type diagnostics and affected-consumer builds pass; do not run or invent a test. For example, a runtime-producing npm project may require:
 
@@ -107,4 +107,4 @@ Failure → STOP, surface to user. Do not report completion until clean.
 | `git commit` fails (pre-commit hook) | Surface output; fix; re-run from Step 5. Do NOT `--amend` — create a new attempt by re-describing if needed. |
 | `jj describe` rejected (immutable) | Target is on a protected revset. Run `jj new` first, then describe the new `@`. |
 | Conventional regex fails | Fix subject; re-run. Do not bypass. |
-| User wants to skip project-script checks | Pass `--no-verify`. Skip project scripts only; the integrity hook still runs. |
+| User wants to skip project-script checks | Pass `--no-verify`. Skip applicable project scripts; ordinary saves have no rewrite integrity hook. |

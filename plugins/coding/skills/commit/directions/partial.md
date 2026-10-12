@@ -12,7 +12,7 @@ If `@` mixes concerns but they all belong on the same new change → [split.md](
 
 ## Pre-flight
 
-This route can rewrite history when an existing bookmark moves backward. The PreToolUse backup hook fires per [SKILL.md](../SKILL.md) Step 1 for that case; a new bookmark does not rewind history.
+This route can move an existing bookmark backward. Apply [backup and recovery](../SKILL.md#backup-and-recovery) to the actual VCS operation; JJ bookmark movement uses its operation log and needs no filesystem backup.
 
 ```bash
 jj git fetch
@@ -211,7 +211,7 @@ The unstaged hunks remain on `@` untouched — verify they match the user's expe
 
 ## Verification
 
-The PostToolUse hook fires `verify.sh` after the rewrite ops. Read the `── Integrity Check ──` block per [SKILL.md](../SKILL.md) Verification. `GIT_TREE_MATCH` reflects the new HEAD on the target branch, not `@`.
+Inspect the saved target commit, selected diff, remainder, and bookmark against the bound pre-state under [SKILL.md](../SKILL.md#verification). This JJ route creates no backup checkpoint; do not invoke `verify.sh`.
 
 Run applicable project scripts (unless `--no-verify`), including configured typecheck or equivalent diagnostics for all changed code, plus affected-consumer builds for changed public shape. Runtime tests apply only to runtime behavior; focused compile-time tests apply only to allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with neither test kind, run the diagnostics and consumer-build gates, then record both test gates as `SKIP (not applicable)`; do not run or invent a test. For example, a runtime-producing npm project may require:
 

@@ -49,3 +49,39 @@ json_field() {
     sed -n 's/.*"'"$field"'"[[:space:]]*:[[:space:]]*"\{0,1\}\([^",}]*\)"\{0,1\}[,}].*/\1/p' | head -1
   fi
 }
+
+# Recognize the Git rewrite commands used by this skill, without executing
+# shell text. Other rewrite forms require the skill's manual checkpoint.
+is_git_history_rewrite() {
+  local command="${1:-}"
+  local -a arguments
+  local argument skip_value=0
+  case "$command" in
+    rtk\ proxy\ *) command="${command#rtk proxy }" ;;
+    rtk\ *) command="${command#rtk }" ;;
+  esac
+
+  # Quoted argument contents are data, so a message mentioning --amend cannot
+  # turn an ordinary save into a rewrite. Supported flags are unquoted.
+  command="$(printf '%s\n' "$command" | sed -E 's/"([^"\\]|\\.)*"|'"'"'[^'"'"']*'"'"'/__quoted_argument__/g')"
+  read -r -a arguments <<< "$command"
+  [[ "${arguments[0]:-}" == git ]] || return 1
+  case "${arguments[1]:-}" in
+    rebase) return 0 ;;
+    commit)
+      for argument in "${arguments[@]:2}"; do
+        if [[ "$skip_value" == 1 ]]; then
+          skip_value=0
+          continue
+        fi
+        case "$argument" in
+          -m|--message|-F|--file|-C|--reuse-message|-c|--reedit-message)
+            skip_value=1 ;;
+          --amend) return 0 ;;
+          --) return 1 ;;
+        esac
+      done
+      ;;
+  esac
+  return 1
+}
