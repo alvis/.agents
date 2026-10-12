@@ -13,7 +13,7 @@ The product's identity is expressed consistently and on purpose through its deci
 
 ## Code Superpowers
 
-- Check brand token usage (`--ui-primary`, `--ui-accent`, `--font-display`) across components
+- Check brand token usage (`--ui-accent`, `--font-display`) across components
 - Verify consistent font-family usage across pages
 - Flag framework or library default styling that nothing in the design contract chose
 

@@ -18,7 +18,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 
 ### Color & Contrast
 
-- DO NOT use >12 unique non-neutral colors or undisciplined palettes without primary/accent/neutral/semantic slots [`DES-COLR-01`]
+- DO NOT use >12 unique non-neutral colors or undisciplined palettes without accent/neutral/semantic slots [`DES-COLR-01`]
 - DO NOT fail WCAG 2.2 AA contrast: 4.5:1 normal text, 3:1 large text/UI components [`DES-COLR-02`]
 
 ### Spacing & Grid
@@ -79,7 +79,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 | `DES-COLR-02` | WCAG AA contrast failure | 2.5:1 ratio on body text; light gray on white |
 | `DES-SPAC-01` | Arbitrary spacing values not on grid | 5px here, 7px there, 13px elsewhere |
 | `DES-SPAC-02` | Proximity principle violated | Related items have same gap as unrelated sections |
-| `DES-CONS-01` | Hardcoded values instead of tokens | `#3b82f6` instead of `var(--ui-primary)`; `8px` instead of `var(--space-2)` |
+| `DES-CONS-01` | Hardcoded values instead of tokens | `#3b82f6` instead of `var(--ui-accent)`; `8px` instead of `var(--space-2)` |
 | `DES-CONS-02` | Inconsistent component styling | 3 different button styles for same action type across screens |
 | `DES-A11Y-01` | Missing keyboard/focus support | `outline: none` without `:focus-visible`; custom controls not keyboard-accessible |
 | `DES-A11Y-02` | Missing accessible names/labels | Icon button without `aria-label`; input with placeholder-only label |

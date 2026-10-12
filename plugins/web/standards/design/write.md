@@ -26,7 +26,7 @@
 
 ### Color & Contrast (DES-COLR)
 
-- **DES-COLR-01**: Build a small, intentional palette: one primary, one accent, neutrals, and semantic colors (red=error, green=success, yellow=warning, blue=info); never use color as sole indicator -- pair with icon/text/shape; support `prefers-color-scheme` when applicable.
+- **DES-COLR-01**: Build a small, intentional palette: one brand accent (a second hue only when a decision needs it), neutrals, and semantic colors (red=error, green=success, yellow=warning, blue=info); never use color as sole indicator -- pair with icon/text/shape; support `prefers-color-scheme` when applicable.
 - **DES-COLR-02**: Meet WCAG AA contrast minimums: normal text >= 4.5:1, large text >= 3:1, UI components >= 3:1.
 
 ### Spacing & Grid (DES-SPAC)
@@ -78,19 +78,19 @@
 
 ### Color Palette Construction
 
-| Role | Token | Usage |
-|---|---|---|
-| Primary | `--ui-primary` | Brand identity, primary CTA backgrounds, active navigation |
-| Accent | `--ui-accent` | Secondary actions, highlights, links |
-| Canvas | `--ui-bg` | Page background |
-| Border | `--ui-border` | Borders and dividers |
-| Subtle text | `--ui-fg-subtle` | Placeholder text, secondary icons |
-| Muted text | `--ui-fg-muted` | Supporting text |
-| Text | `--ui-fg` | Body and heading text |
-| Error | `--ui-danger` | Destructive actions, validation errors (red) |
-| Success | `--ui-success` | Confirmation, positive feedback (green) |
-| Warning | `--ui-warning` | Caution states, non-blocking alerts (yellow) |
-| Info | `--ui-info` | Informational banners, help context (blue) |
+Each role is a tier-2 `--ui-<role>` token named and wired under `CSS-MODE-04`; components consume it through the `WT-CONTRACT-01` fallback chain, where the primary action reads the accent role.
+
+| Role | Usage |
+|---|---|
+| Accent | Brand emphasis, primary CTA backgrounds, active navigation, links |
+| Canvas | Page background |
+| Text | Body and heading text |
+| Muted text | Supporting text, placeholders, secondary icons |
+| Border | Borders and dividers |
+| Error | Destructive actions, validation errors (red) |
+| Success | Confirmation, positive feedback (green) |
+| Warning | Caution states, non-blocking alerts (yellow) |
+| Info | Informational banners, help context (blue) |
 
 ### Spacing Scale
 
