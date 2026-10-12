@@ -120,7 +120,7 @@ The git log should reflect the new order with the same descriptions.
 
 - If any unmerged bookmark sits inside the reordered range, follow the [SKILL.md](../SKILL.md) publication handoff with the resolved stack metadata after local integrity passes. Discover open PRs for the selected heads and report their states without mutating them. The caller separately authorizes any publication or restacking through the [publication workflow](../../pr/directions/create-update.md#3-publish-bottom-up) that owns pushing and PR-base repair.
 
-- Per-change build: `jj edit <each_change> && npm run build` to confirm each compiles in its new position.
+- Classify each change through the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes). Run applicable configured project gates for executable changes in their new positions; documentation-only changes receive no local mechanical checks.
 - Final integrity + project scripts.
 
 ## Error / edge cases

@@ -8,12 +8,12 @@ Use the smallest topology that preserves correctness: handle one bounded, low-ri
 
 | Tier | Typical change | Agent topology | Validation |
 | --- | --- | --- | --- |
-| 0 | Rename, documentation, formatting, narrow configuration | One agent | Focused mechanical checks |
+| 0 | Rename, documentation, formatting, narrow configuration | One agent | [Artifact-appropriate validation](validation.md#classify-documentation-only-changes) |
 | 1 | Bounded behavior change or one coherent component | One implementing agent | Tests, types, lint, self-review |
 | 2 | Public API or consequential multi-file change | Implementer and independent reviewer | Full affected gates |
 | 3 | Architecture, migration, security, persistent data, release topology, or cross-domain change | Tech Lead, specialists, and reviewer | Current governed lifecycle |
 
-Use `tech-lead` for multiple dependent milestones, multiple implementers, or Tier 3 work. A public-API change is Tier 2 unless a Tier 3 condition also applies. Consequential work and every publication-bound change require independent review even when one agent implements them; that owner still runs focused mechanical checks.
+Use `tech-lead` for multiple dependent milestones, multiple implementers, or Tier 3 work. A public-API change is Tier 2 unless a Tier 3 condition also applies. Consequential work and every publication-bound change require independent review even when one agent implements them; that owner follows [artifact-appropriate validation](validation.md#classify-documentation-only-changes).
 
 Before delegating, read `essential:directions/delegate.md`; before orchestrating or reviewing across a team, read `essential:directions/orchestration.md`. Select specialists through `coding:references/ROUTING.md` and give them full paths to every required skill, direction, template, and standard.
 

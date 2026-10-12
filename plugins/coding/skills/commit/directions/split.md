@@ -106,6 +106,8 @@ jj new
 
 ## Verification
 
+Apply the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes) before local project checks.
+
 After EACH split + describe pair, run:
 
 ```bash
@@ -120,7 +122,7 @@ npm run test
 npm run build
 ```
 
-For each commit in isolation (recommended for stacked PR candidates):
+For each executable change requiring a configured build in isolation (recommended for stacked PR candidates):
 
 ```bash
 jj edit <change_id> && npm run build

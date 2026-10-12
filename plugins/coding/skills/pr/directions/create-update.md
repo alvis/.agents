@@ -41,7 +41,7 @@ Accept the delivery owner's companion review receipt as internal context, not a 
 
 <IMPORTANT>
 - Ownership is singular: `coding:commit` owns direct history mutations; its `--reorder` workflow owns reshaping/reparenting when a root cause belongs in a lower PR outside the current PR; the core publication phase below owns batch push, restack, and PR-base mechanics. The parent alone accepts fixer edits and performs commit, push, and restack mutations; the poller may dispatch exactly one scoped fixer when the red branch requires it.
-- Before every push, unless the caller explicitly supplied `--no-verify`, run the applicable `pull_request` test and lint tasks through read-only `jj run` at exact revision anchors. Run the selected tip first as a canary, then every selected PR surface bottom-up through the tip. Follow [verify.md](verify.md) for isolated tooling/dependency setup and CI environment supply. Attempt the exact command before treating an unavailable variable as a failure. Only captured failure evidence naming a missing CI-declared variable may open the per-surface exception: ask for an explicit source and rerun or approval of that exact revision and lexically sorted name list. Never infer approval from another flag or caller, invent an empty value, or push after any other unresolved local failure.
+- Before every push, apply the [documentation-only classification](../../../directions/validation.md#classify-documentation-only-changes); for mechanically applicable surfaces unless the caller explicitly supplied `--no-verify`, run the applicable `pull_request` test and lint tasks through read-only `jj run` at exact revision anchors. Run the selected tip first as a canary, then every selected PR surface bottom-up through the tip. Follow [verify.md](verify.md) for isolated tooling/dependency setup and CI environment supply. Attempt the exact command before treating an unavailable variable as a failure. Only captured failure evidence naming a missing CI-declared variable may open the per-surface exception: ask for an explicit source and rerun or approval of that exact revision and lexically sorted name list. Never infer approval from another flag or caller, invent an empty value, or push after any other unresolved local failure.
 - `--no-verify` skips only this invocation's local revision-bound parity gate and must be recorded with every skipped bookmark and PR. It never skips hosted CI, review, publication checks, or authoring checks and is never implied by `--publish-only`, a commit-time flag, or missing secrets.
 - `--no-review` skips only the AI PR review loop for `ACTION=create`. It does not skip local verification, hosted CI, PR authoring, or publication checks. Do not infer it from `--no-verify`, a reviewer's absence, or a prior request.
 - Internal `--publish-only` returns after leased pushes, metadata updates, and head/base verification. Its verified review-loop or red-CI-repair parent retains CI convergence and either review convergence or the explicit unreviewed-create decision; it is never a direct-caller option.
@@ -80,7 +80,7 @@ Accept the delivery owner's companion review receipt as internal context, not a 
   fi
   ```
 
-  Anything else selects the fully supported Git path. Authoring PR text alone needs neither. Unless `--no-verify` is explicit, local CI parity additionally requires jj 0.44 or newer and exact target resolution so every task can run through `jj run`; follow the shared jj guide and `coding:sync-tool` instead of substituting a Git runner.
+  Anything else selects the fully supported Git path. Authoring PR text alone needs neither. For surfaces requiring mechanical validation unless `--no-verify` is explicit, local CI parity additionally requires jj 0.44 or newer and exact target resolution so every task can run through `jj run`; follow the shared jj guide and `coding:sync-tool` instead of substituting a Git runner.
 
 ## State gate
 
@@ -127,7 +127,7 @@ Carry the selected identities and their resolving/partial/related disposition in
 
 With `--dry-run`, print the exact plan after this read-only coverage step, including issue identities, lookup/skip decisions, dispositions, proposed association changes, and unresolved coverage. Stop before any write, including link changes.
 
-### 2. Verify exact local CI parity before publication
+### 2. Classify local validation and verify applicable exact CI parity before publication
 
 After stack discovery, resolve each selected head and its intended PR base to immutable revision IDs. Encode them in `SELECTED_STACK_JSON` as objects with `head` and `base` fields plus the discovered `bookmark` and PR identity, ordered bottom-up; a standalone target has one object. Derive the canary target from that map: the last selected head is the target revision and the first selected head's base is the target base revision. The tip's immediate PR base is not the selected canary base.
 
@@ -150,29 +150,31 @@ printf 'TARGET_KIND=%s\nTARGET_SHA=%s\nTARGET_BASE=%s\n' \
   "$TARGET_KIND" "$TARGET_SHA" "$TARGET_BASE"
 ```
 
+Classify every selected immutable head/base surface, including the integrated stack canary, under [documentation-only validation](../../../directions/validation.md#classify-documentation-only-changes) before mechanical setup. Retain a matching `not_applicable_documentation_only` record for each qualifying surface. Other surfaces require the parity action below unless explicitly waived; a mixed stack cannot borrow a documentation-only classification from one layer. All-documentation surfaces proceed without local tests, dependency installs, tester dispatches, or test worktrees.
+
 With `--no-verify`, record `local_verification: skipped_by_user` with the exact ordered bookmark, PR, head, and base map, then continue to publication. Do not create a parity receipt, treat the skip as a missing-secret approval, or reuse the skip after this invocation.
 
-Otherwise invoke the public parity action with the three bound canary inputs:
+For a canary requiring mechanical validation, invoke the public parity action with the three bound inputs:
 
 ```text
 coding:pr verify --target "$TARGET_SHA" --base "$TARGET_BASE" --kind "$TARGET_KIND"
 ```
 
-For a standalone surface, that successful canary is the complete local gate. For a stack, a successful canary proves the integrated tip first; next, rebind `TARGET_SHA` and `TARGET_BASE` to each object's `head` and immediate `base`, set `TARGET_KIND=standalone`, and invoke the same public action bottom-up through the tip. The tip is deliberately run again against its immediate PR base so both the integrated stack and every independently publishable PR surface have exact evidence.
+For a standalone surface, that successful canary is the complete local gate. For a stack, a successful canary proves the integrated tip first; next, rebind `TARGET_SHA` and `TARGET_BASE` to each object's `head` and immediate `base`, set `TARGET_KIND=standalone`, and classify each surface before invoking the same public action for surfaces requiring mechanical validation, bottom-up through the tip. The tip is deliberately run again against its immediate PR base so both the integrated stack and every independently publishable PR surface have exact evidence.
 
 If the canary is red, do not push or repair it immediately. Run the same action bottom-up until the first red surface. The first failure is the earliest broken bookmark/PR even when a later commit masks that failure at the tip; retain its command output and the verifier's diagnosis. Stop the traversal there, fix the root cause in that owning change through `coding:commit` and the shared `jj edit` route when applicable, then restart stack discovery and the entire tip-first gate. If the canary is green but a bottom-up surface is red, apply the same earliest-surface rule. Never test higher surfaces after the first bottom-up failure because their inputs will be invalidated by the repair.
 
-For every successful action, capture its complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`; bind the receipt to the surface's bookmark and PR identity. Consume each receipt immediately and replay the same gate for the complete ordered receipt set before every entry or re-entry to publication:
+For every successful mechanical action, capture its complete `CI_PARITY_RECEIPT_JSON`, its canonical `CI_PARITY_EXPECTED_WORKFLOW_COMMAND_RESULTS_JSON`, and its canonical `CI_PARITY_EXPECTED_MISSING_SECRET_NAMES_JSON`; bind the receipt to the surface's bookmark and PR identity. Consume each receipt immediately and replay the same gate for the complete ordered receipt set before every entry or re-entry to publication:
 
 ```bash
 source "${CODING_PR_SKILL_DIR}/../../scripts/validate-ci-parity-receipt.sh"
 ```
 
-A rewrite, base-map change, bookmark/PR identity change, or command/result-set change invalidates the complete receipt set and restarts discovery before this step.
+A rewrite, base-map change, bookmark/PR identity change, classification change, or command/result-set change invalidates the complete classification/receipt set and restarts discovery before this step.
 
 ### 3. Publish bottom-up
 
-Before every entry or re-entry to this phase, either confirm the invocation's explicit `--no-verify` record still matches the complete selected stack or rerun the receipt gate above against every current bound surface in the ordered receipt set. On a missing-secret exception path, each approval's `sha` equals that surface's exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch, like a missing surface receipt, returns to step 2 before a remote mutation. For each rebound surface, its `sha` equals the exact `TARGET_SHA`; its sorted names and complete receipt remain inseparable from that target.
+Before every entry or re-entry to this phase, either confirm the invocation's explicit `--no-verify` record still matches the complete selected stack or rerun the receipt gate above against every current mechanically applicable bound surface in the ordered receipt set, and recheck documentation-only classification records for every exempt surface. On a missing-secret exception path, each approval's `sha` equals that surface's exact `TARGET_SHA` and its `names` equal the verifier's exact lexically sorted missing-secret names. A SHA-only approval or any name/order mismatch, like a missing applicable parity receipt or documentation-only classification record, returns to step 2 before a remote mutation. For each rebound surface, its `sha` equals the exact `TARGET_SHA`; its sorted names and complete receipt remain inseparable from that target.
 
 Require a saved, clean, linear chain to the selected `ROOT_BASE`/`DESTINATION` at authoritative `$REMOTE`, standalone green changes, conventional descriptions per [commit-message standard](../../../standards/commit/write.md), no selected change already merged at `$REMOTE`, and a derived or supplied branch prefix. If needed, invoke `coding:commit --reorder`; for merged history follow [merged.md](../../commit/directions/merged.md).
 
@@ -546,7 +548,7 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
 
 - For each surface, report known issue identities, whether search ran or was skipped and why, lookup failures or coverage limits, selected issue dispositions, and added/preserved/removed/failed Development links with read-back evidence. No issue was created implicitly; lookup ran only when identity was unknown and search was permitted. A published PR with unverified required links is partial completion, never a fully successful association.
 - The title matches the Conventional Commits regex and the rendered body passes [scan-pr-message.ts](../scripts/scan-pr-message.ts). Every emitted body has behavioral Goal and Requirements sections and emoji-prefixed headings with no `[ Optional ]` authoring markers; a repo template is verbatim, or the bundled default has no placeholder or dropped-section stub. The same head OID, base/empty-tree OID, template, thresholds, and placeholder map yield byte-identical `title\n\nbody` without timestamps or random IDs.
-- Unless `--no-verify` was explicitly recorded, the applicable `pull_request` test and lint tasks passed through read-only `jj run` first at the exact selected tip and then at every selected PR head bottom-up, with revision-bound sources and results. The sole per-surface exception records the user's explicit approval for that exact revision and the verifier's exact lexically sorted missing-secret names. A `--no-verify` run instead reports every skipped bookmark, PR, head, and base; hosted CI remains mandatory.
+- Every documentation-only surface has a current classification record and no local mechanical run. For other surfaces unless `--no-verify` was explicitly recorded, the applicable `pull_request` test and lint tasks passed through read-only `jj run` first at the exact selected tip and then at every selected PR head bottom-up, with revision-bound sources and results. The missing-variable per-surface exception records the user's explicit approval for that exact revision and the verifier's exact lexically sorted missing-secret names. A `--no-verify` run instead reports every skipped bookmark, PR, head, and base; hosted CI remains mandatory.
 - Every head was pushed under a lease — one explicit affected-bookmark `jj git push` on the jj path, `git push --force-with-lease` on the git path; each new PR started as a draft, uses the authored title/body, and has the intended stack base. The default review loop verifies passing surfaces are ready for review; an explicitly unreviewed creation remains draft without reviewer tasks.
 - By default, review convergence produced a substantive `PASS` on each final head, including required replies and repair heads; or the configured review maximum was exhausted and green CI plus missing passing AI review is reported. With `--no-review`, report the explicit opt-out and no review verdict for each PR; never describe green CI alone as a passing AI review.
 

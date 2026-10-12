@@ -78,6 +78,8 @@ This creates an empty `@` on top of the just-described change so subsequent edit
 
 The PostToolUse hook fires `verify.sh` after `git commit`. Read the `── Integrity Check ──` stderr block per [SKILL.md](../SKILL.md) Verification.
 
+Apply the [documentation-only exemption](../../../directions/validation.md#classify-documentation-only-changes) before project checks.
+
 Run applicable project scripts (unless `--no-verify`): lint and build where the project defines them, configured typecheck or equivalent type diagnostics for all changed code, affected-consumer builds for changed public shape, runtime tests only for runtime behavior, and focused compile-time tests only for allowed compiler-semantic promises under `TST-CORE-10`. For a declaration-only change with no runtime behavior or allowed compiler-semantic promise, record those two test gates as `SKIP (not applicable)` after type diagnostics and affected-consumer builds pass; do not run or invent a test. For example, a runtime-producing npm project may require:
 
 ```bash
