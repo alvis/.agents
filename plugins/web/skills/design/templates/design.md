@@ -8,7 +8,7 @@ Choose the scope before filling anything in. **Lightweight** (a local refinement
 
 > **Provenance**: {{SOURCE_URLS_PATHS_REVISIONS_AND_PRIOR_DESIGN_REFS}}
 
-> **Handoff contract**: §5, §6, §8, and §9 stay current at every save point. Whole-work context and planning remain in `state.md`; this file owns design detail and decisions.
+> **Handoff contract**: §5, §6, §8, and (at full scope) §9 stay current at every save point. Whole-work context and planning remain in `state.md`; this file owns design detail and decisions.
 
 ---
 
@@ -113,7 +113,7 @@ Facelift and existing-product redesigns only.
 
 **Built so far**: {{PATH — STATUS}}
 
-**Current slice and budget**: {{SLICE}} · rework pass {{n}} of 3 · best checkpoint {{CHANGE_ID}}
+**Current slice and budget**: {{SLICE}} · rework pass {{n}} of the shared budget in `web:directions/evaluation.md` · best checkpoint {{CHANGE_ID}}
 
 **Known gaps**: {{FAILED_UNVERIFIED_OR_BLOCKED_CHECKS_AND_OPEN_FINDINGS}}
 

@@ -72,7 +72,7 @@ Deliver the chosen direction in slices, starting with the one that exposes the m
 
 1. **Build.** `frontend-implementer` works inside the theming contract and the component-reuse map, starting from the recorded decision.
 2. **Evaluate.** Use the rubric with neutral reviewer context: the brief, targets, direction, rendered artifact, and evidence, never builder rationale. Check contrast for every component slice. Check lab budgets for page-scope slices.
-3. **Repair or proceed.** Use the rubric's transition table within the shared three-pass budget. Turn a failed readiness check into a concrete repair. Address a weak organising idea at the concept, not with polish.
+3. **Repair or proceed.** Use the rubric's transition table within the shared rework budget. Turn a failed readiness check into a concrete repair. Address a weak organising idea at the concept, not with polish.
 4. **Save.** Make a save point through `coding:commit` (never raw history mutation) and record the change ID.
 5. **Return the ledger entry** for the main agent to add to the design child:
 
@@ -94,7 +94,7 @@ Page-scope slices and the final assembly need performance evidence under the sam
 2. Run a second trace without reload while exercising the primary interaction, and read interaction latency and long tasks in that window.
 3. On a regression, use `performance_analyze_insight` (`LCPBreakdown`, `CLSCulprits`, `DocumentLatency`) to name the culprit before reworking.
 
-Use the field thresholds in `web:directions/evaluation.md` (Performance) as lab budgets unless the project declares its own. Report them as **lab** results under the named conditions. Field Core Web Vitals (75th percentile of real visits) are claimed only from field data. Having no task over 50 ms in the interaction window is evidence of responsiveness, not of 60 fps. Also look at the filmstrip and screenshots: a page that passes on paper but visibly jank fails on Craft.
+Use the field thresholds in `web:directions/evaluation.md` (Performance) as lab budgets unless the project declares its own. Report them as **lab** results under the named conditions. Field Core Web Vitals (75th percentile of real visits) are claimed only from field data. Having no task over 50 ms in the interaction window is evidence of responsiveness, not of 60 fps. Also look at the filmstrip and screenshots: a page that passes on paper but visibly janks fails on Craft.
 
 ## 7. Parity check
 

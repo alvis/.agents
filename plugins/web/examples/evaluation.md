@@ -8,14 +8,14 @@ Illustrative only. These are worked instances of [the evaluation summary](../tem
 
 **Route:** inherit the system. No moodboard, palette, or alternative screen. Fix the affected row, then check the narrow state, the long-label case, and keyboard order.
 
-| Dimension | Target | Observed result |
-| --- | --- | --- |
-| Product fit | Inherited | Inherited from `docs/design/system.md`; not reassessed |
-| Distinctiveness | Inherited | Not reassessed: a familiar settings pattern is correct here |
-| Coherence | Competent | Competent: the fix reuses the existing row component and spacing tokens |
-| Craft | Competent | Competent: the label wraps to two lines without orphaning, and the toggle stays aligned to the first baseline |
-| Task completion | Required checks verified | Ready for scope: the toggle works at 320 px and at 200% zoom, keyboard order is unchanged, and the dark mode supported by the product passes contrast. Other settings screens are not rechecked |
-| Efficiency | Proportionate effort | One edit, one render pass; elapsed time unavailable |
+| Dimension | Target | Observed result | Target met |
+| --- | --- | --- | --- |
+| Product fit | Inherited | Inherited from `docs/design/system.md`; not reassessed | n/a |
+| Distinctiveness | Inherited | Not reassessed: a familiar settings pattern is correct here | n/a |
+| Coherence | Competent | Competent: the fix reuses the existing row component and spacing tokens | yes |
+| Craft | Competent | Competent: the label wraps to two lines without orphaning, and the toggle stays aligned to the first baseline | yes |
+| Task completion | Required checks verified | Ready: the toggle works at 320 px and at 200% zoom, keyboard order is unchanged, and the dark mode supported by the product passes contrast. Other settings screens are not rechecked | yes |
+| Efficiency | Proportionate effort | One edit, one render pass; elapsed time unavailable | yes |
 
 The report does not claim that untouched areas were reviewed.
 
@@ -31,14 +31,14 @@ The report does not claim that untouched areas were reviewed.
 
 The place-led concept wins on Product fit, and the poster wall's typographic energy is kept as a named trait. Only the chosen concept gets responsive, accessible, working-flow treatment. Rejected concepts never become complete sites.
 
-| Dimension | Target | Observed result (slice) |
-| --- | --- | --- |
-| Product fit | Strong | Strong: the route ordering answers "what can I see tonight near me?" |
-| Distinctiveness | Exceptional | Exceptional: the walking route doubles as the page's reading order, and the type scale borrowed from the poster concept marks each venue; neither would survive a logo swap |
-| Coherence | Strong | Strong: one route line, one type system, one ticket affordance |
-| Craft | Exceptional | Strong: map labels collide at 390 px. Target met: No |
-| Task completion | Required checks verified | **Not ready:** the map's list equivalent exists, but ticket links for 3 events are unverified |
-| Efficiency | Proportionate effort | Three single-composition concepts and one slice; tool count measured, cost unavailable |
+| Dimension | Target | Observed result (slice) | Target met |
+| --- | --- | --- | --- |
+| Product fit | Strong | Strong: the route ordering answers "what can I see tonight near me?" | yes |
+| Distinctiveness | Exceptional | Exceptional: the walking route doubles as the page's reading order, and the type scale borrowed from the poster concept marks each venue; neither would survive a logo swap | yes |
+| Coherence | Strong | Strong: one route line, one type system, one ticket affordance | yes |
+| Craft | Exceptional | Strong: map labels collide at 390 px | no |
+| Task completion | Required checks verified | **Not ready:** the map's list equivalent exists, but ticket links for 3 events are unverified | no |
+| Efficiency | Proportionate effort | Three single-composition concepts and one slice; tool count measured, cost unavailable | yes |
 
 **Next:** resolve the label collision and verify ticket links within the shared budget. Do not reopen the direction.
 
@@ -53,13 +53,13 @@ Neither minimalism nor maximalism earns a bonus or a penalty. Judge clarity, pur
 
 ## Illustrative report: polished but broken
 
-| Dimension | Target | Observed result |
-| --- | --- | --- |
-| Product fit | Strong | Strong: results and actions reflect the intended search task |
-| Distinctiveness | Competent | Competent: product-specific information design within a familiar pattern |
-| Coherence | Strong | Strong: established components, terminology, and states are consistent |
-| Craft | Strong | Strong: hierarchy and responsive composition are well resolved |
-| Task completion | Required checks verified | **Not ready:** the filter changes its chip but not the results; the mobile keyboard journey is unverified |
-| Efficiency | Proportionate effort | Two layout studies and one implementation; exact model cost unavailable |
+| Dimension | Target | Observed result | Target met |
+| --- | --- | --- | --- |
+| Product fit | Strong | Strong: results and actions reflect the intended search task | yes |
+| Distinctiveness | Competent | Competent: product-specific information design within a familiar pattern | yes |
+| Coherence | Strong | Strong: established components, terminology, and states are consistent | yes |
+| Craft | Strong | Strong: hierarchy and responsive composition are well resolved | yes |
+| Task completion | Required checks verified | **Not ready:** the filter changes its chip but not the results; the mobile keyboard journey is unverified | no |
+| Efficiency | Proportionate effort | Two layout studies and one implementation; exact model cost unavailable | yes |
 
 The useful next step is to repair and verify filtering and keyboard behaviour, not to restart the visual direction.
