@@ -6,11 +6,11 @@
 - Lead with typography -- use a consistent type scale (ratio-based) and purposeful font weights to create hierarchy before reaching for color or decoration
 - Anchor all spacing to a base grid (4px/8px) so margins, padding, and gaps are predictable and harmonious
 - Define complete interactive states for every control: default, hover, active, focus-visible, and disabled with explanation
-- Design every UI state explicitly: loading (skeleton/spinner), empty (explanation + next step), error (problem + cause + fix), success (confirmation + next action), and permission (why blocked + how to request)
-- Treat WCAG AA as the accessibility floor for contrast, keyboard access, names/labels, reflow, and visible focus; separately enforce the project's stricter >=44px touch-target rule
+- Design every reachable UI state explicitly: loading (skeleton/spinner), empty (explanation + next step), error (problem + cause + fix), success (confirmation + next action), permission (why blocked + how to request), and domain states; mark unreachable states N/A
+- Treat WCAG 2.2 AA as the accessibility floor for contrast, keyboard access, names/labels, reflow, and visible focus; separately enforce the project's stricter >=44px touch-target rule
 - Use a single icon set consistently; reserve icon-only affordances for universally understood actions (search, close, menu) and label everything else
 - Use motion to support comprehension, feedback, spatial continuity, or deliberate brand expression; keep it subordinate, layout-stable outside the changing region, accessible, and performance-checked
-- Express brand personality through restrained color, spacious layout, and typographic voice -- never through dark patterns or decorative excess
+- Express brand identity through deliberate, consistent decisions that fit the brief -- restrained or expressive -- never through dark patterns or decoration unrelated to the subject
 
 ## Core Rules Summary
 
@@ -46,7 +46,7 @@
 
 ### States & Feedback (DES-STAT)
 
-- **DES-STAT-01**: Implement all 5 UI states: loading (skeleton, no layout jumps, prevent double-submit), empty (explain + next step), error (what + why + fix, preserve input), success (confirm + next action), permission (why blocked + how to request).
+- **DES-STAT-01**: Implement every reachable state from the surface's state inventory: loading (skeleton, no layout jumps, prevent double-submit), empty (explain + next step), error (what + why + fix, preserve input), success (confirm + next action), permission (why blocked + how to request), and domain states.
 - **DES-STAT-02**: Provide hover, active, disabled (with explanation), and focus pseudo-states on every interactive element.
 
 ### Navigation & IA (DES-NAVI)
@@ -61,7 +61,7 @@
 
 ### Responsiveness (DES-RESP)
 
-- **DES-RESP-01**: Adapt layout at breakpoints 320/768/1024/1440+; no horizontal scroll; content reflows (WCAG 1.4.10 at 400%); mobile-first content ordering; images scale with `max-width: 100%`.
+- **DES-RESP-01**: Cover the supported range (320px and up unless declared) with content-driven breakpoints; no horizontal page scroll; content reflows (WCAG 1.4.10); task-priority ordering at each width; images scale with `max-width: 100%`.
 - **DES-RESP-02**: Touch targets >= 44px on mobile; primary actions in thumb zone; provide touch alternatives for hover-only interactions.
 
 ### Imagery, Icons & Motion (DES-ICON)
@@ -71,7 +71,7 @@
 
 ### Branding & Modern Standards (DES-BRND)
 
-- **DES-BRND-01**: Express brand personality consistently through color, typography, and tone; restrained color, spacious layout, typography-led hierarchy signal modern design; avoid dated patterns.
+- **DES-BRND-01**: Express brand identity deliberately and consistently through color roles, typography, imagery, composition, interaction, and tone; replace template defaults no decision chose.
 - **DES-BRND-02**: No dark patterns (confirmshaming, hidden costs, trick questions, forced continuity); cancellation as easy as signup; opt-in for marketing; transparent, minimal data collection.
 
 ## Patterns
@@ -80,17 +80,17 @@
 
 | Role | Token | Usage |
 |---|---|---|
-| Primary | `--color-primary` | Brand identity, primary CTA backgrounds, active navigation |
-| Accent | `--color-accent` | Secondary actions, highlights, links |
-| Neutral-50 | `--color-neutral-50` | Backgrounds, subtle dividers |
-| Neutral-200 | `--color-neutral-200` | Borders, disabled backgrounds |
-| Neutral-500 | `--color-neutral-500` | Placeholder text, secondary icons |
-| Neutral-700 | `--color-neutral-700` | Body text |
-| Neutral-900 | `--color-neutral-900` | Headings, high-emphasis text |
-| Error | `--color-error` | Destructive actions, validation errors (red) |
-| Success | `--color-success` | Confirmation, positive feedback (green) |
-| Warning | `--color-warning` | Caution states, non-blocking alerts (yellow) |
-| Info | `--color-info` | Informational banners, help context (blue) |
+| Primary | `--ui-primary` | Brand identity, primary CTA backgrounds, active navigation |
+| Accent | `--ui-accent` | Secondary actions, highlights, links |
+| Canvas | `--ui-bg` | Page background |
+| Border | `--ui-border` | Borders and dividers |
+| Subtle text | `--ui-fg-subtle` | Placeholder text, secondary icons |
+| Muted text | `--ui-fg-muted` | Supporting text |
+| Text | `--ui-fg` | Body and heading text |
+| Error | `--ui-danger` | Destructive actions, validation errors (red) |
+| Success | `--ui-success` | Confirmation, positive feedback (green) |
+| Warning | `--ui-warning` | Caution states, non-blocking alerts (yellow) |
+| Info | `--ui-info` | Informational banners, help context (blue) |
 
 ### Spacing Scale
 
@@ -144,6 +144,6 @@
 
 1. **Hierarchy first**: Establish clear visual levels -- primary CTA, heading scale, whitespace rhythm (`DES-HIER`, `DES-TYPO`).
 2. **Tokens second**: Define color palette, spacing scale, and type scale as design tokens before building components (`DES-COLR`, `DES-SPAC`, `DES-CONS`).
-3. **States third**: Design every UI state (loading, empty, error, success, disabled) for each component (`DES-STAT`).
+3. **States third**: Design every reachable state in each component's inventory (`DES-STAT`).
 4. **Accessibility fourth**: Verify contrast ratios, keyboard flow, and ARIA labels meet the AA floor; verify touch targets meet the separate stricter project rule (`DES-A11Y`, `DES-RESP`).
-5. **Polish last**: Apply animation, icon refinement, and brand personality only after the structural foundation is solid (`DES-ICON`, `DES-BRND`).
+5. **Expression throughout**: Decide imagery, motion, microcopy, and brand expression with the structure, not as late decoration; refine their execution once the foundation holds (`DES-ICON`, `DES-BRND`).

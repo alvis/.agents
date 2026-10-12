@@ -6,7 +6,9 @@ Read this before UI/UX design, CSS, image-generation, Next.js diagnosis, Storybo
 
 | Action | Instruction |
 | --- | --- |
-| Define a visual contract and orchestrate its implementation | `web:design` |
+| Design, redesign, or refine an interface and orchestrate its implementation | `web:design` |
+| Set design targets or evaluate a design, build, or concept under the six dimensions | [Evaluation](evaluation.md) |
+| Measure rendered text contrast for a design, build, or review | [Contrast protocol](contrast-protocol.md) |
 | Audit a rendered interface | `web:audit` |
 | Create or maintain the root color-mode stylesheet | `web:css` |
 | Generate or edit visual assets | `web:imagine` |

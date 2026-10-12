@@ -2,7 +2,7 @@
 
 Any P0 or P1 finding blocks UI approval and completion unless it is closed under the canonical [audit disposition contract](../../skills/audit/templates/review.md). A non-fixed closure requires explicit risk-acceptance authority, an accountable owner, non-placeholder rationale, durable acceptance evidence, and a concrete recheck condition. Protocol: `essential:directions/standards.md`.
 
-> **During auditing**: Report all findings with severity. For the design skill, self-audit against this checklist and iterate toward 10/10 in every category, within that skill's rework budget — carry whatever still falls short to confirmation as a residual gap rather than looping past the budget. For the audit skill, report violations without fixing them.
+> **During auditing**: Report all findings with severity. Designers self-check against this list and judge overall quality with the six-dimension rubric in `web:directions/evaluation.md`, within its shared rework budget; unmet requirements remain visible gaps. The audit skill reports violations without fixing them.
 
 ## Quick Scan
 
@@ -19,7 +19,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 ### Color & Contrast
 
 - DO NOT use >12 unique non-neutral colors or undisciplined palettes without primary/accent/neutral/semantic slots [`DES-COLR-01`]
-- DO NOT fail WCAG AA contrast: 4.5:1 normal text, 3:1 large text/UI components [`DES-COLR-02`]
+- DO NOT fail WCAG 2.2 AA contrast: 4.5:1 normal text, 3:1 large text/UI components [`DES-COLR-02`]
 
 ### Spacing & Grid
 
@@ -38,7 +38,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 
 ### States & Feedback
 
-- DO NOT omit loading (skeleton), empty (guidance), error (recovery), success (next step), or permission states [`DES-STAT-01`]
+- DO NOT omit a reachable loading, empty, error, success, permission, or domain state, or invent states the surface cannot reach [`DES-STAT-01`]
 - DO NOT leave interactive elements without hover, active, disabled, and focus visual states [`DES-STAT-02`]
 
 ### Navigation & IA
@@ -54,7 +54,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 
 ### Responsiveness
 
-- DO NOT allow horizontal scroll or fixed-width elements that break mobile layouts at 320-1440+ [`DES-RESP-01`]
+- DO NOT allow horizontal page scroll or fixed-width elements that break layouts anywhere in the supported range (320px and up unless declared otherwise) [`DES-RESP-01`]
 - DO NOT use touch targets <44px on mobile or ignore thumb-zone placement for primary actions [`DES-RESP-02`]
 
 ### Imagery, Icons & Motion
@@ -64,7 +64,7 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 
 ### Branding & Modern Standards
 
-- DO NOT produce generic template-like designs with no visible brand personality [`DES-BRND-01`]
+- DO NOT ship unexamined template defaults in place of deliberate brand expression [`DES-BRND-01`]
 - DO NOT implement dark patterns (confirmshaming, pre-checked opt-outs, hidden costs, trick questions) [`DES-BRND-02`]
 
 ## Rule Matrix
@@ -79,20 +79,20 @@ Any P0 or P1 finding blocks UI approval and completion unless it is closed under
 | `DES-COLR-02` | WCAG AA contrast failure | 2.5:1 ratio on body text; light gray on white |
 | `DES-SPAC-01` | Arbitrary spacing values not on grid | 5px here, 7px there, 13px elsewhere |
 | `DES-SPAC-02` | Proximity principle violated | Related items have same gap as unrelated sections |
-| `DES-CONS-01` | Hardcoded values instead of tokens | `#3b82f6` instead of `var(--primary)`; `8px` instead of `var(--space-2)` |
+| `DES-CONS-01` | Hardcoded values instead of tokens | `#3b82f6` instead of `var(--ui-primary)`; `8px` instead of `var(--space-2)` |
 | `DES-CONS-02` | Inconsistent component styling | 3 different button styles for same action type across screens |
 | `DES-A11Y-01` | Missing keyboard/focus support | `outline: none` without `:focus-visible`; custom controls not keyboard-accessible |
 | `DES-A11Y-02` | Missing accessible names/labels | Icon button without `aria-label`; input with placeholder-only label |
-| `DES-STAT-01` | Missing UI states | Blank screen while loading; empty area with no explanation |
+| `DES-STAT-01` | Missing reachable UI states | Blank screen while loading; empty area with no explanation |
 | `DES-STAT-02` | Missing interactive states | No hover/disabled visual feedback on buttons; no active state |
 | `DES-NAVI-01` | Technical IA structure | Nav matches database tables, not user tasks or goals |
 | `DES-NAVI-02` | Lost navigation context | No breadcrumbs; no active indicator in sidebar/tabs |
 | `DES-NAVI-03` | Current page still a link | Nav item for active route has `<a href>` that reloads; no `aria-current` |
 | `DES-COPY-01` | Vague action labels | "Submit", "OK", "Click here", "Done" |
 | `DES-COPY-02` | Unhelpful error messages | "Something went wrong"; error code with no guidance |
-| `DES-RESP-01` | Broken mobile layout | Fixed-width tables; horizontal scroll on phone; content overflow |
+| `DES-RESP-01` | Broken layout in the supported range | Fixed-width tables; horizontal page scroll at 320px; content overflow |
 | `DES-RESP-02` | Tiny mobile targets | 24px touch targets; primary actions outside thumb zone |
 | `DES-ICON-01` | Mixed icon styles or emoji in UI | Outlined + filled + emoji mixed; icon-only for non-universal actions |
 | `DES-ICON-02` | Distracting, inaccessible, or unmeasured motion | Repeating bounce; unexpected layout jump; missing CSS/JS reduced-motion branch; unprofiled blur or size animation |
-| `DES-BRND-01` | Generic/template appearance | Default Bootstrap look; no brand colors; stock typography |
+| `DES-BRND-01` | Undecided template appearance | Unmodified library defaults that no design decision chose |
 | `DES-BRND-02` | Dark patterns present | Confirmshaming; pre-checked marketing consent; hidden cancellation |

@@ -21,7 +21,7 @@ Use CSS custom properties (design tokens) instead of hardcoded color, spacing, a
 
 ## Common Mistakes
 
-1. Hardcoded color values (`#3b82f6`) instead of tokens (`var(--color-primary)`)
+1. Hardcoded color values (`#3b82f6`) instead of tokens (`var(--ui-primary)`)
 2. Multiple border-radius values (3px, 4px, 6px, 8px, 10px, 12px) with no system
 3. Inconsistent box-shadow definitions across components
 4. Mixing hardcoded and token-based values in the same file

@@ -7,7 +7,7 @@ Use a small, intentional color palette: one primary, one accent, neutrals, and s
 ## Fix
 
 - Define palette slots: primary, accent, neutral-50 through neutral-900, success, warning, error, info
-- Use design tokens (`--color-primary`, `--color-error`, etc.) for all color values
+- Use design tokens (`--ui-primary`, `--ui-danger`, etc.) for all color values
 - Pair every color-coded status with an icon or text label
 - Apply semantic colors consistently: red=error, green=success, yellow=warning, blue=info
 - Support `prefers-color-scheme` media query when dark mode is applicable

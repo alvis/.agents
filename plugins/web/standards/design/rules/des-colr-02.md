@@ -2,7 +2,7 @@
 
 ## Intent
 
-All text and UI components must meet WCAG AA contrast minimums. Normal text >=4.5:1, large text (>=18px bold or >=24px) >=3:1, UI components and graphical objects >=3:1.
+All text and UI components must meet WCAG AA contrast minimums. Normal text >=4.5:1, large text (>=18.66px, i.e. 14pt, bold or >=24px, i.e. 18pt; WCAG 2.2 SC 1.4.3) >=3:1, UI components and graphical objects >=3:1.
 
 ## Fix
 
