@@ -19,12 +19,12 @@
   // DES rule-ID mapping for WCAG text issues
   // ---------------------------------------------------------------------------
   var DES_RULE_MAP = {
-    'contrast':                'DES-CONT-01',
+    'contrast':                'DES-COLR-02',
     'collapsed-width':         'DES-TYPO-02',
     'narrow-heading-width':    'DES-TYPO-02',
     'tight-frame-spacing':     'DES-SPAC-01',
     'tight-label-spacing':     'DES-SPAC-01',
-    'control-height-too-small': 'DES-RESP-01',
+    'control-height-too-small': 'DES-RESP-02',
     'cramped-pill-aspect':     'DES-COMP-01',
     'cramped-search-width':    'DES-COMP-01',
     'inconsistent-control-heights': 'DES-COMP-01',
@@ -104,15 +104,61 @@
     // Color utilities
     // -----------------------------------------------------------------------
 
-    /** Parse an rgb()/rgba() string into { r, g, b, a }. */
-    var parseColor = function (value) {
-      if (!value || value === 'transparent') return null;
-      var match = value.match(/rgba?\(([^)]+)\)/);
+    var isTransparentValue = function (value) {
+      return !value || value === 'transparent' || value === 'none';
+    };
+
+    /** Parse an rgb()/rgba() string, comma or space separated, into { r, g, b, a }. */
+    var parseRgbFunction = function (value) {
+      var match = value.match(/^rgba?\(([^)]+)\)$/);
       if (!match) return null;
-      var parts = match[1].split(',').map(function (p) { return parseFloat(p.trim()); });
-      var r = parts[0], g = parts[1], b = parts[2], a = parts[3];
-      if (a === undefined || isNaN(a)) a = 1;
-      return { r: r, g: g, b: b, a: a };
+      var parts = match[1].split(/[\s,\/]+/).filter(Boolean);
+      if (parts.length < 3 || parts.some(function (p) { return p.indexOf('%') !== -1 || p === 'none'; })) return null;
+      var numbers = parts.map(function (p) { return parseFloat(p); });
+      if (numbers.some(function (n) { return isNaN(n); })) return null;
+      var a = numbers.length > 3 ? numbers[3] : 1;
+      return { r: numbers[0], g: numbers[1], b: numbers[2], a: a };
+    };
+
+    // Chrome serializes colors declared in oklch(), lab(), color(), and other
+    // modern syntaxes in that syntax, so normalize them to sRGB by painting one
+    // canvas pixel; a value the canvas rejects stays unparsed.
+    var colorCanvas = null;
+    var parseWithCanvas = function (value) {
+      try {
+        if (!colorCanvas) {
+          var canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          colorCanvas = canvas.getContext('2d', { willReadFrequently: true });
+        }
+        if (!colorCanvas) return null;
+        var sentinels = ['#010203', '#040506'];
+        var accepted = sentinels.every(function (sentinel) {
+          colorCanvas.fillStyle = sentinel;
+          colorCanvas.fillStyle = value;
+          return colorCanvas.fillStyle !== sentinel;
+        });
+        if (!accepted) return null;
+        colorCanvas.clearRect(0, 0, 1, 1);
+        colorCanvas.fillRect(0, 0, 1, 1);
+        var pixel = colorCanvas.getImageData(0, 0, 1, 1).data;
+        return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] / 255 };
+      } catch (error) {
+        return null;
+      }
+    };
+
+    /** Convert any computed CSS color to sRGB { r, g, b, a }, with alpha 0 for transparent; null when unconvertible. */
+    var toSrgb = function (value) {
+      if (isTransparentValue(value)) return { r: 0, g: 0, b: 0, a: 0 };
+      return parseRgbFunction(value) || parseWithCanvas(value);
+    };
+
+    /** A visible color in sRGB; null when transparent or unconvertible. */
+    var parseColor = function (value) {
+      var color = toSrgb(value);
+      return color && color.a > 0 ? color : null;
     };
 
     /** Alpha-composite foreground over background. */
@@ -239,6 +285,21 @@
       var stack = document.elementsFromPoint(samplePoint.x, samplePoint.y);
       var bg = getBodyBackground();
 
+      // Off-screen, covered, or pointer-events:none text is missing from the
+      // hit-test stack, so composite its own ancestors instead of whatever
+      // happens to sit at the sample point.
+      if (stack.indexOf(target) === -1) {
+        var ancestors = [];
+        for (var node = target; node && node !== document.documentElement; node = node.parentElement) {
+          ancestors.push(node);
+        }
+        for (var j = ancestors.length - 1; j >= 0; j--) {
+          var layer = parseColor(getComputedStyle(ancestors[j]).backgroundColor);
+          if (layer) bg = composite(layer, bg);
+        }
+        return bg;
+      }
+
       for (var i = stack.length - 1; i >= 0; i--) {
         var el = stack[i];
         var color = parseColor(getComputedStyle(el).backgroundColor);
@@ -257,25 +318,32 @@
     var getReliableSurfaceBackground = function (element) {
       var current = element;
       var depth = 0;
-      var bg = getBodyBackground();
+      // Translucent layers found on the way up sit above the solid surface,
+      // so they are composited over it once that surface is known.
+      var translucentLayers = [];
 
       while (current && current !== document.documentElement && depth < 12) {
         var style = getComputedStyle(current);
         var color = parseColor(style.backgroundColor);
         var hasStrongEffects =
+          (style.backgroundImage && style.backgroundImage !== 'none') ||
           (style.backdropFilter && style.backdropFilter !== 'none') ||
           (style.filter && style.filter !== 'none') ||
           (style.mixBlendMode && style.mixBlendMode !== 'normal');
 
         if (color && color.a >= settings.minReliableSurfaceAlpha && !hasStrongEffects) {
+          var surface = composite(color, getBodyBackground());
+          for (var i = translucentLayers.length - 1; i >= 0; i--) {
+            surface = composite(translucentLayers[i], surface);
+          }
           return {
-            color: composite(color, bg),
+            color: surface,
             source: 'solid-surface-fallback',
             selector: getSelectorHint(current),
           };
         }
         if (color && color.a > 0) {
-          bg = composite(color, bg);
+          translucentLayers.push(color);
         }
         current = current.parentElement;
         depth++;
@@ -294,7 +362,8 @@
 
       while (current && current !== document.documentElement && depth < 12) {
         var style = getComputedStyle(current);
-        var bgColor = parseColor(style.backgroundColor);
+        var bgRaw = toSrgb(style.backgroundColor);
+        var bgColor = bgRaw && bgRaw.a > 0 ? bgRaw : null;
         var beforeStyle = getComputedStyle(current, '::before');
         var afterStyle = getComputedStyle(current, '::after');
         var isRoot = current === document.body || current === document.documentElement;
@@ -320,6 +389,12 @@
         }
         if (!isRoot && bgColor && bgColor.a > 0 && bgColor.a < 1) {
           flags.push('transparent background on ' + tag);
+        }
+        if (!bgRaw) {
+          flags.push('unparsed background color on ' + tag);
+        }
+        if (!isRoot && parseFloat(style.opacity || '1') < 1) {
+          flags.push('opacity on ' + tag);
         }
 
         var pseudos = [['::before', beforeStyle], ['::after', afterStyle]];
@@ -351,6 +426,12 @@
         seen[f] = true;
         return true;
       });
+    };
+
+    // Translucent solid colors are composited into the measurement, so only they
+    // may still be measured; every other flag hides the real backdrop.
+    var isCompositedFlag = function (flag) {
+      return /^(transparent background|::before background|::after background) on /.test(flag);
     };
 
     // -----------------------------------------------------------------------
@@ -825,7 +906,7 @@
     var createElementCandidates = function () {
       return Array.from(
         document.querySelectorAll(
-          'a, p, h1, h2, h3, h4, h5, h6, li, span, strong, em, code, button, label, summary'
+          'a, p, h1, h2, h3, h4, h5, h6, li, span, strong, em, b, i, small, mark, code, kbd, time, abbr, cite, q, blockquote, button, label, legend, summary, td, th, caption, figcaption, dt, dd, output, div'
         )
       ).filter(function (el) {
         return isVisibleLeafTextElement(el) && !matchesIgnoredSelector(el);
@@ -1096,8 +1177,36 @@
     var allCandidates = createElementCandidates().concat(createPseudoCandidates());
 
     var analyzeCandidate = function (candidate) {
-      var foreground = parseColor(candidate.style.color);
-      if (!foreground) return;
+      // -webkit-text-fill-color paints the glyphs when set; it computes to the
+      // color value otherwise.
+      var fillValue = candidate.style.webkitTextFillColor || candidate.style.color;
+      var foreground = toSrgb(fillValue);
+      if (!foreground || foreground.a === 0) {
+        var unmeasuredSelector = getSelectorHint(candidate.element);
+        var reason = foreground
+          ? 'transparent text fill (gradient or image text): ' + fillValue
+          : 'unparsed text color: ' + fillValue;
+        manualReviewItems.push({
+          selector: unmeasuredSelector,
+          summary: 'Text color could not be measured -- contrast is unverified.',
+          reason: reason,
+          aiPrompt: 'Measure the contrast of the text at ' + unmeasuredSelector +
+            ' manually at its worst-case point; ' + reason + '.',
+          humanReview: {
+            checklist: [
+              'Does the text meet the WCAG contrast minimum against its rendered background?',
+            ],
+          },
+          cropPath: '',
+          estimatedContrast: null,
+        });
+        return;
+      }
+      // Translucent text blends with whatever is behind it, so measure the
+      // composited color rather than the declared one.
+      var visibleForeground = function (background) {
+        return foreground.a < 1 ? composite(foreground, background) : foreground;
+      };
 
       var samplePoint = getSamplePoint(candidate.rect);
       var backgroundOverride = getOverrideBackground(candidate.element);
@@ -1110,18 +1219,22 @@
       var clearance = getFrameClearance(candidate.element, lineMetrics.bounds);
       var isCodeText = candidate.element.tagName === 'CODE';
 
-      var sampledRatio = getContrastRatio(foreground, sampledBackground);
-      var fallbackRatio = fallbackSurface ? getContrastRatio(foreground, fallbackSurface.color) : null;
+      var sampledRatio = getContrastRatio(visibleForeground(sampledBackground), sampledBackground);
+      var fallbackRatio = fallbackSurface
+        ? getContrastRatio(visibleForeground(fallbackSurface.color), fallbackSurface.color)
+        : null;
 
+      var hasUnmeasurableSurface = complexSurfaceFlags.some(function (flag) { return !isCompositedFlag(flag); });
       var useFallbackSurface =
         Boolean(fallbackSurface) &&
+        !hasUnmeasurableSurface &&
         complexSurfaceFlags.length > 0 &&
         fallbackRatio !== null &&
         fallbackRatio >= threshold.minimum + settings.manualReviewContrastBuffer;
 
       var background = backgroundOverride?.color ??
         (useFallbackSurface ? fallbackSurface.color : sampledBackground);
-      var ratio = getContrastRatio(foreground, background);
+      var ratio = getContrastRatio(visibleForeground(background), background);
 
       var measureIssue = isCodeText ? null : getMeasureIssue(lineMetrics, expandableContainer);
       var narrowHeadingIssue = isCodeText ? null : getNarrowHeadingIssue(candidate.element, candidate.style, lineMetrics, expandableContainer);
@@ -1129,7 +1242,7 @@
       var singleLineLabelIssue = isCodeText ? null : getSingleLineLabelClearanceIssue(clearance, lineMetrics, candidate.style);
 
       var row = buildRow(
-        candidate, threshold, foreground, background, samplePoint,
+        candidate, threshold, visibleForeground(background), background, samplePoint,
         lineMetrics, clearance, complexSurfaceFlags,
         backgroundOverride?.source ?? (useFallbackSurface ? fallbackSurface.source : 'sampled'),
         backgroundOverride?.label ?? fallbackSurface?.selector ?? null
@@ -1137,9 +1250,10 @@
 
       row.needsManualReview =
         !backgroundOverride &&
-        !useFallbackSurface &&
-        complexSurfaceFlags.length > 0 &&
-        sampledRatio < threshold.minimum + settings.manualReviewContrastBuffer;
+        (hasUnmeasurableSurface ||
+          (!useFallbackSurface &&
+            complexSurfaceFlags.length > 0 &&
+            sampledRatio < threshold.minimum + settings.manualReviewContrastBuffer));
 
       row.collapsedWidthRisk = Boolean(measureIssue || narrowHeadingIssue);
       row.tightFrameSpacingRisk = Boolean(clearanceIssue || singleLineLabelIssue);
@@ -1203,7 +1317,7 @@
       return {
         category: 'wcag-text',
         ruleId: raw.issueType || raw.ruleId || 'contrast',
-        desRuleId: DES_RULE_MAP[raw.issueType] || DES_RULE_MAP[raw.ruleId] || 'DES-CONT-01',
+        desRuleId: DES_RULE_MAP[raw.issueType] || DES_RULE_MAP[raw.ruleId] || 'DES-COLR-02',
         severity: raw.severity || 'medium',
         title: raw.title || issueTitleFor(raw.issueType),
         summary: raw.details || '',

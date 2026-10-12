@@ -397,7 +397,7 @@ Key checks:
 
 Important trait:
 
-- it includes a manual-review lane for complex surfaces where contrast sampling is unreliable, such as gradients or image-backed text
+- it includes a manual-review lane for complex surfaces where contrast sampling is unreliable, such as gradients or image-backed text, and for any text color it cannot convert to sRGB; neither case is reported as a pass
 
 ### 🏗️ `semantic-structure-audit.js`
 
