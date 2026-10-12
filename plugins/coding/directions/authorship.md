@@ -1,6 +1,6 @@
 # Authorship
 
-Read this before committing, naming a branch, or writing a commit message, PR title, PR body, review, issue, or comment. Published work reads as the user's own: nothing in it reveals the agent or harness that produced it.
+Read this before committing, naming a branch, or writing a commit message, PR title, PR body, review, issue, or comment. Published work reads as the user's own: nothing in it reveals the agent or harness that produced it. Never hard-wrap any content.
 
 ## Identity
 
@@ -9,10 +9,6 @@ A cloud harness can preconfigure a Git identity that is not the user's. Before t
 ## Branches
 
 Name every branch by [coding:commit's branch convention](../skills/commit/SKILL.md#commit-and-branch-directions). A harness- or session-assigned name does not satisfy it; publish under the conventional name instead.
-
-## PR prose
-
-Do not hard-wrap authored PR bodies at a column width. Keep each prose paragraph and each list-item paragraph on one source line regardless of length. When deriving PR prose from a wrapped commit message, join continuation lines within the same paragraph with a single space. Preserve blank lines and Markdown structure, including separate list items, headings, tables, block quotes, and fenced or indented code; never reflow code. Inspect the raw message's line boundaries before publication; visual wrapping by GitHub or an editor does not change the source. When a repository template must be emitted verbatim and contains hard-wrapped prose, report that formatting conflict before emission rather than rewriting the template or publishing wrapped prose.
 
 ## Provenance
 

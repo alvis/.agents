@@ -48,9 +48,7 @@ Validate against the regex in [commit-message standard](../../../standards/commi
 ```text
 feat(user-profile): add avatar upload
 
-Adds the AvatarPicker component plus the upload endpoint and data
-model that backs it. The full flow lands in one commit so each layer
-compiles in isolation.
+Adds the AvatarPicker component plus the upload endpoint and data model that backs it. The full flow lands in one commit so each layer compiles in isolation.
 ```
 
 ### 5. Describe and commit
