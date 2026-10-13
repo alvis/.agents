@@ -4,7 +4,7 @@ description: Media production in three actions. motion-design crafts a motion vi
 requirements:
   model: capable
   effort: deliberate
-argument-hint: "[motion-design|track|review] <request> [--work-id=<id>]"
+argument-hint: "[motion-design|track|review] <request> [--work-id=<id>] [--cloud <name>]"
 ---
 
 # Production
@@ -18,6 +18,8 @@ Give media work the same truth discipline code enjoys, and help users make it. O
 - **`review`** — Record feedback, approval, or rejection on a cut or render; decide whether earlier approvals survive a new revision. See [review.md](directions/review.md).
 
 Select the action by what the user wants done, not by the subject noun: "make a video" is `motion-design`, "log this render" is `track`, "the client approved v3" is `review`. When the request fits none, or two equally, ask which is intended. `motion-design` calls `track` for every asset and render it produces and `review` for every feedback round on them.
+
+For `motion-design`, `--cloud <name>` selects the final renderer: `heygen`, `aws`, `gcp`, or `local`. Resolve the choice and credentials through [render](directions/motion-design/render.md#choose-the-renderer) before rendering; a supplied flag answers that choice. Unknown names or use with `track` or `review` require correction before proceeding.
 
 ## Completion
 
