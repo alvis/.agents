@@ -22,7 +22,7 @@ const summary = lowercaseFirst(text);
 
 The advisory scanner flags every match; humans triage. Permitted exceptions (not auto-suppressed):
 
-- **Standards-enforcement tooling** — audit/lint scripts whose code section literally implements the named rule may annotate the section in a header comment (e.g., `// ---- Color collection (DES-CONS-01) ----` in `plugins/web/skills/audit/scripts/design-tokens-audit.js`). The rule ID identifies the artifact under test, not the reason for the code.
+- **Standards-enforcement tooling** — audit/lint scripts whose code section literally implements the named rule may annotate the section in a header comment (e.g., `// ---- Color collection (DES-CONS-01) ----` in `web:scripts/audits/design-tokens-audit.js`). The rule ID identifies the artifact under test, not the reason for the code.
 
 ## Edge Cases
 

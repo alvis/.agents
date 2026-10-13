@@ -548,7 +548,7 @@
         severity: inlineSeverity,
         title: 'Hardcoded colors in inline styles (' + inlineColorIssues.length + ' instances)',
         summary: inlineColorIssues.length + ' inline style attributes contain hardcoded color values (#hex, rgb(), hsl()). Use CSS custom properties instead.',
-        details: 'Inline hardcoded colors bypass the design token system and make global theme changes impossible. Replace with var(--color-*) tokens.',
+        details: 'Inline hardcoded colors bypass the design token system and make global theme changes impossible. Replace with var(--ui-*) tokens.',
         selector: inlineColorIssues.length > 0 ? inlineColorIssues[0].selector : 'body',
         tags: ['design-tokens', 'inline-styles', 'colors', 'hardcoded'],
         wcagCriteria: [],

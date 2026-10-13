@@ -2,12 +2,12 @@
 
 ## Intent
 
-Use a small, intentional color palette: one primary, one accent, neutrals, and semantic colors. Maximum 12 unique non-neutral colors. Never use color as the sole indicator — always pair with icon, text, or shape for colorblind accessibility.
+Use a small, intentional color palette: one brand accent (a second hue only when a decision needs it), neutrals, and semantic colors. Maximum 12 unique non-neutral colors. Never use color as the sole indicator — always pair with icon, text, or shape for colorblind accessibility.
 
 ## Fix
 
-- Define palette slots: primary, accent, neutral-50 through neutral-900, success, warning, error, info
-- Use design tokens (`--color-primary`, `--color-error`, etc.) for all color values
+- Define palette slots: brand accent, a neutral ramp, success, warning, error, info
+- Use the tier-2 role tokens named under `CSS-MODE-04` (for example `--ui-accent`) for all color values
 - Pair every color-coded status with an icon or text label
 - Apply semantic colors consistently: red=error, green=success, yellow=warning, blue=info
 - Support `prefers-color-scheme` media query when dark mode is applicable
@@ -17,7 +17,7 @@ Use a small, intentional color palette: one primary, one accent, neutrals, and s
 - Extract all color values — flag if >12 unique non-neutral colors
 - Check for color-only indicators — elements distinguished solely by `color`/`background-color` without text/icon differentiation
 - Verify `prefers-color-scheme` media query presence if dark mode expected
-- Count `var(--color-*)` usage vs hardcoded hex/rgb values
+- Count `var(--ui-*)` usage vs hardcoded hex/rgb values
 
 ## Common Mistakes
 

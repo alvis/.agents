@@ -15,7 +15,7 @@ Before rendering:
 
 ## Classification and reconciliation
 
-Apply `review.md` and classify each finding exactly once. Map `critical|high|medium|low` to `P0|P1|P2|P3`; retain `info` as advisory raw evidence without a canonical priority ID unless stronger evidence raises its severity. Group actionable findings by canonical review area, then priority and stable source key. Before allocating an ID, load the applicable existing area file and reuse the canonical ID already paired with that source key. Allocate only genuinely new IDs using the area's canonical prefix and its next unused sequence. Never renumber old IDs or use raw CLI IDs as headings.
+Apply `web:templates/review.md` and classify each finding exactly once. Map `critical|high|medium|low` to `P0|P1|P2|P3`; retain `info` as advisory raw evidence without a canonical priority ID unless stronger evidence raises its severity. Group actionable findings by canonical review area, then priority and stable source key. Before allocating an ID, load the applicable existing area file and reuse the canonical ID already paired with that source key. Allocate only genuinely new IDs using the area's canonical prefix and its next unused sequence. Never renumber old IDs or use raw CLI IDs as headings.
 
 Return complete proposed content only for applicable `reviews/<area>.md` files. The main agent writes them. Each proposal must retain the canonical frontmatter, verdict line, required finding fields, and existing findings not owned by this Web run. Merge by source key so a rerun updates evidence without erasing dispositions, owners, recheck conditions, risk acceptance, or findings from other reviewers. Recompute the file's five disposition counts, derived closed/outstanding counts, outstanding P0-P3 counts, and verdict from the entire resulting file.
 
@@ -31,7 +31,7 @@ Site-level navigation or interaction failures belong to `correctness.md`. Recurr
 
 ## Main-agent roll-up handoff
 
-Validate every proposed area against `review.md`, then return its reconciliation payload. For each area, report all five dispositions, derived closed/outstanding counts, P0-P3 counts, verdict, and path. An absent area is `not_run` with zeroes unless an existing canonical area file supplies current counts; it is never silently reported as `pass` or `skipped`. Add:
+Validate every proposed area against `web:templates/review.md`, then return its reconciliation payload. For each area, report all five dispositions, derived closed/outstanding counts, P0-P3 counts, verdict, and path. An absent area is `not_run` with zeroes unless an existing canonical area file supplies current counts; it is never silently reported as `pass` or `skipped`. Add:
 
 ```yaml
 audit_summary:

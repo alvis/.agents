@@ -23,7 +23,7 @@ flowchart LR
     CLI --> S["Local script server<br/>drive/inject.ts"]
 
     B --> AB["agent-browser batch CLI"]
-    S --> JS["Injected audit scripts<br/>scripts/*.js"]
+    S --> JS["Injected audit scripts<br/>scripts/audits/*.js"]
     JS --> AGG["window.runDesignAudit()"]
     AGG --> CLI
 
@@ -46,7 +46,7 @@ flowchart LR
 | [`../../../scripts/audit-cli/audit_cli/drive/inject.ts`](../../../scripts/audit-cli/audit_cli/drive/inject.ts)                   | Hosts and injects JS scripts                                                   |
 | [`../../../scripts/audit-cli/audit_cli/report`](../../../scripts/audit-cli/audit_cli/report)                                     | TypeScript scoring, AI routing, and JSON emission modules                      |
 | [`../../../scripts/audit-cli/audit_cli/types.ts`](../../../scripts/audit-cli/audit_cli/types.ts)                                 | Readonly wire-contract interfaces                                              |
-| [`scripts/*.js`](../scripts)                                                                                                     | In-browser audit modules                                                       |
+| [`web:scripts/audits/*.js`](../../../scripts/audits)                                                                                                     | In-browser audit modules                                                       |
 
 ## 🛣️ End-to-End Runtime Flow
 
@@ -200,7 +200,7 @@ Tests in [`browser_cdp_url.spec.ts`](../../../scripts/audit-cli/audit_cli/drive/
 
 ### 🖥️ Localhost Script Server
 
-[`drive/inject.ts`](../../../scripts/audit-cli/audit_cli/drive/inject.ts) starts a temporary Node HTTP server rooted at the shared `scripts` directory.
+[`drive/inject.ts`](../../../scripts/audit-cli/audit_cli/drive/inject.ts) starts a temporary Node HTTP server rooted at the shared `web:scripts/audits` directory.
 
 This exists for a concrete reason:
 
@@ -240,7 +240,7 @@ window.runDesignAudit({ viewport, viewportLabel });
 
 Two script-side files are not part of the current active path:
 
-- [`scripts/navigation-audit.js`](../scripts/navigation-audit.js): implemented, but not injected and not referenced by the aggregator
+- [`web:scripts/audits/navigation-audit.js`](../../../scripts/audits/navigation-audit.js): implemented, but not injected and not referenced by the aggregator
 
 ## 📄 Per-Page Audit Pipeline
 
@@ -397,7 +397,7 @@ Key checks:
 
 Important trait:
 
-- it includes a manual-review lane for complex surfaces where contrast sampling is unreliable, such as gradients or image-backed text
+- it includes a manual-review lane for complex surfaces where contrast sampling is unreliable, such as gradients or image-backed text, and for any text color it cannot convert to sRGB; neither case is reported as a pass
 
 ### 🏗️ `semantic-structure-audit.js`
 
@@ -760,7 +760,7 @@ The cleanest way to think about the system is:
 1. `cli.ts` decides where to go.
 2. `BrowserDriver` decides how to manipulate the live page.
 3. `inject.ts` loads the browser-side auditors.
-4. `scripts/*.js` decide what is wrong with the rendered page.
+4. `scripts/audits/*.js` decide what is wrong with the rendered page.
 5. `../../../scripts/audit-cli/audit_cli/crawl/page.ts` explores state changes the baseline missed.
 6. `flag_ai.ts` marks uncertain or subjective findings.
 7. `aggregate.ts` scores the resulting finding set.

@@ -11,16 +11,16 @@ This standard enforces requirements beyond common design practices:
 |--------------------------------------------|---------------------------------------------------------------------------|
 | Visual appeal is subjective                | **Measurable framework: hierarchy levels, scan patterns, CRAP principles** |
 | Typography choices are flexible            | **Max 2–3 typefaces, enforced type scale, line-height/line-length ranges** |
-| Contrast "looks fine"                      | **WCAG AA floor: 4.5:1 normal text, 3:1 large text and UI components**   |
+| Contrast "looks fine"                      | **WCAG 2.2 AA floor: 4.5:1 normal text, 3:1 large text and UI components** |
 | Spacing is eyeballed                       | **4px/8px base grid; all spacing values must land on grid**               |
 | Hardcoded values are common                | **Design tokens (CSS variables) required; hardcoded values flagged**      |
-| Accessibility is a nice-to-have            | **WCAG AA floor plus a stricter project rule: 44px touch targets**       |
-| Some states can be skipped                 | **All 5 required: loading, empty, error, success, permission**           |
+| Accessibility is a nice-to-have            | **WCAG 2.2 AA floor (24px target minimum) plus a stricter project rule: 44px touch targets** |
+| States are designed ad hoc                 | **Applicable state inventory: every reachable loading, empty, error, success, permission, and domain state** |
 | Navigation structure varies                | **Organized by user mental model; ≤7 top-level items; location indicated** |
 | Button labels like "OK" / "Submit" are fine | **Action-verb labels; layered help text; error = problem + cause + fix** |
-| Desktop-first is acceptable                | **Responsive at 320/768/1024/1440+; no horizontal scroll on mobile**     |
+| Desktop-first is acceptable                | **Supported range from 320px with content-driven breakpoints; no horizontal page scroll** |
 | Mixed icon styles are tolerated            | **Single icon family; no emoji as UI icons; motion stays purposeful, accessible, and performance-checked** |
-| Brand is optional polish                   | **Brand personality required; no dark patterns; ethical defaults**        |
+| Brand is optional polish                   | **Deliberate brand expression; no dark patterns; ethical defaults**       |
 
 ## Exception Policy
 
@@ -48,9 +48,9 @@ If exception note is missing, submission is rejected.
 - `DES-SPAC-*`: Spacing and grid — 4px/8px base grid, consistent margins/padding, proximity-based grouping, alignment.
 - `DES-CONS-*`: Consistency and design tokens — CSS variable adoption, component reuse, border-radius/shadow uniformity, naming consistency.
 - `DES-A11Y-*`: Accessibility — keyboard navigation, visible focus indicators, ARIA labels, form labels, alt text, touch targets ≥44×44 CSS px.
-- `DES-STAT-*`: States and feedback — loading, empty, error, success, and permission states; hover/active/disabled/focus on interactive elements.
+- `DES-STAT-*`: States and feedback — the applicable inventory of loading, empty, error, success, permission, and domain states; hover/active/disabled/focus on interactive elements.
 - `DES-NAVI-*`: Navigation and IA — mental-model grouping, ≤7 top-level items, breadcrumbs, search/filter, current-location indication.
 - `DES-COPY-*`: Content and microcopy — action-verb labels, help text layering (L0–L3), error message clarity, no jargon, consistent terminology.
-- `DES-RESP-*`: Responsiveness — breakpoints at 320/768/1024/1440+, mobile touch targets, content reflow, no horizontal scroll.
+- `DES-RESP-*`: Responsiveness — the viewport coverage contract, content-driven breakpoints, mobile touch targets, content reflow, no horizontal page scroll.
 - `DES-ICON-*`: Imagery, icons, and motion — single icon set, no emoji as icons, labeled ambiguous icons, purposeful subordinate animation, reduced-motion behavior, layout stability, and performance checks.
-- `DES-BRND-*`: Branding and modern standards — brand personality expression, current design patterns, no dark patterns, ethical defaults, transparent data collection.
+- `DES-BRND-*`: Branding — deliberate brand expression, no dark patterns, ethical defaults, transparent data collection.

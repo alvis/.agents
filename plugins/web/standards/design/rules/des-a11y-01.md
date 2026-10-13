@@ -7,7 +7,7 @@ All interactive elements must be keyboard-accessible (Tab, Enter, Escape). Visib
 ## Fix
 
 - Ensure all interactive elements are reachable via Tab key in logical order
-- Add visible focus styles: `outline: 2px solid var(--color-primary); outline-offset: 2px` on `:focus-visible`
+- Add visible focus styles: `outline: 2px solid var(--ui-focus-ring); outline-offset: 2px` on `:focus-visible`
 - If removing default outline, always provide a `:focus-visible` replacement
 - Add skip-navigation link as the first focusable element: `<a href="#main" class="sr-only focus:not-sr-only">Skip to main content</a>`
 - Ensure Escape closes modals/overlays and returns focus to trigger element

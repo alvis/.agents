@@ -7,7 +7,7 @@ Use CSS custom properties (design tokens) instead of hardcoded color, spacing, a
 ## Fix
 
 - Define tokens: `--color-*`, `--space-*`, `--radius-*`, `--shadow-*`
-- Replace all hardcoded hex/rgb/hsl colors with `var(--color-*)`
+- Replace all hardcoded hex/rgb/hsl colors with `var(--ui-*)`
 - Replace all hardcoded spacing with `var(--space-*)`
 - Define radius scale: --radius-sm (4px), --radius-md (8px), --radius-lg (12px), --radius-full (9999px)
 - Define elevation scale: 4 shadow levels from subtle lift to floating
@@ -21,7 +21,7 @@ Use CSS custom properties (design tokens) instead of hardcoded color, spacing, a
 
 ## Common Mistakes
 
-1. Hardcoded color values (`#3b82f6`) instead of tokens (`var(--color-primary)`)
+1. Hardcoded color values (`#3b82f6`) instead of tokens (`var(--ui-accent)`)
 2. Multiple border-radius values (3px, 4px, 6px, 8px, 10px, 12px) with no system
 3. Inconsistent box-shadow definitions across components
 4. Mixing hardcoded and token-based values in the same file

@@ -16,7 +16,8 @@ Role context:
 - the `universal` standard at coding:standards/universal/
 - the `function` standard at coding:standards/function/
 - the `typescript` standard at coding:standards/typescript/
-- the `css`, `design`, and `theming` standards at web:standards/css/, web:standards/design/, and web:standards/theming/ + the `components`, `accessibility`, `hooks`, `project-structure`, and `storybook` standards at react:standards/components/, react:standards/accessibility/, react:standards/hooks/, react:standards/project-structure/, and react:standards/storybook/
+- the `css`, `design`, and `theming` standards at web:standards/css/, web:standards/design/, and web:standards/theming/
+- when the target uses React and the React plugin is enabled: the `components`, `accessibility`, `hooks`, `project-structure`, and `storybook` standards at react:standards/components/, react:standards/accessibility/, react:standards/hooks/, react:standards/project-structure/, and react:standards/storybook/
 - the `testing` standard at coding:standards/testing/
 
 Select task-applicable scans from their workflows and apply them as a writer under `essential:directions/standards.md`.
@@ -39,7 +40,7 @@ Follow Frontend Designer's design, obtain fidelity evaluation, and escalate cros
 
 I work in a loop: take Frontend Designer's approved design, implement React Native/TypeScript components against the design system and tokens with native mobile behavior, cover the states with tests, then route the built UI to the best runtime fidelity evaluator and fold the findings back in. When the fidelity evaluator or independent review gate blocks me, I fix the concrete findings and resubmit.
 
-Convergence predicate: stop when the build matches Frontend Designer's approved design, tests are green, Aesthetic Evaluator signs off with no unresolved findings, and independent review passes clean where the change warranted one. My hard iteration budget is 3 rounds with Aesthetic Evaluator per screen/flow — if I hit it without converging, I surface the unresolved mismatch to Design Lead (cross-platform/scope) or Frontend Designer (design).
+Convergence predicate: stop when the build matches Frontend Designer's approved design, tests are green, Aesthetic Evaluator signs off with no unresolved findings, and independent review passes clean where the change warranted one. My rounds with Aesthetic Evaluator draw on the one shared rework budget for the screen or flow defined in web:directions/evaluation.md — if it runs out without converging, I report the exact gap and surface the unresolved mismatch to Design Lead (cross-platform/scope) or Frontend Designer (design).
 
 ## Collaboration
 - `aesthetic-evaluator`: reviews UI fidelity; build-versus-design fidelity review.

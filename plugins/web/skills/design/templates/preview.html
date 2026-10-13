@@ -7,8 +7,10 @@
     this catalog is a rendering of the SAME tier-1 values, never a second source of truth.
   - Replace every value marked with a REPLACE comment. Keep the five-branch
     @layer theme structure exactly as-is (CSS-MODE-01..04).
-  - Verify contrast in BOTH modes: run the SKILL.md WCAG script once with
-    data-theme="light" and once with data-theme="dark".
+  - Placeholder values are deliberately neutral greys: an unreplaced preview
+    should look unfinished, not like a house style.
+  - Verify contrast in every supported mode with
+    web:directions/contrast-protocol.md.
   - Catalog styles below the PRIMITIVES block consume ONLY tier-2 ui-* tokens
     and primitives. Keep it that way: this file doubles as the reference
     implementation of the theming contract.
@@ -38,16 +40,13 @@
     --theme-light-fg-muted: #52525b;           /* REPLACE */
     --theme-light-fg-subtle: #71717a;          /* REPLACE */
     --theme-light-fg-inverse: #ffffff;         /* REPLACE */
-    --theme-light-primary: #4f46e5;            /* REPLACE */
-    --theme-light-primary-hover: #4338ca;      /* REPLACE */
-    --theme-light-primary-active: #3730a3;     /* REPLACE */
-    --theme-light-primary-subtle: #e0e7ff;     /* REPLACE */
-    --theme-light-accent: #0f766e;             /* REPLACE */
-    --theme-light-accent-hover: #115e59;       /* REPLACE */
-    --theme-light-accent-subtle: #ccfbf1;      /* REPLACE */
+    --theme-light-accent: #27272a;             /* REPLACE */
+    --theme-light-accent-hover: #18181b;       /* REPLACE */
+    --theme-light-accent-active: #09090b;      /* REPLACE */
+    --theme-light-accent-subtle: #f4f4f5;      /* REPLACE */
     --theme-light-border: #e4e4e7;             /* REPLACE */
     --theme-light-border-strong: #d4d4d8;      /* REPLACE */
-    --theme-light-focus-ring: #4f46e5;         /* REPLACE */
+    --theme-light-focus-ring: #27272a;         /* REPLACE */
     --theme-light-success: #15803d;            /* REPLACE */
     --theme-light-success-subtle: #f0fdf4;     /* REPLACE */
     --theme-light-warning: #b45309;            /* REPLACE */
@@ -69,16 +68,13 @@
     --theme-dark-fg-muted: #d4d4d8;            /* REPLACE */
     --theme-dark-fg-subtle: #a1a1aa;           /* REPLACE */
     --theme-dark-fg-inverse: #18181b;          /* REPLACE */
-    --theme-dark-primary: #818cf8;             /* REPLACE */
-    --theme-dark-primary-hover: #a5b4fc;       /* REPLACE */
-    --theme-dark-primary-active: #c7d2fe;      /* REPLACE */
-    --theme-dark-primary-subtle: #1e1b4b;      /* REPLACE */
-    --theme-dark-accent: #2dd4bf;              /* REPLACE */
-    --theme-dark-accent-hover: #5eead4;        /* REPLACE */
-    --theme-dark-accent-subtle: #134e4a;       /* REPLACE */
+    --theme-dark-accent: #e4e4e7;              /* REPLACE */
+    --theme-dark-accent-hover: #f4f4f5;        /* REPLACE */
+    --theme-dark-accent-active: #fafafa;       /* REPLACE */
+    --theme-dark-accent-subtle: #27272a;       /* REPLACE */
     --theme-dark-border: #27272a;              /* REPLACE */
     --theme-dark-border-strong: #3f3f46;       /* REPLACE */
-    --theme-dark-focus-ring: #818cf8;          /* REPLACE */
+    --theme-dark-focus-ring: #e4e4e7;          /* REPLACE */
     --theme-dark-success: #4ade80;             /* REPLACE */
     --theme-dark-success-subtle: #052e16;      /* REPLACE */
     --theme-dark-warning: #fbbf24;             /* REPLACE */
@@ -102,12 +98,9 @@
     --ui-fg-muted: var(--theme-light-fg-muted);
     --ui-fg-subtle: var(--theme-light-fg-subtle);
     --ui-fg-inverse: var(--theme-light-fg-inverse);
-    --ui-primary: var(--theme-light-primary);
-    --ui-primary-hover: var(--theme-light-primary-hover);
-    --ui-primary-active: var(--theme-light-primary-active);
-    --ui-primary-subtle: var(--theme-light-primary-subtle);
     --ui-accent: var(--theme-light-accent);
     --ui-accent-hover: var(--theme-light-accent-hover);
+    --ui-accent-active: var(--theme-light-accent-active);
     --ui-accent-subtle: var(--theme-light-accent-subtle);
     --ui-border: var(--theme-light-border);
     --ui-border-strong: var(--theme-light-border-strong);
@@ -137,12 +130,9 @@
       --ui-fg-muted: var(--theme-light-fg-muted);
       --ui-fg-subtle: var(--theme-light-fg-subtle);
       --ui-fg-inverse: var(--theme-light-fg-inverse);
-      --ui-primary: var(--theme-light-primary);
-      --ui-primary-hover: var(--theme-light-primary-hover);
-      --ui-primary-active: var(--theme-light-primary-active);
-      --ui-primary-subtle: var(--theme-light-primary-subtle);
       --ui-accent: var(--theme-light-accent);
       --ui-accent-hover: var(--theme-light-accent-hover);
+      --ui-accent-active: var(--theme-light-accent-active);
       --ui-accent-subtle: var(--theme-light-accent-subtle);
       --ui-border: var(--theme-light-border);
       --ui-border-strong: var(--theme-light-border-strong);
@@ -172,12 +162,9 @@
     --ui-fg-muted: var(--theme-light-fg-muted);
     --ui-fg-subtle: var(--theme-light-fg-subtle);
     --ui-fg-inverse: var(--theme-light-fg-inverse);
-    --ui-primary: var(--theme-light-primary);
-    --ui-primary-hover: var(--theme-light-primary-hover);
-    --ui-primary-active: var(--theme-light-primary-active);
-    --ui-primary-subtle: var(--theme-light-primary-subtle);
     --ui-accent: var(--theme-light-accent);
     --ui-accent-hover: var(--theme-light-accent-hover);
+    --ui-accent-active: var(--theme-light-accent-active);
     --ui-accent-subtle: var(--theme-light-accent-subtle);
     --ui-border: var(--theme-light-border);
     --ui-border-strong: var(--theme-light-border-strong);
@@ -207,12 +194,9 @@
       --ui-fg-muted: var(--theme-dark-fg-muted);
       --ui-fg-subtle: var(--theme-dark-fg-subtle);
       --ui-fg-inverse: var(--theme-dark-fg-inverse);
-      --ui-primary: var(--theme-dark-primary);
-      --ui-primary-hover: var(--theme-dark-primary-hover);
-      --ui-primary-active: var(--theme-dark-primary-active);
-      --ui-primary-subtle: var(--theme-dark-primary-subtle);
       --ui-accent: var(--theme-dark-accent);
       --ui-accent-hover: var(--theme-dark-accent-hover);
+      --ui-accent-active: var(--theme-dark-accent-active);
       --ui-accent-subtle: var(--theme-dark-accent-subtle);
       --ui-border: var(--theme-dark-border);
       --ui-border-strong: var(--theme-dark-border-strong);
@@ -242,12 +226,9 @@
     --ui-fg-muted: var(--theme-dark-fg-muted);
     --ui-fg-subtle: var(--theme-dark-fg-subtle);
     --ui-fg-inverse: var(--theme-dark-fg-inverse);
-    --ui-primary: var(--theme-dark-primary);
-    --ui-primary-hover: var(--theme-dark-primary-hover);
-    --ui-primary-active: var(--theme-dark-primary-active);
-    --ui-primary-subtle: var(--theme-dark-primary-subtle);
     --ui-accent: var(--theme-dark-accent);
     --ui-accent-hover: var(--theme-dark-accent-hover);
+    --ui-accent-active: var(--theme-dark-accent-active);
     --ui-accent-subtle: var(--theme-dark-accent-subtle);
     --ui-border: var(--theme-dark-border);
     --ui-border-strong: var(--theme-dark-border-strong);
@@ -290,9 +271,8 @@
   --radius-card: 0.75rem;     /* REPLACE — cards, panels */
   --radius-modal: 1rem;       /* REPLACE — modals, sheets, large surfaces */
 
-  /* fonts — REPLACE the display face via the Font Selection procedure in
-     references/brief.md; reflex fonts (Inter/Roboto/system-ui as
-     display) fail the litmus checks */
+  /* fonts — REPLACE with the faces chosen in the design child's direction,
+     keeping a system fallback stack for each */
   --font-display: 'Georgia', 'Times New Roman', serif;                           /* REPLACE */
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; /* REPLACE */
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;              /* REPLACE */
@@ -405,12 +385,9 @@ code {
 .chip--fg-muted { background: var(--ui-fg-muted); }
 .chip--fg-subtle { background: var(--ui-fg-subtle); }
 .chip--fg-inverse { background: var(--ui-fg-inverse); }
-.chip--primary { background: var(--ui-primary); }
-.chip--primary-hover { background: var(--ui-primary-hover); }
-.chip--primary-active { background: var(--ui-primary-active); }
-.chip--primary-subtle { background: var(--ui-primary-subtle); }
 .chip--accent { background: var(--ui-accent); }
 .chip--accent-hover { background: var(--ui-accent-hover); }
+.chip--accent-active { background: var(--ui-accent-active); }
 .chip--accent-subtle { background: var(--ui-accent-subtle); }
 .chip--border { background: var(--ui-border); }
 .chip--border-strong { background: var(--ui-border-strong); }
@@ -512,12 +489,12 @@ code {
 
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.btn--primary { background: var(--ui-primary); color: var(--ui-fg-inverse); }
-.btn--primary:hover:not(:disabled) { background: var(--ui-primary-hover); }
-.btn--primary:active:not(:disabled) { background: var(--ui-primary-active); }
+.btn--primary { background: var(--ui-accent); color: var(--ui-fg-inverse); }
+.btn--primary:hover:not(:disabled) { background: var(--ui-accent-hover); }
+.btn--primary:active:not(:disabled) { background: var(--ui-accent-active); }
 
-.btn--secondary { background: transparent; color: var(--ui-primary); border-color: var(--ui-primary); }
-.btn--secondary:hover:not(:disabled) { background: var(--ui-primary-subtle); }
+.btn--secondary { background: transparent; color: var(--ui-accent); border-color: var(--ui-accent); }
+.btn--secondary:hover:not(:disabled) { background: var(--ui-accent-subtle); }
 
 .btn--ghost { background: transparent; color: var(--ui-fg); }
 .btn--ghost:hover:not(:disabled) { background: var(--ui-surface-sunken); }
@@ -566,7 +543,7 @@ code {
 
 .space-row__bar {
   height: var(--space-3);
-  background: var(--ui-primary);
+  background: var(--ui-accent);
   border-radius: 9999px;
 }
 
@@ -634,12 +611,9 @@ code {
     <div class="swatch"><div class="swatch__chip chip--fg-inverse"></div><code class="swatch__label">--ui-fg-inverse</code></div>
   </div>
   <div class="swatch-grid">
-    <div class="swatch"><div class="swatch__chip chip--primary"></div><code class="swatch__label">--ui-primary</code></div>
-    <div class="swatch"><div class="swatch__chip chip--primary-hover"></div><code class="swatch__label">--ui-primary-hover</code></div>
-    <div class="swatch"><div class="swatch__chip chip--primary-active"></div><code class="swatch__label">--ui-primary-active</code></div>
-    <div class="swatch"><div class="swatch__chip chip--primary-subtle"></div><code class="swatch__label">--ui-primary-subtle</code></div>
     <div class="swatch"><div class="swatch__chip chip--accent"></div><code class="swatch__label">--ui-accent</code></div>
     <div class="swatch"><div class="swatch__chip chip--accent-hover"></div><code class="swatch__label">--ui-accent-hover</code></div>
+    <div class="swatch"><div class="swatch__chip chip--accent-active"></div><code class="swatch__label">--ui-accent-active</code></div>
     <div class="swatch"><div class="swatch__chip chip--accent-subtle"></div><code class="swatch__label">--ui-accent-subtle</code></div>
     <div class="swatch"><div class="swatch__chip chip--border"></div><code class="swatch__label">--ui-border</code></div>
     <div class="swatch"><div class="swatch__chip chip--border-strong"></div><code class="swatch__label">--ui-border-strong</code></div>

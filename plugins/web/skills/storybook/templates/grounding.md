@@ -3,12 +3,12 @@
 `ground.sh` selects one section below by state name and embeds the screenshot's absolute path so Claude Code reads the image. Each prompt MUST end with the standard output contract so `ground.sh` can parse the response deterministically.
 
 Cited standards (model should reference mentally when judging):
-- `the React plugin accessibility standard` (WCAG 2.1 AA, focus indication, contrast)
-- `the Web plugin design standard` (visual hierarchy, spacing, state distinctness)
+- `the React plugin accessibility standard` (focus indication, semantics, keyboard access)
+- `the Web plugin design standard` (WCAG 2.2 AA contrast and targets, visual hierarchy, spacing, state distinctness)
 
 ## default
 
-You are auditing the default rendered state of a Storybook story. Inspect the supplied screenshot and look for issues that violate WCAG 2.1 AA accessibility or the project's visual design standard. Specifically check:
+You are auditing the default rendered state of a Storybook story. Inspect the supplied screenshot and look for issues that violate WCAG 2.2 AA accessibility or the project's visual design standard. Specifically check:
 
 - Text contrast against background (≥ 4.5:1 for body, ≥ 3:1 for large text and UI components).
 - Truncation, overflow, or clipped content.
@@ -25,7 +25,7 @@ Output format: first line must be either "ISSUES: none" or "ISSUES: found". If f
 You are auditing the hover state of a Storybook story. The supplied screenshot was taken while the primary interactive element receives a hover event. Compare what you see to the conventions for hover feedback:
 
 - A hover state should be visually distinguishable from the default state (color shift, elevation, underline, cursor cue).
-- The change must not destroy contrast — hover text must still meet WCAG 2.1 AA contrast.
+- The change must not destroy contrast — hover text must still meet WCAG 2.2 AA contrast.
 - Layout must not shift jarringly (jumping by more than a pixel or two) on hover.
 - Decorative-only hover (e.g. tooltip appearing off-screen, ghost outlines) counts as low-severity.
 
@@ -38,7 +38,7 @@ Output format: first line must be either "ISSUES: none" or "ISSUES: found". If f
 You are auditing the active / pressed state of a Storybook story. The screenshot was taken while a mousedown is held on the primary interactive element. Check for:
 
 - A visually distinct pressed appearance (depressed shadow, darker fill, inset border, scale-down).
-- Contrast preservation — pressed-state colors must still meet WCAG 2.1 AA.
+- Contrast preservation — pressed-state colors must still meet WCAG 2.2 AA.
 - No content disappearing or layout collapse during press.
 - Press feedback consistent with platform conventions (buttons appear "pushed", links may invert).
 
