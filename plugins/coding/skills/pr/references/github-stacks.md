@@ -253,6 +253,8 @@ Bind `MERGE_METHOD` from the caller or repository policy; do not select a defaul
 
 On the jj route, moving between members is a revision choice, not a tree switch: add or reuse a workspace at the member's `<head-branch>@<remote>` as [Land the resolved surface](../directions/resolve.md#land-the-resolved-surface) directs, so one member's work never displaces another's.
 
+After a synchronous merge succeeds, read back every stack member's merge state, timestamp, and revision, then reconcile landing through [monitor.md](../directions/monitor.md). Queue acceptance is not a merge: keep the existing monitor active until members are confirmed merged. Return landing evidence to the main-agent lease holder; the monitor owns remaining listeners and thread settlement.
+
 ## Verify and recover
 
 After every locally tracked mutation, use `gh stack view --json` to confirm saved local order, current branch, PR URLs, heads, bases, merge state, and `needsRebase`. Its API refresh is best-effort, so separately use `gh pr view` to verify remote head SHAs, bases, and draft state. For `link`, remote unstack, and regrouping, verify grouping through the paginated Stacks REST projection; `view --json` cannot verify state that has no local tracking.

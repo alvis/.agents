@@ -5,7 +5,7 @@ Review a remote GitHub pull request and publish the result where the author will
 ## Boundaries
 
 - Use for: reviewing an open GitHub PR by number, URL, or the path of a source tree holding its head; re-reviewing after a push; publishing line comments and a verdict to GitHub.
-- Do not use for: reviewing uncommitted local work or writing work-local review artifacts (`coding:review-code`), fixing findings (`coding:fix`), mechanical standards enforcement (`coding:lint`), publishing PRs or repairing CI (`coding:pr create` or `coding:pr update`), or merging (`coding:pr merge`). The publication owner starts or reuses the active CI schedule for a pending standalone review under [review-publishing.md](review-publishing.md). A standalone review observes red CI and updates its review body, then reports the failure without dispatching a fixer.
+- Do not use for: reviewing uncommitted local work or writing work-local review artifacts (`coding:review-code`), fixing findings (`coding:fix`), mechanical standards enforcement (`coding:lint`), publishing PRs or repairing CI (`coding:pr create` or `coding:pr update`), or merging (`coding:pr merge`). The publication owner starts or reuses the active PR monitor for a pending standalone review under [review-publishing.md](review-publishing.md). A standalone review observes red CI and updates its review body, then reports the failure without dispatching a fixer.
 - One reviewer per pass. Never fan out per area — a PR is sized so one reader can hold it whole, and split judgement produces split findings.
 
 ## Review directions
@@ -107,7 +107,7 @@ REVIEW_ASSESSMENT="$REVIEW_ARTIFACT_DIR/assessment.json"
 REVIEW_APPROVAL="$REVIEW_ARTIFACT_DIR/approval.json"
 ```
 
-The reviewer writes those four files via `jq` or contract-command redirection; scanner commands write their own retained reports. Review-tree cleanup must exclude the artifact directory. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active CI schedule. Remove the recorded directory only after the guarded update reaches terminal CI, the pinned revision is invalidated and its schedule is canceled or replaced, or a publication failure or cancellation leaves no scheduled update. Cancel an active schedule before removing its approval receipt:
+The reviewer writes those four files via `jq` or contract-command redirection; scanner commands write their own retained reports. Review-tree cleanup must exclude the artifact directory. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active [monitor](monitor.md). Remove the recorded directory only after the guarded update reaches terminal CI, or after invalidation/publication cancellation removes that surface's pending review-update binding. Before removing an approval receipt, remove its binding and cancel only a separately recorded receipt-specific job if one exists; retain the shared lifecycle monitor, other surfaces' receipts, and buffered comment timers:
 
 ```bash
 rm -rf -- "$REVIEW_ARTIFACT_DIR"
