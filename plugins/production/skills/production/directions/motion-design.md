@@ -29,7 +29,7 @@ HyperFrames moves fast; its own entry skill says how to refresh its skills and p
 ## Inputs and output
 
 - **Required**: the user's request, however vague.
-- **Optional**: goal, destination, length, references, supplied media, brand, song, lyrics, and any explicit "just build it" signal.
+- **Optional**: goal, destination, length, references, supplied media, brand, song, lyrics, any explicit "just build it" signal, and `--cloud <name>` as [render](directions/motion-design/render.md#choose-the-renderer) defines.
 - **Output**: a HyperFrames project containing `BRIEF.md`, `STORYBOARD.md`, the compositions, the music track, the draft page, and the rendered video; asset and render entries recorded through `track`.
 
 ## Workflow
@@ -43,8 +43,8 @@ Each step names the file that owns it. Read a file only when its step begins, an
 5. **Set up the project.** Follow the `hyperframes` entry skill: run `npx hyperframes init`, then write `BRIEF.md` in the [HyperFrames brief format](https://github.com/heygen-com/hyperframes/blob/main/skills/hyperframes/references/brief-format.md) with `workflow: general-video`, `flow: companion`, `storyboard: yes` for a picture-first piece, or `workflow: music-to-video` when the user supplied the song. Write the approved storyboard as `STORYBOARD.md` in the [HyperFrames storyboard format](https://github.com/heygen-com/hyperframes/blob/main/skills/hyperframes/references/storyboard-format.md) so HyperFrames asks no intent question again.
 6. **Compose the song to the approved timing.** Follow [music](directions/motion-design/music.md): generate takes from the approved plan, let the user pick by ear, measure the accepted take, and lock its times into the timing data object. Repair a take that drifts or drops a planned section before any picture exists, so the picture is built once, on measured times.
 7. **Build the picture** on the locked timing through the `hyperframes-core` and `hyperframes-animation` skills, following [build](directions/motion-design/build.md), with the hero acted as [directing](directions/motion-design/directing.md#act-through-the-hero) describes. Use [Blender](directions/motion-design/blender.md) only for shots the storyboard marks as 3D beyond what Three.js in HyperFrames can deliver.
-8. **Confirm a draft.** Follow [render](directions/motion-design/render.md#draft): check every sync point and text exit on snapshots, render a 1 fps draft, and show it with the song as a standalone HTML page. The user confirms it through the question tool before the full render.
-9. **Render and finish.** Follow [render](directions/motion-design/render.md#full-render): render once at 25 fps, watch it with sound, and apply the finish test for its form in [quality](directions/motion-design/quality.md) before calling it done. When the platform needs captions, deliver a caption file from the measured word times; animated keywords are not captions. Package the title, cover frame, caption copy, and any cut-downs around the same promise with [payoffs](directions/motion-design/payoffs.md#package-the-same-promise).
+8. **Confirm a draft.** Follow [render](directions/motion-design/render.md): resolve the final renderer with the user before rendering, check every sync point and text exit on snapshots, render a 1 fps draft, and show it with the song as a standalone HTML page. The user confirms it through the question tool before the full render.
+9. **Render and finish.** Follow [render](directions/motion-design/render.md#full-render) on the chosen renderer, watch it with sound, and apply the finish test for its form in [quality](directions/motion-design/quality.md) before calling it done. When the platform needs captions, deliver a caption file from the measured word times; animated keywords are not captions. Package the title, cover frame, caption copy, and any cut-downs around the same promise with [payoffs](directions/motion-design/payoffs.md#package-the-same-promise).
 10. **Record and review.** Register supplied, sourced, and generated assets and the render through the `track` action. Route the user's feedback on the render through the `review` action; each feedback round produces a new render revision.
 
 ## Verification
@@ -56,7 +56,7 @@ Each step names the file that owns it. Read a file only when its step begins, an
 - Scenes reuse the project's shared components and helpers; no helper or component is copied between scene files.
 - The song was generated from the approved music plan, and its measured times were locked before the picture was built.
 - Every sync point in the storyboard lands within the [music](directions/motion-design/music.md) tolerance of its measured beat or word in the final render.
-- The full render ran after the user confirmed the draft page, and its trace shows the worker count [render](directions/motion-design/render.md#full-render) sets.
+- The full render ran after the user confirmed the draft page, on the chosen renderer with the settings and output verification [render](directions/motion-design/render.md#full-render) requires.
 - No external skill text was copied into the project or this repository; no Python file was written.
 - Every sourced or generated asset has provenance and rights recorded, or is reported as pending.
 
