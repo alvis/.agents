@@ -17,6 +17,10 @@ Route every remote pull-request operation through one explicit subcommand. Local
 
 Every PR title, body, branch, review, and comment follows `coding:directions/authorship.md`. Each action reference owns its directions. Scan each implementation diff and rendered PR body against `coding:standards/git/`. Author PR bodies through [message.md](templates/message.md), then validate them with [scan-pr-message.ts](scripts/scan-pr-message.ts). Before preparing a review assessment, read and follow [inline-review.md](templates/inline-review.md) and [overall-review.md](templates/overall-review.md), which own the posted presentation. [review-publication.ts](scripts/review-publication.ts) renders those templates and owns assessment validation, approval receipts, and GitHub publication; the publisher relays approved bytes without rewriting them.
 
+- Actively assign issue types, parent/sub-issue links, and blocking dependencies wherever task evidence supports them; prefer native `gh issue` flags where supported. `coding:issue` owns issue writes.
+- For repository discussion context, use `gh discussion list/view`; use `create/edit/comment` for requested discussion updates.
+- When screenshots or videos explain a change, repeat `--attach` for multiple files; reference their local paths in the body to control placement, as in [the attachment example](examples/attachments.md). Retain the existing publisher for reviews.
+
 ## Usage
 
 ```text
