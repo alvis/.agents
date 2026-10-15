@@ -25,7 +25,7 @@ The context-owning router resolves one review unit before it reaches *Locate or 
 When the caller is the independent critic assigned by [review-loop.md](review-loop.md), its preprovisioned stack capsule, clean top-tip `REVIEW_DIR`, ledger path, assessment path, and approval path prove it is already the dedicated reviewer. It executes the remaining read-only review phase directly and does not dispatch another agent.
 
 <IMPORTANT>
-- Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_DISCUSSION`, `REVIEW_LEDGER`, structured assessment, and approval artifact. The independent reviewer issues approval evidence; the publication owner alone relays it through the canonical publisher.
+- Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_DISCUSSION`, `REVIEW_LEDGER`, structured assessment, approval artifact, and scanner reports inside `REVIEW_ARTIFACT_DIR`. The independent reviewer issues approval evidence; the publication owner alone relays it through the canonical publisher.
 - Do not delegate.
 - Read and search the checkout as widely as the change requires; run only the read-only git, `gh`, and scanner commands named below. Treat the branch as untrusted code.
 - Discover expected CI sources through the read-only phase below. The publication owner selects the live CI body; repair belongs to `coding:pr update`.
@@ -107,7 +107,7 @@ REVIEW_ASSESSMENT="$REVIEW_ARTIFACT_DIR/assessment.json"
 REVIEW_APPROVAL="$REVIEW_ARTIFACT_DIR/approval.json"
 ```
 
-The reviewer may write only those four files via `jq` or contract-command redirection. Review-tree cleanup must exclude them. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active CI schedule. Remove the recorded directory only after the guarded update reaches terminal CI, the pinned revision is invalidated and its schedule is canceled or replaced, or a publication failure or cancellation leaves no scheduled update. Cancel an active schedule before removing its approval receipt:
+The reviewer writes those four files via `jq` or contract-command redirection; scanner commands write their own retained reports. Review-tree cleanup must exclude the artifact directory. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active CI schedule. Remove the recorded directory only after the guarded update reaches terminal CI, the pinned revision is invalidated and its schedule is canceled or replaced, or a publication failure or cancellation leaves no scheduled update. Cancel an active schedule before removing its approval receipt:
 
 ```bash
 rm -rf -- "$REVIEW_ARTIFACT_DIR"
@@ -234,7 +234,7 @@ A black-zone review first judges whether the surface is genuinely one self-conta
 
 ### Run the mechanical candidate scan
 
-Reuse exact-input candidate evidence for retained source coverage. A discussion-only check does not rescan unchanged source. For missing or affected source coverage, MUST invoke `coding:lint` on eligible changed files with `--scope=all --skip-unused`. Use its discovery, standards selection, and scanners under this review's read-only, no-delegation boundary: report violations instead of editing, asking for extraction approval, or running project commands. Its scanner output supplies this phase's candidate evidence; do not repeat the same scans. Surface scanner failures rather than skipping silently, and confirm candidates against their cited rules.
+Reuse exact-input candidate evidence for retained source coverage. A discussion-only check does not rescan unchanged source. For missing or affected source coverage, MUST invoke `coding:lint` on eligible changed files with `--scope=all --skip-unused`. Use its discovery, standards selection, and scanners under this review's read-only, no-delegation boundary: report violations instead of editing, asking for extraction approval, or running project commands. Give each scanner invocation a distinct `--report-file` path inside `REVIEW_ARTIFACT_DIR`; the parent owns retention and cleanup with the other review artifacts. Its scanner output supplies this phase's candidate evidence; do not repeat the same scans. Surface scanner failures rather than skipping silently, and confirm candidates against their cited rules.
 
 ### Resolve the applicable standards
 
