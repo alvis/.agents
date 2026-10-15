@@ -10,6 +10,16 @@ edit → verify delivery → affected gates → save
        └──────────────────┘
 ```
 
+## Integration development
+
+<IMPORTANT>
+All integration work MUST follow tests-first development using real integration tests without mocks, including integration of internal components, databases, services, and external APIs. Write the integration tests before their corresponding implementation.
+
+Complete the whole work's tests and implementation, then pass type checks, lint, and self-review before the first integration test on real infrastructure. Preserve tests-first authoring while deferring live Red → Green execution. This gate takes precedence over per-test, phase, batch, and task test or coverage runs, including those required by composed skills. After readiness, run the real integration suite and follow the applicable final validation and independent-review requirements.
+
+External services may require `TEST_*` API tokens or other test configuration. Missing credentials block infrastructure validation; report the integration tests as unrun and blocked, never replace them with mocks, silently skip them, or claim they passed.
+</IMPORTANT>
+
 ## Verify delivery
 
 Confirm every stated requirement shipped against the code, tests, and documentation. Fix anything unmet, then reassess delivery and rerun failed or invalidated gates under the evidence contract below; retain unaffected passes.
