@@ -71,7 +71,7 @@ class Harness {
 }
 
 describe("work markdown size budgeting", () => {
-  it("should exempt only the complete root journal index from the size limit", () => {
+  it("should exempt only the complete root journal and backlog indexes from the size limit", () => {
     const harness = new Harness();
     // One byte above the existing 16 KiB limit distinguishes exclusion from a passing measurement.
     const index = harness.bytes(".state/journals.md", 16_385);
@@ -80,17 +80,29 @@ describe("work markdown size budgeting", () => {
       16_385,
     );
     const local = harness.bytes(".state/works/demo/journals.md", 16_385);
+    const backlogIndex = harness.bytes(".state/backlogs.md", 16_385);
+    const backlogItem = harness.bytes(
+      ".state/backlogs/backlog-1-demo.md",
+      16_385,
+    );
 
-    const result = harness.run(index, summary, local);
+    const result = harness.run(
+      index,
+      summary,
+      local,
+      backlogIndex,
+      backlogItem,
+    );
 
     expect(result).toMatchObject({
       exitCode: 1,
       payload: {
-        checked: 2,
-        excluded: [index],
+        checked: 3,
+        excluded: [index, backlogIndex],
         oversized: [
           { path: summary, bytes: 16_385 },
           { path: local, bytes: 16_385 },
+          { path: backlogItem, bytes: 16_385 },
         ],
       },
     });

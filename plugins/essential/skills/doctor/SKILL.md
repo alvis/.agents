@@ -57,7 +57,7 @@ Use an entry only when its finding blocks the needed reading and the proposed `.
 | `charter-provenance` | Add `Charter: approved \| reconstructed \| absent` to `goal.md`, recording what is true. Mark `approved` only where the user approved it; reconstruct from recorded history otherwise and leave it `reconstructed` until they do. |
 | `specification-provenance` | Write the canonical seven-field `goal.md` section: source kind, canonical specification, accepted revision/base, optional local materialization, matching receipt, last verification status, and last verified time. Resolve `pending` before `working`; never infer anchors from the global overview. |
 | `merge-evidence` | Preserve this check ID. For coding work, record merged pull request(s) or the observation on the default branch. For non-coding work, record explicit acceptance and a promotion receipt listing every promoted durable path or evidenced `not required`. Without the applicable landing evidence, return the stream to `reviewing`; an author's assertion alone is never evidence. |
-| `outlives-me` | Give every item an owner: promote it, open a successor stream, or record it as a [backlog](../../directions/backlog.md) item and name that item as its owner in the receipt. Filing is a rehoming that survives the row drop, not a deletion. |
+| `outlives-me` | Give every item an owner: promote it, open a successor stream, or record it as a [backlog](../../directions/backlog.md) item and name that item as its owner in the receipt. Recording it there is a rehoming that survives the row drop, not a deletion. |
 
 Two rules bind every migration above:
 

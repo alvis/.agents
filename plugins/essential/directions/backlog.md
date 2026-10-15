@@ -6,7 +6,7 @@ Read this when work surfaces an issue outside its goal, and when that work lands
 
 When the focus test defers an issue, record it as a backlog item and continue the goal without fixing it. Work the current stream will carry out is a task in its [registry](../references/state-format.md#task-identity-and-tables), never a backlog item; the backlog holds only what no stream is carrying out.
 
-The main agent alone writes the backlog, through `state-write --state-target` under an owned stream's [lease](lease.md); a subagent returns the finding, its location, and evidence instead. Work without a stream that must record a finding [establishes one](establish-work-stream.md) first.
+The main agent alone writes the backlog, through `state-write --state-target` under an owned stream's [lease](lease.md); a subagent returns the finding, its location, and evidence instead. Work without a stream that must record a finding first [establishes a stream for that work](establish-work-stream.md), never one for the finding alone, so the finding is triaged when the work lands.
 
 ## Items and index
 
@@ -41,7 +41,7 @@ Once a stream records [landing evidence](stream-completion.md#completed-requires
 
 1. Re-examine each item against the current default branch. Set a resolved or obsolete item `dropped`, citing the revision that shows it.
 2. Ask the user which remaining items to post, in one multi-select question that follows [questions.md](questions.md). Describe each item in plain language, never by its backlog ID. Skip the question when no item remains. Declined items stay `open` for later adoption. Until the user answers, the stream carries `Blocked on: user — backlog triage`, which holds it from [archival](retirement.md#completion-and-the-debt-rule).
-3. File each chosen item in the issue tracking system the work's domain plugin declares in its `directions/WORKFLOW.md`, through that plugin's owning capability. When no domain declares one, ask the user which system to use.
+3. File each chosen item in the issue tracking system the work's domain plugin declares in its `<plugin>:directions/WORKFLOW.md`, through that plugin's owning capability. When no domain declares one, ask the user which system to use.
 4. Record each returned link in the item's `Tracker`, set it `filed`, and refresh its row.
 
 A partial filing failure leaves the unfiled items `open` and is reported with the tracker's error; never record a link that was not read back.
