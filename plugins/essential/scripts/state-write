@@ -16,8 +16,9 @@ usage() {
 usage: state-write --work-dir <dir> --token <token> \
          <--target <work-relative path>|--state-target <state-relative path>> \
          [--content-file <path>] [--ttl <s>]
-Global targets: overview.md, journals.md, or
-journals/<domain>/<YYYY-MM-DD>-<owned-work-id>.md under .state/.
+Global targets: overview.md, journals.md, backlogs.md,
+journals/<domain>/<YYYY-MM-DD>-<owned-work-id>.md, or
+backlogs/backlog-<n>-<slug>.md under .state/.
 Content is read from --content-file, else stdin. Exit codes: 0 written,
 2 invalid usage, 4 lease free/expired, 5 foreign lease or wrong token.
 USAGE
@@ -76,7 +77,9 @@ if [[ -n "$state_target" ]]; then
   [[ "$(basename "$(dirname "$work_dir")")" == works && "$(basename "$(dirname "$(dirname "$work_dir")")")" == .state ]] || invalid "global writes require .state/works/<work-id>"
   work_id="$(basename "$work_dir")"
   [[ "$work_id" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || invalid "global writes require a valid work ID"
-  if [[ "$state_target" != overview.md && "$state_target" != journals.md ]]; then
+  if [[ "$state_target" == backlogs/* ]]; then
+    [[ "$state_target" =~ ^backlogs/backlog-[1-9][0-9]*-[a-z0-9]+(-[a-z0-9]+)*\.md$ ]] || invalid "global target is not allowlisted: $state_target"
+  elif [[ "$state_target" != overview.md && "$state_target" != journals.md && "$state_target" != backlogs.md ]]; then
     [[ "$state_target" =~ ^journals/[a-z0-9]+(-[a-z0-9]+)*/[0-9]{4}-[0-9]{2}-[0-9]{2}-${work_id}\.md$ ]] || invalid "global target is not allowlisted: $state_target"
     completion_date="${state_target##*/}"
     completion_date="${completion_date:0:10}"
@@ -89,6 +92,16 @@ if [[ -n "$state_target" ]]; then
     ' >/dev/null || invalid "global target has an invalid completion date: $state_target"
   fi
   target_root="$(dirname "$(dirname "$work_dir")")"
+  # A backlog number names one item; concurrent streams must not reuse it.
+  if [[ "$state_target" == backlogs/* ]]; then
+    backlog_number="${state_target#backlogs/backlog-}"
+    backlog_number="${backlog_number%%-*}"
+    for held in "$target_root/backlogs/backlog-$backlog_number-"*.md; do
+      if [[ -e "$held" && "$held" != "$target_root/$state_target" ]]; then
+        invalid "backlog number is already held: ${held#"$target_root/"}"
+      fi
+    done
+  fi
 fi
 selected_target="${state_target:-$target}"
 case "$selected_target" in

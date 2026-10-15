@@ -1258,7 +1258,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     expect(result.code).toBe(1);
     expect(finding).toMatchObject({ severity: "error" });
     expect(finding?.message).toContain("`U1`");
-    expect(finding?.fix).toContain(".state/backlog.md");
+    expect(finding?.fix).toContain(".state/backlogs/");
   });
   it("accepts owned debt and ignores debt on live streams", async () => {
     const receipt =

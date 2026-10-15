@@ -23,6 +23,10 @@ Favor maintainable simplicity over the shortest diff. Explain a simplification o
 Minimum work preserves correctness, safety, accessibility, trust-boundary validation, data-loss protection, explicit requirements, applicable standards, and required review or validation. Correctness and data-loss protection cover failures that realistically occur in supported use; a failure that is merely possible is not a need. Test depth follows the risk and claims under the owning standard; this policy adds no blanket coverage target.
 </IMPORTANT>
 
+## Stay on the goal
+
+Deliver the specified goal; an issue found along the way is not the work. A blocker to the goal, or a defect that would leave the delivered work incorrect or unsafe, belongs to the goal. For any other issue, ask whether fixing it later would force an architectural change to this work: if yes, surface it now as a changed premise; if no, record it in [the backlog](../directions/backlog.md#capture) and continue without fixing it or widening scope.
+
 ## Logical change units
 
 A logical change unit is a cohesive code change serving one purpose, regardless of line count, diff hunks, files, or commits. Group implementation with its directly supporting tests; count independently motivated helpers, fallbacks, configuration options, and cleanup separately. Exclude formatting-only and generated output from the count. Count the cumulative delivery of the approved task, never each commit separately; do not split tasks or bundle unrelated purposes to evade review. Apply the same purpose grouping to authored non-code content when assessing minimality.
