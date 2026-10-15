@@ -234,15 +234,7 @@ A black-zone review first judges whether the surface is genuinely one self-conta
 
 ### Run the mechanical candidate scan
 
-Reuse exact-input candidate evidence for retained source coverage. A discussion-only check does not rescan unchanged source. For missing or affected source coverage, group changed files by owning project before scanning. Resolve each project's configured compiler-test mechanism and discovery patterns, then invoke the scanner once per group with that absolute project root and every applicable compiler-test glob. Never combine files owned by different test roots in one invocation:
-
-```bash
-bun run "${CODING_PR_SKILL_DIR}/../../scripts/scanlib/core.ts" \
-  <changed-files-owned-by-project> --category all --before 5 --after 10 \
-  --test-root <project-root> [--test-pattern <compiler-test-glob> ...]
-```
-
-That path resolves the scanner from the installed PR skill directory up to the coding plugin root; pass every group's classification arguments to it. Surface a non-zero scanner failure rather than skipping silently. Candidates are advisory until confirmed against the rule they cite.
+Reuse exact-input candidate evidence for retained source coverage. A discussion-only check does not rescan unchanged source. For missing or affected source coverage, MUST invoke `coding:lint` on eligible changed files with `--scope=all --skip-unused`. Use its discovery, standards selection, and scanners under this review's read-only, no-delegation boundary: report violations instead of editing, asking for extraction approval, or running project commands. Its scanner output supplies this phase's candidate evidence; do not repeat the same scans. Surface scanner failures rather than skipping silently, and confirm candidates against their cited rules.
 
 ### Resolve the applicable standards
 
@@ -259,6 +251,7 @@ Apply `coding:standards/code-review/`'s evidence threshold before recording a bl
 - **Ask whether the diff is the best solution**, not only whether it works: apply `essential:references/working-attitude.md` — need, reuse, standard library, native capability, installed dependency, then minimum addition. Search code, content, tests, helpers, and fixtures; reinventing an available equivalent is a finding.
 - **Prove the stated intent.** Trace each stated Goal and behavioral Requirement through implementation, callers, edge and failure paths realistic under `coding:standards/universal/rules/gen-safe-04.md`, and tests. Behavior that diverges from the contract is a finding.
 - **Read the linked specification.** Grade alignment against the specification the PR links, and confirm every deviation from it is captured under Additional Notes; an uncaptured deviation is a merge-blocking chore. A linked specification that cannot be read is not `skipped_unknown` — it caps the event in step 2 below.
+- **Check all current ADRs.** MUST discover and read every current architecture decision record in the pinned checkout, following the project's architecture index and supersession links, then check the changed logic against each applicable decision. Report contradictions as findings; record when no current ADRs exist or a required record cannot be read.
 - **Apply the complete standards set.** Check file structure, testing, documentation, universal code, function/API, and every applicable language-specific standard resolved above.
 - **Remove anything that earns no place.** Flag code, content, tests, helpers, or repetition whose deletion preserves required behavior and readability.
 - **Say so when the change belongs somewhere else.** A guard repeated at each call site that belongs in the callee, validation in a controller that belongs in the domain, a symptom patched downstream of the function that produced the bad value — propose the better location and name the exact path. Never relocate it yourself.
