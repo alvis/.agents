@@ -8,6 +8,7 @@
 import { parseArgs, value } from "./args.ts";
 import {
   api,
+  apiItems,
   parseRepositorySpec,
   readBody,
   resolveRepository,
@@ -21,6 +22,12 @@ import type { Handler, Repository } from "./route.ts";
 /** the REST issue fields this wrapper reads */
 interface Issue {
   readonly html_url: string;
+}
+
+/** the REST issue-comment fields this wrapper reads */
+interface IssueComment {
+  readonly id: number;
+  readonly user: { readonly login: string } | null;
 }
 
 async function selectIssue(
@@ -71,17 +78,62 @@ async function edit(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
-async function comment(argv: readonly string[]): Promise<number> {
-  const parsed = parseArgs(argv, { values: ["body-file"], aliases: { F: "body-file" } });
-  const { repository, number } = await selectIssue(parsed);
-  const body = await readBody(value(parsed, "body-file"));
-  if (body === undefined) throw new WrapperError("--body-file is required when routed through REST");
-  const created = await api<{ html_url: string }>(
+/**
+ * finds the viewer's most recent comment on an issue, reading every page
+ * @param repository - the issue's repository
+ * @param number - the issue number
+ * @returns the comment id
+ */
+async function viewerLastComment(repository: Repository, number: string): Promise<number> {
+  const { login } = await api<{ login: string }>(repository, "user");
+  let last: number | undefined;
+  for await (const item of apiItems<IssueComment>(
     repository,
     `repos/${repository.owner}/${repository.repo}/issues/${number}/comments`,
-    { method: "POST", body: { body } },
-  );
-  process.stdout.write(`${created.html_url}\n`);
+  ))
+    if (item.user?.login === login) last = item.id;
+  if (last === undefined) throw new WrapperError(`no comment by ${login} on issue #${number} to edit or delete`);
+  return last;
+}
+
+/**
+ * posts, edits, or deletes a comment on an issue the way `gh issue comment`
+ * does: a new comment by default, or the viewer's last one with `--edit-last`
+ * or `--delete-last --yes`. the target is not checked for being an issue:
+ * a pull-request number writes that pull request's conversation comments
+ * (see skills/pr/directions/review-publishing.md, "Guarded routes and limits")
+ * @param argv - arguments after the subcommand
+ * @returns the exit code
+ */
+async function comment(argv: readonly string[]): Promise<number> {
+  const parsed = parseArgs(argv, {
+    values: ["body-file"],
+    booleans: ["edit-last", "delete-last", "yes"],
+    aliases: { F: "body-file" },
+  });
+  const editLast = parsed.booleans.has("edit-last");
+  const deleteLast = parsed.booleans.has("delete-last");
+  if (editLast && deleteLast) throw new WrapperError("--edit-last and --delete-last cannot be combined");
+  if (deleteLast && !parsed.booleans.has("yes"))
+    throw new WrapperError("--delete-last needs --yes to confirm when routed through REST");
+  const bodyFile = value(parsed, "body-file");
+  if (deleteLast && bodyFile !== undefined) throw new WrapperError("--body-file cannot be combined with --delete-last");
+  if (!deleteLast && bodyFile === undefined) throw new WrapperError("--body-file is required when routed through REST");
+  const { repository, number } = await selectIssue(parsed);
+  const root = `repos/${repository.owner}/${repository.repo}/issues`;
+  if (deleteLast) {
+    await api(repository, `${root}/comments/${await viewerLastComment(repository, number)}`, { method: "DELETE" });
+    return 0;
+  }
+  const body = (await readBody(bodyFile))!;
+  const written = editLast
+    ? await api<{ html_url: string }>(
+        repository,
+        `${root}/comments/${await viewerLastComment(repository, number)}`,
+        { method: "PATCH", body: { body } },
+      )
+    : await api<{ html_url: string }>(repository, `${root}/${number}/comments`, { method: "POST", body: { body } });
+  process.stdout.write(`${written.html_url}\n`);
   return 0;
 }
 
