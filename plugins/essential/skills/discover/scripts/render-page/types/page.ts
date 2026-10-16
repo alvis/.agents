@@ -1,5 +1,6 @@
 import type { Block } from "./block.ts";
 import type { Metric, Source } from "./content.ts";
+import type { Rich } from "./inline.ts";
 
 /**
  * every presentation kind the renderer accepts.
@@ -45,6 +46,13 @@ export interface Section {
   eyebrow?: string;
   /** the section heading, rendered directly above the body */
   title: string;
+  /**
+   * the section's answer in a sentence or two, drawn under the title.
+   *
+   * a reader skimming the headings gets the conclusion without opening
+   * anything; the blocks below hold the evidence.
+   */
+  lede?: Rich;
   /** the section's content, in reading order */
   blocks: Block[];
 }

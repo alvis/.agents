@@ -350,8 +350,12 @@ describe("fn:renderPage", () => {
 
     // SC-4: everything the drawer buys back over a bare count
     expect(panel).toMatch(/<nav class="drawer-nav" aria-label="Sections">/);
+    // a board that asks something also states each section's standing in its
+    // link, so the label is checked as the link's first text and not its last
     for (const section of data.sections)
-      expect(panel).toContain(`href="#s-${section.id}">${section.label}</a>`);
+      expect(panel).toMatch(
+        new RegExp(`href="#s-${section.id}"[^>]*>${section.label}[ <]`),
+      );
     expect(panel).toMatch(/<ul class="summaries" data-summaries>/);
     // the copy control lives in the collapsed bar, so the reply can be taken
     // without first opening the drawer to reach it
@@ -2018,6 +2022,183 @@ describe("fn:renderPage questions inside a container", () => {
     // page's order
     expect(drawn).toEqual(["before", "rollout", "after"]);
     expect(replied).toEqual(["Q1", "Q23", "Q2"]);
+  });
+});
+
+describe("fn:renderPage section outline", () => {
+  /** a decision that agrees with its own default, so a fresh page reads it as settled */
+  const settled = {
+    type: "decision",
+    response: "follow-up",
+    default: "approve",
+    id: "more",
+    ref: "F1",
+    label: "More detail",
+    ask: "Want this explained further?",
+  } as const satisfies Block;
+
+  const outlined = page({
+    sections: [
+      {
+        id: "plain",
+        label: "Plain",
+        title: "Nothing asked",
+        blocks: [{ type: "prose", text: "Just reading." }],
+      },
+      {
+        id: "asked",
+        label: "Asked",
+        title: "Two asked",
+        lede: ["The answer is ", { kind: "mark", text: "yes" }, " <b>."],
+        blocks: [
+          { type: "note", id: "before", ref: "Q1", label: "Before", ask: "A" },
+          { type: "disclosure", summary: "Working", blocks: [NEW_BLOCKS.decision] },
+        ],
+      },
+      {
+        id: "done",
+        label: "Done",
+        title: "Settled by default",
+        blocks: [{ type: "prose", text: "Read this first." }, settled],
+      },
+      {
+        id: "cards",
+        label: "Cards",
+        title: "Questions first",
+        blocks: [
+          { type: "note", id: "c1", ref: "C1", label: "One", ask: "A" },
+          { type: "note", id: "c2", ref: "C2", label: "Two", ask: "A" },
+          { type: "prose", text: "Afterwards." },
+        ],
+      },
+      {
+        id: "buried",
+        label: "Buried",
+        title: "Nested question",
+        blocks: [
+          {
+            type: "disclosure",
+            summary: "Working",
+            blocks: [{ type: "note", id: "b1", ref: "B1", label: "Nested", ask: "A" }],
+          },
+        ],
+      },
+      {
+        id: "late",
+        label: "Late",
+        title: "A card after cards and content",
+        blocks: [
+          { type: "note", id: "l1", ref: "L1", label: "First", ask: "A" },
+          { type: "prose", text: "Between." },
+          { type: "note", id: "l2", ref: "L2", label: "Second", ask: "A" },
+        ],
+      },
+    ],
+  });
+
+  /**
+   * reads one section's markup out of a rendered page
+   * @param html the rendered page
+   * @param id the section's id
+   * @returns the section element, from its opening tag to its close
+   */
+  function sectionOf(html: string, id: string): string {
+    const start = html.indexOf(`<section class="section" id="s-${id}"`);
+
+    return html.slice(start, html.indexOf("</section>", start));
+  }
+
+  it("should draw a lede under the title, escaped, and before the body", () => {
+    const drawn = sectionOf(render(outlined), "asked");
+
+    expect(drawn.indexOf("</h2>")).toBeLessThan(drawn.indexOf('<p class="section-lede">'));
+    expect(drawn.indexOf('<p class="section-lede">')).toBeLessThan(drawn.indexOf("section-body"));
+    expect(drawn).toContain("&lt;b&gt;.");
+    expect(drawn).not.toContain("<b>");
+  });
+
+  it("should leave a section with neither a lede nor a question as it always was", () => {
+    const drawn = sectionOf(render(outlined), "plain");
+
+    expect(drawn).not.toContain("section-lede");
+    expect(drawn).not.toContain("section-asks");
+    expect(drawn).toMatch(/<\/h2><button[^>]*>[\s\S]*?<\/button><\/div><div class="section-body"/);
+  });
+
+  it("should chip exactly the section's questions, nested ones included, in page order", () => {
+    const html = render(outlined);
+    const asks = /<p class="section-asks">([\s\S]*?)<\/p>/.exec(sectionOf(html, "asked"))?.[1] ?? "";
+    const linked = [...asks.matchAll(/href="#qs-([^"]+)"/g)].map((match) => match[1]);
+    const drawn = [...sectionOf(html, "asked").matchAll(/ data-question-id="([^"]+)"/g)].map(
+      (match) => match[1],
+    );
+
+    expect(linked).toEqual(["before", "rollout"]);
+    expect(linked).toEqual(drawn);
+    // a link that lands nowhere is no better than none
+    for (const id of linked) expect(html).toContain(`id="qs-${id}"`);
+    expect(sectionOf(html, "done")).toContain('data-heading-chip="more"');
+    expect(sectionOf(html, "plain")).not.toContain("section-asks");
+  });
+
+  it("should draw no chips for a section whose questions are its leading blocks", () => {
+    // the title is followed directly by its cards, so chips would repeat them
+    expect(sectionOf(render(outlined), "cards")).not.toContain("section-asks");
+  });
+
+  it("should chip every question of a section that asks after other content", () => {
+    const html = render(outlined);
+    const linked = (id: string): string[] =>
+      [...sectionOf(html, id).matchAll(/data-heading-chip="([^"]+)"/g)].map((match) => match[1]);
+
+    // all of them, the first included, once anything precedes the last
+    expect(linked("late")).toEqual(["l1", "l2"]);
+    expect(linked("done")).toEqual(["more"]);
+  });
+
+  it("should count a nested question as coming after content", () => {
+    const html = render(outlined);
+
+    expect(sectionOf(html, "buried")).toContain('data-heading-chip="b1"');
+    // the section's first block is a container, not a question
+    expect(sectionOf(html, "asked")).toContain('data-heading-chip="rollout"');
+  });
+
+  it("should open each chip in the state the reply gives its question", () => {
+    const html = render(outlined);
+    const status = (id: string): string | undefined =>
+      new RegExp(`data-heading-chip="${id}" data-status="(\\w+)"`).exec(html)?.[1];
+
+    // a recommendation nobody has agreed to, a question that recommends
+    // nothing, and a follow-up resting at its own default
+    expect(status("rollout")).toBe("suggested");
+    expect(status("before")).toBe("unanswered");
+    expect(status("more")).toBe("confirmed");
+    // the state is a word, so it never rests on colour alone
+    expect(html).toMatch(/data-heading-chip="more"[^>]*>F1 <span class="q-chip-state">confirmed<\/span>/);
+  });
+
+  it("should say in the drawer's navigation where each section stands", () => {
+    const nav = /<nav class="drawer-nav"[\s\S]*?<\/nav>/.exec(render(outlined))?.[0] ?? "";
+    const stateOf = (id: string): string | undefined =>
+      new RegExp(`data-nav-section="${id}" data-nav-state="(\\w+)"`).exec(nav)?.[1];
+
+    expect(stateOf("plain")).toBe("none");
+    expect(stateOf("asked")).toBe("open");
+    expect(stateOf("done")).toBe("settled");
+    // the tally stays on a section even where it draws no chips
+    expect(stateOf("cards")).toBe("open");
+  });
+
+  it("should leave the navigation as plain links on a board that asks nothing", () => {
+    const html = render(
+      page({
+        sections: [{ id: "s", label: "S", title: "T", blocks: [{ type: "prose", text: "x" }] }],
+        reply: undefined,
+      }),
+    );
+
+    expect(html).toContain('<nav class="drawer-nav" aria-label="Sections"><h3>Sections</h3><a href="#s-s">S</a></nav>');
   });
 });
 

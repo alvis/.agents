@@ -32,6 +32,7 @@
       "label": "The plan",
       "eyebrow": "Sequence",
       "title": "What is proposed, in order.",
+      "lede": "Detect first, merge as a link, and leave the one irreversible step for last: five of the six steps can be undone by turning a flag off.",
       "blocks": [
         {
           "type": "tldr",
@@ -93,6 +94,7 @@
       "label": "Owners",
       "eyebrow": "Routing",
       "title": "Who holds each step.",
+      "lede": "Every step has an owner who has scheduled it except step 6, whose owner was named in the plan but never asked.",
       "blocks": [
         {
           "type": "owners",
@@ -170,6 +172,7 @@
       "label": "Risks",
       "eyebrow": "Per step",
       "title": "What each step could cost.",
+      "lede": "Merging is safe because it only adds a pointer; the risk with no mitigation yet is that Search platform may not be able to take step 6 this quarter.",
       "blocks": [
         {
           "type": "risk-matrix",
@@ -225,6 +228,7 @@
       "label": "Your review",
       "eyebrow": "Questions",
       "title": "Three things this plan needs from you.",
+      "lede": "The decision is whether to approve with step 6 held until Search platform accepts it; the order and the conditions shape that approval.",
       "blocks": [
         {
           "type": "probe",

@@ -18,6 +18,7 @@ import { installKeys } from "./keys.ts";
 import { installNoteDialog } from "./note-dialog.ts";
 import { rowsOf } from "./note-view.ts";
 import { installNotes } from "./notes.ts";
+import { installOutline } from "./outline.ts";
 import { domPassages } from "./passage-dom.ts";
 import { installProbes } from "./probe.ts";
 import { installQuiz } from "./quiz.ts";
@@ -87,6 +88,9 @@ export function start(): void {
 
   const strip = drawerRoot.querySelector<HTMLElement>("[data-chip-strip]");
   const paintChips = strip ? installChips(strip, fields) : undefined;
+  // the heading chips and the drawer's section states, which the renderer drew
+  // from the fresh dispositions and which this repaints from the same lines
+  const paintOutline = fields.length ? installOutline(fields) : undefined;
 
   // following a decision row has to get the drawer out of the way, or the jump
   // lands behind the panel that started it. The anchor's own navigation does
@@ -160,6 +164,7 @@ export function start(): void {
     // the bar's chips carry the same dispositions the drawer's rows do, drawn
     // from the same lines, so the two can never disagree about a question
     paintChips?.(lines);
+    paintOutline?.(lines);
     // the offer has to shrink as the reader answers, or it keeps promising to
     // fill gaps that are no longer there
     repaintBulk?.();
