@@ -1,13 +1,15 @@
 import { RenderError } from "../error.ts";
 import { requireString } from "../validate.ts";
 import { MAX_LINES, MAX_STEP, WRAP_LIMIT } from "./geometry.ts";
-import { EDGE_KINDS, NODE_ROLES } from "./vocabulary.ts";
+import { DIAGRAM_FLOWS, EDGE_KINDS, NODE_ROLES } from "./vocabulary.ts";
 
 import type {
+  DiagramBlock,
   DiagramEdge,
+  DiagramFlow,
   DiagramNode,
-  PlacedEdge,
   PlacedNode,
+  ResolvedEdge,
 } from "./shape.ts";
 
 /**
@@ -175,6 +177,33 @@ export function readNodes(nodes: unknown, path: string): PlacedNode[] {
 }
 
 /**
+ * reads the direction a diagram flows and, for an across flow, its row length
+ * @param block the author-supplied diagram
+ * @param path JSON path of the block, used as the prefix of every refusal
+ * @returns the flow, with the row length only when the author wrote one
+ */
+export function readFlow(
+  block: DiagramBlock,
+  path: string,
+): Pick<DiagramBlock, "wrap"> & { flow: DiagramFlow } {
+  const flow = requireToken(block.flow, DIAGRAM_FLOWS, "down", `${path}.flow`);
+  const wrap = block.wrap;
+  if (wrap === undefined) return { flow };
+  // a down flow already draws one layer per row, so it has nothing to wrap
+  if (flow === "down")
+    throw new RenderError(
+      `${path}.wrap: required only with "flow": "across", received ${JSON.stringify(wrap)} with a down flow`,
+    );
+  // a one-layer row is a down flow drawn with a turn where each arrow should be
+  if (typeof wrap !== "number" || !Number.isInteger(wrap) || wrap < 2)
+    throw new RenderError(
+      `${path}.wrap: required an integer of at least 2, received ${JSON.stringify(wrap)}`,
+    );
+
+  return { flow, wrap };
+}
+
+/**
  * resolves both ends of every declared edge against the declared nodes
  * @param edges the author-supplied edge list
  * @param nodes every node already validated by `readNodes`
@@ -185,7 +214,7 @@ export function readEdges(
   edges: unknown,
   nodes: PlacedNode[],
   path: string,
-): Omit<PlacedEdge, "around" | "points" | "caption">[] {
+): ResolvedEdge[] {
   return requireArray(edges, `${path}.edges`).map((entry, index) => {
     const at = `${path}.edges[${index}]`;
     const edge = entry as DiagramEdge;

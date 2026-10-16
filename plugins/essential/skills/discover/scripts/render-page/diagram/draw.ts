@@ -75,7 +75,7 @@ export function drawEdge(edge: PlacedEdge, slug: string): string {
   const around = edge.around ? " dg-edge-around" : "";
   const line = `<path class="dg-edge dg-edge-${edge.kind}${around}" d="M${edge.points.map(([x, y]) => `${x} ${y}`).join(" L")}" marker-end="url(#${slug}-${edge.kind})" />`;
   if (!edge.caption) return line;
-  return `${line}<text class="dg-edge-label" x="${edge.caption.x}" y="${edge.caption.y}" text-anchor="${edge.caption.anchor}"${edge.around ? ' dominant-baseline="middle"' : ""}>${escapeHtml(edge.label ?? "")}</text>`;
+  return `${line}<text class="dg-edge-label" x="${edge.caption.x}" y="${edge.caption.y}" text-anchor="${edge.caption.anchor}"${edge.caption.baseline === undefined ? "" : ` dominant-baseline="${edge.caption.baseline}"`}>${escapeHtml(edge.label ?? "")}</text>`;
 }
 
 /**

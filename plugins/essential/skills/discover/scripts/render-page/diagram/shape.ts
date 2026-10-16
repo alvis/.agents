@@ -21,6 +21,9 @@ export type NodeRole =
 /** what an edge carries from one node to the next. */
 export type EdgeKind = "flow" | "fanout" | "derive";
 
+/** the direction a diagram's layers advance across the drawing. */
+export type DiagramFlow = "down" | "across";
+
 /** one box in the graph, placed entirely by the layer the author declares. */
 export interface DiagramNode {
   /** unique handle the edges refer to */
@@ -92,6 +95,22 @@ export interface DiagramBlock {
    * to say why the seam between two of its boxes is the interesting part.
    */
   pins?: Pin[];
+  /**
+   * the direction the layers advance; defaults to `down`.
+   *
+   * a long pipeline drawn down is a column far taller than it is wide, which
+   * the reader scrolls past; `across` lays its layers left to right instead,
+   * so the sequence reads like a sentence in the column it sits in.
+   */
+  flow?: DiagramFlow;
+  /**
+   * layers per row of an `across` flow, an integer of at least 2.
+   *
+   * rows alternate direction, so the last layer of one row and the first of
+   * the next share a column and every turn drops down it rather than
+   * crossing the drawing.
+   */
+  wrap?: number;
 }
 
 
@@ -122,7 +141,24 @@ export interface PlacedEdge {
   /** the polyline the edge draws, as `x y` pairs */
   points: number[][];
   /** where the edge's label sits, absent when the edge carries none */
-  caption?: { x: number; y: number; anchor: "start" | "middle" | "end" };
+  caption?: {
+    x: number;
+    y: number;
+    anchor: "start" | "middle" | "end";
+    /** set when `y` is the caption's middle, beside a vertical line, rather than its baseline above a horizontal one */
+    baseline?: "middle";
+  };
+}
+
+/** an edge once both ends resolve, before it is routed. */
+export type ResolvedEdge = Omit<PlacedEdge, "around" | "points" | "caption">;
+
+/** one edge routed down a margin lane, as far as the margin's width depends on it. */
+export interface LaneUse {
+  /** how many lanes sit between this one and the content */
+  lane: number;
+  /** what the edge carries, drawn beside its lane */
+  label?: string;
 }
 
 /** the whole graph, measured and placed. */

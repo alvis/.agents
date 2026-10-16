@@ -86,6 +86,31 @@
               "state": "todo"
             }
           ]
+        },
+        {
+          "type": "diagram",
+          "title": "One thread, from arrival to a single search row",
+          "flow": "across",
+          "wrap": 4,
+          "nodes": [
+            { "id": "thread", "label": "Incoming thread", "layer": 0, "role": "client", "note": "a new feedback thread as a customer files it" },
+            { "id": "similarity", "label": "Similarity pass", "layer": 1, "role": "engine", "note": "the nightly job that scores the thread against the last 90 days" },
+            { "id": "pairs", "label": "Candidate pairs", "layer": 2, "role": "derived", "note": "every pair with its score, rebuilt each night" },
+            { "id": "threshold", "label": "Threshold check", "layer": 3, "role": "domain", "note": "the score chosen in step 2 from 200 read pairs" },
+            { "id": "review", "label": "Review table", "layer": 4, "role": "source", "note": "pairs below the threshold, kept for reading and never merged" },
+            { "id": "pointer", "label": "Merge pointer", "layer": 4, "role": "source", "emphasis": true, "note": "a link from the merged thread to its survivor; deleting it is the unmerge" },
+            { "id": "collapse", "label": "Index collapse", "layer": 5, "role": "engine", "emphasis": true, "note": "step 6, the only irreversible step" },
+            { "id": "search", "label": "Search results", "layer": 6, "role": "client", "note": "one row per complaint" }
+          ],
+          "edges": [
+            { "from": "thread", "to": "similarity", "label": "body text" },
+            { "from": "similarity", "to": "pairs", "label": "scored pair" },
+            { "from": "pairs", "to": "threshold", "label": "pair + score" },
+            { "from": "threshold", "to": "review", "label": "below" },
+            { "from": "threshold", "to": "pointer", "label": "above", "kind": "fanout" },
+            { "from": "pointer", "to": "collapse", "label": "link" },
+            { "from": "collapse", "to": "search", "label": "survivor only", "kind": "derive" }
+          ]
         }
       ]
     },
