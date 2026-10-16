@@ -15,7 +15,7 @@ Use this as a quick decision reflex, not a separate research project. Skip inapp
 
 ## Stop at sufficient evidence
 
-Keep simple, reversible work inline when the owning workflow permits. Add investigation, artifacts, coordination, or verification only to resolve a material unknown, protect the outcome, or satisfy an explicit contract. Once the required evidence passes, continue to completion; broaden or repeat checks only after changed inputs, failures, unresolved concerns, or a required gate.
+Keep simple, reversible work inline when the owning workflow permits. Add investigation, artifacts, coordination, or verification only to resolve a material unknown, protect the outcome, or satisfy an explicit contract. Once the required evidence passes, continue to completion; broaden or repeat checks only after changed inputs, failures, or unresolved concerns. A required gate that any agent already passed on the same inputs is that evidence: never rerun it.
 
 Favor maintainable simplicity over the shortest diff. Explain a simplification only when its limit changes a future decision; require no ceremonial comment.
 

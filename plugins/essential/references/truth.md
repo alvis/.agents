@@ -15,7 +15,7 @@ Read this once per work stream, alongside the state lifecycle. It defines what k
 
 Never let one kind impersonate another: a completed task is execution history, not proof its result is still valid; a passing test is evidence about one revision; an accepted decision is history, not necessarily the current contract; memory is a hint, never current project truth.
 
-`.state/` is the **operational projection** of the work — the richest view of it, but not the record of record. Records of record are versioned `docs/` and external anchors (task, PR, Notion). Every state change, discovery, and decision is stored immediately in the journal and its owning state, decision, or discovery file. The projection is not byte-reconstructible. It becomes disposable only after accepted decisions, approved contracts, artifact identities, unresolved risks, and reusable conclusions have durable carriers and closure is recorded.
+`.state/` is the **operational projection** of the work — the richest view of it, but not the record of record. Records of record are versioned `docs/` and external anchors (task, PR, Notion). Every event that [the persistence rule](state.md#persistence-and-the-main-agent-lease) defines is stored in the journal and its owning state, decision, or discovery file when it happens; steps are never stored on their own. The projection is not byte-reconstructible. It becomes disposable only after accepted decisions, approved contracts, artifact identities, unresolved risks, and reusable conclusions have durable carriers and closure is recorded.
 
 ## Constitutional rules
 
