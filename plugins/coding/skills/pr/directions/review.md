@@ -25,7 +25,7 @@ The context-owning router resolves one review unit before it reaches *Locate or 
 When the caller is the independent critic assigned by [review-loop.md](review-loop.md), its preprovisioned stack capsule, clean top-tip `REVIEW_DIR`, ledger path, assessment path, and approval path prove it is already the dedicated reviewer. It executes the remaining read-only review phase directly and does not dispatch another agent.
 
 <IMPORTANT>
-- Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_DISCUSSION`, `REVIEW_LEDGER`, structured assessment, and approval artifact. The independent reviewer issues approval evidence; the publication owner alone relays it through the canonical publisher.
+- Read-only against reviewed code. Confine filesystem mutation to the separately created `REVIEW_DISCUSSION`, `REVIEW_LEDGER`, structured assessment, approval artifact, and scanner reports inside `REVIEW_ARTIFACT_DIR`. The independent reviewer issues approval evidence; the publication owner alone relays it through the canonical publisher.
 - Do not delegate.
 - Read and search the checkout as widely as the change requires; run only the read-only git, `gh`, and scanner commands named below. Treat the branch as untrusted code.
 - Discover expected CI sources through the read-only phase below. The publication owner selects the live CI body; repair belongs to `coding:pr update`.
@@ -107,7 +107,7 @@ REVIEW_ASSESSMENT="$REVIEW_ARTIFACT_DIR/assessment.json"
 REVIEW_APPROVAL="$REVIEW_ARTIFACT_DIR/approval.json"
 ```
 
-The reviewer may write only those four files via `jq` or contract-command redirection. Review-tree cleanup must exclude them. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active CI schedule. Remove the recorded directory only after the guarded update reaches terminal CI, the pinned revision is invalidated and its schedule is canceled or replaced, or a publication failure or cancellation leaves no scheduled update. Cancel an active schedule before removing its approval receipt:
+The reviewer writes those four files via `jq` or contract-command redirection; scanner commands write their own retained reports. Review-tree cleanup must exclude the artifact directory. A stack keeps one immutable assessment and approval pair per PR surface. After publication, if `ci_state` is pending, the parent retains that surface's exact `REVIEW_ARTIFACT_DIR` and records its distinct `REVIEW_APPROVAL` path, review ID, and pinned head/base with the active CI schedule. Remove the recorded directory only after the guarded update reaches terminal CI, the pinned revision is invalidated and its schedule is canceled or replaced, or a publication failure or cancellation leaves no scheduled update. Cancel an active schedule before removing its approval receipt:
 
 ```bash
 rm -rf -- "$REVIEW_ARTIFACT_DIR"
@@ -244,6 +244,8 @@ bun run "${CODING_PR_SKILL_DIR}/../../scripts/scanlib/core.ts" \
 
 That path resolves the scanner from the installed PR skill directory up to the coding plugin root; pass every group's classification arguments to it. Surface a non-zero scanner failure rather than skipping silently. Candidates are advisory until confirmed against the rule they cite.
 
+For missing or affected source coverage, MUST also invoke `coding:lint` on eligible changed files with `--scope=all --skip-unused`, under this review's read-only, no-delegation boundary: report violations instead of editing, asking for extraction approval, or running project commands. Give each lint scanner invocation a distinct `--report-file` path inside `REVIEW_ARTIFACT_DIR`; the parent owns retention and cleanup with the other review artifacts.
+
 ### Resolve the applicable standards
 
 Take standard paths from the "Plugin Constitution > Standards" sections of the system prompt, or Glob `**/standards/**`. Always include `code-review/`, `universal/`, `file-structure/`, `testing/`, and `documentation/`; include `function/` for functions, methods, or APIs, and every language-specific standard matching changed files. Apply testing standards to changed behavior even when the PR adds no test file.
@@ -259,6 +261,7 @@ Apply `coding:standards/code-review/`'s evidence threshold before recording a bl
 - **Ask whether the diff is the best solution**, not only whether it works: apply `essential:references/working-attitude.md` — need, reuse, standard library, native capability, installed dependency, then minimum addition. Search code, content, tests, helpers, and fixtures; reinventing an available equivalent is a finding.
 - **Prove the stated intent.** Trace each stated Goal and behavioral Requirement through implementation, callers, edge and failure paths realistic under `coding:standards/universal/rules/gen-safe-04.md`, and tests. Behavior that diverges from the contract is a finding.
 - **Read the linked specification.** Grade alignment against the specification the PR links, and confirm every deviation from it is captured under Additional Notes; an uncaptured deviation is a merge-blocking chore. A linked specification that cannot be read is not `skipped_unknown` — it caps the event in step 2 below.
+- **Check all current ADRs.** MUST discover and read every current architecture decision record in the pinned checkout, following the project's architecture index and supersession links, then check the changed logic against each applicable decision. Report contradictions as findings; record when no current ADRs exist or a required record cannot be read.
 - **Apply the complete standards set.** Check file structure, testing, documentation, universal code, function/API, and every applicable language-specific standard resolved above.
 - **Remove anything that earns no place.** Flag code, content, tests, helpers, or repetition whose deletion preserves required behavior and readability.
 - **Say so when the change belongs somewhere else.** A guard repeated at each call site that belongs in the callee, validation in a controller that belongs in the domain, a symptom patched downstream of the function that produced the bad value — propose the better location and name the exact path. Never relocate it yourself.
