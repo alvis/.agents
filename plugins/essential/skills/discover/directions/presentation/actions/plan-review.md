@@ -13,12 +13,13 @@ The plan already exists and is basically sound; what is unresolved is a handful 
 ## Information architecture
 
 1. Show where the plan came from: the originating request, and the sources the author actually read to write it. The user judges the plan against its inputs before confirming anything.
-2. Order the plan's steps by **tweak-likelihood**, most likely to change first, settled last — not by build order. Give every step a visible rank affordance so the sort is legible at a glance and never carried by colour alone.
-3. Make every step an interview turn: the step's content with real code excerpts and file references, honest trade-offs where the call is material, and one decision — accept the recommendation, take the named alternative, or tweak it in a note.
-4. For any step that changes a schema or a shared structure, let the choice rewrite a shared diagram in lockstep, so the consequence of the call is visible in the artifact rather than described in prose.
-5. Show the build sequencing and the owner asks separately from the decisions — this is order-of-work, not a call the user has to make.
-6. Disclose what the plan deliberately leaves out and where it is weakest, in the author's own voice.
-7. Capture exactly one hand-off verdict: build as-is, build with the tweaks marked on the page, or take another pass. Every step answer and note rides into the one generated reply regardless of the verdict.
+2. Before any decision, show what the plan delivers: the expected-delivery inventory (a status-marked `tree` where the plan creates, changes, removes or moves files), then the end-to-end flow of the thing being built, drawn as one diagram. The user judges each call against the whole it belongs to. Where the flow is long, draw it `across`; the marks that make it findable are under [reading order inside a section](../../presentation.md#reading-order-inside-a-section).
+3. Order the plan's steps by **tweak-likelihood**, most likely to change first, settled last — not by build order. Give every step a visible rank affordance so the sort is legible at a glance and never carried by colour alone.
+4. Make every step an interview turn: the step's content with real code excerpts and file references, honest trade-offs where the call is material, and one decision — accept the recommendation, take the named alternative, or tweak it in a note. A decided step closes with the alternative it beat and what that alternative would have cost, so the user can overturn the call knowing what they give up. Where the alternatives are whole panels to compare, a [`variants`](../components.md#variants) block shows them side by side and the question goes after it.
+5. For any step that changes a schema or a shared structure, let the choice rewrite a shared diagram in lockstep, so the consequence of the call is visible in the artifact rather than described in prose.
+6. Show the build sequencing and the owner asks separately from the decisions — this is order-of-work, not a call the user has to make.
+7. Disclose what the plan deliberately leaves out and where it is weakest, in the author's own voice.
+8. Capture exactly one hand-off verdict: build as-is, build with the tweaks marked on the page, or take another pass. Every step answer and note rides into the one generated reply regardless of the verdict.
 
 A realistic plan review usually needs four or more decision steps; a page with one token step and a verdict is not a review. Reach for a rank chip, a shared schema diagram, code excerpts, a trade-off block, a sequencing timeline, and a scope-cut disclosure according to the actual plan — none is mandatory, and a step with no genuine judgment call should be marked settled and kept short rather than dressed up as a decision.
 
@@ -27,6 +28,7 @@ A realistic plan review usually needs four or more decision steps; a page with o
 The checked-in example is directional, not a page schema. Executors may add, remove, combine, or redesign components for the clearest task-specific UX while preserving these semantic requirements:
 
 - steps are ordered by tweak-likelihood, and every step carries its rank;
+- what the plan delivers and its end-to-end flow come before the first decision, and a decided step closes with the alternative it beat;
 - every step poses one genuine decision the user can accept, redirect, or tweak;
 - a schema- or structure-affecting step shows the consequence of the choice in a shared, lockstep-updating diagram rather than only in prose;
 - trade-offs are stated where a call is material, in the direction's own terms;
