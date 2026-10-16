@@ -269,6 +269,38 @@
           ]
         },
         {
+          "type": "variants",
+          "title": "The two ways to approve",
+          "items": [
+            {
+              "label": "Approve with step 6 held",
+              "blocks": [
+                {
+                  "type": "prose",
+                  "text": "Steps 1–5 proceed on the dates in the owners table. Step 6 is not scheduled until Search platform has accepted it, so the one irreversible step has an owner before it has a date."
+                },
+                {
+                  "type": "prose",
+                  "text": "Cost: if Search platform never accepts, the plan ends at step 5 and both indexes stay for good."
+                }
+              ]
+            },
+            {
+              "label": "Hold the whole plan",
+              "blocks": [
+                {
+                  "type": "prose",
+                  "text": "Nothing ships until step 6 has an owner, so the plan is approved once and never has to be reopened."
+                },
+                {
+                  "type": "prose",
+                  "text": "Cost: a plan that is safe to run waits on a team that has not yet been asked, and the unmerge-rate evidence from steps 4 and 5 waits with it."
+                }
+              ]
+            }
+          ]
+        },
+        {
           "type": "decision",
           "id": "plan-step-six",
           "ref": "D1",
