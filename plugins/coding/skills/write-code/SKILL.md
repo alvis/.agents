@@ -32,6 +32,8 @@ Before creating or materially rewriting a project artifact, read the absolute `s
 
 Use the required skills in this order. For Tier 0/1, the same owner loads them directly; a distinct skill phase does not justify delegation or a coordinator.
 
+For integration work, [mandatory tests-first development and infrastructure readiness](../../directions/validation.md#integration-development) take precedence over the phase order and per-step test or coverage execution below and in composed skills.
+
 1. `coding:setup-project`, only if essential structure is missing.
 2. `coding:draft-code`, for types, skeleton, canonical implementation markers, and red/pending test structure.
 3. `coding:complete-code`, then `coding:complete-test` for pending tests.

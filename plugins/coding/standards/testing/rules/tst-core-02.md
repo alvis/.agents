@@ -13,7 +13,7 @@ it("should fail first", () => expect(run()).toThrow());
 ## Test-Driven Development (TDD)
 
 - **Test Before Code** - Write type-safe tests before implementing new supported behavior
-- **Follow TDD cycle** - Red → Green → Refactor with TypeScript checking at each step
+- **Follow TDD cycle** - Red → Green → Refactor with TypeScript checking at each step, subject to [mandatory tests-first integration development](../../../directions/validation.md#integration-development)
 - **Prove after-the-fact sensitivity** - For already-correct behavior, keep an initially passing regression case only after a temporary implementation mutation or equivalent controlled proof makes that case fail for the named behavior; restore the implementation, rerun the case green, and report the proof and restoration
 - **BDD style descriptions** - Use 'should [expected behavior]' format
 
