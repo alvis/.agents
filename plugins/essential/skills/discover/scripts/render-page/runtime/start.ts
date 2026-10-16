@@ -14,6 +14,7 @@ import { installDiagramDetail } from "./detail.ts";
 import { installDrawer } from "./drawer.ts";
 import { installEmbeds } from "./embed.ts";
 import { installFilters } from "./filter.ts";
+import { installJumps } from "./fold.ts";
 import { installKeys } from "./keys.ts";
 import { installNoteDialog } from "./note-dialog.ts";
 import { rowsOf } from "./note-view.ts";
@@ -92,18 +93,17 @@ export function start(): void {
   // from the fresh dispositions and which this repaints from the same lines
   const paintOutline = fields.length ? installOutline(fields) : undefined;
 
-  // following a decision row has to get the drawer out of the way, or the jump
-  // lands behind the panel that started it. The anchor's own navigation does
-  // the scrolling; this only collapses and puts the keyboard on the card, so a
-  // reader arriving by Enter is reading the same question their eyes are
-  targets.list.addEventListener("click", (event) => {
-    const jump = (event.target as HTMLElement).closest<HTMLElement>(".summary-jump");
-    if (!jump) return;
+  // every link to a question opens the fold the question sits in, whichever
+  // control it is on: a drawer row, a bar chip, or a section heading's chip.
+  // Following a drawer row also has to get the drawer out of the way, or the
+  // jump lands behind the panel that started it. The anchor's own navigation
+  // does the scrolling; this only collapses and puts the keyboard on the card,
+  // so a reader arriving by Enter is reading the same question their eyes are
+  installJumps((target, link) => {
+    if (!link.classList.contains("summary-jump")) return;
 
     drawer.setExpanded(false);
-    // the href is the one record of where the row points, so the focus follows
-    // the same fragment the browser is already navigating to
-    document.getElementById(jump.getAttribute("href")!.slice(1))?.focus();
+    target.focus();
   });
 
   const saved: SavedState = loadState(store, pageId);
