@@ -55,7 +55,7 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
     case "diagram":
       return renderDiagram(block, path);
     case "tree":
-      return renderTree(block, path);
+      return renderTree(block, path, page);
     case "mermaid":
       return renderMermaid(block, path);
     case "svg":

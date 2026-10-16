@@ -50,10 +50,10 @@
           "title": "The four files, in reading order",
           "root": "services/beacon",
           "items": [
-            { "name": "src/alert/fingerprint.ts", "note": "new — what makes two alerts the same" },
-            { "name": "src/alert/suppress.ts", "note": "new — the ten-minute window" },
-            { "name": "src/alert/dispatch.ts", "note": "changed — the only caller" },
-            { "name": "src/alert/dispatch.spec.ts", "note": "changed — six new cases" }
+            { "name": "src/alert/fingerprint.ts", "status": "new", "section": "fingerprint", "note": "what makes two alerts the same" },
+            { "name": "src/alert/suppress.ts", "status": "new", "section": "window", "note": "the ten-minute window" },
+            { "name": "src/alert/dispatch.ts", "status": "changed", "section": "window", "note": "the only caller" },
+            { "name": "src/alert/dispatch.spec.ts", "status": "changed", "note": "six new cases" }
           ]
         },
         {
