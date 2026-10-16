@@ -234,7 +234,17 @@ A black-zone review first judges whether the surface is genuinely one self-conta
 
 ### Run the mechanical candidate scan
 
-Reuse exact-input candidate evidence for retained source coverage. A discussion-only check does not rescan unchanged source. For missing or affected source coverage, MUST invoke `coding:lint` on eligible changed files with `--scope=all --skip-unused`. Use its discovery, standards selection, and scanners under this review's read-only, no-delegation boundary: report violations instead of editing, asking for extraction approval, or running project commands. Give each scanner invocation a distinct `--report-file` path inside `REVIEW_ARTIFACT_DIR`; the parent owns retention and cleanup with the other review artifacts. Its scanner output supplies this phase's candidate evidence; do not repeat the same scans. Surface scanner failures rather than skipping silently, and confirm candidates against their cited rules.
+Reuse exact-input candidate evidence for retained source coverage. A discussion-only check does not rescan unchanged source. For missing or affected source coverage, group changed files by owning project before scanning. Resolve each project's configured compiler-test mechanism and discovery patterns, then invoke the scanner once per group with that absolute project root and every applicable compiler-test glob. Never combine files owned by different test roots in one invocation:
+
+```bash
+bun run "${CODING_PR_SKILL_DIR}/../../scripts/scanlib/core.ts" \
+  <changed-files-owned-by-project> --category all --before 5 --after 10 \
+  --test-root <project-root> [--test-pattern <compiler-test-glob> ...]
+```
+
+That path resolves the scanner from the installed PR skill directory up to the coding plugin root; pass every group's classification arguments to it. Surface a non-zero scanner failure rather than skipping silently. Candidates are advisory until confirmed against the rule they cite.
+
+For missing or affected source coverage, MUST also invoke `coding:lint` on eligible changed files with `--scope=all --skip-unused`, under this review's read-only, no-delegation boundary: report violations instead of editing, asking for extraction approval, or running project commands. Give each lint scanner invocation a distinct `--report-file` path inside `REVIEW_ARTIFACT_DIR`; the parent owns retention and cleanup with the other review artifacts.
 
 ### Resolve the applicable standards
 
