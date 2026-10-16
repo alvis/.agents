@@ -2585,9 +2585,15 @@ describe("fn:renderPage theming", () => {
       html.indexOf('<div class="drawer-bar"'),
       html.indexOf('<div class="drawer-panel"'),
     );
+    const copyControls = [
+      ...markupOf(html).matchAll(/<button\b[^>]*data-copy\b[^>]*>[\s\S]*?<\/button>/g),
+    ];
 
     // a glyph says nothing to a screen reader, so the name is real text
-    expect(bar).toContain('<span class="sr-only">Copy reply</span>');
+    expect(copyControls).toHaveLength(1);
+    expect(copyControls[0][0]).toContain(
+      '<span class="sr-only">Copy prompt for LLM coder</span>',
+    );
     for (const icon of ["copy", "done"]) expect(bar).toContain(`data-icon="${icon}"`);
     expect(css).toContain(".copy .copy-icon{display:none}");
 

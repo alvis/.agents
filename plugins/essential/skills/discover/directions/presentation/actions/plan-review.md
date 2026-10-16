@@ -1,6 +1,6 @@
 # Plan review direction
 
-Before presenting the draft, verify it against [Making plans](../../../../../directions/plan.md). Return an incomplete plan to its author instead of asking the user to review missing foundations.
+Before presenting the draft, verify it against `essential:directions/plan.md`. Return an incomplete plan to its author instead of asking the user to review missing foundations.
 
 Use this direction when a drafted implementation plan is ready but its judgment calls still need the user's confirmation or tweaks before anyone builds against it. The plan is not the deliverable; the deliverable is the user's set of answers to the calls the plan makes. Turn the plan into an interview — one decision per step — rather than a document the user skims and approves out of politeness.
 

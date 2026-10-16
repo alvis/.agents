@@ -79,7 +79,7 @@ export function renderPage(data: PageData, assets: PageAssets): string {
   const counters = asks
     ? `<span class="drawer-count" id="drawer-count" data-unanswered-count aria-live="polite">${asks} unanswered</span>
 <button type="button" class="reply-show" data-reply-open hidden>Show reply</button>
-<button type="button" class="copy" data-copy><span class="sr-only">Copy reply</span>${COPY_ICONS}<span class="copy-state" data-copy-status role="status"></span></button>`
+<button type="button" class="copy" data-copy><span class="sr-only">Copy prompt for LLM coder</span>${COPY_ICONS}<span class="copy-state" data-copy-status role="status"></span></button>`
     : "";
   const reply = asks ? replyDialog(data) : "";
   const nav = data.sections

@@ -1,6 +1,6 @@
 # Presenting discovery results
 
-Use an interactive HTML review surface when visual relationships, comparison, or in-context feedback will reduce ambiguity more than prose alone. HTML is not the default and is never evidence by itself. The evidence ledger remains the source of truth after answers and annotations are transferred back.
+Use an interactive HTML review surface when visual relationships, comparison, or in-context feedback will reduce ambiguity more than prose alone. HTML is optional except when `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a Discover board; follow that direction if rendering or presentation is unavailable. The board is never evidence by itself. The evidence ledger remains the source of truth after answers and annotations are transferred back.
 
 ## Choose a directional action
 

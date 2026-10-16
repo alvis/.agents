@@ -806,7 +806,7 @@ export function validatePolicy(
       for (const rawDestination of markdownDestinations(line)) {
         const destination = normalizeMarkdownDestination(rawDestination);
         if (!isLocalFileDestination(destination)) continue;
-        const reference = resolve(dirname(absoluteSkill), destination);
+        const reference = resolve(dirname(markdownFile), destination);
         if (
           options.portable &&
           (relative(dirname(absoluteSkill), reference).startsWith("..") ||
