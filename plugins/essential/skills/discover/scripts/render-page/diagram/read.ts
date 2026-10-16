@@ -1,13 +1,15 @@
 import { RenderError } from "../error.ts";
 import { requireString } from "../validate.ts";
-import { MAX_LINES, WRAP_LIMIT } from "./geometry.ts";
-import { EDGE_KINDS, NODE_ROLES } from "./vocabulary.ts";
+import { MAX_LINES, MAX_STEP, WRAP_LIMIT } from "./geometry.ts";
+import { DIAGRAM_FLOWS, EDGE_KINDS, NODE_ROLES } from "./vocabulary.ts";
 
 import type {
+  DiagramBlock,
   DiagramEdge,
+  DiagramFlow,
   DiagramNode,
-  PlacedEdge,
   PlacedNode,
+  ResolvedEdge,
 } from "./shape.ts";
 
 /**
@@ -59,6 +61,49 @@ function requireArray(value: unknown, path: string): unknown[] {
       `${path}: required non-empty array, received ${JSON.stringify(value)}`,
     );
   return value;
+}
+
+/**
+ * reads the three optional marks a node may carry, each by its own path
+ * @param node the author-supplied node
+ * @param at JSON path of the node, used as the prefix of every refusal
+ * @param read the nodes already read, which no step number may repeat
+ * @returns only the marks the author wrote, so an unmarked node gains no key
+ */
+function readMarks(
+  node: DiagramNode,
+  at: string,
+  read: PlacedNode[],
+): Pick<DiagramNode, "emphasis" | "step" | "tie"> {
+  if (node.emphasis !== undefined && typeof node.emphasis !== "boolean")
+    throw new RenderError(
+      `${at}.emphasis: required true or false, received ${JSON.stringify(node.emphasis)}`,
+    );
+  const step = node.step;
+  if (
+    step !== undefined &&
+    (typeof step !== "number" ||
+      !Number.isInteger(step) ||
+      step < 1 ||
+      step > MAX_STEP)
+  )
+    throw new RenderError(
+      `${at}.step: required an integer from 1 to ${MAX_STEP}, received ${JSON.stringify(step)}`,
+    );
+  // two boxes numbered alike would send a reader along a path that forks
+  // where the author meant one line
+  if (step !== undefined && read.some((seen) => seen.step === step))
+    throw new RenderError(
+      `${at}.step: required a step number used once, received ${step} for a second time`,
+    );
+
+  return {
+    ...(node.emphasis === undefined ? {} : { emphasis: node.emphasis }),
+    ...(step === undefined ? {} : { step }),
+    ...(node.tie === undefined
+      ? {}
+      : { tie: requireString(node.tie, `${at}.tie`) }),
+  };
 }
 
 /**
@@ -120,6 +165,7 @@ export function readNodes(nodes: unknown, path: string): PlacedNode[] {
           // that loses it here draws a box no reader can open beside an aside
           // inviting them to open one
           ...(node.detail === undefined ? {} : { detail: node.detail }),
+          ...readMarks(node, at, read),
           lines: wrapLabel(label),
           x: 0,
           y: 0,
@@ -128,6 +174,33 @@ export function readNodes(nodes: unknown, path: string): PlacedNode[] {
     },
     [],
   );
+}
+
+/**
+ * reads the direction a diagram flows and, for an across flow, its row length
+ * @param block the author-supplied diagram
+ * @param path JSON path of the block, used as the prefix of every refusal
+ * @returns the flow, with the row length only when the author wrote one
+ */
+export function readFlow(
+  block: DiagramBlock,
+  path: string,
+): Pick<DiagramBlock, "wrap"> & { flow: DiagramFlow } {
+  const flow = requireToken(block.flow, DIAGRAM_FLOWS, "down", `${path}.flow`);
+  const wrap = block.wrap;
+  if (wrap === undefined) return { flow };
+  // a down flow already draws one layer per row, so it has nothing to wrap
+  if (flow === "down")
+    throw new RenderError(
+      `${path}.wrap: required only with "flow": "across", received ${JSON.stringify(wrap)} with a down flow`,
+    );
+  // a one-layer row is a down flow drawn with a turn where each arrow should be
+  if (typeof wrap !== "number" || !Number.isInteger(wrap) || wrap < 2)
+    throw new RenderError(
+      `${path}.wrap: required an integer of at least 2, received ${JSON.stringify(wrap)}`,
+    );
+
+  return { flow, wrap };
 }
 
 /**
@@ -141,7 +214,7 @@ export function readEdges(
   edges: unknown,
   nodes: PlacedNode[],
   path: string,
-): Omit<PlacedEdge, "around" | "points" | "caption">[] {
+): ResolvedEdge[] {
   return requireArray(edges, `${path}.edges`).map((entry, index) => {
     const at = `${path}.edges[${index}]`;
     const edge = entry as DiagramEdge;

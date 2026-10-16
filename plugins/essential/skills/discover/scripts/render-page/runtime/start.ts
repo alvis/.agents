@@ -14,10 +14,12 @@ import { installDiagramDetail } from "./detail.ts";
 import { installDrawer } from "./drawer.ts";
 import { installEmbeds } from "./embed.ts";
 import { installFilters } from "./filter.ts";
+import { installJumps } from "./fold.ts";
 import { installKeys } from "./keys.ts";
 import { installNoteDialog } from "./note-dialog.ts";
 import { rowsOf } from "./note-view.ts";
 import { installNotes } from "./notes.ts";
+import { installOutline } from "./outline.ts";
 import { domPassages } from "./passage-dom.ts";
 import { installProbes } from "./probe.ts";
 import { installQuiz } from "./quiz.ts";
@@ -87,20 +89,9 @@ export function start(): void {
 
   const strip = drawerRoot.querySelector<HTMLElement>("[data-chip-strip]");
   const paintChips = strip ? installChips(strip, fields) : undefined;
-
-  // following a decision row has to get the drawer out of the way, or the jump
-  // lands behind the panel that started it. The anchor's own navigation does
-  // the scrolling; this only collapses and puts the keyboard on the card, so a
-  // reader arriving by Enter is reading the same question their eyes are
-  targets.list.addEventListener("click", (event) => {
-    const jump = (event.target as HTMLElement).closest<HTMLElement>(".summary-jump");
-    if (!jump) return;
-
-    drawer.setExpanded(false);
-    // the href is the one record of where the row points, so the focus follows
-    // the same fragment the browser is already navigating to
-    document.getElementById(jump.getAttribute("href")!.slice(1))?.focus();
-  });
+  // the heading chips and the drawer's section states, which the renderer drew
+  // from the fresh dispositions and which this repaints from the same lines
+  const paintOutline = fields.length ? installOutline(fields) : undefined;
 
   const saved: SavedState = loadState(store, pageId);
   const touched = new Set(saved.touched);
@@ -160,6 +151,7 @@ export function start(): void {
     // the bar's chips carry the same dispositions the drawer's rows do, drawn
     // from the same lines, so the two can never disagree about a question
     paintChips?.(lines);
+    paintOutline?.(lines);
     // the offer has to shrink as the reader answers, or it keeps promising to
     // fill gaps that are no longer there
     repaintBulk?.();
@@ -259,6 +251,21 @@ export function start(): void {
   // after the questions are restored and the dialogs are wired, so a shortcut can
   // never reach a control the page has not finished setting up
   installKeys(fields);
+
+  // every way of arriving at a question opens the fold the question sits in:
+  // a drawer row, a bar chip, a section heading's chip, or an address that
+  // names it. The anchor's own navigation does the scrolling, so focus is
+  // placed without scrolling: it puts the keyboard on the card, which is also
+  // what tells the letter keys which question the reader is on, so one arriving
+  // by Enter is reading the same question their eyes are. After the keys, not
+  // before: a card takes focus only once they have made it focusable, and an
+  // address that names a question is read as this runs. Following a drawer row
+  // also has to get the drawer out of the way, or the jump lands behind the
+  // panel that started it
+  installJumps((target, link) => {
+    target.focus({ preventScroll: true });
+    if (link?.classList.contains("summary-jump")) drawer.setExpanded(false);
+  });
 
   // the restore above wrote controls without persisting; this first paint is what
   // puts the drawer in step with them, and re-saving is what prunes any entry the

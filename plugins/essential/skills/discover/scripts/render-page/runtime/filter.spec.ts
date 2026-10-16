@@ -105,6 +105,68 @@ describe("fn:installFilters", () => {
     expect(item.classList.contains("is-dimmed")).toBe(false);
   });
 
+  describe("a region that names its own scope", () => {
+    /**
+     * builds a findings bar and a tree with a bar of its own, both in one section
+     * @returns each bar's chips and each region's items
+     */
+    function nested(): {
+      scope: StubElement;
+      outer: StubElement[];
+      inner: StubElement[];
+      rows: StubElement[];
+      findings: StubElement[];
+    } {
+      const outer = [
+        new StubElement("button", { "data-filter": "all", "aria-pressed": "true" }),
+        new StubElement("button", { "data-filter": "critical", "aria-pressed": "false" }),
+      ];
+      const inner = [
+        new StubElement("button", { "data-filter": "all", "aria-pressed": "true" }),
+        new StubElement("button", { "data-filter": "new", "aria-pressed": "false" }),
+      ];
+      const rows = [
+        new StubElement("span", { "data-filter-item": "new" }),
+        new StubElement("span", { "data-filter-item": "changed" }),
+      ];
+      const findings = [
+        new StubElement("li", { "data-filter-item": "critical" }),
+        new StubElement("li", { "data-filter-item": "watch" }),
+      ];
+      const figure = new StubElement("figure", { "data-filter-scope": "" }, [
+        new StubElement("div", { "data-filter-chips": "" }, inner),
+        ...rows,
+      ]);
+      const scope = new StubElement("section", {}, [
+        new StubElement("div", { "data-filter-chips": "" }, outer),
+        ...findings,
+        figure,
+      ]);
+
+      return { scope, outer, inner, rows, findings };
+    }
+
+    it("should dim only the items of its own scope when a bar sits inside it", () => {
+      const { scope, inner, rows, findings } = nested();
+      installFilters(scope as unknown as ParentNode);
+
+      inner[1]!.dispatch("click");
+
+      expect(dimmed(rows)).toEqual([false, true]);
+      expect(dimmed(findings)).toEqual([false, false]);
+    });
+
+    it("should not dim a nested scope's items when the bar above it filters", () => {
+      const { scope, outer, rows, findings } = nested();
+      installFilters(scope as unknown as ParentNode);
+
+      outer[1]!.dispatch("click");
+
+      expect(dimmed(findings)).toEqual([false, true]);
+      expect(dimmed(rows)).toEqual([false, false]);
+    });
+  });
+
   it("should leave a bar with no items alone", () => {
     const chip = new StubElement("button", { "data-filter": "x" });
     const bar = new StubElement("div", { "data-filter-chips": "" }, [chip]);

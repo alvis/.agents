@@ -4,7 +4,8 @@ import { COPY_ICONS } from "./copy.ts";
 import { RenderError } from "./error.ts";
 import { escapeHtml } from "./escape.ts";
 import { freshIds } from "./id.ts";
-import { questionsOf, renderReply, replyTemplate } from "./reply.ts";
+import { asksIn, questionsOf, renderReply, replyTemplate } from "./reply.ts";
+import { sectionState } from "./runtime/outline.ts";
 import { SCHEME_ICONS } from "./scheme.ts";
 import { renderSection } from "./section.ts";
 import { renderBoardSet } from "./set.ts";
@@ -82,10 +83,7 @@ export function renderPage(data: PageData, assets: PageAssets): string {
     : "";
   const reply = asks ? replyDialog(data) : "";
   const nav = data.sections
-    .map(
-      (section) =>
-        `<a href="#s-${escapeHtml(section.id)}">${escapeHtml(section.label)}</a>`,
-    )
+    .map((section, index) => renderNavLink(section, index, Boolean(asks)))
     .join("");
   return `<!doctype html>
 <html lang="en">
@@ -151,6 +149,33 @@ ${assets.runtime}
 </body>
 </html>
 `;
+}
+
+/**
+ * draws one section's link in the drawer's navigation.
+ *
+ * on a board that asks something the link also says where its section stands,
+ * so a reader jumping about sees which sections still need them without
+ * opening any: the state is a data attribute for the style, and the tally is
+ * the same fact in words. A board that asks nothing has no state to show, so
+ * its links stay as plain as they always were.
+ * @param section the section the link goes to
+ * @param index the section's position, which names its blocks' JSON path
+ * @param asked whether the board asks any question at all
+ * @returns the link as HTML
+ */
+function renderNavLink(section: Section, index: number, asked: boolean): string {
+  const id = escapeHtml(section.id);
+  const label = escapeHtml(section.label);
+  if (!asked) return `<a href="#s-${id}">${label}</a>`;
+
+  const { state, tally } = sectionState(
+    asksIn(section.blocks, `sections[${index}].blocks`).map(
+      ({ disposition }) => disposition,
+    ),
+  );
+
+  return `<a href="#s-${id}" data-nav-section="${id}" data-nav-state="${state}">${label} <span class="nav-tally">${tally}</span></a>`;
 }
 
 /**

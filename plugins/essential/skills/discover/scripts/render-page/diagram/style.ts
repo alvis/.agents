@@ -28,6 +28,24 @@ export const DIAGRAM_CSS = `
 .dg-node-derived .dg-box{stroke:var(--ui-positive); stroke-width:1}
 .dg-node-ephemeral .dg-box{stroke:var(--ui-amber); stroke-dasharray:1.5 3.5}
 .dg-box-inner{fill:none; stroke:var(--ui-positive); stroke-width:1}
+/* emphasis sets fill and stroke colour and nothing else, so the role's dash and
+   weight, which carry the role without colour, are still there under it. The
+   fill is the accent mixed into the canvas rather than the soft accent token,
+   which is within 1.1:1 of the canvas in the light scheme and so reads as no
+   fill at all; a mix follows the scheme because both of its inputs do. The
+   first declaration is what a browser without color-mix keeps */
+.dg-node.is-emphasis .dg-box{fill:var(--ui-accent-soft); fill:color-mix(in srgb, var(--ui-accent) 22%, var(--ui-canvas)); stroke:var(--ui-accent-ink)}
+/* the tag is the one channel that carries the role without colour, and the
+   faint ink it has elsewhere falls to about 3:1 on a tinted ground */
+.dg-node.is-emphasis .dg-tag{fill:var(--ui-muted)}
+/* lit inverts the colours, as a lit pin does, so a box that is lit never looks
+   like a box that is emphasised: one is a filled ground, the other a dark one */
+.dg-node.is-active .dg-box{fill:var(--ui-accent-ink); stroke:var(--ui-accent-ink)}
+.dg-node.is-active .dg-label,.dg-node.is-active .dg-tag{fill:var(--ui-accent-soft)}
+/* the ring in the canvas colour keeps the badge apart from the box it sits on,
+   lit or not */
+.dg-step rect{fill:var(--ui-ink); stroke:var(--ui-canvas); stroke-width:1.5}
+.dg-step text{font:700 .75rem/1 var(--font-mono); fill:var(--ui-canvas)}
 .dg-node:focus{outline:none}
 .dg-node:focus-visible{outline:3px solid var(--ui-focus); outline-offset:3px}
 .dg-node:focus-visible .dg-box{stroke:var(--ui-focus); stroke-width:3; stroke-dasharray:none}
@@ -58,6 +76,19 @@ export const DIAGRAM_CSS = `
 .tree-title{font-family:var(--font-display); font-weight:560; font-size:1.05rem; color:var(--ui-ink)}
 .tree{overflow-x:auto; margin:0; padding:.9rem 1rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised); color:var(--ui-ink); font:.82rem/1.7 var(--font-mono); tab-size:2}
 .tree-note{color:var(--ui-muted)}
+/* the gutter's word is what says the status; colour only echoes it, so it
+   survives greyscale. Moved has no colour of its own: it is the one status that
+   is neither good nor bad news, so it stays the muted base */
+.tree-status{color:var(--ui-muted); font-weight:700}
+.tree-status[data-status="new"]{color:var(--ui-positive-ink)}
+.tree-status[data-status="changed"]{color:var(--ui-amber-ink)}
+.tree-status[data-status="removed"]{color:var(--ui-critical-ink)}
+.tree-link{color:inherit; text-decoration:underline; text-decoration-color:var(--ui-border-strong); text-underline-offset:.2em}
+.tree-link:hover{text-decoration-color:currentColor}
+.tree-link:focus-visible{outline:2px solid var(--ui-accent); outline-offset:2px; border-radius:.2rem}
+.tree-legend{margin:0; color:var(--ui-muted); font:.82rem/1.5 var(--font-mono)}
+/* the figure's own gap spaces the bar, so the bar brings no margin of its own */
+.tree-figure .filter-chips{margin:0}
 
 .mermaid-figure{display:flex; flex-direction:column; gap:.8rem; margin:0}
 .mermaid-canvas{overflow-x:auto; padding:.4rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised)}

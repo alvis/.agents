@@ -9,6 +9,7 @@ import { DEVIATION_CSS } from "./style/deviation.ts";
 import { LEDGER_CSS } from "./style/ledger.ts";
 import { OBSERVATION_CSS } from "./style/observation.ts";
 import { QUIZ_CSS } from "./style/quiz.ts";
+import { VARIANTS_CSS } from "./style/variants.ts";
 import { codeExcerpts, usesBlock } from "./walk.ts";
 import { usesMermaid } from "./block/mermaid.ts";
 import { RenderError } from "./error.ts";
@@ -75,6 +76,7 @@ export async function renderFile(
     // the gate rides on the question: `renderGate` refuses a page that asks
     // none, so a board holding a gate holds a quiz and one test covers both
     ...(usesBlock(data, "quiz") ? [QUIZ_CSS] : []),
+    ...(usesBlock(data, "variants") ? [VARIANTS_CSS] : []),
   ].join("\n\n");
   const html = renderPage(data, { ...assets, css, files, mermaid });
   await mkdir(dirname(outPath), { recursive: true });

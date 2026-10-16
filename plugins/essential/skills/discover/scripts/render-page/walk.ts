@@ -9,10 +9,32 @@ export interface Placed {
 }
 
 /**
+ * lists the block lists one block holds, each with its own JSON path.
+ *
+ * a `disclosure` holds one list; a `variants` block holds one per item, which
+ * is why the path cannot be derived from the block's type alone.
+ * @param block the block to look inside, which may be malformed
+ * @param path JSON path of `block`
+ * @returns each list it holds, in the order it draws them
+ */
+function heldBy(block: unknown, path: string): { held: unknown; at: string }[] {
+  const container = block as { type?: unknown; blocks?: unknown; items?: unknown } | null;
+  if (container?.type !== "variants")
+    return [{ held: container?.blocks, at: `${path}.blocks` }];
+
+  return Array.isArray(container.items)
+    ? container.items.map((item: { blocks?: unknown } | null, index) => ({
+        held: item?.blocks,
+        at: `${path}.items[${index}].blocks`,
+      }))
+    : [];
+}
+
+/**
  * walks every block a list holds, including the ones a container nests.
  *
- * `disclosure` is the only block carrying blocks of its own, and a flat walk
- * saw none of them. One walk, shared by everything that asks a question of a
+ * `disclosure` and `variants` carry blocks of their own, and a flat walk saw
+ * none of them. One walk, shared by everything that asks a question of a
  * board's blocks, is what keeps those answers from disagreeing: a picture
  * behind a disclosure was once resolved by the reader that recursed and missed
  * by the one that did not, and a Mermaid graph behind one shipped with neither
@@ -34,7 +56,9 @@ export function walkBlocks(blocks: Block[] | undefined, at: string): Placed[] {
 
     return [
       { block, path },
-      ...walkBlocks((block as { blocks?: Block[] } | null)?.blocks, `${path}.blocks`),
+      ...heldBy(block, path).flatMap(({ held, at: heldAt }) =>
+        walkBlocks(held as Block[] | undefined, heldAt),
+      ),
     ];
   });
 }

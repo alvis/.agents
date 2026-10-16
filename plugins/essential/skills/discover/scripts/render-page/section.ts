@@ -1,6 +1,9 @@
 import { renderBlock } from "./block.ts";
 import { escapeHtml } from "./escape.ts";
 import { requireFreshId } from "./id.ts";
+import { renderInline } from "./inline.ts";
+import { asksIn, opensWithQuestions } from "./reply.ts";
+import { STATE_WORD } from "./runtime/outline.ts";
 import {
   optionalString,
   requireArray,
@@ -9,6 +12,7 @@ import {
 } from "./validate.ts";
 
 import type { PageContext } from "./context.ts";
+import type { Ask } from "./reply.ts";
 import type { Block, Section } from "./types.ts";
 
 /**
@@ -32,8 +36,45 @@ export function renderSection(section: Section, index: number, page: PageContext
       renderBlock(block, `${at}.blocks[${position}]`, page),
     )
     .join("");
+  const lede =
+    section.lede === undefined
+      ? ""
+      : `<p class="section-lede">${renderInline(section.lede, `${at}.lede`)}</p>`;
+  // read after the body is drawn, so every question the chips name has been
+  // through its own refusals and has an id, a ref and a label worth linking to.
+  // chips under a title that is followed directly by its cards repeat what is
+  // already on screen, so a section opening with all its questions draws none
+  const asks = opensWithQuestions(section.blocks, `${at}.blocks`)
+    ? ""
+    : renderAsks(asksIn(section.blocks, `${at}.blocks`));
 
-  return `<section class="section" id="s-${escapeHtml(id)}" data-section data-section-id="${escapeHtml(id)}" data-section-label="${label}" data-section-title="${title}"><div class="section-heading"><p class="section-no">${number}${eyebrow ? ` · ${escapeHtml(eyebrow)}` : ""}</p><h2>${title}</h2>${noteControl(label)}</div><div class="section-body" data-section-body>${body}</div><ul class="note-list" data-note-list aria-label="Notes on ${label}"></ul></section>`;
+  return `<section class="section" id="s-${escapeHtml(id)}" data-section data-section-id="${escapeHtml(id)}" data-section-label="${label}" data-section-title="${title}"><div class="section-heading"><p class="section-no">${number}${eyebrow ? ` · ${escapeHtml(eyebrow)}` : ""}</p><h2>${title}</h2>${noteControl(label)}</div>${lede}${asks}<div class="section-body" data-section-body>${body}</div><ul class="note-list" data-note-list aria-label="Notes on ${label}"></ul></section>`;
+}
+
+/**
+ * draws the questions a section asks as chips under its heading.
+ *
+ * a reader who skims the headings learns what is being asked of them and how
+ * far along it is without reading a block. Each chip is a plain link to its
+ * card, and its state word is text so the state never rests on colour; the
+ * runtime repaints both as the reader answers, from the same lines that paint
+ * the drawer.
+ * @param asks the section's questions in reading order, nested ones included
+ * @returns the chips as HTML, or nothing for a section that asks nothing
+ */
+function renderAsks(asks: Ask[]): string {
+  if (!asks.length) return "";
+
+  const chips = asks
+    .map(({ question, disposition }) => {
+      const id = escapeHtml(question.id);
+      const ref = escapeHtml(question.ref);
+
+      return `<a class="q-chip" href="#qs-${id}" data-heading-chip="${id}" data-status="${disposition}" title="${ref} · ${escapeHtml(question.label)}">${ref} <span class="q-chip-state">${STATE_WORD[disposition]}</span></a>`;
+    })
+    .join("");
+
+  return `<p class="section-asks"><span class="section-asks-label">Asks</span>${chips}</p>`;
 }
 
 /**

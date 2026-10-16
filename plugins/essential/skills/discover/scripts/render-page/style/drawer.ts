@@ -107,6 +107,14 @@ export const DRAWER_CSS = `
 .drawer-nav{display:grid; gap:.15rem}
 .drawer-nav a{padding:.3rem .5rem; border-radius:.55rem; color:var(--ui-muted); text-decoration:none; font-size:.85rem}
 .drawer-nav a[aria-current="location"]{background:var(--ui-accent-soft); color:var(--ui-accent-ink); font-weight:700}
+/* the tally is words ("2 open", "settled"), and the colour only echoes them: a
+   section with nothing asked of it carries no tally at all, and an empty one
+   is not drawn, or its flex gap would indent the label */
+.drawer-nav a[data-nav-section]{display:flex; gap:.6rem; align-items:baseline; justify-content:space-between}
+.nav-tally{color:var(--ui-faint); font:700 .72rem/1.4 var(--font-mono); letter-spacing:.04em; white-space:nowrap}
+.nav-tally:empty{display:none}
+.drawer-nav a[data-nav-state="open"] .nav-tally{color:var(--ui-accent-ink)}
+.drawer-nav a[data-nav-state="settled"] .nav-tally{color:var(--ui-positive-ink)}
 .summaries{margin:0; padding:0; list-style:none; display:grid; gap:.4rem; font-size:.85rem}
 /* the run's other boards, drawn as a peer of the section list: leaving the
    board is the same kind of move as jumping within it, and a reader who has

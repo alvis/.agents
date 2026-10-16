@@ -68,7 +68,9 @@ export const ANNOTATION_CSS = `
 .diagram-detail-hint{margin:0; color:var(--ui-faint); font:italic .82rem/1.5 var(--font-body)}
 .diagram-detail-card h4{margin:0 0 .3rem; font:700 .95rem/1.3 var(--font-display)}
 .diagram-detail-card p{margin:0; color:var(--ui-ink); font:.86rem/1.6 var(--font-body)}
-.dg-node.is-active .dg-box{stroke:var(--ui-accent); stroke-width:3}
+/* chosen is the box whose detail is open; it is not "active", which the tie
+   runtime owns for a box lit by a partner, so the two can hold at once */
+.dg-node.is-chosen .dg-box{stroke:var(--ui-accent); stroke-width:3}
 
 .disclosure{margin:.8rem 0; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
 .disclosure>summary{padding:.6rem .8rem; color:var(--ui-ink); font:600 .9rem/1.5 var(--font-body); cursor:pointer}

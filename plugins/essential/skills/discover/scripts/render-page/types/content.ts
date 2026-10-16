@@ -212,12 +212,28 @@ export interface Row {
   };
 }
 
+/**
+ * what a change did to a tree entry.
+ *
+ * the list lives beside the entry type written in it, for the reason the page
+ * kinds do: kept apart, the union and the list the renderer validates against
+ * drift, and nothing would report it.
+ */
+export const TREE_STATUSES = ["new", "changed", "removed", "moved"] as const;
+
 /** one entry in a file tree, drawn with box-drawing rules rather than images. */
 export interface TreeItem {
   /** the file or directory name, drawn verbatim in a mono face */
   name: string;
   /** what it is for, drawn dimmed to the right of the name */
   note?: string;
+  /**
+   * what the change did to it; an entry beneath one that has a status
+   * inherits it, so a new directory is marked once rather than on every file
+   */
+  status?: (typeof TREE_STATUSES)[number];
+  /** the id of the section that explains it, which its name then links to */
+  section?: string;
   /** entries nested beneath it; presence is what makes this a directory */
   children?: TreeItem[];
 }

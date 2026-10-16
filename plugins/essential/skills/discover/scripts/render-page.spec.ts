@@ -8,6 +8,7 @@ import { main } from "./render-page/cli.ts";
 import { RenderError } from "./render-page/error.ts";
 import { PAGE_KINDS } from "./render-page/types/page.ts";
 import { renderPage } from "./render-page/page.ts";
+import { VARIANTS_CSS } from "./render-page/style/variants.ts";
 import { CHOICE_TAGS } from "./render-page/types.ts";
 import { removeDirectory, temporaryDirectory } from "./test-support.ts";
 
@@ -350,8 +351,12 @@ describe("fn:renderPage", () => {
 
     // SC-4: everything the drawer buys back over a bare count
     expect(panel).toMatch(/<nav class="drawer-nav" aria-label="Sections">/);
+    // a board that asks something also states each section's standing in its
+    // link, so the label is checked as the link's first text and not its last
     for (const section of data.sections)
-      expect(panel).toContain(`href="#s-${section.id}">${section.label}</a>`);
+      expect(panel).toMatch(
+        new RegExp(`href="#s-${section.id}"[^>]*>${section.label}[ <]`),
+      );
     expect(panel).toMatch(/<ul class="summaries" data-summaries>/);
     // the copy control lives in the collapsed bar, so the reply can be taken
     // without first opening the drawer to reach it
@@ -1788,6 +1793,20 @@ describe("fn:renderPage new blocks", () => {
     expect(css).not.toMatch(/minmax\(1[4-9]rem,1fr\)/);
   });
 
+  it("should let a narrow column shrink a variants track below its density", () => {
+    // the same overflow as the choice grid, at four times the floor: a bare
+    // minmax(30rem,1fr) demands 480px inside a 272px page
+    expect(VARIANTS_CSS).toMatch(
+      /\.variants-grid\{[^}]*minmax\(min\(var\(--track\),100%\),1fr\)/,
+    );
+    expect(VARIANTS_CSS.replaceAll(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(
+      /minmax\(\d+(?:\.\d+)?rem,1fr\)/,
+    );
+    // and a panel may shrink under a figure drawn at natural size, so the
+    // figure's own frame scrolls instead of widening the row
+    expect(VARIANTS_CSS).toMatch(/\.variant\{[^}]*min-width:0/);
+  });
+
   it("should stretch a board card to the row it shares", () => {
     const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
 
@@ -1969,6 +1988,305 @@ describe("fn:renderPage single-reply round trip", () => {
         'sections[0].blocks[1].id: duplicate question id "controls"',
       ),
     );
+  });
+});
+
+describe("fn:renderPage questions inside a container", () => {
+  const nested = page({
+    sections: [
+      {
+        id: "s",
+        label: "S",
+        title: "T",
+        blocks: [
+          { type: "note", id: "before", ref: "Q1", label: "Before", ask: "A" },
+          { type: "disclosure", summary: "Working", blocks: [NEW_BLOCKS.decision] },
+          { type: "note", id: "after", ref: "Q2", label: "After", ask: "A" },
+        ],
+      },
+    ],
+    reply: { heading: "Generated reply", template: "Answers:\n{{answers}}" },
+  });
+
+  /**
+   * reads the reply a reader with scripting off is handed
+   * @param html the rendered page
+   * @returns the pre-rendered reply text
+   */
+  function replyOf(html: string): string {
+    return /<pre class="reply"[^>]*>([^<]*)<\/pre>/.exec(html)?.[1] ?? "";
+  }
+
+  it("should count a decision inside a disclosure and list it in the reply", () => {
+    const html = render(nested);
+
+    // the runtime counts every `[data-question]` field, folded or not, so a
+    // count that read only top-level blocks opened the page at 2 and corrected
+    // itself to 3 once the script ran
+    expect(html).toContain(">3 unanswered<");
+    expect(replyOf(html)).toContain("- **Q23 · Rollout plan:** ");
+  });
+
+  it("should list questions in the order the page draws them", () => {
+    const html = render(nested);
+    const drawn = [...html.matchAll(/ data-question-id="([^"]+)"/g)].map((id) => id[1]);
+    const replied = [...replyOf(html).matchAll(/^- \*\*(Q\d+) /gm)].map((ref) => ref[1]);
+
+    // the runtime reads its fields in document order and the reply is written
+    // in the order the walk yields them; they agree only while both are the
+    // page's order
+    expect(drawn).toEqual(["before", "rollout", "after"]);
+    expect(replied).toEqual(["Q1", "Q23", "Q2"]);
+  });
+});
+
+describe("fn:renderPage questions inside a variant", () => {
+  const compared = page({
+    sections: [
+      {
+        id: "s",
+        label: "S",
+        title: "T",
+        // the section opens with the comparison, so every question it asks is
+        // nested and none is among its leading top-level blocks
+        blocks: [
+          {
+            type: "variants",
+            title: "Two ways",
+            items: [
+              {
+                label: "Keep",
+                blocks: [{ type: "note", id: "kept", ref: "V1", label: "Kept", ask: "A" }],
+              },
+              { label: "Move", blocks: [NEW_BLOCKS.decision] },
+            ],
+          },
+          { type: "note", id: "after", ref: "Q2", label: "After", ask: "A" },
+        ],
+      },
+    ],
+    reply: { heading: "Generated reply", template: "Answers:\n{{answers}}" },
+  });
+
+  it("should count every question in a panel and list it in the reply, in page order", () => {
+    const html = render(compared);
+    const reply = /<pre class="reply"[^>]*>([^<]*)<\/pre>/.exec(html)?.[1] ?? "";
+    const drawn = [...html.matchAll(/ data-question-id="([^"]+)"/g)].map((id) => id[1]);
+    const replied = [...reply.matchAll(/^- \*\*(\w+) /gm)].map((ref) => ref[1]);
+
+    // A5 — the runtime counts every `[data-question]` field, and a count that
+    // read only top-level blocks opened at one number and corrected to another
+    expect(html).toContain(">3 unanswered<");
+    expect(drawn).toEqual(["kept", "rollout", "after"]);
+    expect(replied).toEqual(["V1", "Q23", "Q2"]);
+  });
+
+  it("should draw a question in a panel where key navigation can reach it", () => {
+    const markup = markupOf(render(compared));
+    // everything from the block's opening tag to the question drawn after it
+    const panels = markup.slice(
+      markup.indexOf('<div class="variants">'),
+      markup.indexOf('data-question-id="after"'),
+    );
+
+    // key navigation arrows through the page's question fields in document
+    // order, and a field inside a closed disclosure or a hidden element is one
+    // it would land on and show nothing: a panel is neither
+    expect(panels).toContain('data-question-id="kept"');
+    expect(panels).toContain('data-question-id="rollout"');
+    expect(panels).not.toContain("<details");
+    expect(panels).not.toMatch(/<div class="variants?[^>]*\shidden/);
+    // and the drawer lists them for a jump, as it does any question
+    expect(markup).toContain('href="#qs-kept"');
+    expect(markup).toContain('href="#qs-rollout"');
+  });
+
+  it("should chip every question of a section that asks only inside its variants", () => {
+    const html = render(compared);
+    const start = html.indexOf('<section class="section" id="s-s"');
+    const drawn = html.slice(start, html.indexOf("</section>", start));
+    const chipped = [...drawn.matchAll(/data-heading-chip="([^"]+)"/g)].map((chip) => chip[1]);
+
+    // a question nested in a container counts as after content, so the title
+    // is not followed directly by its cards and the chips are not a repeat
+    expect(chipped).toEqual(["kept", "rollout", "after"]);
+  });
+});
+
+describe("fn:renderPage section outline", () => {
+  /** a decision that agrees with its own default, so a fresh page reads it as settled */
+  const settled = {
+    type: "decision",
+    response: "follow-up",
+    default: "approve",
+    id: "more",
+    ref: "F1",
+    label: "More detail",
+    ask: "Want this explained further?",
+  } as const satisfies Block;
+
+  const outlined = page({
+    sections: [
+      {
+        id: "plain",
+        label: "Plain",
+        title: "Nothing asked",
+        blocks: [{ type: "prose", text: "Just reading." }],
+      },
+      {
+        id: "asked",
+        label: "Asked",
+        title: "Two asked",
+        lede: ["The answer is ", { kind: "mark", text: "yes" }, " <b>."],
+        blocks: [
+          { type: "note", id: "before", ref: "Q1", label: "Before", ask: "A" },
+          { type: "disclosure", summary: "Working", blocks: [NEW_BLOCKS.decision] },
+        ],
+      },
+      {
+        id: "done",
+        label: "Done",
+        title: "Settled by default",
+        blocks: [{ type: "prose", text: "Read this first." }, settled],
+      },
+      {
+        id: "cards",
+        label: "Cards",
+        title: "Questions first",
+        blocks: [
+          { type: "note", id: "c1", ref: "C1", label: "One", ask: "A" },
+          { type: "note", id: "c2", ref: "C2", label: "Two", ask: "A" },
+          { type: "prose", text: "Afterwards." },
+        ],
+      },
+      {
+        id: "buried",
+        label: "Buried",
+        title: "Nested question",
+        blocks: [
+          {
+            type: "disclosure",
+            summary: "Working",
+            blocks: [{ type: "note", id: "b1", ref: "B1", label: "Nested", ask: "A" }],
+          },
+        ],
+      },
+      {
+        id: "late",
+        label: "Late",
+        title: "A card after cards and content",
+        blocks: [
+          { type: "note", id: "l1", ref: "L1", label: "First", ask: "A" },
+          { type: "prose", text: "Between." },
+          { type: "note", id: "l2", ref: "L2", label: "Second", ask: "A" },
+        ],
+      },
+    ],
+  });
+
+  /**
+   * reads one section's markup out of a rendered page
+   * @param html the rendered page
+   * @param id the section's id
+   * @returns the section element, from its opening tag to its close
+   */
+  function sectionOf(html: string, id: string): string {
+    const start = html.indexOf(`<section class="section" id="s-${id}"`);
+
+    return html.slice(start, html.indexOf("</section>", start));
+  }
+
+  it("should draw a lede under the title, escaped, and before the body", () => {
+    const drawn = sectionOf(render(outlined), "asked");
+
+    expect(drawn.indexOf("</h2>")).toBeLessThan(drawn.indexOf('<p class="section-lede">'));
+    expect(drawn.indexOf('<p class="section-lede">')).toBeLessThan(drawn.indexOf("section-body"));
+    expect(drawn).toContain("&lt;b&gt;.");
+    expect(drawn).not.toContain("<b>");
+  });
+
+  it("should leave a section with neither a lede nor a question as it always was", () => {
+    const drawn = sectionOf(render(outlined), "plain");
+
+    expect(drawn).not.toContain("section-lede");
+    expect(drawn).not.toContain("section-asks");
+    expect(drawn).toMatch(/<\/h2><button[^>]*>[\s\S]*?<\/button><\/div><div class="section-body"/);
+  });
+
+  it("should chip exactly the section's questions, nested ones included, in page order", () => {
+    const html = render(outlined);
+    const asks = /<p class="section-asks">([\s\S]*?)<\/p>/.exec(sectionOf(html, "asked"))?.[1] ?? "";
+    const linked = [...asks.matchAll(/href="#qs-([^"]+)"/g)].map((match) => match[1]);
+    const drawn = [...sectionOf(html, "asked").matchAll(/ data-question-id="([^"]+)"/g)].map(
+      (match) => match[1],
+    );
+
+    expect(linked).toEqual(["before", "rollout"]);
+    expect(linked).toEqual(drawn);
+    // a link that lands nowhere is no better than none
+    for (const id of linked) expect(html).toContain(`id="qs-${id}"`);
+    expect(sectionOf(html, "done")).toContain('data-heading-chip="more"');
+    expect(sectionOf(html, "plain")).not.toContain("section-asks");
+  });
+
+  it("should draw no chips for a section whose questions are its leading blocks", () => {
+    // the title is followed directly by its cards, so chips would repeat them
+    expect(sectionOf(render(outlined), "cards")).not.toContain("section-asks");
+  });
+
+  it("should chip every question of a section that asks after other content", () => {
+    const html = render(outlined);
+    const linked = (id: string): string[] =>
+      [...sectionOf(html, id).matchAll(/data-heading-chip="([^"]+)"/g)].map((match) => match[1]);
+
+    // all of them, the first included, once anything precedes the last
+    expect(linked("late")).toEqual(["l1", "l2"]);
+    expect(linked("done")).toEqual(["more"]);
+  });
+
+  it("should count a nested question as coming after content", () => {
+    const html = render(outlined);
+
+    expect(sectionOf(html, "buried")).toContain('data-heading-chip="b1"');
+    // the section's first block is a container, not a question
+    expect(sectionOf(html, "asked")).toContain('data-heading-chip="rollout"');
+  });
+
+  it("should open each chip in the state the reply gives its question", () => {
+    const html = render(outlined);
+    const status = (id: string): string | undefined =>
+      new RegExp(`data-heading-chip="${id}" data-status="(\\w+)"`).exec(html)?.[1];
+
+    // a recommendation nobody has agreed to, a question that recommends
+    // nothing, and a follow-up resting at its own default
+    expect(status("rollout")).toBe("suggested");
+    expect(status("before")).toBe("unanswered");
+    expect(status("more")).toBe("confirmed");
+    // the state is a word, so it never rests on colour alone
+    expect(html).toMatch(/data-heading-chip="more"[^>]*>F1 <span class="q-chip-state">confirmed<\/span>/);
+  });
+
+  it("should say in the drawer's navigation where each section stands", () => {
+    const nav = /<nav class="drawer-nav"[\s\S]*?<\/nav>/.exec(render(outlined))?.[0] ?? "";
+    const stateOf = (id: string): string | undefined =>
+      new RegExp(`data-nav-section="${id}" data-nav-state="(\\w+)"`).exec(nav)?.[1];
+
+    expect(stateOf("plain")).toBe("none");
+    expect(stateOf("asked")).toBe("open");
+    expect(stateOf("done")).toBe("settled");
+    // the tally stays on a section even where it draws no chips
+    expect(stateOf("cards")).toBe("open");
+  });
+
+  it("should leave the navigation as plain links on a board that asks nothing", () => {
+    const html = render(
+      page({
+        sections: [{ id: "s", label: "S", title: "T", blocks: [{ type: "prose", text: "x" }] }],
+        reply: undefined,
+      }),
+    );
+
+    expect(html).toContain('<nav class="drawer-nav" aria-label="Sections"><h3>Sections</h3><a href="#s-s">S</a></nav>');
   });
 });
 
@@ -2457,6 +2775,36 @@ describe("fn:renderPage Mermaid runtime", () => {
     );
   });
 
+  it("should carry the runtime for a graph held by a variant", () => {
+    const html = renderPage(
+      page({
+        sections: [
+          {
+            id: "s",
+            label: "S",
+            title: "T",
+            blocks: [
+              {
+                type: "variants",
+                items: [
+                  { label: "A", blocks: [{ type: "prose", text: "no graph" }] },
+                  {
+                    label: "B",
+                    blocks: [{ type: "mermaid", source: "graph TD; a-->b;", alt: "a to b" }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      { ...assets, mermaid: "/* drawn */" },
+    );
+
+    expect(html).toContain("/* drawn */");
+    expect(html).toContain("data-mermaid");
+  });
+
   it("should carry no runtime for a board that draws no graph", () => {
     const html = renderPage(
       page({
@@ -2484,21 +2832,24 @@ describe("fn:renderPage Mermaid runtime", () => {
 
 describe("fn:renderPage malformed blocks", () => {
   /** builds a board whose blocks, at one level or the other, are not a list. */
-  function broken(where: "section" | "disclosure"): PageData {
+  function broken(where: "section" | "disclosure" | "variant"): PageData {
     const inner = "not-an-array" as unknown as PageData["sections"][number]["blocks"];
-
-    return page({
-      sections: [
+    const held = {
+      section: inner,
+      disclosure: [{ type: "disclosure", summary: "Working", blocks: inner }],
+      variant: [
         {
-          id: "s",
-          label: "S",
-          title: "T",
-          blocks:
-            where === "section"
-              ? inner
-              : [{ type: "disclosure", summary: "Working", blocks: inner }],
+          type: "variants",
+          items: [
+            { label: "A", blocks: [{ type: "prose", text: "x" }] },
+            { label: "B", blocks: inner },
+          ],
         },
       ],
+    } as const;
+
+    return page({
+      sections: [{ id: "s", label: "S", title: "T", blocks: held[where] as never }],
     });
   }
 
@@ -2509,8 +2860,9 @@ describe("fn:renderPage malformed blocks", () => {
   it.each([
     ["a section", "section", "sections[0].blocks"],
     ["a disclosure", "disclosure", "sections[0].blocks[0].blocks"],
+    ["a variant", "variant", "sections[0].blocks[0].items[1].blocks"],
   ])("should name the path when %s holds blocks that are not a list", (_, where, at) => {
-    expect(() => render(broken(where as "section" | "disclosure"))).toThrow(
+    expect(() => render(broken(where as "section" | "disclosure" | "variant"))).toThrow(
       new RegExp(`${at.replace(/[[\]]/g, "\\$&")}: required (?:non-empty )?array`),
     );
   });

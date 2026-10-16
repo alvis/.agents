@@ -97,6 +97,26 @@ describe("fn:sourcesOf", () => {
     ).toStrictEqual(["sections[0].blocks[0].blocks[0].blocks[0]"]);
   });
 
+  it("should find a picture held by a variant, at the path that item gives it", () => {
+    // the variants block holds its blocks under `items[i]`, not `blocks`, so a
+    // walk that looked only for `blocks` left the picture unread and unfound
+    expect(
+      sourcesOf(
+        board([
+          {
+            type: "variants",
+            items: [
+              { label: "A", blocks: [{ type: "prose", text: "x" }] },
+              { label: "B", blocks: [{ type: "image", src: "deep.png" }] },
+            ],
+          },
+        ]),
+      ),
+    ).toStrictEqual([
+      { src: "deep.png", type: "image", path: "sections[0].blocks[0].items[1].blocks[0]" },
+    ]);
+  });
+
   it("should ignore blocks that name no file", () => {
     expect(sourcesOf(board([{ type: "prose", text: "hello" }]))).toStrictEqual([]);
   });
@@ -115,6 +135,10 @@ describe("fn:sourcesOf", () => {
     [
       "a disclosure",
       { sections: [{ blocks: [{ type: "disclosure", blocks: "not-an-array" }] }] },
+    ],
+    [
+      "a variant",
+      { sections: [{ blocks: [{ type: "variants", items: [{ blocks: "not-an-array" }] }] }] },
     ],
   ])("should walk past blocks that are not a list, in %s", (_, data) => {
     expect(sourcesOf(data as unknown as PageData)).toEqual([]);
