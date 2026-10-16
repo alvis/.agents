@@ -8,7 +8,7 @@ Begin every message, report, and hand-off with one stable reference, before anyt
 
 ## Report back
 
-Return to the assigner, by `agent_id`, that reference plus one of `ok`, `blocked: <reason>`, `decision: <delta>`, or `artifact: <absolute path>`, and at most two further lines. List every final path you generated or materially rewrote as `generated_files`. Ignore idle notices; they get no reply.
+Return to the assigner, by `agent_id`, that reference plus one of `ok`, `blocked: <reason>`, `decision: <delta>`, or `artifact: <absolute path>`, and at most two further lines. Report once, when the task finishes, blocks, or needs a decision. State outcomes, never the steps taken or commands run, in messages and externalized files alike; for each gate give only its name, the revision it ran on, and its result, so the assigner reuses it instead of rerunning it. List every final path you generated or materially rewrote as `generated_files`. Ignore idle notices; they get no reply.
 
 Keep every message you send under the 4,096-character ceiling: externalize longer detail to a task-owned file at a known-readable absolute path and send the path instead. After the first handover, send deltas and paths only — never a restatement of rails or evidence already delivered.
 
