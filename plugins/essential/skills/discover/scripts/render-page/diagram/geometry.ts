@@ -30,4 +30,17 @@ export const LANE_INSET = 18;
 export const LANE_GAP = 16;
 /** gap between an around-routing lane and its label, in px. */
 export const LANE_LABEL_GAP = 8;
+/**
+ * half the side of a step badge's square tile, in px.
+ *
+ * two mono digits at .75rem are 14.4px wide, so a 22px tile holds the largest
+ * step with 3.8px of air each side. Centred on a box's corner it reaches 11px
+ * past it, which is inside `FRAME_PAD` and clear of the first lane at
+ * `LANE_INSET`, so a badge never moves the drawing's size or a pin's place.
+ */
+export const STEP_HALF = 11;
+/** corner radius of a step badge's tile, in px: rounded enough to read as a tag, square enough never to pass for a pin's disc. */
+export const STEP_CORNER = 4;
+/** highest step number a badge holds, because it has room for two digits. */
+export const MAX_STEP = 99;
 

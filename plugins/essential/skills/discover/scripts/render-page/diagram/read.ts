@@ -1,6 +1,6 @@
 import { RenderError } from "../error.ts";
 import { requireString } from "../validate.ts";
-import { MAX_LINES, WRAP_LIMIT } from "./geometry.ts";
+import { MAX_LINES, MAX_STEP, WRAP_LIMIT } from "./geometry.ts";
 import { EDGE_KINDS, NODE_ROLES } from "./vocabulary.ts";
 
 import type {
@@ -62,6 +62,49 @@ function requireArray(value: unknown, path: string): unknown[] {
 }
 
 /**
+ * reads the three optional marks a node may carry, each by its own path
+ * @param node the author-supplied node
+ * @param at JSON path of the node, used as the prefix of every refusal
+ * @param read the nodes already read, which no step number may repeat
+ * @returns only the marks the author wrote, so an unmarked node gains no key
+ */
+function readMarks(
+  node: DiagramNode,
+  at: string,
+  read: PlacedNode[],
+): Pick<DiagramNode, "emphasis" | "step" | "tie"> {
+  if (node.emphasis !== undefined && typeof node.emphasis !== "boolean")
+    throw new RenderError(
+      `${at}.emphasis: required true or false, received ${JSON.stringify(node.emphasis)}`,
+    );
+  const step = node.step;
+  if (
+    step !== undefined &&
+    (typeof step !== "number" ||
+      !Number.isInteger(step) ||
+      step < 1 ||
+      step > MAX_STEP)
+  )
+    throw new RenderError(
+      `${at}.step: required an integer from 1 to ${MAX_STEP}, received ${JSON.stringify(step)}`,
+    );
+  // two boxes numbered alike would send a reader along a path that forks
+  // where the author meant one line
+  if (step !== undefined && read.some((seen) => seen.step === step))
+    throw new RenderError(
+      `${at}.step: required a step number used once, received ${step} for a second time`,
+    );
+
+  return {
+    ...(node.emphasis === undefined ? {} : { emphasis: node.emphasis }),
+    ...(step === undefined ? {} : { step }),
+    ...(node.tie === undefined
+      ? {}
+      : { tie: requireString(node.tie, `${at}.tie`) }),
+  };
+}
+
+/**
  * breaks a label into the lines drawn inside a node box
  * @param label the node's full label
  * @returns up to `MAX_LINES` lines, the last absorbing any remainder
@@ -120,6 +163,7 @@ export function readNodes(nodes: unknown, path: string): PlacedNode[] {
           // that loses it here draws a box no reader can open beside an aside
           // inviting them to open one
           ...(node.detail === undefined ? {} : { detail: node.detail }),
+          ...readMarks(node, at, read),
           lines: wrapLabel(label),
           x: 0,
           y: 0,

@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import { StubElement } from "../dom-support.ts";
+import { renderCode } from "./block/code.ts";
 import { renderDiagram } from "./diagram.ts";
 import { DIAGRAM_CSS } from "./diagram/style.ts";
 import { RenderError } from "./error.ts";
+import { renderInline } from "./inline.ts";
+import { installDiagramDetail } from "./runtime/detail.ts";
+import { installTies } from "./runtime/tie.ts";
 
 import type { DiagramBlock } from "./diagram/shape.ts";
 
@@ -415,5 +420,212 @@ describe("fn:renderDiagram details", () => {
         }),
       ),
     ).toContain(`${at}.nodes[1].detail`);
+  });
+});
+
+describe("fn:renderDiagram marks", () => {
+  /** a graph whose middle node carries every mark a node may. */
+  const marked = () =>
+    diagram({
+      nodes: [
+        { id: "a", label: "Alpha", layer: 0 },
+        {
+          id: "b",
+          label: "Beta",
+          layer: 1,
+          note: "owns the order",
+          step: 2,
+          emphasis: true,
+          tie: "order",
+          detail: "What Beta holds",
+        },
+        { id: "c", label: "Gamma", layer: 2, step: 3 },
+      ],
+    });
+
+  /**
+   * picks the opening tag of the node group that wraps a label
+   * @param html the rendered figure
+   * @param label the node's label
+   * @returns the group's opening tag
+   */
+  function groupOf(html: string, label: string): string {
+    return (
+      new RegExp(`<g class="dg-node[^>]*>(?=<title>[^<]*${label})`).exec(html)?.[0] ?? ""
+    );
+  }
+
+  it("should draw an emphasised box with a class and set only fill and stroke for it", () => {
+    const html = renderDiagram(marked(), at);
+    const rule = /\.dg-node\.is-emphasis \.dg-box\{([^}]*)\}/.exec(DIAGRAM_CSS)?.[1] ?? "";
+    const properties = rule.split(";").map((one) => one.split(":")[0]?.trim());
+
+    expect(groupOf(html, "Beta")).toContain('class="dg-node dg-node-domain is-emphasis"');
+    expect(groupOf(html, "Alpha")).not.toContain("is-emphasis");
+    // a rule that set dash or weight would erase the channels that carry the
+    // role without colour
+    expect(properties.filter(Boolean)).toStrictEqual(["fill", "stroke"]);
+  });
+
+  it("should carry the tie key and the detail key on one node", () => {
+    const group = groupOf(renderDiagram(marked(), at), "Beta");
+
+    expect(group).toContain('data-diagram-node="b"');
+    expect(group).toContain('data-sync="tie:order"');
+  });
+
+  it("should keep a box chosen and lit at once, because they are different classes", () => {
+    const key = /data-sync="([^"]+)"/.exec(groupOf(renderDiagram(marked(), at), "Beta"))?.[1];
+    const node = new StubElement("g", {
+      "data-sync": key ?? "",
+      "data-diagram-node": "b",
+    });
+    const host = new StubElement("div", { "data-diagram-detail-host": "" });
+    const figure = new StubElement("figure", { class: "diagram" }, [node, host]);
+    const page = new StubElement("div", {}, [figure]);
+    installTies(page as unknown as ParentNode);
+    installDiagramDetail(page as unknown as ParentNode);
+
+    node.dispatch("mouseenter");
+    node.dispatch("click");
+
+    expect(node.classList.contains("is-active")).toBe(true);
+    expect(node.classList.contains("is-chosen")).toBe(true);
+  });
+
+  it("should light a prose run, a code line and a node from one tie key", () => {
+    // A1 — each end is drawn by its own renderer, so the key it emits is the
+    // one the page would carry
+    const prose = renderInline([{ kind: "tie", text: "the order", key: "order" }], "p");
+    const code = renderCode(
+      {
+        type: "code",
+        language: "typescript",
+        code: "const a = 1;\nconst order = 2;",
+        ties: [{ key: "order", lines: [2] }],
+      } as Parameters<typeof renderCode>[0],
+      "c",
+    );
+    const keys = [prose, code, renderDiagram(marked(), at)].map(
+      (html) => /data-sync="([^"]+)"/.exec(html)?.[1] ?? "",
+    );
+    const [run, line, node] = keys.map(
+      (key) => new StubElement("span", { "data-sync": key }),
+    ) as [StubElement, StubElement, StubElement];
+    const bystander = new StubElement("span", { "data-sync": "tie:other" });
+    const page = new StubElement("div", {}, [run, line, node, bystander]);
+    installTies(page as unknown as ParentNode);
+
+    node.dispatch("mouseenter");
+
+    expect(keys).toStrictEqual(["tie:order", "tie:order", "tie:order"]);
+    expect(run.classList.contains("is-active")).toBe(true);
+    expect(line.classList.contains("is-active")).toBe(true);
+    expect(bystander.classList.contains("is-active")).toBe(false);
+  });
+
+  it("should invert a lit box so that it cannot be taken for an emphasised one", () => {
+    const fill = (selector: string) =>
+      new RegExp(`${selector.replaceAll(".", "\\.")} \\.dg-box\\{[^}]*fill:([^;}]*)`).exec(
+        DIAGRAM_CSS,
+      )?.[1];
+
+    expect(fill(".dg-node.is-active")).toBeDefined();
+    expect(fill(".dg-node.is-active")).not.toBe(fill(".dg-node.is-emphasis"));
+  });
+
+  it("should draw every step badge inside the emitted drawing", () => {
+    // A2 — a badge sits on its box's corner, so the boxes nearest the edges of
+    // the drawing are where one could be clipped
+    const html = renderDiagram(
+      diagram({
+        nodes: [
+          { id: "a", label: "Alpha", layer: 0, step: 1 },
+          { id: "b", label: "Beta", layer: 1, step: 99 },
+          { id: "c", label: "Gamma", layer: 2, step: 3 },
+        ],
+      }),
+      at,
+    );
+    const [, width, height] = /<svg width="(\d+)" height="(\d+)"/.exec(html)?.map(Number) ?? [];
+    const tiles = [
+      ...html.matchAll(
+        /<g class="dg-step"[^>]*><rect x="(-?[\d.]+)" y="(-?[\d.]+)" width="(\d+)" height="(\d+)"/g,
+      ),
+    ].map((one) => ({ x: Number(one[1]), y: Number(one[2]), w: Number(one[3]), h: Number(one[4]) }));
+
+    expect(tiles).toHaveLength(3);
+    for (const { x, y, w, h } of tiles) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(x + w).toBeLessThanOrEqual(width ?? 0);
+      expect(y + h).toBeLessThanOrEqual(height ?? 0);
+    }
+  });
+
+  it("should not resize the drawing when steps are added", () => {
+    const stepped = diagram().nodes.map((node, index) => ({ ...node, step: index + 1 }));
+    const size = (html: string) => /<svg width="\d+" height="\d+"/.exec(html)?.[0];
+
+    expect(size(renderDiagram(diagram({ nodes: stepped }), at))).toBe(
+      size(renderDiagram(diagram(), at)),
+    );
+  });
+
+  it("should lead the title and the text list with the step", () => {
+    const html = renderDiagram(marked(), at);
+
+    expect(html).toContain("<title>Step 2: Beta — owns the order</title>");
+    expect(html).toContain("<li>Step 3: Gamma");
+    expect(html).toContain("<li>Alpha");
+  });
+
+  it("should hide the badge from assistive tech, which has the words already", () => {
+    expect(renderDiagram(marked(), at)).toContain('<g class="dg-step" aria-hidden="true">');
+  });
+
+  it("should draw a graph without marks exactly as it was", () => {
+    const html = renderDiagram(diagram(), at);
+    const falsy = diagram().nodes.map((node) => ({ ...node, emphasis: false }));
+
+    expect(html).not.toMatch(/is-emphasis|dg-step|Step \d|data-sync/);
+    expect(renderDiagram(diagram({ nodes: falsy }), at)).toBe(html);
+  });
+
+  it("should refuse an emphasis that is not a boolean, by the node's path", () => {
+    const nodes = [{ id: "a", label: "Alpha", layer: 0, emphasis: "yes" }];
+
+    expect(refusal(diagram({ nodes }))).toBe(
+      `${at}.nodes[0].emphasis: required true or false, received "yes"`,
+    );
+  });
+
+  it("should refuse a step outside 1 to 99 or not whole, by the node's path", () => {
+    for (const step of [0, 100, 1.5, "2"]) {
+      const nodes = [{ id: "a", label: "Alpha", layer: 0, step }];
+
+      expect(refusal(diagram({ nodes }))).toBe(
+        `${at}.nodes[0].step: required an integer from 1 to 99, received ${JSON.stringify(step)}`,
+      );
+    }
+  });
+
+  it("should refuse a step used twice, naming the second node", () => {
+    const nodes = [
+      { id: "a", label: "Alpha", layer: 0, step: 4 },
+      { id: "b", label: "Beta", layer: 1, step: 4 },
+    ];
+
+    expect(refusal(diagram({ nodes }))).toBe(
+      `${at}.nodes[1].step: required a step number used once, received 4 for a second time`,
+    );
+  });
+
+  it("should refuse a tie that is not a non-empty string, by the node's path", () => {
+    const nodes = [{ id: "a", label: "Alpha", layer: 0, tie: 7 }];
+
+    expect(refusal(diagram({ nodes }))).toBe(
+      `${at}.nodes[0].tie: required non-empty string, received 7`,
+    );
   });
 });

@@ -28,6 +28,17 @@ export const DIAGRAM_CSS = `
 .dg-node-derived .dg-box{stroke:var(--ui-positive); stroke-width:1}
 .dg-node-ephemeral .dg-box{stroke:var(--ui-amber); stroke-dasharray:1.5 3.5}
 .dg-box-inner{fill:none; stroke:var(--ui-positive); stroke-width:1}
+/* emphasis sets fill and stroke colour and nothing else, so the role's dash and
+   weight, which carry the role without colour, are still there under it */
+.dg-node.is-emphasis .dg-box{fill:var(--ui-accent-soft); stroke:var(--ui-accent-ink)}
+/* lit inverts the colours, as a lit pin does, so a box that is lit never looks
+   like a box that is emphasised: one is a filled ground, the other a dark one */
+.dg-node.is-active .dg-box{fill:var(--ui-accent-ink); stroke:var(--ui-accent-ink)}
+.dg-node.is-active .dg-label,.dg-node.is-active .dg-tag{fill:var(--ui-accent-soft)}
+/* the ring in the canvas colour keeps the badge apart from the box it sits on,
+   lit or not */
+.dg-step rect{fill:var(--ui-ink); stroke:var(--ui-canvas); stroke-width:1.5}
+.dg-step text{font:700 .75rem/1 var(--font-mono); fill:var(--ui-canvas)}
 .dg-node:focus{outline:none}
 .dg-node:focus-visible{outline:3px solid var(--ui-focus); outline-offset:3px}
 .dg-node:focus-visible .dg-box{stroke:var(--ui-focus); stroke-width:3; stroke-dasharray:none}

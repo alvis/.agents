@@ -42,6 +42,23 @@ export interface DiagramNode {
    * reader is actually asking about.
    */
   detail?: Rich;
+  /**
+   * marks the box as one of the few the design turns on.
+   *
+   * drawn in fill and stroke colour only, so the role's dash pattern and
+   * weight, which carry the role without colour, survive it.
+   */
+  emphasis?: boolean;
+  /**
+   * the box's place in a sequence the reader follows, drawn as a numbered
+   * badge on its corner; an integer from 1 to 99, used once per diagram.
+   */
+  step?: number;
+  /**
+   * the key this box shares with prose runs and code lines of the same `tie`
+   * key, which all light together when any one of them is hovered or focused.
+   */
+  tie?: string;
 }
 
 /** one directed connection between two declared nodes. */

@@ -46,7 +46,21 @@
       "blocks": [
         {
           "type": "prose",
-          "text": "Each band below is one hop on the edit path, top to bottom. The tag inside a node says which tier it belongs to — the client, the stateless edge, a domain service, or persistence — so the four-tier decomposition survives even though the bands are ordered by hop."
+          "text": [
+            "Each band below is one hop on the edit path, top to bottom, and the numbered badges give the order an edit travels. The tag inside a node says which tier it belongs to — the client, the stateless edge, a domain service, or persistence — so the four-tier decomposition survives even though the bands are ordered by hop. Two boxes are filled because the design turns on them: ",
+            {
+              "kind": "tie",
+              "text": "the merge engine",
+              "key": "merge"
+            },
+            ", where concurrent edits agree without a lock, and ",
+            {
+              "kind": "tie",
+              "text": "the op log",
+              "key": "log"
+            },
+            ", the one record that is authoritative."
+          ]
         },
         {
           "type": "diagram",
@@ -57,6 +71,7 @@
               "label": "Editor clients",
               "layer": 0,
               "role": "client",
+              "step": 1,
               "note": "browser editors, each holding an optimistic local CRDT replica so typing stays responsive before the server acknowledges",
               "detail": "A replica applies the keystroke locally, renders it, and only then sends the op. Every client is therefore briefly ahead of the server, and the merge engine is what makes those divergent replicas agree again rather than the client waiting to find out."
             },
@@ -65,6 +80,8 @@
               "label": "Realtime Gateway",
               "layer": 1,
               "role": "edge",
+              "step": 2,
+              "tie": "ack",
               "note": "stateless WebSocket edge; holds no document state, so any node serves any session behind a plain load balancer"
             },
             {
@@ -72,6 +89,7 @@
               "label": "Session Coordinator",
               "layer": 2,
               "role": "domain",
+              "step": 3,
               "note": "routes each op to the right document actor and owns membership; the one place per-document ordering is decided",
               "detail": "One actor per open document, addressed by document id. Ordering is decided here and nowhere else, which is what lets the merge engine stay stateless about who sent what."
             },
@@ -88,6 +106,9 @@
               "label": "CRDT Merge Engine",
               "layer": 3,
               "role": "engine",
+              "step": 4,
+              "emphasis": true,
+              "tie": "merge",
               "note": "Yjs-style convergence with no central merge lock; concurrent edits merge deterministically and a slow client never blocks others"
             },
             {
@@ -95,6 +116,9 @@
               "label": "Op Log",
               "layer": 4,
               "role": "source",
+              "step": 5,
+              "emphasis": true,
+              "tie": "log",
               "note": "append-only event store; every document state is reconstructable by replaying it, and this is the single authoritative record"
             },
             {
@@ -203,7 +227,13 @@
         {
           "type": "prose",
           "text": [
-            "Read the two long-range edges first, because they carry the design. The gateway acks straight back to the client without waiting for the merge, which is why typing never blocks — ",
+            "Read the two long-range edges first, because they carry the design. ",
+            {
+              "kind": "tie",
+              "text": "The gateway acks straight back to the client",
+              "key": "ack"
+            },
+            " without waiting for the merge, which is why typing never blocks — ",
             {
               "kind": "provenance",
               "text": "18 ms p99 ack",

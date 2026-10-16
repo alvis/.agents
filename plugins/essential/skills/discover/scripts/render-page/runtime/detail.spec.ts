@@ -78,10 +78,21 @@ describe("fn:installDiagramDetail", () => {
 
     nodes[1]!.dispatch("click");
 
-    expect(nodes.map((node) => node.classList.contains("is-active"))).toEqual([
+    expect(nodes.map((node) => node.classList.contains("is-chosen"))).toEqual([
       false,
       true,
     ]);
+  });
+
+  it("should leave a box lit by its tie lit when another is chosen", () => {
+    const { root, nodes } = figure();
+    installDiagramDetail(root as unknown as ParentNode);
+    nodes[0]!.classList.add("is-active");
+
+    nodes[1]!.dispatch("click");
+
+    expect(nodes[0]!.classList.contains("is-active")).toBe(true);
+    expect(nodes[1]!.classList.contains("is-active")).toBe(false);
   });
 
   it("should answer the keys that activate a control, since a group has none", () => {
