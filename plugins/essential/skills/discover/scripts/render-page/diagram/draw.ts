@@ -1,8 +1,32 @@
 import { escapeHtml } from "../escape.ts";
-import { LINE_HEIGHT, TAG_ZONE } from "./geometry.ts";
+import { syncAttribute } from "../sync.ts";
+import { LINE_HEIGHT, STEP_CORNER, STEP_HALF, TAG_ZONE } from "./geometry.ts";
 import { EDGE_KINDS, KIND_NOTE, NODE_ROLES, ROLE_NOTE, ROLE_TAG } from "./vocabulary.ts";
 
 import type { EdgeKind, PlacedEdge, PlacedNode, Placement } from "./shape.ts";
+
+/**
+ * names a node's place in the sequence, for the title and the text list
+ * @param node the placed node
+ * @returns the lead-in, or nothing when the node carries no step
+ */
+function stepLead(node: PlacedNode): string {
+  return node.step === undefined ? "" : `Step ${node.step}: `;
+}
+
+/**
+ * draws a node's step badge on the corner of its box.
+ *
+ * the badge is a square tile in plain ink, because an author's annotation pin
+ * is an accent disc that can sit on the same box: two numbered discs on one
+ * node would read as one numbering.
+ * @param node the placed node, which carries a step
+ * @returns the badge markup, hidden from assistive tech because the title and
+ * the text list already say the step in words
+ */
+function drawStep(node: PlacedNode): string {
+  return `<g class="dg-step" aria-hidden="true"><rect x="${node.x - STEP_HALF}" y="${node.y - STEP_HALF}" width="${STEP_HALF * 2}" height="${STEP_HALF * 2}" rx="${STEP_CORNER}" /><text x="${node.x}" y="${node.y}" text-anchor="middle" dominant-baseline="central">${node.step}</text></g>`;
+}
 
 /**
  * draws one node as a focusable group
@@ -15,7 +39,7 @@ export function drawNode(
   size: { width: number; height: number },
 ): string {
   const centre = node.x + size.width / 2;
-  const title = node.note ? `${node.label} — ${node.note}` : node.label;
+  const title = `${stepLead(node)}${node.note ? `${node.label} — ${node.note}` : node.label}`;
   const inner =
     node.role === "source"
       ? `<rect class="dg-box-inner" x="${node.x + 5}" y="${node.y + 5}" width="${size.width - 10}" height="${size.height - 10}" rx="7" />`
@@ -29,12 +53,14 @@ export function drawNode(
   // tabindex makes the node tab-reachable in reading order and the title gives
   // the group its accessible name
   return [
-    `<g class="dg-node dg-node-${node.role}" tabindex="0" role="group"${node.detail === undefined ? "" : ` data-diagram-node="${escapeHtml(node.id)}"`}>`,
+    `<g class="dg-node dg-node-${node.role}${node.emphasis ? " is-emphasis" : ""}" tabindex="0" role="group"${node.detail === undefined ? "" : ` data-diagram-node="${escapeHtml(node.id)}"`}${node.tie === undefined ? "" : syncAttribute("tie", node.tie)}>`,
     `<title>${escapeHtml(title)}</title>`,
     `<rect class="dg-box" x="${node.x}" y="${node.y}" width="${size.width}" height="${size.height}" rx="10" />`,
     inner,
     `<text class="dg-tag" x="${centre}" y="${node.y + 20}" text-anchor="middle">${escapeHtml(ROLE_TAG[node.role])}</text>`,
     lines,
+    // after the box and its text, so the badge paints over the corner
+    node.step === undefined ? "" : drawStep(node),
     `</g>`,
   ].join("");
 }
@@ -49,7 +75,7 @@ export function drawEdge(edge: PlacedEdge, slug: string): string {
   const around = edge.around ? " dg-edge-around" : "";
   const line = `<path class="dg-edge dg-edge-${edge.kind}${around}" d="M${edge.points.map(([x, y]) => `${x} ${y}`).join(" L")}" marker-end="url(#${slug}-${edge.kind})" />`;
   if (!edge.caption) return line;
-  return `${line}<text class="dg-edge-label" x="${edge.caption.x}" y="${edge.caption.y}" text-anchor="${edge.caption.anchor}"${edge.around ? ' dominant-baseline="middle"' : ""}>${escapeHtml(edge.label ?? "")}</text>`;
+  return `${line}<text class="dg-edge-label" x="${edge.caption.x}" y="${edge.caption.y}" text-anchor="${edge.caption.anchor}"${edge.caption.baseline === undefined ? "" : ` dominant-baseline="${edge.caption.baseline}"`}>${escapeHtml(edge.label ?? "")}</text>`;
 }
 
 /**
@@ -81,7 +107,7 @@ export function drawTextList(placement: Placement): string {
   const nodes = placement.nodes
     .map(
       (node) =>
-        `<li>${escapeHtml(node.label)} — ${escapeHtml(ROLE_NOTE[node.role])}, layer ${node.layer}${node.note ? `: ${escapeHtml(node.note)}` : ""}</li>`,
+        `<li>${stepLead(node)}${escapeHtml(node.label)} — ${escapeHtml(ROLE_NOTE[node.role])}, layer ${node.layer}${node.note ? `: ${escapeHtml(node.note)}` : ""}</li>`,
     )
     .join("");
   const edges = placement.edges

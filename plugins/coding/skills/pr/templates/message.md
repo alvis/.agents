@@ -8,7 +8,7 @@ Body and scanner metadata: classify every PR with the archetype selected in [cre
 
 Always required: Summary + Goal + Requirements + Context + Verification + Additional Notes. Goal states the outcome; Requirements lists observable behavior, never generic process gates. Yellow, red, and black zones also require Risk + Test Plan; red and black require Why This Size. Specification, Implementation, Breaking, Rollback, Feature Flag, Screenshots, Generated Files, Risk, Test Plan, Why This Size, Related and Boundary are conditional and carry the `[ Optional ]` suffix in this authoring template even when a zone, archetype, or diff makes one mandatory for that PR. Remove `[ Optional ]` from every heading in the final rendered PR message. Every section heading starts with an emoji.
 
-The order is a single arc — why, what, what it costs, what to check, where it stops — with lookup material last. Authors fill placeholders in `{{double_braces}}`; the guidance comment above each one says what belongs there.
+The order is a single arc — why, what, what it costs, what to check, where it stops — with lookup material last. Authors fill placeholders in `{{double_braces}}` and write Screenshots directly; each section's guidance comment says what belongs there.
 
 Placeholders (for non-LLM callers performing literal substitution):
 
@@ -26,7 +26,6 @@ Placeholders (for non-LLM callers performing literal substitution):
   why_this_size_body         by zone   Concise, specific indivisibility rationale. Required for red/black.
   rollback_body              by type   Rollback steps or explicit forward-only mitigation. Required for migration.
   feature_flag_body          by type   Flag name, default, removal target, rollout plan, and cleanup change. Required for feature-flag.
-  screenshots_body           by type   Before/after screenshots and relevant accessibility notes. Required for ui.
   generated_files_body       by diff   Generated paths and their source/generator. Required whenever any generated files exist.
   verification_body          yes       Checklist of the checks that must pass before sign-off, ticked as each is confirmed.
   boundary_body              no        Related work the instruction placed outside this change. Drop section if empty.
@@ -89,8 +88,22 @@ Substitution rules:
 
 ## 🖼️ Screenshots [ Optional ]
 
-<!-- before/after screenshots and relevant accessibility notes; required for ui -->
-{{screenshots_body}}
+<!-- Instruction: MUST include screenshots for any work related to a graphical interface; omit this section otherwise. Use bold screen/state/device/viewport captions. Existing screens: a side-by-side Before/After table with matching states and viewports. New screens: one image without a table. Attach each referenced local file with `gh pr <command> ... --attach /path/to/image`. -->
+
+<!-- AUTHOR GUIDANCE ONLY — remove this entire comment before publishing. Examples below show formatting only. Do NOT publish their labels, sample captions, or sample paths. Write actual screenshot content instead.
+
+Example — existing screen:
+**Settings — validation error · desktop · 1280 × 800**
+
+| Before | After |
+| --- | --- |
+| ![Before](/path/to/before.png) | ![After](/path/to/after.png) |
+
+Example — new screen:
+**Settings — initial state · desktop · 1280 × 800**
+
+![Settings initial state](/path/to/image.png)
+-->
 
 ## 🏭 Generated Files [ Optional ]
 

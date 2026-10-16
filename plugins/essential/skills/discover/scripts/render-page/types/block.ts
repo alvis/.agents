@@ -24,6 +24,32 @@ import type { Rich } from "./inline.ts";
 import type { LedgerGroup } from "./ledger.ts";
 import type { QuestionBlock } from "./question.ts";
 
+/** one alternative of a `variants` block, drawn as a panel of its own. */
+export interface Variant {
+  /** what the alternative is called; the panel's heading */
+  label: string;
+  /** whole blocks, so an alternative can carry a table or an excerpt, not only prose */
+  blocks: Block[];
+}
+
+/**
+ * two or more alternatives drawn side by side, wrapping to a stack where the
+ * column is too narrow for them.
+ *
+ * the width of a panel follows what it holds, never a number the author picks:
+ * a figure is drawn at natural size and would scroll inside a track made for
+ * prose. A question that chooses between the variants goes after the block, so
+ * the reader has seen every alternative before being asked.
+ */
+export interface VariantsBlock {
+  /** discriminant of the block union */
+  type: "variants";
+  /** names the comparison, drawn above the panels */
+  title?: string;
+  /** the alternatives; one alone is a section, not a comparison */
+  items: Variant[];
+}
+
 /** one paragraph as it was and as it is; an empty side is an insertion or a removal. */
 export interface DiffPair {
   /** the paragraph as it was */
@@ -253,6 +279,7 @@ export type Block =
    * every reader scroll past it.
    */
   | { type: "disclosure"; summary: string; open?: boolean; blocks: Block[] }
+  | VariantsBlock
   /**
    * the hub's index of every board the run produced.
    *

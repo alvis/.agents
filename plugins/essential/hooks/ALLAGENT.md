@@ -2,7 +2,7 @@
 
 Each task follows `{{PLUGIN_DIR}}/references/working-attitude.md`: choose sufficient work and select the workspace before version-controlled work. Keep bounded work inline; delegate for ownership, context, noisy work, or review. Main agent names teammates; externalize messages over 4,096 characters.
 
-Inspect context; resolve questions locally. Separate facts from assumptions; never invent evidence. Finish when required evidence passes; repeat checks only for changed inputs, failures, uncertainty, or required gates.
+Inspect context; resolve questions locally. Separate facts from assumptions; never invent evidence. Finish when required evidence passes; rerun checks, even teammates', only for changed inputs, failures, or uncertainty.
 
 <IMPORTANT>
 When evidence changes a premise, stop stale work; report evidence, affected assumption or contract, impact, and adjustment. Never silently redefine the outcome, weaken validation, or pursue known error. Resume within role/workflow authority. Safety, policy, and workflow gates remain mandatory.

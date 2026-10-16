@@ -42,12 +42,14 @@ Board level:
 
 ## E. Content devices (menu — reach for what the content calls for)
 
-verdict/finding cards with semantic edge + pill · option card set with recommended badge · readiness meter (`n/5`) · provenance chips (observed / inferred / needs-live-query) · owner chips with initials · severity tags · landing-map disposition rows · critical-path strip · risk-matrix table · Prevent/Detect/Contain failure map · timeline rail with recheck triggers · scope-cuts note · sign-off card · tl;dr block · glossary · entity card · flow strip · stat tiles · plain-English translation line · `file:line` source chips · data-driven card sets rendered from a JSON array
+verdict/finding cards with semantic edge + pill · option card set with recommended badge · readiness meter (`n/5`) · provenance chips (observed / inferred / needs-live-query) · owner chips with initials · severity tags · landing-map disposition rows · critical-path strip · risk-matrix table · Prevent/Detect/Contain failure map · timeline rail with recheck triggers · scope-cuts note · sign-off card · tl;dr block · glossary · entity card · flow strip · stat tiles · plain-English translation line · `file:line` source chips · data-driven card sets rendered from a JSON array · section lede with heading chips and drawer tallies · status-marked change inventory linking to its sections · numbered and emphasised diagram nodes shared with prose and code through ties · across-flow pipeline wrapped to the column · side-by-side variants panels
+
+Fields and rules for the last five live in [the JSON block catalogue](../directions/presentation/components.md).
 
 ## F. Legibility (floor)
 
 - [ ] **A flow is drawn, not narrated**: a section explaining a flow, pipeline, sequence, or state machine carries a diagram — hand-authored SVG where the drawing carries the claim, otherwise a Mermaid figure — with prose as its support, not its substitute
-- [ ] **Column width follows content kind**, never a picked number: `tile` (8rem) for a number and a label, `compact` (14rem) for a short label and one line, `prose` (22rem) for a claim, `wide` (30rem) for code, tables, or several paragraphs. Findings default to `prose`; override per block with `data-grid-density`
+- [ ] **Column width follows content kind**, chosen by the renderer and never by the author: a `variants` block draws `wide` when a panel holds code or a figure and `prose` otherwise. The widths, and what each is derived from, are in `scripts/render-page/style/variants.ts`
 - [ ] Body text sits inside a readable measure (~45–75ch) at every breakpoint
 
 ## G. Engineering (floor)

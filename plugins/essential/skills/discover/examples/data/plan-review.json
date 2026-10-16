@@ -32,6 +32,7 @@
       "label": "The plan",
       "eyebrow": "Sequence",
       "title": "What is proposed, in order.",
+      "lede": "Detect first, merge as a link, and leave the one irreversible step for last: five of the six steps can be undone by turning a flag off.",
       "blocks": [
         {
           "type": "tldr",
@@ -85,6 +86,31 @@
               "state": "todo"
             }
           ]
+        },
+        {
+          "type": "diagram",
+          "title": "One thread, from arrival to a single search row",
+          "flow": "across",
+          "wrap": 4,
+          "nodes": [
+            { "id": "thread", "label": "Incoming thread", "layer": 0, "role": "client", "note": "a new feedback thread as a customer files it" },
+            { "id": "similarity", "label": "Similarity pass", "layer": 1, "role": "engine", "note": "the nightly job that scores the thread against the last 90 days" },
+            { "id": "pairs", "label": "Candidate pairs", "layer": 2, "role": "derived", "note": "every pair with its score, rebuilt each night" },
+            { "id": "threshold", "label": "Threshold check", "layer": 3, "role": "domain", "note": "the score chosen in step 2 from 200 read pairs" },
+            { "id": "review", "label": "Review table", "layer": 4, "role": "source", "note": "pairs below the threshold, kept for reading and never merged" },
+            { "id": "pointer", "label": "Merge pointer", "layer": 4, "role": "source", "emphasis": true, "note": "a link from the merged thread to its survivor; deleting it is the unmerge" },
+            { "id": "collapse", "label": "Index collapse", "layer": 5, "role": "engine", "emphasis": true, "note": "step 6, the only irreversible step" },
+            { "id": "search", "label": "Search results", "layer": 6, "role": "client", "note": "one row per complaint" }
+          ],
+          "edges": [
+            { "from": "thread", "to": "similarity", "label": "body text" },
+            { "from": "similarity", "to": "pairs", "label": "scored pair" },
+            { "from": "pairs", "to": "threshold", "label": "pair + score" },
+            { "from": "threshold", "to": "review", "label": "below" },
+            { "from": "threshold", "to": "pointer", "label": "above", "kind": "fanout" },
+            { "from": "pointer", "to": "collapse", "label": "link" },
+            { "from": "collapse", "to": "search", "label": "survivor only", "kind": "derive" }
+          ]
         }
       ]
     },
@@ -93,6 +119,7 @@
       "label": "Owners",
       "eyebrow": "Routing",
       "title": "Who holds each step.",
+      "lede": "Every step has an owner who has scheduled it except step 6, whose owner was named in the plan but never asked.",
       "blocks": [
         {
           "type": "owners",
@@ -170,6 +197,7 @@
       "label": "Risks",
       "eyebrow": "Per step",
       "title": "What each step could cost.",
+      "lede": "Merging is safe because it only adds a pointer; the risk with no mitigation yet is that Search platform may not be able to take step 6 this quarter.",
       "blocks": [
         {
           "type": "risk-matrix",
@@ -225,6 +253,7 @@
       "label": "Your review",
       "eyebrow": "Questions",
       "title": "Three things this plan needs from you.",
+      "lede": "The decision is whether to approve with step 6 held until Search platform accepts it; the order and the conditions shape that approval.",
       "blocks": [
         {
           "type": "probe",
@@ -237,6 +266,38 @@
             "Enable for one workspace",
             "Enable for everyone",
             "Collapse the index"
+          ]
+        },
+        {
+          "type": "variants",
+          "title": "The two ways to approve",
+          "items": [
+            {
+              "label": "Approve with step 6 held",
+              "blocks": [
+                {
+                  "type": "prose",
+                  "text": "Steps 1–5 proceed on the dates in the owners table. Step 6 is not scheduled until Search platform has accepted it, so the one irreversible step has an owner before it has a date."
+                },
+                {
+                  "type": "prose",
+                  "text": "Cost: if Search platform never accepts, the plan ends at step 5 and both indexes stay for good."
+                }
+              ]
+            },
+            {
+              "label": "Hold the whole plan",
+              "blocks": [
+                {
+                  "type": "prose",
+                  "text": "Nothing ships until step 6 has an owner, so the plan is approved once and never has to be reopened."
+                },
+                {
+                  "type": "prose",
+                  "text": "Cost: a plan that is safe to run waits on a team that has not yet been asked, and the unmerge-rate evidence from steps 4 and 5 waits with it."
+                }
+              ]
+            }
           ]
         },
         {

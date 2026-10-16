@@ -24,6 +24,7 @@ import { renderGate, renderQuiz } from "./block/quiz.ts";
 import { renderKanban, renderTimeline } from "./block/timeline.ts";
 import { renderTradeoffs } from "./block/tradeoff.ts";
 import { renderTree } from "./block/tree.ts";
+import { renderVariants } from "./block/variants.ts";
 import { renderDiagram } from "./diagram.ts";
 import { RenderError } from "./error.ts";
 import { renderInline } from "./inline.ts";
@@ -55,7 +56,7 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
     case "diagram":
       return renderDiagram(block, path);
     case "tree":
-      return renderTree(block, path);
+      return renderTree(block, path, page);
     case "mermaid":
       return renderMermaid(block, path);
     case "svg":
@@ -106,6 +107,8 @@ export function renderBlock(block: Block, path: string, page: PageContext): stri
       return renderBoards(block, path, page);
     case "disclosure":
       return renderDisclosure(block, path, (held, at) => renderBlock(held, at, page));
+    case "variants":
+      return renderVariants(block, path, (held, at) => renderBlock(held, at, page));
     case "probe":
       return renderProbe(block, path, page.ids);
     case "choice":

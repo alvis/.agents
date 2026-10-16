@@ -213,6 +213,24 @@ describe("fn:formatCodeBlocks", () => {
     expect(blocks[0].code).toBe("a b");
   });
 
+  it("should reach an excerpt held by a variant", () => {
+    const data = board([
+      {
+        type: "variants",
+        items: [
+          { label: "A", blocks: [{ type: "prose", text: "x" }] },
+          { label: "B", blocks: [{ type: "code", language: "typescript", code: "a  b" }] },
+        ],
+      },
+    ] as unknown as Block[]);
+    formatCodeBlocks(data, fake(["prettier"]));
+    const { items } = data.sections[0].blocks[0] as {
+      items: { blocks: { code: string }[] }[];
+    };
+
+    expect(items[1]?.blocks[0]?.code).toBe("a b");
+  });
+
   it("should leave the excerpt alone and say so once when nothing is installed", () => {
     const tools = fake([]);
     const data = board([

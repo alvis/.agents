@@ -14,6 +14,9 @@ export const NODE_ROLES = [
 /** every edge kind, in the order the legend lists them. */
 export const EDGE_KINDS = ["flow", "fanout", "derive"] as const;
 
+/** every direction a diagram may flow, the default first. */
+export const DIAGRAM_FLOWS = ["down", "across"] as const;
+
 /**
  * the tag drawn inside each node.
  *

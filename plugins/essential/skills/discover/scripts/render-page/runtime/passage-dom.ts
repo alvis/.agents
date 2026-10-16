@@ -1,3 +1,4 @@
+import { reveal } from "./fold.ts";
 import { findPassage, markPieces, offsetBefore, offsetOf } from "./passage.ts";
 
 import type { Anchor, SavedExcerpt } from "./store.ts";
@@ -159,8 +160,7 @@ export const domPassages: Passages = {
     );
     if (!mark) return;
 
-    for (let held = mark.closest("details"); held; held = held.parentElement?.closest("details") ?? null)
-      held.open = true;
+    reveal(mark);
     mark.scrollIntoView({ block: "center" });
   },
 };

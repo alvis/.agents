@@ -1,21 +1,16 @@
 import { RenderError } from "../error.ts";
+import { placeAcross } from "./across.ts";
 import {
   COLUMN_GAP,
-  EDGE_ADVANCE,
   FRAME_PAD,
-  LABEL_ADVANCE,
   LANE_GAP,
   LANE_INSET,
   LANE_LABEL_GAP,
   LAYER_GAP,
-  LINE_HEIGHT,
-  NODE_MAX_WIDTH,
-  NODE_MIN_WIDTH,
-  NODE_PAD_X,
-  NODE_PAD_Y,
-  TAG_ZONE,
+  margin,
+  measureBox,
 } from "./geometry.ts";
-import { readEdges, readNodes } from "./read.ts";
+import { readEdges, readFlow, readNodes } from "./read.ts";
 
 import type {
   DiagramBlock,
@@ -27,9 +22,10 @@ import type {
 /**
  * measures and places every node and routes every edge.
  *
- * `x` comes from the node's index within its layer and `y` from the layer
- * itself. There is no layout engine, no force simulation, and no crossing
- * minimisation; the drawing is a pure function of the declared layers.
+ * In a down flow `x` comes from the node's index within its layer and `y`
+ * from the layer itself; an across flow is placed by `placeAcross`. There is
+ * no layout engine, no force simulation, and no crossing minimisation; the
+ * drawing is a pure function of the declared layers.
  * @param block the validated diagram block
  * @param path JSON path of the block, used as the prefix of every refusal
  * @returns the measured drawing, at its natural size
@@ -37,18 +33,13 @@ import type {
 export function place(block: DiagramBlock, path: string): Placement {
   const nodes = readNodes(block.nodes, path);
   const resolved = readEdges(block.edges, nodes, path);
-
-  const widest = Math.max(
-    ...nodes.flatMap((node) => node.lines.map((line) => line.length)),
-  );
-  const nodeWidth = Math.min(
-    NODE_MAX_WIDTH,
-    Math.max(NODE_MIN_WIDTH, Math.ceil(widest * LABEL_ADVANCE) + 2 * NODE_PAD_X),
-  );
-  const tallest = Math.max(...nodes.map((node) => node.lines.length));
-  const nodeHeight = TAG_ZONE + tallest * LINE_HEIGHT + NODE_PAD_Y;
-
+  const { flow, wrap } = readFlow(block, path);
   const layers = Math.max(...nodes.map((node) => node.layer)) + 1;
+  // an across flow with no wrap is one row holding every layer
+  if (flow === "across")
+    return placeAcross(nodes, resolved, wrap ?? layers, path);
+
+  const { nodeWidth, nodeHeight } = measureBox(nodes);
   const perLayer = [...Array(layers).keys()].map((layer) =>
     nodes.filter((node) => node.layer === layer),
   );
@@ -68,26 +59,14 @@ export function place(block: DiagramBlock, path: string): Placement {
   const lanes = sides.map(
     (side, index) => sides.slice(0, index).filter((seen) => seen === side).length,
   );
-  const margin = (side: "left" | "right"): number => {
-    const used = sides
-      .map((seen, index) => ({ seen, index }))
-      .filter((entry) => entry.seen === side);
-    if (used.length === 0) return FRAME_PAD;
-    return (
-      LANE_INSET +
-      Math.max(
-        ...used.map(
-          (entry) =>
-            lanes[entry.index] * LANE_GAP +
-            LANE_LABEL_GAP +
-            Math.ceil((resolved[entry.index].label ?? "").length * EDGE_ADVANCE),
-        ),
-      ) +
-      FRAME_PAD
+  const routedDown = (side: "left" | "right"): number =>
+    margin(
+      sides.flatMap((seen, index) =>
+        seen === side ? [{ lane: lanes[index], label: resolved[index].label }] : [],
+      ),
     );
-  };
-  const left = margin("left");
-  const right = margin("right");
+  const left = routedDown("left");
+  const right = routedDown("right");
 
   const placed = perLayer.flatMap((layer) => {
     const row = layer.length * nodeWidth + (layer.length - 1) * COLUMN_GAP;
@@ -197,6 +176,7 @@ function route(params: {
                 : laneX + LANE_LABEL_GAP,
             y: (startY + endY) / 2,
             anchor: side === "left" ? ("end" as const) : ("start" as const),
+            baseline: "middle" as const,
           },
         }),
   };

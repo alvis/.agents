@@ -19,10 +19,16 @@ function tagsOf(item: HTMLElement): string[] {
 export function installFilters(root: ParentNode = document): void {
   for (const bar of root.querySelectorAll<HTMLElement>("[data-filter-chips]")) {
     const chips = [...bar.querySelectorAll<HTMLElement>("[data-filter]")];
-    // the bar's own parent, so two filtered lists in one section keep their
-    // chips over their own items
-    const scope = bar.parentElement ?? bar;
-    const items = [...scope.querySelectorAll<HTMLElement>("[data-filter-item]")];
+    // a block that draws its own bar names the region it filters, so the bar
+    // reaches exactly that region; one that does not is filtered over its
+    // parent, which keeps two lists in one section over their own items
+    const home = bar.closest<HTMLElement>("[data-filter-scope]");
+    const scope = home ?? bar.parentElement ?? bar;
+    // an item answers to the nearest scope above it, so a bar over a parent
+    // never dims the items of a region that has a bar of its own inside it
+    const items = [
+      ...scope.querySelectorAll<HTMLElement>("[data-filter-item]"),
+    ].filter((item) => item.closest("[data-filter-scope]") === home);
     if (!chips.length || !items.length) continue;
 
     /**

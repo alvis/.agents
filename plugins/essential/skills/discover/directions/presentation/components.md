@@ -51,15 +51,25 @@ The template's markers are filled in as the reader works: `{{summary}}` becomes 
   "label": "Cost",
   "eyebrow": "Section two",
   "title": "What each engine costs to run",
+  "lede": "B-tree costs twice the disk of LSM and is the only one that never loses a write.",
   "blocks": []
 }
 ```
 
-`id` is unique across the board and is what the drawer's navigation, a quiz's `explains`, and every in-page jump link resolve against. Every id in the format — section, question, finding, probe — must match `[A-Za-z0-9_-]+`, because it becomes a URL fragment, and a space or a `#` produces a jump that silently fails rather than an error. Each kind is unique within its own peer group.
+`id` is unique across the board and is what the drawer's navigation, a quiz's `explains`, every in-page jump link and a `tree` entry's `section` resolve against. Every id in the format — section, question, finding, probe — must match `[A-Za-z0-9_-]+`, because it becomes a URL fragment, and a space or a `#` produces a jump that silently fails rather than an error. Each kind is unique within its own peer group.
+
+`lede` is optional and is `Rich`. It is the section's answer in a sentence or two, drawn under the title, so a reader skimming the headings gets the conclusion without opening anything; the blocks below hold the evidence. The reading order that goes with it is in [presenting discovery results](../presentation.md#reading-order-inside-a-section).
+
+A section that asks gets two readouts of where its questions stand, both repainted as the reader answers:
+
+- **the drawer link's tally**, on every section that asks, counting its open and settled questions;
+- **heading chips**, one per question the section holds, nested ones included, each a link to its card carrying a state word so the state never rests on colour — drawn only when the section does not open with every question it asks. Chips under a title that is followed directly by its question cards repeat what is already on screen. A question after other content, or inside a container such as a `disclosure` or `variants`, is not part of that opening run, so the chips announce it.
+
+A question that chooses between the panels of a `variants` block goes after the block, not inside a panel, so the reader has seen every alternative before being asked. A question that does sit inside a panel or a closed `disclosure` is still reached by key navigation, counted and replied, and every link to it opens the fold it sits in.
 
 ## Blocks
 
-Thirty-seven types, grouped by what they are for. Every one carries `type`.
+Grouped by what they are for. Every one carries `type`. `scripts/render-page/block.ts` is the authority on which types exist, so no count of them is kept here.
 
 ### Prose and structure
 
@@ -121,6 +131,23 @@ An aside set off from the surrounding prose.
 
 Content the reader opens for themselves — `summary`, an optional `open`, and its own `blocks`. A board earns its length by not spending it up front.
 
+#### `variants`
+
+Two or more alternatives side by side, each a panel of its own: `title?` and `items` of `{ label, blocks }`. A panel holds whole blocks, so an alternative can carry a table or an excerpt and not only prose.
+
+```json
+{
+  "type": "variants",
+  "title": "The two ways to approve",
+  "items": [
+    { "label": "Approve with step 6 held", "blocks": [{ "type": "prose", "text": "…" }] },
+    { "label": "Hold the whole plan", "blocks": [{ "type": "prose", "text": "…" }] }
+  ]
+}
+```
+
+Panels wrap to a stack where the column is too narrow for them. The panels' width follows what they hold, never a number the author picks: the grid is `wide` when any panel holds, at any depth, a code excerpt, table, diagram or other figure, and `prose` otherwise, because a figure is drawn at natural size and would scroll inside a track made for prose. The widths, and what each is derived from, are in `scripts/render-page/style/variants.ts`. Panels are never hidden, so a question inside one stays visible to key navigation. The block is refused with fewer than two items, and nested in another `variants` block.
+
 #### `table`
 
 A comparison table. Every row must be as long as `columns`.
@@ -143,7 +170,11 @@ A responsive strip of labelled figures: `items` of `{ label, value }`.
 
 #### `tree`
 
-A directory listing drawn with box-drawing characters — `root` plus nested `items` of `{ name, note?, children? }`. It is text, not a picture: it survives copy and paste into a reply, reads aloud in order, and costs the page nothing.
+A directory listing drawn with box-drawing characters — `root` plus nested `items` of `{ name, note?, status?, section?, children? }`. It is text, not a picture: it survives copy and paste into a reply, reads aloud in order, and costs the page nothing.
+
+`status` is `new`, `changed`, `removed` or `moved`, and makes the listing the inventory of a change. Once any entry carries one, every line opens with a three-letter gutter code (`NEW`, `CHG`, `DEL`, `MOV`), so the status is a word and never rests on colour. An entry's status passes to its children until a child states its own, because a file is new when its directory is. One status in the tree is a sentence under the title saying how many entries carry it; two or more are a bar of chips with counts that dim the rows they do not match, the same bar a `findings` list uses.
+
+`section` is the `id` of a section on this board, and turns the entry's name into a link to it, so the inventory doubles as the jump map into the explanations. It is refused when no section has that id, because a link that scrolls nowhere promises an explanation the page does not hold.
 
 #### `glossary`
 
@@ -170,6 +201,14 @@ A layered node-and-edge graph, drawn as inline SVG at natural size.
 ```
 
 Every edge end must name a declared node. A node's `detail` explains one box; a `pin` explains a place — a junction, a boundary, a gap between two boxes that no single node owns.
+
+Three optional marks on a node say which boxes the reader must find and in what order:
+
+- `emphasis: true` fills the box in the accent, for the few boxes the design turns on. It changes fill and stroke colour only, so the role's tag, dash pattern and weight, which carry the role without colour, survive it.
+- `step` is an integer from 1 to 99, used once per diagram, drawn as a square numbered tile on the box's corner. The tile is square so it cannot be mistaken for a round annotation `pin`. Numbers say where to begin and which way to read; they do not have to cover every node.
+- `tie` is a key shared with prose `tie` runs and a `code` block's `ties`: hovering or focusing any one lights all of them. A prose sentence that cites "step 3" can tie to the box carrying it, so the number is reused rather than re-explained.
+
+`flow` is `down` (the default) or `across`. Down is the layered graph, which routes an edge that skips or returns round the margin. A long pipeline drawn down is a column far taller than it is wide; `across` lays the layers left to right so the sequence reads like a sentence. `wrap` is the number of layers per row of an across flow, an integer of at least 2 and allowed only with `across`; rows alternate direction so each turn drops down the shared column instead of crossing the drawing. An across flow draws only edges between adjacent layers and refuses any other, naming the edge: use `down`, or a `mermaid` block, for a graph that skips or returns. Choosing a `wrap` whose row fits the reading column is covered in [presenting discovery results](../presentation.md#reading-order-inside-a-section).
 
 #### `mermaid`
 
@@ -438,7 +477,9 @@ Every refusal names the problem *and* the JSON path it is at, so an author never
 - an `id` that is not a safe URL fragment, or a `ref` longer than six characters
 - a duplicate section, question, finding or probe `id`, or a duplicate `ref`
 - a table row that is not as long as its `columns`
-- a diagram edge naming a node that was never declared
+- a diagram edge naming a node that was never declared, an `emphasis` that is not a boolean, a `step` that is not an integer from 1 to 99 or is used twice, a `wrap` with a `down` flow or below 2, and an across flow's edge between layers that are not adjacent
+- a `tree` entry whose `status` is outside the four, or whose `section` names no section on the board
+- a `variants` block with fewer than two items, or nested inside another
 - a quiz whose `explains` names no section on the board
 - a quiz that does not mark exactly one option `correct`
 - a gate on a board that asks no quiz question
@@ -464,7 +505,8 @@ Every refusal names the problem *and* the JSON path it is at, so an author never
 | inline runs | `scripts/render-page/types/inline.ts` |
 | the content sub-shapes | `scripts/render-page/types/content.ts` |
 | ledger groups, rows and facts | `scripts/render-page/types/ledger.ts` |
-| the diagram graph | `scripts/render-page/diagram/shape.ts` |
+| the diagram graph, node marks, `flow` and `wrap` | `scripts/render-page/diagram/shape.ts` |
+| the `variants` block | `scripts/render-page/types/block.ts` |
 | the run set | `scripts/render-page/types/set.ts` |
 
 `scripts/render-page/block.ts` is the dispatcher every entry above answers to. Nothing checks the two against each other: a test comparing this file to that one would assert agreement between two checked-in artifacts, which `TST-CORE-10` forbids. Adding a block type therefore means adding its entry here in the same change.

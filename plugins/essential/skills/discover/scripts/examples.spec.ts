@@ -116,6 +116,7 @@ const SHEETS = [
   { type: "deviations", marker: ".deviation-pair{" },
   { type: "ledger", marker: ".ledger-entry{" },
   { type: "quiz", marker: ".quiz-option{" },
+  { type: "variants", marker: ".variants-grid{" },
 ];
 
 /** collects every `type` and `kind` an authored board uses, at any depth. */

@@ -12,6 +12,16 @@ import { SEVERITY_LABEL } from "../vocabulary.ts";
 import type { PageIds } from "../id.ts";
 import type { Block, Finding } from "../types.ts";
 
+/** one chip of a filter bar. */
+export interface FilterChip {
+  /** what the chip selects; the runtime matches it against an item's tags */
+  value: string;
+  /** the chip's visible name */
+  label: string;
+  /** how many items the data gives it, fixed at render and never moved */
+  count: number;
+}
+
 /**
  * draws findings as an ordered list, each led by its severity in words
  * @param block the findings block
@@ -81,17 +91,33 @@ function renderChips(items: Finding[], path: string): string {
       return item.severity === severity;
     }),
   );
-  const chip = (value: string, label: string, count: number): string =>
-    `<button type="button" class="chip" data-filter="${value}" aria-pressed="${value === "all" ? "true" : "false"}">${label} <span class="chip-count" data-filter-count>${String(count)}</span></button>`;
 
-  return `<div class="filter-chips" role="group" aria-label="Filter findings by severity" data-filter-chips>${[
-    chip("all", "All", items.length),
-    ...severities.map((severity) =>
-      chip(
-        severity,
-        SEVERITY_LABEL[severity],
-        items.filter((item) => item.severity === severity).length,
-      ),
-    ),
-  ].join("")}</div>`;
+  return renderFilterBar("Filter findings by severity", [
+    { value: "all", label: "All", count: items.length },
+    ...severities.map((severity) => ({
+      value: severity,
+      label: SEVERITY_LABEL[severity],
+      count: items.filter((item) => item.severity === severity).length,
+    })),
+  ]);
+}
+
+/**
+ * draws a bar of chips that dim the items they do not match.
+ *
+ * shared by everything that filters, so a chip reads and behaves the same on
+ * a findings list as on a change tree: the runtime wires any bar carrying
+ * `data-filter-chips` over the items in its scope that carry
+ * `data-filter-item`, and the chip valued `all` is the one open at first paint.
+ * @param label what the bar filters, read out as the group's name
+ * @param chips the chips in order, each with the count the data gives it
+ * @returns the chip bar as HTML
+ */
+export function renderFilterBar(label: string, chips: FilterChip[]): string {
+  return `<div class="filter-chips" role="group" aria-label="${escapeHtml(label)}" data-filter-chips>${chips
+    .map(
+      (chip) =>
+        `<button type="button" class="chip" data-filter="${chip.value}" aria-pressed="${chip.value === "all" ? "true" : "false"}">${escapeHtml(chip.label)} <span class="chip-count" data-filter-count>${String(chip.count)}</span></button>`,
+    )
+    .join("")}</div>`;
 }

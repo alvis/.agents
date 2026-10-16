@@ -328,3 +328,93 @@ describe("fn:installKeys", () => {
     expect(handlers.keydown).toBeUndefined();
   });
 });
+
+/**
+ * folds a question inside a disclosure
+ * @param field the question
+ * @param open whether the disclosure starts open
+ * @returns the disclosure, which holds the question
+ */
+function fold(field: StubElement, open = false): StubElement {
+  return new StubElement("details", open ? { open: "" } : {}, [field]);
+}
+
+describe("fn:installKeys folded questions", () => {
+  it("should open the disclosure around a question it arrows onto", () => {
+    const field = choice("a");
+    const details = fold(field);
+    install([field]);
+
+    press("ArrowRight");
+
+    // focus and scroll on a hidden card show the reader nothing, and the next
+    // key would then answer a question they cannot see
+    expect(details.open).toBe(true);
+    expect(field.focused).toBe(true);
+    expect(field.scrolled).toBe(true);
+  });
+
+  it("should open every disclosure around it, however deep", () => {
+    const field = choice("a");
+    const inner = fold(field);
+    const outer = fold(inner);
+    install([field]);
+
+    press("ArrowRight");
+
+    expect([inner.open, outer.open]).toEqual([true, true]);
+  });
+
+  it("should open nothing for a question that is not folded", () => {
+    const field = choice("a");
+    const details = fold(field, true);
+    install([field]);
+
+    press("ArrowRight");
+
+    expect(details.open).toBe(true);
+    expect(field.focused).toBe(true);
+  });
+
+  it("should not answer a question whose disclosure was closed after the arrow", () => {
+    const field = choice("a");
+    const details = fold(field);
+    install([field]);
+    press("ArrowRight");
+    details.open = false;
+
+    press("b");
+
+    expect(field.querySelectorAll("input").some((option) => option.checked)).toBe(false);
+  });
+
+  it("should not accept a decision whose disclosure was closed after the arrow", () => {
+    const field = decision("d");
+    const details = fold(field);
+    install([field]);
+    let pressed = false;
+    field.querySelector('[data-verdict="approve"]')!.addEventListener("click", () => {
+      pressed = true;
+    });
+    press("ArrowRight");
+    details.open = false;
+
+    press("a");
+
+    expect(pressed).toBe(false);
+  });
+
+  it("should answer again once the question is open", () => {
+    const field = choice("a");
+    const details = fold(field);
+    install([field]);
+    press("ArrowRight");
+    details.open = false;
+    press("b");
+
+    details.open = true;
+    press("b");
+
+    expect(field.querySelectorAll("input")[1]!.checked).toBe(true);
+  });
+});

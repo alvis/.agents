@@ -1,3 +1,4 @@
+import { isFolded, reveal } from "./fold.ts";
 import { isInDialog, isTyping } from "./selection.ts";
 
 /** how far along the alphabet an option's key can be labelled. */
@@ -91,6 +92,10 @@ export function installKeys(fields: HTMLElement[]): void {
     const field = fields[current];
     if (!field) return;
 
+    // focus and scroll on a question inside a closed disclosure do nothing the
+    // reader can see, and the next letter key would then answer a card that is
+    // not on screen
+    reveal(field);
     field.focus();
     field.scrollIntoView({ block: "center", behavior: "smooth" });
   };
@@ -127,7 +132,10 @@ export function installKeys(fields: HTMLElement[]): void {
     }
 
     const field = fields[current];
-    if (!field) return;
+    // "current" outlives the fold: the reader can arrow to a question and then
+    // close the disclosure around it, and a letter pressed now would answer a
+    // card they cannot see
+    if (!field || isFolded(field)) return;
 
     if (event.key === "a" || event.key === "A") {
       const approve = field.querySelector<HTMLElement>('[data-verdict="approve"]');

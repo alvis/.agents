@@ -92,6 +92,209 @@ describe("fn:renderBlock tree", () => {
   it("should refuse a tree with no entries", () => {
     expect(() => html({ type: "tree", root: "a/", items: [] })).toThrow(RenderError);
   });
+
+  it("should draw a tree that carries no status exactly as it always was", () => {
+    // a board that never uses a status must not change by a byte: no gutter,
+    // no rows, no legend, no scope
+    expect(
+      html({
+        type: "tree",
+        title: "Layout",
+        root: "a/",
+        items: [{ name: "b/", note: "dir", children: [{ name: "c" }] }, { name: "d" }],
+      }),
+    ).toBe(
+      '<figure class="tree-figure"><figcaption class="tree-title">Layout</figcaption><pre class="tree">a/\n├── b/     <span class="tree-note">dir</span>\n│   └── c\n└── d</pre></figure>',
+    );
+  });
+});
+
+describe("fn:renderBlock tree status", () => {
+  const sections = new Set(["why", "how"]);
+  const page = (): PageContext => ({ ...emptyContext(), sections });
+
+  /**
+   * reads a tree the way a reader copying it would
+   * @param drawn the rendered figure
+   * @returns the lines of its listing, without markup
+   */
+  function linesOf(drawn: string): string[] {
+    const listing = /<pre class="tree">([\s\S]*?)<\/pre>/.exec(drawn)?.[1] ?? "";
+
+    return listing
+      .replace(/<[^>]*>/g, "")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&amp;", "&")
+      .split("\n");
+  }
+
+  const changed = {
+    type: "tree",
+    root: "src/",
+    items: [
+      { name: "alpha.ts", status: "new", note: "first" },
+      {
+        name: "beta/",
+        status: "changed",
+        children: [{ name: "inner.ts", note: "inherits" }, { name: "gone.ts", status: "removed" }],
+      },
+      { name: "plain.ts", note: "no status" },
+    ],
+  };
+
+  it("should open every line with a four-column gutter, blank where nothing is marked", () => {
+    // the widest line before a note is `    │   ├── inner.ts`, twenty
+    // characters, so every note starts two columns past it
+    expect(linesOf(html(changed, page()))).toEqual([
+      "    src/",
+      "NEW ├── alpha.ts      first",
+      "CHG ├── beta/",
+      "    │   ├── inner.ts  inherits",
+      "DEL │   └── gone.ts",
+      "    └── plain.ts      no status",
+    ]);
+  });
+
+  it("should keep every note in one column once the gutter is counted", () => {
+    const notes = linesOf(html(changed, page()))
+      .filter((line) => /(first|inherits|no status)$/.test(line))
+      .map((line) => line.search(/first|inherits|no status/));
+
+    expect(new Set(notes).size).toBe(1);
+  });
+
+  it("should give an entry beneath a marked one the parent's filter value and a blank gutter", () => {
+    const drawn = html(changed, page());
+
+    expect(drawn).toContain(
+      '<span class="tree-row" data-filter-item="changed"><span class="tree-status">    </span>│   ├── inner.ts',
+    );
+    expect(drawn).toContain(
+      '<span class="tree-row" data-filter-item="removed"><span class="tree-status" data-status="removed">DEL </span>',
+    );
+  });
+
+  it("should let a child's own status win over the one it would inherit", () => {
+    const drawn = html(
+      {
+        type: "tree",
+        root: "r/",
+        items: [
+          { name: "d/", status: "new", children: [{ name: "f", status: "moved" }, { name: "g" }] },
+        ],
+      },
+      page(),
+    );
+
+    expect(drawn).toContain('data-filter-item="moved"><span class="tree-status" data-status="moved">MOV </span>');
+    expect(drawn).toContain('data-filter-item="new"><span class="tree-status">    </span>    └── g');
+  });
+
+  it("should link a name to the section that explains it", () => {
+    const drawn = html(
+      { type: "tree", root: "r/", items: [{ name: "a.ts", status: "new", section: "why" }] },
+      page(),
+    );
+
+    expect(drawn).toContain('<a class="tree-link" href="#s-why">a.ts</a>');
+    expect(linesOf(drawn)).toEqual(["    r/", "NEW └── a.ts"]);
+  });
+
+  it("should refuse a section no section on the page has", () => {
+    expect(() =>
+      html(
+        { type: "tree", root: "r/", items: [{ name: "a", children: [{ name: "b", section: "nope" }] }] },
+        page(),
+      ),
+    ).toThrow(
+      new RenderError(
+        'b.items[0].children[0].section: no section on this page has id "nope", so the entry would link nowhere',
+      ),
+    );
+  });
+
+  it("should refuse a status that is not one of the four", () => {
+    expect(() =>
+      html({ type: "tree", root: "r/", items: [{ name: "a", status: "added" }] }, page()),
+    ).toThrow(
+      new RenderError(
+        'b.items[0].status: required one of "new", "changed", "removed", "moved", received "added"',
+      ),
+    );
+  });
+
+  it("should count each chip by the rows it dims and scope the bar to its own figure", () => {
+    const drawn = html(changed, page());
+    const rows = (value: string): number =>
+      drawn.split(`data-filter-item="${value}"`).length - 1;
+    const chips = [
+      ...drawn.matchAll(/data-filter="(\w+)"[^>]*>[^<]*<span[^>]*>(\d+)</g),
+    ].map(([, value, count]) => [value, Number(count)]);
+
+    expect(drawn).toContain('<figure class="tree-figure" data-filter-scope>');
+    expect(chips).toEqual([
+      ["all", 5],
+      ["new", rows("new")],
+      ["changed", rows("changed")],
+      ["removed", rows("removed")],
+    ]);
+    // `plain.ts` has no status of its own and no ancestor with one, so it is
+    // counted by `All` and by no status chip
+    expect(rows("new") + rows("changed") + rows("removed")).toBe(4);
+  });
+
+  it("should draw a single status as a legend, with no chips and no scope", () => {
+    const drawn = html(
+      {
+        type: "tree",
+        root: "r/",
+        items: [{ name: "a", status: "new" }, { name: "b", status: "new" }],
+      },
+      page(),
+    );
+
+    expect(drawn).toContain('<p class="tree-legend">NEW marks 2 new entries</p>');
+    expect(drawn).not.toContain("data-filter-chips");
+    expect(drawn).not.toContain("data-filter-scope");
+  });
+
+  it("should mark no row for filtering where there is no bar to filter them", () => {
+    // a marked row with no scope around it could be adopted by a bar further up
+    // the page, which would dim these rows for a choice made about another list
+    const drawn = html(
+      {
+        type: "tree",
+        root: "r/",
+        items: [{ name: "a", status: "new", children: [{ name: "b" }] }, { name: "c" }],
+      },
+      page(),
+    );
+
+    expect(drawn).not.toContain("data-filter-item");
+    expect(drawn).toContain('<span class="tree-row"><span class="tree-status" data-status="new">NEW </span>');
+  });
+
+  it("should draw a tree with no status as the plain listing it was", () => {
+    const drawn = html(
+      { type: "tree", root: "r/", items: [{ name: "a", note: "n" }, { name: "b" }] },
+      page(),
+    );
+
+    expect(drawn).not.toContain("tree-row");
+    expect(drawn).not.toContain("data-filter");
+  });
+
+  it("should escape a name and a note beside the gutter", () => {
+    const drawn = html(
+      { type: "tree", root: "<r>", items: [{ name: "<x>", status: "new", note: "<n>" }] },
+      page(),
+    );
+
+    expect(drawn).toContain("&lt;x&gt;");
+    expect(drawn).toContain("&lt;n&gt;");
+    expect(drawn).not.toContain("<x>");
+  });
 });
 
 describe("fn:renderBlock mermaid", () => {

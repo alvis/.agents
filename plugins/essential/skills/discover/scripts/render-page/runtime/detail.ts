@@ -23,7 +23,9 @@ export function installDiagramDetail(root: ParentNode = document): void {
      * @param node the box the reader chose
      */
     const show = (node: HTMLElement): void => {
-      for (const other of nodes) other.classList.toggle("is-active", other === node);
+      // `is-chosen`, never `is-active`: the tie runtime lights a box with that
+      // one, and a click that cleared it would put out a tie still held
+      for (const other of nodes) other.classList.toggle("is-chosen", other === node);
 
       const card = cards.get(node.dataset.diagramNode ?? "");
       host.replaceChildren();
