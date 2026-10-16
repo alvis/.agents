@@ -20,6 +20,7 @@ import {
 } from "./quick_validate.ts";
 
 import type { MockInstance } from "vitest";
+import type { PolicyIssue } from "./quick_validate.ts";
 
 class TestGlob {
   public constructor(private readonly pattern: string) {}
@@ -95,7 +96,7 @@ function rawSkill(root: string, frontmatter: string): string {
   );
 }
 
-function errors(path: string, portable = false): unknown[] {
+function errors(path: string, portable = false): PolicyIssue[] {
   return validatePolicy(path, { portable }).errors;
 }
 
@@ -561,23 +562,65 @@ describe("body and Markdown references", () => {
       errors(path, true).map((x) => (x as { message: string }).message),
     ).toEqual([`Reference escapes skill root in SKILL.md: ${shared}`]);
   });
-  it("checks links in supporting references", async () => {
+  it("should resolve supporting links from their containing Markdown file", async () => {
     const root = await temporaryRoot();
     const path = skill(
       root,
       "portable",
-      "Use when validating root-relative links throughout a portable skill's supporting references.",
+      "Use when validating that portable supporting links resolve from their own source files.",
+      "# Portable\n\nRead [step](directions/step.md).",
+    );
+    write(
+      resolve(dirname(path), "directions/step.md"),
+      "Read [guide](../references/guide.md).",
+    );
+    write(resolve(dirname(path), "references/guide.md"), "Guide");
+
+    expect(errors(path, true)).toEqual([]);
+  });
+  it("should reject supporting links that leave the portable skill root", async () => {
+    const root = await temporaryRoot();
+    write(resolve(root, "skills/shared.md"), "shared");
+    const path = skill(
+      root,
+      "portable",
+      "Use when validating that portable supporting links cannot cross the skill boundary.",
       "# Portable\n\nRead [guide](references/guide.md).",
     );
     write(
       resolve(dirname(path), "references/guide.md"),
-      "Read [missing](references/missing.md).",
+      "Read [shared](../../shared.md).",
     );
-    expect(
-      errors(path, true).map((x) => (x as { message: string }).message),
-    ).toEqual([
-      "Unresolved local reference in references/guide.md: references/missing.md",
-    ]);
+
+    const issues = errors(path, true);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({
+      line: 1,
+      message: expect.stringMatching(/escap|outside/i),
+    });
+    expect(issues[0].message).toContain("references/guide.md");
+    expect(issues[0].message).toContain("../../shared.md");
+  });
+  it("should reject missing links in supporting references", async () => {
+    const root = await temporaryRoot();
+    const path = skill(
+      root,
+      "portable",
+      "Use when validating file-relative links throughout a portable skill's supporting references.",
+      "# Portable\n\nRead [guide](references/guide.md).",
+    );
+    write(
+      resolve(dirname(path), "references/guide.md"),
+      "Read [missing](missing.md).",
+    );
+    const issues = errors(path, true);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({
+      line: 1,
+      message: expect.stringMatching(/unresolved|missing/i),
+    });
+    expect(issues[0].message).toContain("references/guide.md");
+    expect(issues[0].message).toContain("missing.md");
   });
   it("checks Markdown reference definitions", async () => {
     const root = await temporaryRoot();
@@ -591,14 +634,22 @@ describe("body and Markdown references", () => {
     );
     write(
       resolve(dirname(path), "references/guide.md"),
-      "[shared]: <../shared file.md>\n[external]: https://example.com/shared.md\n[example]: [path/to/file.md]\n",
+      "[shared]: <../../shared file.md>\n[external]: https://example.com/shared.md\n[example]: [path/to/file.md]\n",
     );
-    expect(
-      errors(path, true).map((x) => (x as { message: string }).message),
-    ).toEqual([
-      "Reference escapes skill root in SKILL.md: ../shared.md",
-      "Reference escapes skill root in references/guide.md: <../shared file.md>",
-    ]);
+    const issues = errors(path, true);
+    expect(issues).toHaveLength(2);
+    expect(issues[0]).toMatchObject({
+      line: 14,
+      message: expect.stringMatching(/escap|outside/i),
+    });
+    expect(issues[0].message).toContain("SKILL.md");
+    expect(issues[0].message).toContain("../shared.md");
+    expect(issues[1]).toMatchObject({
+      line: 1,
+      message: expect.stringMatching(/escap|outside/i),
+    });
+    expect(issues[1].message).toContain("references/guide.md");
+    expect(issues[1].message).toContain("<../../shared file.md>");
   });
 });
 

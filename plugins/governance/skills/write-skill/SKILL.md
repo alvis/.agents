@@ -34,7 +34,7 @@ Resolve `scripts/quick_validate.ts` from this skill's root—the directory conta
 bun run "<loaded-write-skill-root>/scripts/quick_validate.ts" --portable "$TARGET"
 ```
 
-Portable mode rejects required Markdown links outside the skill root and checks root-relative links in `references/`. The script resolves a containing Claude plugin through the target's ancestors and validates it when present. Complete the checks in [authoring.md](references/authoring.md) and any applicable harness checks in [harnesses.md](references/harnesses.md) after every fix iteration. When a check fails, change only the reported cause and re-run that check; loop fix and re-verify at most 3 times, then report partial completion with the remaining issues.
+Portable mode resolves Markdown destinations from their containing file, rejects required links that escape the skill root, and reports missing local targets. The script resolves a containing Claude plugin through the target's ancestors and validates it when present. Complete the checks in [authoring.md](references/authoring.md) and any applicable harness checks in [harnesses.md](references/harnesses.md) after every fix iteration. When a check fails, change only the reported cause and re-run that check; loop fix and re-verify at most 3 times, then report partial completion with the remaining issues.
 
 ## Completion
 

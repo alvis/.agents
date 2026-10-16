@@ -1,10 +1,9 @@
 ---
 name: discover
-description: "Discovers material unknowns before planning. Use for a blindspot pass or unknown unknowns, brainstorming approaches, an architecture interview, a multi-round planning interview, reference semantics, a disposable prototype, a readiness check, an operations board of local state, an account of a finished build, or explaining recorded decisions (ADRs and local state) to a newcomer; researched option selection belongs to essential:decide."
+description: "Discovers material unknowns before planning. Use for blindspot passes, brainstorming approaches, architecture and planning interviews, required direction boards before planning, reference semantics, disposable prototypes, readiness checks, local work state, finished-build accounts, or explaining recorded decisions to a newcomer; researched option selection belongs to essential:decide."
 requirements:
   model: capable
   effort: deliberate
-argument-hint: "[blindspots|options|interview|plan|reference|prototype|readiness|state|implementation] <problem> [--persist] [--work-id=<id>] | decisions [selector…] [--only=active,proposed,superseded]"
 ---
 
 # Discover
@@ -13,8 +12,8 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 
 ## Boundaries
 
-- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a multi-round interview that settles an implementation direction before planning, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
-- Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), choosing among already-grounded options (`essential:decide`), production UI design (`web:design`), or clear bounded implementation.
+- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a pre-plan direction review required by `essential:directions/plan.md#confirm-the-direction-and-architecture` or a multi-round interview, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
+- Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), choosing among already-grounded options (`essential:decide`), or production UI design (`web:design`). Clear bounded implementation needs no exploratory discovery unless `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a board.
 - Never claim an unknown unknown has been found merely because it is plausible; record it as a hypothesis until evidence supports it.
 
 ## Inputs and output
@@ -51,7 +50,7 @@ The evidence ledger uses these fields:
    - `blindspots`: missing constraints, failure modes, history, or integration surfaces may change the problem;
    - `options`: the problem is understood but the solution space is too narrow or too broad;
    - `interview`: the user holds material intent or preferences not yet stated;
-   - `plan`: the user wants to be interviewed, over as many rounds as needed, until an implementation direction or architecture is ready to plan;
+   - `plan`: the user wants to be interviewed toward an implementation direction or architecture, or `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a board;
    - `reference`: a codebase, document, site, image, or example defines the desired semantics more precisely than prose;
    - `prototype`: the cheapest way to learn is a disposable artifact and the user has authorized creating it;
    - `readiness`: existing evidence needs a plan/implementation go-no-go check;

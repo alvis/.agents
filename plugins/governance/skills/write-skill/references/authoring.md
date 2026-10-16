@@ -15,8 +15,8 @@ Load this reference for every action. It owns the portable structure and content
 - Author one self-contained skill directory with `SKILL.md` at its root.
 - Stop at the skill directory; installation and catalog placement are separate workflows.
 - Put optional documentation in `references/`, deterministic executables in `scripts/`, and templates or static resources in `assets/`.
-- Keep every required resource inside the skill root. Address files directly from that root, such as `references/<topic>.md` or `scripts/<check>.py`, even when the instruction appears in a supporting file.
-- Never require the caller's current working directory, a hard-coded install path, `../`, or a harness-specific path substitution to find a resource.
+- Keep every required resource inside the skill root. Address named resources and command paths from the loaded skill root, such as `references/<topic>.md` or `scripts/<check>.py`, even when the instruction appears in a supporting file. Resolve Markdown link destinations from their containing Markdown file; a link from `directions/` to `references/` uses `../references/<name>.md`.
+- Never require the caller's current working directory, a hard-coded install path, `../` in a named resource or command path, a Markdown link that escapes the skill root, or a harness-specific path substitution to find a resource.
 - Maintain one shared `SKILL.md` for Claude Code, Codex, and Grok Build. Do not generate a portable projection of a non-portable source.
 
 ## Reusable knowledge target
