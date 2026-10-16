@@ -507,7 +507,7 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
    - whenever the review diff contains generated files, the body contains the exact `## 🏭 Generated Files` heading with at least one generated path or path pattern and its source or generator. A heading alone, `N/A`, "generated files present", or another path-free summary is generic and blocks emission.
 
    A heading's presence alone never passes. When no repo-local template exists, fall back to the bundled default at [message.md](../templates/message.md) and continue. When the bundled default is also missing: exit 4, print the path that failed to resolve.
-6. Fill the bundled default's placeholders from the commit body, diff, and recorded verification evidence. Never hard-wrap any content. Before matching a Markdown section name, strip its leading emoji token and trailing `[ Optional ]` suffix so the canonical template headings and their plain aliases resolve identically:
+6. Fill the bundled default's placeholders and author its Screenshots section from the commit body, diff, and recorded verification evidence. Never hard-wrap any content. Before matching a Markdown section name, strip its leading emoji token and trailing `[ Optional ]` suffix so the canonical template headings and their plain aliases resolve identically:
    - `{{summary_paragraph}}` — first body paragraph (≤3 sentences); fall back to the subject text after `: ` when the body is empty.
    - `{{goal_body}}` — exact content under `## Goal` / `Goal:` / `Intent:` / `Purpose:`; otherwise the first body paragraph, then the subject text after `: `. It states the outcome and why it matters, not the implementation.
    - `{{requirements_body}}` — bullets under `## Requirements` / `Requirements:` / `Acceptance Criteria:` / `Behavior:`. Each item names observable, testable behavior. Stop when none exist or when every item is a generic process gate such as passing tests, following standards, or keeping CI green; never infer requirements from implementation details.
@@ -517,7 +517,7 @@ Compose deterministic `title\n\nbody` for a commit and optional base. Step 3 pas
    - `{{breaking_changes_body}}` — `BREAKING CHANGE:` footers; "None." when absent.
    - `{{rollback_body}}` — exact rollback steps or explicit forward-only mitigation. Required for the `migration` archetype.
    - `{{feature_flag_body}}` — flag name, default state, removal target, rollout plan, and cleanup change. Required for the `feature-flag` archetype.
-   - `{{screenshots_body}}` — before/after screenshots and relevant accessibility notes. Required for the `ui` archetype.
+   - Screenshots — follow the inline guidance in [message.md](../templates/message.md).
    - `{{generated_files_body}}` — every generated path and its source or generator. Required whenever the diff contains generated files; only package lockfiles may remain in the head under `GIT-PR-TYPE-05`, and removed artifacts are identified as deleted.
    - `{{risk_body}}` — exact content under `## Risk` / `Risk:`. Required for yellow/red/black; stop when absent rather than inventing it from the diff.
    - `{{test_plan_body}}` — exact content under `## Test plan` / `Test-Plan:`. Required for yellow/red/black; stop when absent.
