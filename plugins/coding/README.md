@@ -9,7 +9,7 @@ Two mechanisms make saves and publication safe around AI-driven edits:
 - **One `jj` playbook.** [`./directions/jj.md`](directions/jj.md) owns initialization, workspaces, stacked-review fixes, history shaping, publication handoffs, and recovery for every coding skill.
 
 - **Scoped saves.** Lifecycle saves run through `coding:commit` with a sealed path manifest (`--paths-from=<manifest> --manifest-sha256=<sha>`), so a save touches exactly the reviewed file set and preserves unrelated staged or dirty developer work. Any writer after sealing invalidates the manifest.
-- **Per-commit QA.** `coding:finalize-commits` verifies every unpushed commit in isolation before `coding:pr create` publishes initially draft PRs, promotes approved surfaces to ready for review, and drives CI to green. History mutation belongs to `coding:commit` alone.
+- **Per-commit QA.** `coding:finalize-commits` verifies every unpushed commit in isolation before `coding:pr create` publishes initially draft PRs, promotes approved surfaces to ready for review, and drives CI to green. The [PR monitor](skills/pr/directions/monitor.md) owns continued feedback and landing observation. History mutation belongs to `coding:commit` alone.
 
 ## Skills
 

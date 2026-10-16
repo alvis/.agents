@@ -1,6 +1,6 @@
 ---
 name: pr
-description: 'Use for GitHub pull-request workflows when the user asks to draft PR text, verify exact local CI parity, resolve a bare PR or stack number, publish a branch, create, update, discover, check out, review, or merge a PR or linear stack. Trigger before running gh pr, inspecting GitHub stacks, or publishing PR-related changes.'
+description: 'Use for GitHub pull-request workflows when the user asks to draft PR text, verify exact local CI parity, resolve a bare PR or stack number, publish a branch, create, update, monitor, discover, check out, review, or merge a PR or linear stack. Trigger before running gh pr, inspecting GitHub stacks, or publishing PR-related changes.'
 requirements:
   model: routine
   effort: instinctive
@@ -13,7 +13,7 @@ When running a `jj` operation, follow `coding:directions/jj.md`; its stacked-rev
 
 Before any script call, set `CODING_PR_SKILL_DIR` to the absolute directory containing this loaded `SKILL.md`. This works in all three harnesses; not every harness exposes a plugin-root variable to ordinary shell calls.
 
-Route every remote pull-request operation through one explicit subcommand. Local history mutation remains owned by `coding:commit`; local pre-commit review remains owned by `coding:review-code`.
+Route every remote pull-request operation through one explicit subcommand. Local history mutation remains owned by `coding:commit`; local pre-commit review remains owned by `coding:review-code`. After creating or adopting a PR, load [monitor.md](directions/monitor.md) and retain its listener through landing; a monitor wake resumes its recorded create/update/review owner, not a new publication subcommand.
 
 Every PR title, body, branch, review, and comment follows `coding:directions/authorship.md`. Each action reference owns its directions. Scan each implementation diff and rendered PR body against `coding:standards/git/`. Author PR bodies through [message.md](templates/message.md), then validate them with [scan-pr-message.ts](scripts/scan-pr-message.ts). Before preparing a review assessment, read and follow [inline-review.md](templates/inline-review.md) and [overall-review.md](templates/overall-review.md), which own the posted presentation. [review-publication.ts](scripts/review-publication.ts) renders those templates and owns assessment validation, approval receipts, and GitHub publication; the publisher relays approved bytes without rewriting them.
 
