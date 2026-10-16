@@ -41,29 +41,61 @@ export function reveal(element: Element): void {
 }
 
 /**
- * makes every link to a question open the fold the question sits in.
+ * finds the question a fragment names
+ *
+ * the one place a `#qs-` fragment becomes an element, whether it came from a
+ * link's `href` or from the address bar, so the two cannot be read differently.
+ * @param fragment a fragment with its leading `#`
+ * @returns the question, or null for any other fragment or a question the page
+ *   does not hold
+ */
+function questionAt(fragment: string): HTMLElement | null {
+  return fragment.startsWith("#qs-") ? document.getElementById(fragment.slice(1)) : null;
+}
+
+/**
+ * opens the fold around the question the address bar names.
+ *
+ * the browser scrolls to a fragment before it fires `hashchange`, and on a
+ * load before any script has run, so it has already scrolled to wherever the
+ * hidden card sat; opening the fold moves the card, and the scroll is redone
+ * for the same reason. A question that was never folded is left alone, so a
+ * reader who has scrolled on is not pulled back.
+ */
+function arrive(): void {
+  const target = questionAt(location.hash);
+  if (!target || !isFolded(target)) return;
+
+  reveal(target);
+  target.scrollIntoView({ block: "start" });
+}
+
+/**
+ * makes every way of arriving at a question open the fold the question sits in.
  *
  * one handler on the document rather than one per kind of link, because the
  * drawer's rows, the bar's chips and a section heading's chips all point at the
  * same `#qs-` anchors and a fourth kind of link added later would otherwise
  * arrive without it. It runs before the browser follows the link, which is why
- * the scroll that follows lands on a card that is open.
- * @param onJump what else a jump does, given the question and the link
+ * the scroll that follows lands on a card that is open. A fragment reached any
+ * other way — a reload after a jump, back and forward, a pasted address — is
+ * read from the address bar, on load and on every change.
+ * @param onJump what else a followed link does, given the question and the link
  */
 export function installJumps(
   onJump: (target: HTMLElement, link: HTMLElement) => void,
 ): void {
   document.addEventListener("click", (event) => {
     const link = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("a[href]");
-    const href = link?.getAttribute("href") ?? "";
-    if (!link || !href.startsWith("#qs-")) return;
-
     // the href is the one record of where the link points, and the browser is
     // navigating to the same fragment, so the two cannot disagree
-    const target = document.getElementById(href.slice(1));
-    if (!target) return;
+    const target = link ? questionAt(link.getAttribute("href") ?? "") : null;
+    if (!link || !target) return;
 
     reveal(target);
     onJump(target, link);
   });
+
+  arrive();
+  window.addEventListener("hashchange", arrive);
 }

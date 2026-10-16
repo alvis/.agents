@@ -6,22 +6,41 @@ import { installJumps, isFolded, reveal } from "./fold.ts";
 /** every click handler the installer put on the document. */
 let clicks: ((event: unknown) => void)[];
 
+/** every hashchange handler the installer put on the window. */
+let arrivals: (() => void)[];
+
 /** the elements the stubbed document can find by id. */
 let byId: Record<string, StubElement>;
 
+/** the address bar's fragment, which a test sets before arriving. */
+let hash: string;
+
 beforeEach(() => {
   clicks = [];
+  arrivals = [];
   byId = {};
+  hash = "";
   globalThis.document = {
     addEventListener: (type: string, handler: (event: unknown) => void) => {
       if (type === "click") clicks.push(handler);
     },
     getElementById: (id: string) => byId[id] ?? null,
   } as unknown as Document;
+  globalThis.window = {
+    addEventListener: (type: string, handler: () => void) => {
+      if (type === "hashchange") arrivals.push(handler);
+    },
+  } as unknown as Window & typeof globalThis;
+  Object.defineProperty(globalThis, "location", {
+    configurable: true,
+    get: () => ({ hash }),
+  });
 });
 
 afterEach(() => {
   delete (globalThis as { document?: Document }).document;
+  delete (globalThis as { window?: unknown }).window;
+  delete (globalThis as { location?: unknown }).location;
 });
 
 /**
@@ -160,6 +179,70 @@ describe("fn:installJumps", () => {
   it("should install one handler for every kind of link", () => {
     wired();
 
+    expect(clicks).toHaveLength(1);
+  });
+});
+
+describe("fn:installJumps arriving by fragment", () => {
+  /**
+   * wires the jumps over a folded question the address bar may name
+   * @returns the question and its disclosure
+   */
+  function wired(): { field: StubElement; fold: StubElement } {
+    const { field, folds } = folded(1);
+    byId["qs-q1"] = field;
+    installJumps(() => undefined);
+
+    return { field, fold: folds[0]! };
+  }
+
+  it("should open the fold of the question the page loads at", () => {
+    hash = "#qs-q1";
+
+    const { field, fold } = wired();
+
+    // the browser scrolled to the summary before any script ran, so the card
+    // is brought into view again once it is open
+    expect(fold.open).toBe(true);
+    expect(field.scrolled).toBe(true);
+  });
+
+  it("should open the fold when back or forward lands on a question", () => {
+    const { field, fold } = wired();
+
+    hash = "#qs-q1";
+    for (const arrive of arrivals) arrive();
+
+    expect(fold.open).toBe(true);
+    expect(field.scrolled).toBe(true);
+  });
+
+  it("should not pull a reader back to a question that was never folded", () => {
+    const field = new StubElement("fieldset");
+    byId["qs-q1"] = field;
+    hash = "#qs-q1";
+
+    installJumps(() => undefined);
+
+    expect(field.scrolled).toBe(false);
+  });
+
+  it("should leave every other fragment, and an empty one, alone", () => {
+    const { field, fold } = wired();
+
+    for (const other of ["", "#s-intro", "#qs-gone"]) {
+      hash = other;
+      for (const arrive of arrivals) arrive();
+    }
+
+    expect(fold.open).toBe(false);
+    expect(field.scrolled).toBe(false);
+  });
+
+  it("should watch the address bar once, beside the one click handler", () => {
+    wired();
+
+    expect(arrivals).toHaveLength(1);
     expect(clicks).toHaveLength(1);
   });
 });

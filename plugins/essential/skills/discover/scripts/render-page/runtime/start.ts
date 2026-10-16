@@ -95,15 +95,15 @@ export function start(): void {
 
   // every link to a question opens the fold the question sits in, whichever
   // control it is on: a drawer row, a bar chip, or a section heading's chip.
-  // Following a drawer row also has to get the drawer out of the way, or the
-  // jump lands behind the panel that started it. The anchor's own navigation
-  // does the scrolling; this only collapses and puts the keyboard on the card,
-  // so a reader arriving by Enter is reading the same question their eyes are
+  // The anchor's own navigation does the scrolling, so focus is placed without
+  // scrolling: it puts the keyboard on the card, which is also what tells the
+  // letter keys which question the reader is on, so one arriving by Enter is
+  // reading the same question their eyes are. Following a drawer row also has
+  // to get the drawer out of the way, or the jump lands behind the panel that
+  // started it
   installJumps((target, link) => {
-    if (!link.classList.contains("summary-jump")) return;
-
-    drawer.setExpanded(false);
-    target.focus();
+    target.focus({ preventScroll: true });
+    if (link.classList.contains("summary-jump")) drawer.setExpanded(false);
   });
 
   const saved: SavedState = loadState(store, pageId);
