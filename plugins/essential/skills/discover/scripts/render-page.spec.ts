@@ -1972,6 +1972,55 @@ describe("fn:renderPage single-reply round trip", () => {
   });
 });
 
+describe("fn:renderPage questions inside a container", () => {
+  const nested = page({
+    sections: [
+      {
+        id: "s",
+        label: "S",
+        title: "T",
+        blocks: [
+          { type: "note", id: "before", ref: "Q1", label: "Before", ask: "A" },
+          { type: "disclosure", summary: "Working", blocks: [NEW_BLOCKS.decision] },
+          { type: "note", id: "after", ref: "Q2", label: "After", ask: "A" },
+        ],
+      },
+    ],
+    reply: { heading: "Generated reply", template: "Answers:\n{{answers}}" },
+  });
+
+  /**
+   * reads the reply a reader with scripting off is handed
+   * @param html the rendered page
+   * @returns the pre-rendered reply text
+   */
+  function replyOf(html: string): string {
+    return /<pre class="reply"[^>]*>([^<]*)<\/pre>/.exec(html)?.[1] ?? "";
+  }
+
+  it("should count a decision inside a disclosure and list it in the reply", () => {
+    const html = render(nested);
+
+    // the runtime counts every `[data-question]` field, folded or not, so a
+    // count that read only top-level blocks opened the page at 2 and corrected
+    // itself to 3 once the script ran
+    expect(html).toContain(">3 unanswered<");
+    expect(replyOf(html)).toContain("- **Q23 · Rollout plan:** ");
+  });
+
+  it("should list questions in the order the page draws them", () => {
+    const html = render(nested);
+    const drawn = [...html.matchAll(/ data-question-id="([^"]+)"/g)].map((id) => id[1]);
+    const replied = [...replyOf(html).matchAll(/^- \*\*(Q\d+) /gm)].map((ref) => ref[1]);
+
+    // the runtime reads its fields in document order and the reply is written
+    // in the order the walk yields them; they agree only while both are the
+    // page's order
+    expect(drawn).toEqual(["before", "rollout", "after"]);
+    expect(replied).toEqual(["Q1", "Q23", "Q2"]);
+  });
+});
+
 describe("fn:renderPage new-block validation", () => {
   it.each([
     [

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { RenderError } from "./error.ts";
-import { renderReply, replyTemplate } from "./reply.ts";
+import { questionsOf, renderReply, replyTemplate } from "./reply.ts";
 
-import type { PageData } from "./types.ts";
+import type { PageData, Section } from "./types.ts";
 
 /**
  * builds the smallest page whose reply can be filled
@@ -149,5 +149,51 @@ describe("fn:renderReply", () => {
         }),
       ),
     ).toContain("> Caution: 1 figure is invented");
+  });
+});
+
+describe("fn:questionsOf", () => {
+  it("should find a question at any depth, after the blocks that precede its container", () => {
+    // the runtime reads the page's `[data-question]` fields in document order,
+    // and a container draws its blocks where it sits, so a held question comes
+    // after everything before its container and before everything after it,
+    // across sections too
+    const sections: Section[] = [
+      {
+        id: "a",
+        label: "A",
+        title: "A",
+        blocks: [
+          { type: "note", id: "first", ref: "Q1", label: "First", ask: "?" },
+          {
+            type: "disclosure",
+            summary: "Working",
+            blocks: [
+              { type: "decision", id: "held", ref: "Q2", label: "Held", ask: "?" },
+              {
+                type: "disclosure",
+                summary: "Deeper",
+                blocks: [{ type: "note", id: "deep", ref: "Q3", label: "Deep", ask: "?" }],
+              },
+            ],
+          },
+          { type: "note", id: "last", ref: "Q4", label: "Last", ask: "?" },
+        ],
+      },
+      {
+        id: "b",
+        label: "B",
+        title: "B",
+        blocks: [{ type: "note", id: "next", ref: "Q5", label: "Next", ask: "?" }],
+      },
+    ];
+
+    expect(questionsOf(sections).map((question) => question.id)).toEqual([
+      "first",
+      "held",
+      "deep",
+      "last",
+      "next",
+    ]);
   });
 });

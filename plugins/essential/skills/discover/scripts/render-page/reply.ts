@@ -4,22 +4,45 @@ import { formatAnswers, summarise } from "./runtime/disposition.ts";
 import { fillReply, fillTemplate } from "./runtime/reply.ts";
 import { requireString } from "./validate.ts";
 import { QUESTION_TYPES } from "./vocabulary.ts";
+import { walkBlocks } from "./walk.ts";
 
 import type { AnswerLine } from "./runtime/reply.ts";
-import type { PageData, Section } from "./types.ts";
+import type { Block, PageData, Section } from "./types.ts";
 import type { Question } from "./vocabulary.ts";
 
 /**
- * collects every question block, in reading order
+ * collects every question a list of blocks holds, including the ones a
+ * container nests, in reading order.
+ *
+ * the runtime counts every `[data-question]` field in the document, so the
+ * count and the reply drawn before it runs have to look as deep as the
+ * markup does: a decision inside a disclosure is as much a question as one
+ * beside it, and a page that read only the top level opened at one number
+ * and corrected itself to another once the script ran. Walking the blocks
+ * outermost first is what makes this the document's order too, because a
+ * container draws what it holds where it sits.
+ * @param blocks the blocks to search
+ * @param at JSON path of `blocks`
+ * @returns every `choice`, `note`, `checklist`, `scale`, `decision`,
+ *   `observations`, and `quiz` block, none of which is answered in a freshly
+ *   rendered page
+ */
+export function questionsIn(blocks: Block[], at: string): Question[] {
+  return walkBlocks(blocks, at)
+    .map(({ block }) => block)
+    .filter((block): block is Question =>
+      QUESTION_TYPES.some((type) => type === block.type),
+    );
+}
+
+/**
+ * collects every question block on a page, in reading order
  * @param sections the page's sections
- * @returns every `choice`, `note`, `checklist`, `scale`, and `decision`
- *   block, none of which is answered in a freshly rendered page
+ * @returns every question the sections hold at any depth
  */
 export function questionsOf(sections: Section[]): Question[] {
-  return sections.flatMap((section) =>
-    section.blocks.filter((block): block is Question =>
-      QUESTION_TYPES.some((type) => type === block.type),
-    ),
+  return sections.flatMap((section, index) =>
+    questionsIn(section.blocks, `sections[${index}].blocks`),
   );
 }
 
