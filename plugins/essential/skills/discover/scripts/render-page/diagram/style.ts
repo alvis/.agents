@@ -29,8 +29,15 @@ export const DIAGRAM_CSS = `
 .dg-node-ephemeral .dg-box{stroke:var(--ui-amber); stroke-dasharray:1.5 3.5}
 .dg-box-inner{fill:none; stroke:var(--ui-positive); stroke-width:1}
 /* emphasis sets fill and stroke colour and nothing else, so the role's dash and
-   weight, which carry the role without colour, are still there under it */
-.dg-node.is-emphasis .dg-box{fill:var(--ui-accent-soft); stroke:var(--ui-accent-ink)}
+   weight, which carry the role without colour, are still there under it. The
+   fill is the accent mixed into the canvas rather than the soft accent token,
+   which is within 1.1:1 of the canvas in the light scheme and so reads as no
+   fill at all; a mix follows the scheme because both of its inputs do. The
+   first declaration is what a browser without color-mix keeps */
+.dg-node.is-emphasis .dg-box{fill:var(--ui-accent-soft); fill:color-mix(in srgb, var(--ui-accent) 22%, var(--ui-canvas)); stroke:var(--ui-accent-ink)}
+/* the tag is the one channel that carries the role without colour, and the
+   faint ink it has elsewhere falls to about 3:1 on a tinted ground */
+.dg-node.is-emphasis .dg-tag{fill:var(--ui-muted)}
 /* lit inverts the colours, as a lit pin does, so a box that is lit never looks
    like a box that is emphasised: one is a filled ground, the other a dark one */
 .dg-node.is-active .dg-box{fill:var(--ui-accent-ink); stroke:var(--ui-accent-ink)}

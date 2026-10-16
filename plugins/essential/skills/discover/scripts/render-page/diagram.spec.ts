@@ -464,7 +464,16 @@ describe("fn:renderDiagram marks", () => {
     expect(groupOf(html, "Alpha")).not.toContain("is-emphasis");
     // a rule that set dash or weight would erase the channels that carry the
     // role without colour
-    expect(properties.filter(Boolean)).toStrictEqual(["fill", "stroke"]);
+    expect([...new Set(properties.filter(Boolean))]).toStrictEqual(["fill", "stroke"]);
+  });
+
+  it("should fill an emphasised box from a mix of the accent and the canvas, in either scheme", () => {
+    // the soft accent token is within 1.1:1 of the light canvas, so it is only
+    // the fallback; the mix follows the scheme because both inputs do
+    const rule = /\.dg-node\.is-emphasis \.dg-box\{([^}]*)\}/.exec(DIAGRAM_CSS)?.[1] ?? "";
+    const fills = [...rule.matchAll(/fill:([^;]*)/g)].map((match) => match[1]);
+
+    expect(fills.at(-1)).toMatch(/^color-mix\(in srgb, var\(--ui-accent\) \d+%, var\(--ui-canvas\)\)$/);
   });
 
   it("should carry the tie key and the detail key on one node", () => {
@@ -526,9 +535,13 @@ describe("fn:renderDiagram marks", () => {
 
   it("should invert a lit box so that it cannot be taken for an emphasised one", () => {
     const fill = (selector: string) =>
-      new RegExp(`${selector.replaceAll(".", "\\.")} \\.dg-box\\{[^}]*fill:([^;}]*)`).exec(
-        DIAGRAM_CSS,
-      )?.[1];
+      [
+        ...(
+          new RegExp(`${selector.replaceAll(".", "\\.")} \\.dg-box\\{([^}]*)\\}`).exec(
+            DIAGRAM_CSS,
+          )?.[1] ?? ""
+        ).matchAll(/fill:([^;}]*)/g),
+      ].at(-1)?.[1];
 
     expect(fill(".dg-node.is-active")).toBeDefined();
     expect(fill(".dg-node.is-active")).not.toBe(fill(".dg-node.is-emphasis"));

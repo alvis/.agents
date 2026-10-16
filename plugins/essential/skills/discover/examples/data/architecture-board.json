@@ -189,12 +189,12 @@
           ],
           "pins": [
             {
-              "x": 41,
+              "x": 61,
               "y": 24,
               "text": "The gateway holds no document state, so any node serves any session and the edge scales horizontally behind a plain load balancer."
             },
             {
-              "x": 41,
+              "x": 61,
               "y": 59,
               "text": [
                 "A Yjs-style CRDT merges concurrent edits without a central lock, trading extra per-edit metadata for a lock-free server ",
@@ -211,8 +211,8 @@
               "text": "Every state is reconstructable by replaying this log; the snapshot store below it is a derived cache, never authoritative."
             },
             {
-              "x": 66,
-              "y": 59,
+              "x": 72,
+              "y": 76,
               "text": [
                 "Presence fans out here and is never persisted. Whether one channel holds up at peak concurrency is ",
                 {
