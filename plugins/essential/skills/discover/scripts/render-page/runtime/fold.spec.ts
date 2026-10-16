@@ -63,9 +63,10 @@ function folded(depth: number): { field: StubElement; folds: StubElement[] } {
 /**
  * clicks an element the way the document would see it
  * @param target the element the pointer landed on
+ * @param modifiers any modifier the click carried, or `defaultPrevented`
  */
-function click(target: StubElement): void {
-  for (const handler of clicks) handler({ target });
+function click(target: StubElement, modifiers: Record<string, boolean> = {}): void {
+  for (const handler of clicks) handler({ target, ...modifiers });
 }
 
 describe("fn:isFolded", () => {
@@ -158,6 +159,20 @@ describe("fn:installJumps", () => {
     expect(seen).toEqual([{ target: field, link }]);
   });
 
+  it.each(["metaKey", "ctrlKey", "shiftKey", "defaultPrevented"])(
+    "should leave this page alone for a click carrying %s",
+    (modifier) => {
+      // a new tab or window, or a click something else has handled: the
+      // question is not being arrived at on this page
+      const { fold, seen } = wired();
+
+      click(new StubElement("a", { href: "#qs-q1" }), { [modifier]: true });
+
+      expect(fold.open).toBe(false);
+      expect(seen).toEqual([]);
+    },
+  );
+
   it("should leave every other link alone", () => {
     const { fold, seen } = wired();
 
@@ -186,14 +201,19 @@ describe("fn:installJumps", () => {
 describe("fn:installJumps arriving by fragment", () => {
   /**
    * wires the jumps over a folded question the address bar may name
-   * @returns the question and its disclosure
+   * @returns the question, its disclosure and every jump the handler was told of
    */
-  function wired(): { field: StubElement; fold: StubElement } {
+  function wired(): {
+    field: StubElement;
+    fold: StubElement;
+    seen: { target: unknown; link: unknown }[];
+  } {
     const { field, folds } = folded(1);
     byId["qs-q1"] = field;
-    installJumps(() => undefined);
+    const seen: { target: unknown; link: unknown }[] = [];
+    installJumps((target, link) => seen.push({ target, link }));
 
-    return { field, fold: folds[0]! };
+    return { field, fold: folds[0]!, seen };
   }
 
   it("should open the fold of the question the page loads at", () => {
@@ -217,18 +237,39 @@ describe("fn:installJumps arriving by fragment", () => {
     expect(field.scrolled).toBe(true);
   });
 
-  it("should not pull a reader back to a question that was never folded", () => {
+  it("should take the same step as a click, with no link, when an address names a question", () => {
+    // the handler is what puts the keyboard on the card, so a question reached
+    // by address is the one the letter keys act on, as one reached by a link is
+    hash = "#qs-q1";
+
+    const { field, seen } = wired();
+
+    expect(seen).toEqual([{ target: field, link: null }]);
+  });
+
+  it("should take that step again when back or forward lands on a question", () => {
+    const { field, seen } = wired();
+
+    hash = "#qs-q1";
+    for (const arrive of arrivals) arrive();
+
+    expect(seen).toEqual([{ target: field, link: null }]);
+  });
+
+  it("should not pull a reader back to a question that was never folded, but still tell the caller", () => {
     const field = new StubElement("fieldset");
     byId["qs-q1"] = field;
     hash = "#qs-q1";
+    const seen: unknown[] = [];
 
-    installJumps(() => undefined);
+    installJumps((target) => seen.push(target));
 
     expect(field.scrolled).toBe(false);
+    expect(seen).toEqual([field]);
   });
 
   it("should leave every other fragment, and an empty one, alone", () => {
-    const { field, fold } = wired();
+    const { field, fold, seen } = wired();
 
     for (const other of ["", "#s-intro", "#qs-gone"]) {
       hash = other;
@@ -237,6 +278,7 @@ describe("fn:installJumps arriving by fragment", () => {
 
     expect(fold.open).toBe(false);
     expect(field.scrolled).toBe(false);
+    expect(seen).toEqual([]);
   });
 
   it("should watch the address bar once, beside the one click handler", () => {

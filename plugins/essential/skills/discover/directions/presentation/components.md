@@ -146,7 +146,7 @@ Two or more alternatives side by side, each a panel of its own: `title?` and `it
 }
 ```
 
-Panels wrap to a stack where the column is too narrow for them. The panels' width follows what they hold, never a number the author picks: the grid is `wide` when any panel holds, at any depth, a code excerpt, table, diagram or other figure, and `prose` otherwise, because a figure is drawn at natural size and would scroll inside a track made for prose. The tracks are the widths in [features.md §F](../../references/features.md#f-legibility-floor). Panels are never hidden, so a question inside one stays visible to key navigation. The block is refused with fewer than two items, and nested in another `variants` block.
+Panels wrap to a stack where the column is too narrow for them. The panels' width follows what they hold, never a number the author picks: the grid is `wide` when any panel holds, at any depth, a code excerpt, table, diagram or other figure, and `prose` otherwise, because a figure is drawn at natural size and would scroll inside a track made for prose. The widths, and what each is derived from, are in `scripts/render-page/style/variants.ts`. Panels are never hidden, so a question inside one stays visible to key navigation. The block is refused with fewer than two items, and nested in another `variants` block.
 
 #### `table`
 

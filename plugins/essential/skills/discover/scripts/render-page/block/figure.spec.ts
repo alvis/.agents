@@ -259,6 +259,32 @@ describe("fn:renderBlock tree status", () => {
     expect(drawn).not.toContain("data-filter-scope");
   });
 
+  it("should mark no row for filtering where there is no bar to filter them", () => {
+    // a marked row with no scope around it could be adopted by a bar further up
+    // the page, which would dim these rows for a choice made about another list
+    const drawn = html(
+      {
+        type: "tree",
+        root: "r/",
+        items: [{ name: "a", status: "new", children: [{ name: "b" }] }, { name: "c" }],
+      },
+      page(),
+    );
+
+    expect(drawn).not.toContain("data-filter-item");
+    expect(drawn).toContain('<span class="tree-row"><span class="tree-status" data-status="new">NEW </span>');
+  });
+
+  it("should draw a tree with no status as the plain listing it was", () => {
+    const drawn = html(
+      { type: "tree", root: "r/", items: [{ name: "a", note: "n" }, { name: "b" }] },
+      page(),
+    );
+
+    expect(drawn).not.toContain("tree-row");
+    expect(drawn).not.toContain("data-filter");
+  });
+
   it("should escape a name and a note beside the gutter", () => {
     const drawn = html(
       { type: "tree", root: "<r>", items: [{ name: "<x>", status: "new", note: "<n>" }] },

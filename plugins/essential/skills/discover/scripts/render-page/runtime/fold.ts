@@ -62,13 +62,25 @@ function questionAt(fragment: string): HTMLElement | null {
  * for the same reason. A question that was never folded is left alone, so a
  * reader who has scrolled on is not pulled back.
  */
-function arrive(): void {
+function arrive(onJump: JumpHandler): void {
   const target = questionAt(location.hash);
-  if (!target || !isFolded(target)) return;
+  if (!target) return;
 
+  const folded = isFolded(target);
   reveal(target);
-  target.scrollIntoView({ block: "start" });
+  if (folded) target.scrollIntoView({ block: "start" });
+  // the same step a click takes, so a question reached by address is the one
+  // the keyboard is on, exactly as one reached by a link is
+  onJump(target, null);
 }
+
+/**
+ * what else a jump does once its question is open.
+ *
+ * the link is null where the reader arrived by address rather than by
+ * following one, so a handler that only matters to a link can tell.
+ */
+type JumpHandler = (target: HTMLElement, link: HTMLElement | null) => void;
 
 /**
  * makes every way of arriving at a question open the fold the question sits in.
@@ -77,15 +89,17 @@ function arrive(): void {
  * drawer's rows, the bar's chips and a section heading's chips all point at the
  * same `#qs-` anchors and a fourth kind of link added later would otherwise
  * arrive without it. It runs before the browser follows the link, which is why
- * the scroll that follows lands on a card that is open. A fragment reached any
+ * the scroll that follows lands on a card that is open. A click that asks for a
+ * new tab or window, or that something else has already handled, is not an
+ * arrival here, so the current page is left as it was. A fragment reached any
  * other way — a reload after a jump, back and forward, a pasted address — is
  * read from the address bar, on load and on every change.
- * @param onJump what else a followed link does, given the question and the link
+ * @param onJump what else a jump does, given the question and the link, if any
  */
-export function installJumps(
-  onJump: (target: HTMLElement, link: HTMLElement) => void,
-): void {
+export function installJumps(onJump: JumpHandler): void {
   document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey) return;
+
     const link = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("a[href]");
     // the href is the one record of where the link points, and the browser is
     // navigating to the same fragment, so the two cannot disagree
@@ -96,6 +110,6 @@ export function installJumps(
     onJump(target, link);
   });
 
-  arrive();
-  window.addEventListener("hashchange", arrive);
+  arrive(onJump);
+  window.addEventListener("hashchange", () => arrive(onJump));
 }

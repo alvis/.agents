@@ -26,12 +26,20 @@ import type { Question } from "./vocabulary.ts";
  * @param at JSON path of `blocks`
  * @returns every `choice`, `note`, `checklist`, `scale`, `decision`,
  *   `observations`, and `quiz` block, none of which is answered in a freshly
- *   rendered page
+ *   rendered page, each with the JSON path the walk found it at
  */
-export function questionsIn(blocks: Block[], at: string): Question[] {
-  return walkBlocks(blocks, at)
-    .map(({ block }) => block)
-    .filter(isQuestion);
+export function questionsIn(blocks: Block[], at: string): PlacedQuestion[] {
+  return walkBlocks(blocks, at).filter(
+    (placed): placed is PlacedQuestion => isQuestion(placed.block),
+  );
+}
+
+/** one question a board holds, against where in the data it sits. */
+export interface PlacedQuestion {
+  /** the question block, as the author wrote it */
+  block: Question;
+  /** its JSON path, which a refusal about the question names verbatim */
+  path: string;
 }
 
 /**
@@ -67,7 +75,7 @@ export function opensWithQuestions(blocks: Block[], at: string): boolean {
  */
 export function questionsOf(sections: Section[]): Question[] {
   return sections.flatMap((section, index) =>
-    questionsIn(section.blocks, `sections[${index}].blocks`),
+    questionsIn(section.blocks, `sections[${index}].blocks`).map(({ block }) => block),
   );
 }
 
@@ -108,9 +116,9 @@ export interface Ask {
  * @returns the questions in reading order, with their fresh dispositions
  */
 export function asksIn(blocks: Block[], at: string): Ask[] {
-  return questionsIn(blocks, at).map((question) => ({
-    question,
-    disposition: dispositionOf(freshLine(question, at)),
+  return questionsIn(blocks, at).map(({ block, path }) => ({
+    question: block,
+    disposition: dispositionOf(freshLine(block, path)),
   }));
 }
 

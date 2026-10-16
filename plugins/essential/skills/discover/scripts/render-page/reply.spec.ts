@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { RenderError } from "./error.ts";
-import { questionsOf, renderReply, replyTemplate } from "./reply.ts";
+import { asksIn, questionsOf, renderReply, replyTemplate } from "./reply.ts";
 
-import type { PageData, Section } from "./types.ts";
+import type { Block, PageData, Section } from "./types.ts";
 
 /**
  * builds the smallest page whose reply can be filled
@@ -195,5 +195,43 @@ describe("fn:questionsOf", () => {
       "last",
       "next",
     ]);
+  });
+});
+
+describe("fn:asksIn", () => {
+  /**
+   * builds a list holding one malformed question at the given depth
+   * @returns the blocks, with the question inside a disclosure
+   */
+  function malformed(): Block[] {
+    return [
+      { type: "prose", text: "before" },
+      {
+        type: "disclosure",
+        summary: "Working",
+        blocks: [
+          { type: "note", id: "held", ref: "Q1", label: "Held", ask: "?", response: "maybe" },
+        ],
+      },
+    ] as Block[];
+  }
+
+  it("should name a refused question by its own path rather than its list's", () => {
+    expect(() => asksIn(malformed(), "sections[1].blocks")).toThrow(
+      /^sections\[1\]\.blocks\[1\]\.blocks\[0\]\.response:/,
+    );
+  });
+
+  it("should still refuse with a RenderError", () => {
+    expect(() => asksIn(malformed(), "sections[1].blocks")).toThrow(RenderError);
+  });
+
+  it("should list each question with where it stands, nested ones included", () => {
+    const blocks = [
+      { type: "note", id: "a", ref: "Q1", label: "A", ask: "?" },
+      { type: "disclosure", summary: "More", blocks: [{ type: "note", id: "b", ref: "Q2", label: "B", ask: "?" }] },
+    ] as Block[];
+
+    expect(asksIn(blocks, "blocks").map(({ question }) => question.id)).toEqual(["a", "b"]);
   });
 });

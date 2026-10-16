@@ -93,19 +93,6 @@ export function start(): void {
   // from the fresh dispositions and which this repaints from the same lines
   const paintOutline = fields.length ? installOutline(fields) : undefined;
 
-  // every link to a question opens the fold the question sits in, whichever
-  // control it is on: a drawer row, a bar chip, or a section heading's chip.
-  // The anchor's own navigation does the scrolling, so focus is placed without
-  // scrolling: it puts the keyboard on the card, which is also what tells the
-  // letter keys which question the reader is on, so one arriving by Enter is
-  // reading the same question their eyes are. Following a drawer row also has
-  // to get the drawer out of the way, or the jump lands behind the panel that
-  // started it
-  installJumps((target, link) => {
-    target.focus({ preventScroll: true });
-    if (link.classList.contains("summary-jump")) drawer.setExpanded(false);
-  });
-
   const saved: SavedState = loadState(store, pageId);
   const touched = new Set(saved.touched);
 
@@ -264,6 +251,21 @@ export function start(): void {
   // after the questions are restored and the dialogs are wired, so a shortcut can
   // never reach a control the page has not finished setting up
   installKeys(fields);
+
+  // every way of arriving at a question opens the fold the question sits in:
+  // a drawer row, a bar chip, a section heading's chip, or an address that
+  // names it. The anchor's own navigation does the scrolling, so focus is
+  // placed without scrolling: it puts the keyboard on the card, which is also
+  // what tells the letter keys which question the reader is on, so one arriving
+  // by Enter is reading the same question their eyes are. After the keys, not
+  // before: a card takes focus only once they have made it focusable, and an
+  // address that names a question is read as this runs. Following a drawer row
+  // also has to get the drawer out of the way, or the jump lands behind the
+  // panel that started it
+  installJumps((target, link) => {
+    target.focus({ preventScroll: true });
+    if (link?.classList.contains("summary-jump")) drawer.setExpanded(false);
+  });
 
   // the restore above wrote controls without persisting; this first paint is what
   // puts the drawer in step with them, and re-saving is what prunes any entry the

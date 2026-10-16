@@ -227,20 +227,25 @@ export function renderTree(
   // notes line up in a column, so the shape of the tree stays readable down
   // the left edge instead of being broken up by prose of varying length
   const column = Math.max(...lines.map((line) => extentOf(line, gutter))) + 2;
+  const present = TREE_STATUSES.filter((status) =>
+    entries.some((entry) => entry.effective === status),
+  );
+  // one status is a legend, not a filter, so only a tree with a bar of chips
+  // draws a scope and marks its rows: an attribute with no scope around it
+  // would let a bar further up the page adopt these rows as its own
+  const filtered = present.length > 1;
   const rows = lines.map((line, index) => {
     const row = drawLine(line, column, gutter);
     if (!gutter) return row;
     // the root is the listing's heading, so it never carries a status and is
     // never dimmed; an entry with none still carries the attribute, empty, so
     // choosing a status dims it
-    const item = index === 0 ? "" : ` data-filter-item="${line.effective ?? ""}"`;
+    const item =
+      !filtered || index === 0 ? "" : ` data-filter-item="${line.effective ?? ""}"`;
 
     return `<span class="tree-row"${item}>${row}${index === lines.length - 1 ? "" : "\n"}</span>`;
   });
-  const present = TREE_STATUSES.filter((status) =>
-    entries.some((entry) => entry.effective === status),
-  );
-  const scope = present.length > 1 ? " data-filter-scope" : "";
+  const scope = filtered ? " data-filter-scope" : "";
 
   return `<figure class="tree-figure"${scope}>${title ? `<figcaption class="tree-title">${escapeHtml(title)}</figcaption>` : ""}${gutter ? renderKey(entries, present) : ""}<pre class="tree">${rows.join(gutter ? "" : "\n")}</pre></figure>`;
 }

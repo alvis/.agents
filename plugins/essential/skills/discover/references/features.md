@@ -49,7 +49,7 @@ Fields and rules for the last five live in [the JSON block catalogue](../directi
 ## F. Legibility (floor)
 
 - [ ] **A flow is drawn, not narrated**: a section explaining a flow, pipeline, sequence, or state machine carries a diagram — hand-authored SVG where the drawing carries the claim, otherwise a Mermaid figure — with prose as its support, not its substitute
-- [ ] **Column width follows content kind**, never a picked number: `tile` (8rem) for a number and a label, `compact` (14rem) for a short label and one line, `prose` (22rem) for a claim, `wide` (30rem) for code, tables, or several paragraphs. Findings default to `prose`; override per block with `data-grid-density`. The `variants` block enforces it: it chooses `wide` or `prose` from what its panels hold, so an author never picks a width
+- [ ] **Column width follows content kind**, chosen by the renderer and never by the author: a `variants` block draws `wide` when a panel holds code or a figure and `prose` otherwise. The widths, and what each is derived from, are in `scripts/render-page/style/variants.ts`
 - [ ] Body text sits inside a readable measure (~45–75ch) at every breakpoint
 
 ## G. Engineering (floor)

@@ -1797,7 +1797,7 @@ describe("fn:renderPage new blocks", () => {
     // the same overflow as the choice grid, at four times the floor: a bare
     // minmax(30rem,1fr) demands 480px inside a 272px page
     expect(VARIANTS_CSS).toMatch(
-      /\.variants-grid\{[^}]*minmax\(min\(var\(--track,22rem\),100%\),1fr\)/,
+      /\.variants-grid\{[^}]*minmax\(min\(var\(--track\),100%\),1fr\)/,
     );
     expect(VARIANTS_CSS.replaceAll(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(
       /minmax\(\d+(?:\.\d+)?rem,1fr\)/,
