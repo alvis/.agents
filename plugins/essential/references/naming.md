@@ -61,6 +61,7 @@ Naming the branch this way is what lets the workspace resolution step select the
 - A durable directory entrypoint is the fixed uppercase filename `README.md`; operational indexes and semantic documents keep descriptive lowercase names.
 - Work-local specification files use `.state/works/<work-id>/spec/` and take the owning capability, never the task title.
 - ADRs use `adr-<n>-<decision-slug>.md`, where `<n>` is a positive, monotonically increasing integer without leading zeros (`docs/architecture/decisions/<domain>/adr-7-<decision-slug>.md`). The heading uses the same number: `# ADR-7: <decision title>`. ADRs are never renumbered; superseded ADRs keep their filename, with archive placement governed by [ADR supersession](../directions/adr-supersession.md).
+- Backlog items use `.state/backlogs/backlog-<n>-<slug>.md`, where `<n>` is a positive, monotonically increasing integer without leading zeros that is never reused. The heading uses the same number: `# Backlog 7: <title>`.
 - Completed-work retrospectives use `.state/journals/<domain>/<YYYY-MM-DD>-<work-id>.md`: one primary codebase domain using the slug convention, the completion date, and the existing stable Work ID. Reuse an established domain; never rename the Work ID or select a second filename to evade a conflicting record.
 - Ordinary work-local children take unnumbered semantic `<slug>.md` names — never `part-1`, `misc`, or the task title.
 - Numbered `<nn>-<topic-slug>.md` children, in increments of 10, are reserved for the mechanical split of an oversized file.

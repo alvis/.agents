@@ -10,6 +10,8 @@ Read this when creating, locating, or migrating ignored local state. `state-syst
 │   └── <YYYY-MM-DD>-<work-id>.md        # completion date and stable identity
 ├── environment.md                      # dated, re-measurable trees, refs, and gates; never per-stream
 ├── traps.md                            # one line each: symptom, cause, and what to do instead
+├── backlogs.md                         # deferred-finding index; ../directions/backlog.md owns it
+├── backlogs/backlog-<n>-<slug>.md      # one deferred finding and its history
 ├── notion/                             # optional transport mirror; never a contract authority
 ├── archive/<work-id>                   # completed or parked stream; never enumerated by the resolver
 └── works/<work-id>                     # one live stream, phase planned, working, or reviewing

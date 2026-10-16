@@ -252,6 +252,8 @@ describe("cmd:state-write global targets", () => {
     "overview.md",
     "journals.md",
     "journals/essential/2026-09-30-demo.md",
+    "backlogs.md",
+    "backlogs/backlog-12-doctor-fix-text.md",
   ])("should write allowlisted %s under the canonical state root", (target) => {
     const harness = globalHarness();
     const result = writeGlobal(harness, target);
@@ -272,6 +274,12 @@ describe("cmd:state-write global targets", () => {
     "works/foreign/state.md",
     "environment.md",
     "journals/web/nested/2026-09-30-demo.md",
+    "backlogs/backlog-0-zero.md",
+    "backlogs/backlog-07-padded.md",
+    "backlogs/backlog-3.md",
+    "backlogs/backlog-3-Upper.md",
+    "backlogs/nested/backlog-3-demo.md",
+    "backlogs/../overview.md",
   ])("should refuse unsafe or unowned global target %s", (target) => {
     const harness = globalHarness();
     const before = readdirSync(harness.state, { recursive: true }).sort();
@@ -279,6 +287,15 @@ describe("cmd:state-write global targets", () => {
     expect(readdirSync(harness.state, { recursive: true }).sort()).toEqual(
       before,
     );
+  });
+
+  it("should refuse a backlog number already held by another item", () => {
+    const harness = globalHarness();
+    expect(writeGlobal(harness, "backlogs/backlog-4-first.md").status).toBe(0);
+    expect(writeGlobal(harness, "backlogs/backlog-4-first.md").status).toBe(0);
+    expect(writeGlobal(harness, "backlogs/backlog-4-second.md").status).not.toBe(0);
+    expect(writeGlobal(harness, "backlogs/backlog-40-other.md").status).toBe(0);
+    expect(existsSync(resolve(harness.state, "backlogs/backlog-4-second.md"))).toBe(false);
   });
 
   it("should refuse simultaneous work and state target arguments", () => {

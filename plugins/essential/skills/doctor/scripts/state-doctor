@@ -2548,8 +2548,8 @@ def check_outlives_me(
                 "outlives-me",
                 "completed stream holds an outlives-me item with no owner: "
                 + body.strip()[:120],
-                "Promote the item, open a successor stream, or file it in "
-                ".state/backlog.md with an owner or `unowned` — a completed "
+                "Promote the item, open a successor stream, or record it in "
+                ".state/backlogs/ and name that item as its owner — a completed "
                 "row is dropped at retention and shreds the debt.",
             )
 

@@ -16,6 +16,8 @@ Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLA
 | `directions/adr-supersession.md` | When replacing an accepted architectural choice | Successor creation, archive placement, historical preservation, and index updates |
 | `directions/adr-review.md` | When checking ADR integrity or reading history | Integrity review and targeted archive inspection |
 | `templates/state/decisions/decision.md` | When preparing a work-local decision | Inline metadata, causal-field, and section prompts |
+| `directions/backlog.md` | When work surfaces an issue outside its goal, and when that work lands | Capture, item and index format, adoption, after-landing triage, issue-text privacy |
+| `templates/state/backlogs/backlog.md` | When recording a backlog item | Inline metadata and section prompts |
 | `directions/decisions.md` | When accepting/superseding/closing work-local decisions | Blast-radius sweep, supersession, decision completion gate |
 | `references/approvals.md` | When recording approvals or durable claims that age | The approval binding tuple, freshness metadata |
 | `references/anchors.md` | For non-git anchors or cross-stream initiatives | Anchor declarations, adapter contract, initiative manifests |
