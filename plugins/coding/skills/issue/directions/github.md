@@ -26,11 +26,15 @@ Issue types exist only for organization-owned repositories; a 404 for a user-own
 
 ## Bodies, comments, and retries
 
-Write multiline text through a file or JSON input, never interpolate report text into shell code. Post a triage comment with:
+Write multiline text through a file or JSON input, never interpolate report text into shell code. Post a triage comment, edit your last comment on the issue, or delete it with:
 
 ```bash
 bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue-comment.ts" "$NUMBER" --repo "$HOST/$REPOSITORY" --body-file "$BODY_FILE"
+bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue-comment.ts" "$NUMBER" --repo "$HOST/$REPOSITORY" --edit-last --body-file "$BODY_FILE"
+bun "${ISSUE_SKILL_DIR}/../../scripts/gh-issue-comment.ts" "$NUMBER" --repo "$HOST/$REPOSITORY" --delete-last --yes
 ```
+
+On a developer machine these pass through to `gh issue comment`; over REST they `POST issues/{n}/comments`, or `PATCH` / `DELETE issues/comments/{id}` on your most recent comment. `--body-file` cannot be combined with `--delete-last`. The wrapper does not check whether the number names an issue or a pull request; see [guarded routes and limits](../../pr/directions/review-publishing.md#guarded-routes-and-limits) for what that permits and what the review-publication guard still refuses.
 
 After every mutation, fetch the changed resource and compare intended values. For comments, bind the returned comment URL/ID and verify its body. On a timeout/unknown write result, reread before retrying; reuse an existing equivalent comment or issue instead of duplicating it. On permission/validation failure, stop that operation and report its explicit cause. Honor rate-limit reset/retry headers. At most two targeted retries limits duplicate-write risk; unresolved outcomes remain reported. Read-back cannot eliminate the API's race window: detect conflicts and do not overwrite newly observed human edits.
 

@@ -75,4 +75,86 @@ describe("cmd:gh-issue-<subcommand>", () => {
     expect(result.stdout).toBe(`${issue.html_url}#c1\n`);
     expect(requestBody(result, `POST ${project}/issues/12/comments`)).toEqual({ body: "Looks fixed" });
   });
+
+  it.each([
+    [["comment", "12", "--edit-last", "--body-file", "-"]],
+    [["comment", "12", "--delete-last", "--yes"]],
+  ])("should pass %j through to gh unchanged outside a cloud session", (argv) => {
+    const result = run([...argv, "--repo", "example/project"]);
+    expect(result.calls).toEqual([{ args: ["issue", ...argv, "--repo", "example/project"], stdin: "" }]);
+    expect(result.status).toBe(0);
+  });
+
+  const comments = [
+    { id: 7, user: { login: "me" }, html_url: `${issue.html_url}#issuecomment-7` },
+    { id: 8, user: { login: "other" }, html_url: `${issue.html_url}#issuecomment-8` },
+    { id: 9, user: { login: "me" }, html_url: `${issue.html_url}#issuecomment-9` },
+    { id: 10, user: { login: "other" }, html_url: `${issue.html_url}#issuecomment-10` },
+  ];
+
+  it("should edit the viewer's last comment by id", () => {
+    const result = run(["comment", "12", "--repo", "example/project", "--edit-last", "--body-file", "-"], {
+      env: cloud,
+      stdin: "Corrected",
+      routes: {
+        "": { body: { login: "me" } },
+        [`${project}/issues/12/comments`]: { body: comments },
+        [`${project}/issues/comments/9`]: { body: comments[2] },
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe(`${comments[2]!.html_url}\n`);
+    expect(restCalls(result).at(-1)).toBe(`PATCH ${project}/issues/comments/9`);
+    expect(requestBody(result, `PATCH ${project}/issues/comments/9`)).toEqual({ body: "Corrected" });
+  });
+
+  it("should delete the viewer's last comment by id", () => {
+    const result = run(["comment", "12", "--repo", "example/project", "--delete-last", "--yes"], {
+      env: cloud,
+      routes: {
+        "": { body: { login: "me" } },
+        [`${project}/issues/12/comments`]: { body: comments },
+        [`${project}/issues/comments/9`]: { body: "" },
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(restCalls(result).at(-1)).toBe(`DELETE ${project}/issues/comments/9`);
+  });
+
+  it("should page through every comment to find the viewer's last one", () => {
+    const page = Array.from({ length: 100 }, (_, index) => ({ id: index + 1, user: { login: "me" } }));
+    const result = run(["comment", "12", "--repo", "example/project", "--delete-last", "--yes"], {
+      env: cloud,
+      routes: {
+        "": { body: { login: "me" } },
+        [`${project}/issues/12/comments`]: { body: page },
+        [`${project}/issues/12/comments?per_page=100&page=2`]: { body: [{ id: 150, user: { login: "me" } }] },
+        [`${project}/issues/comments/150`]: { body: "" },
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(restCalls(result).at(-1)).toBe(`DELETE ${project}/issues/comments/150`);
+  });
+
+  it("should refuse when the viewer has no comment on the issue", () => {
+    const result = run(["comment", "12", "--repo", "example/project", "--delete-last", "--yes"], {
+      env: cloud,
+      routes: { "": { body: { login: "nobody" } }, [`${project}/issues/12/comments`]: { body: comments } },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("no comment by nobody");
+    expect(restCalls(result).some((call) => call.startsWith("PATCH") || call.startsWith("DELETE"))).toBe(false);
+  });
+
+  it.each([
+    [["comment", "12", "--delete-last"], "--yes"],
+    [["comment", "12", "--edit-last", "--delete-last", "--yes"], "--edit-last"],
+    [["comment", "12", "--edit-last"], "--body-file"],
+    [["comment", "12", "--delete-last", "--yes", "--body-file", "note.md"], "--body-file"],
+  ])("should refuse %j by naming %s before any write", (argv, flag) => {
+    const result = run([...argv, "--repo", "example/project"], { env: cloud });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(flag);
+    expect(result.calls).toEqual([]);
+  });
 });

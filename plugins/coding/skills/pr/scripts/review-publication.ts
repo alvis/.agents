@@ -307,10 +307,14 @@ const STATUS_TEXT: Readonly<Record<StatusAssessment["status"], string>> = {
   "review-started": "Independent review has started.",
 };
 const PROTECTED_REST_PATTERN = new RegExp(
-  String.raw`^repos/[^/]+/[^/]+/(?:issues/(?:\d+/comments|comments/\d+)|pulls/(?:\d+/(?:comments(?:/\d+/replies)?|reviews(?:/\d+(?:/events)?)?|ccr/comments/\d+/(?:un)?resolve)|comments/\d+|reviews/\d+))(?:\?.*)?$`,
+  String.raw`^repos/[^/]+/[^/]+/pulls/(?:\d+/(?:comments(?:/\d+/replies)?|reviews(?:/\d+(?:/events)?)?|ccr/comments/\d+/(?:un)?resolve)|comments/\d+|reviews/\d+)(?:\?.*)?$`,
 );
+// issue comments (addComment, updateIssueComment, deleteIssueComment) are
+// deliberately unguarded so issue triage can publish; a pull-request target is
+// accepted and writes its conversation comments (see review-publishing.md,
+// "Guarded routes and limits")
 const PROTECTED_GRAPHQL_PATTERN =
-  /\b(?:addComment|addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|deleteIssueComment|deletePullRequestReview|resolveReviewThread|submitPullRequestReview|unresolveReviewThread|updateIssueComment|updatePullRequestReview|updatePullRequestReviewComment)\b/;
+  /\b(?:addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|deletePullRequestReview|resolveReviewThread|submitPullRequestReview|unresolveReviewThread|updatePullRequestReview|updatePullRequestReviewComment)\b/;
 
 const modulePath = fileURLToPath(import.meta.url);
 const defaultPluginRoot = resolve(dirname(modulePath), "../../../..");
@@ -2431,10 +2435,6 @@ function assertSameTarget(
 }
 
 function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
-  // coding's gh-issue-comment.ts drop-in reaches the same comment write over
-  // REST, so it is guarded exactly like raw gh issue comment
-  if (words.some((word) => basename(word) === "gh-issue-comment.ts"))
-    return "gh-issue-comment.ts can target a pull request";
   // gh-pr-comment.ts posts plain comments and refuses verdict language itself;
   // an inline verdict is refused here too, before the command runs
   const prComment = words.findIndex((word) => basename(word) === "gh-pr-comment.ts");
@@ -2472,9 +2472,6 @@ function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
     ["comment", "review"].includes(arguments_[1] ?? "")
   ) {
     return `raw gh pr ${arguments_[1]} bypasses the approved payload`;
-  }
-  if (arguments_[0] === "issue" && arguments_[1] === "comment") {
-    return "raw gh issue comment can target a pull request";
   }
   if (arguments_[0] !== "api") return null;
   const parsed = parseApiArguments(arguments_.slice(1));
@@ -2910,13 +2907,10 @@ function splitShellSegments(command: string): readonly ShellSegment[] {
 
 function looksLikeReviewWrite(command: string): boolean {
   return (
-    /\bgh\b[\s\S]*?\b(?:pr\s+(?:comment|review)|issue\s+comment)\b/.test(
-      command,
-    ) ||
-    /\bgh-issue-comment\.ts\b/.test(command) ||
+    /\bgh\b[\s\S]*?\bpr\s+(?:comment|review)\b/.test(command) ||
     (/\bgh\b[\s\S]*?\bapi\b/.test(command) &&
       (PROTECTED_GRAPHQL_PATTERN.test(command) ||
-        /repos\/[^\s]+\/(?:issues|pulls)\//.test(command)))
+        /repos\/[^\s]+\/pulls\//.test(command)))
   );
 }
 

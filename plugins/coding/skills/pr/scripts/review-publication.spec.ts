@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CONTRACT_VERSION,
+  classifyReviewPublicationCommand,
   createReviewPublicationReceipt,
   validateReviewPublicationReceipt,
 } from "./review-publication";
@@ -243,6 +244,41 @@ function reviewStructure(body: string): {
       null,
   };
 }
+
+describe("fn:classifyReviewPublicationCommand", () => {
+  it.each([
+    "gh issue comment 35 --body-file note.md",
+    "gh issue comment 35 --edit-last --body-file note.md",
+    "gh issue comment 35 --delete-last --yes",
+    "gh issue comment 35 --body-file $(mktemp)",
+    "gh issue comment 35 --body `cat note.md`",
+    "bun plugins/coding/scripts/gh-issue-comment.ts 35 --body-file note.md",
+    "bun plugins/coding/scripts/gh-issue-comment.ts 35 --edit-last --body-file $(mktemp)",
+    "bun gh-issue-comment.ts 35 --delete-last --yes",
+    "gh api -X POST repos/acme/app/issues/35/comments -f body=Triaged",
+    'gh api -X PATCH repos/acme/app/issues/comments/12 -f "body=`cat note.md`"',
+    "gh api -X DELETE repos/acme/app/issues/comments/12",
+    'gh api graphql -f \'query=mutation { addComment(input:{subjectId:"x",body:"Triaged"}) { clientMutationId } }\'',
+    'gh api graphql -f \'query=mutation { updateIssueComment(input:{id:"x",body:"$(date)"}) { clientMutationId } }\'',
+    "gh api graphql -f 'query=mutation { deleteIssueComment(input:{id:\"x\"}) { clientMutationId } }'",
+  ])("should leave issue-comment route %s unrelated", (command) => {
+    expect(classifyReviewPublicationCommand(command).decision).toBe("ignore");
+  });
+
+  it.each([
+    "gh pr review 35 --approve",
+    "gh pr comment 35 --body-file note.md",
+    "gh pr comment 35 --body $(cat note.md)",
+    "gh api -X POST repos/acme/app/pulls/35/reviews",
+    "gh api -X POST repos/acme/app/pulls/35/comments -f body=`cat note.md`",
+    "gh api -X PATCH repos/acme/app/pulls/comments/12 -f body=changed",
+    "gh api graphql -f 'query=mutation { submitPullRequestReview(input:{pullRequestReviewId:\"x\",event:APPROVE}) { clientMutationId } }'",
+    'bun gh-pr-comment.ts 35 --body "Approved"',
+    "gh issue comment 35 --body-file note.md $(gh pr review 35 --approve)",
+  ])("should still deny pull-request review route %s", (command) => {
+    expect(classifyReviewPublicationCommand(command).decision).toBe("deny");
+  });
+});
 
 describe("cmd:review-publication", () => {
   it("should publish the governing evidence for every minimality unit", () => {
