@@ -24,7 +24,7 @@ A direction page succeeds only when the user can answer all three questions with
 
 Declare one shared scenario ID on the page and repeat it on every direction frame. Give every frame a stable direction ID, a unique composition name, at least two visible named traits, and local keep/steal/reject controls. The final selection choices must map one-to-one to the rendered direction IDs. These are semantic hooks for validation and prompt synthesis, not styling APIs.
 
-After a technical comparison, route the result to `essential:decide`. After a visual or interaction direction comparison, route the chosen direction and retained traits to `web:design`; the discovery page does not replace the production design workflow.
+After a technical comparison, converge on the same board under the [decide contract](../../decide.md). After a visual or interaction direction comparison, route the chosen direction and retained traits to `web:design`; the discovery page does not replace the production design workflow.
 
 ### Visual-direction worked mapping
 

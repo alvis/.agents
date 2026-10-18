@@ -22,7 +22,7 @@
       },
       {
         "label": "Next owner",
-        "value": "Essential Decide"
+        "value": "Decide contract"
       }
     ]
   },
@@ -160,7 +160,7 @@
       "id": "option-decision",
       "label": "Your shortlist",
       "eyebrow": "One final selection",
-      "title": "Which mechanism should anchor Decide?",
+      "title": "Which mechanism should we commit to?",
       "blocks": [
         {
           "type": "choice",

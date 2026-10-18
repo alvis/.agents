@@ -47,8 +47,7 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 
 | Skill | Use when |
 | --- | --- |
-| `essential:discover` | Finding material unknowns before planning: blindspot passes, brainstorms, interviews, multi-round planning interviews, reference extraction, disposable prototypes. |
-| `essential:decide` | Choosing between researched approaches; records the approved decision with causal metadata and hands off to the owner. |
+| `essential:discover` | Every decision, explanation, and status answer as an interactive board, plus finding material unknowns before planning: blindspot passes, brainstorms, interviews, multi-round planning interviews, reference extraction, disposable prototypes. A decision converges under its [decide contract](skills/discover/directions/decide.md), which records the approved decision with causal metadata and hands off to the owner. |
 | `essential:deep-research` | Multi-source fact-finding with adversarial claim verification and citations. |
 | `essential:autoresearch` | Metric-driven optimization loops (define metric → evolve candidates → verify → mutate). |
 | `essential:handover` | Pausing work: persists all stream state, updates the global overview, releases leases. |
