@@ -1,12 +1,14 @@
 # Documentation: Compliant Code Patterns
 
+Protocol: `essential:directions/standards.md`.
+
 ## Key Principles
 
 - Comments explain intent, constraints, or rationale -- never restate what code already says
 - Use lowercase sentence style for all explanatory comments and JSDoc summaries
 - Function JSDoc summaries start with a present-tense third-person verb (`validates`, `returns`, `creates`)
 - One-line JSDoc only for no-param void-return functions; multi-line for everything else
-- Temporary and review tags must never be committed
+- Temporary tags never reach a ready PR, and only `TODO(draft):` may be committed on a `direction-review` draft or its unfinalized layers; review tags never merge
 - Update or remove related comments/JSDoc when behavior changes
 - Document exported APIs and complex types where contract is not self-evident
 
@@ -16,7 +18,7 @@
 
 - **DOC-CONT-01**: Comments explain why, not what -- remove anything that mirrors code syntax or names.
 - **DOC-CONT-02**: Inline comments must add value by explaining decisions or edge-case behavior.
-- **DOC-CONT-03**: No author/date stamps, modified-by history, temporary tags, or dead commented-out code.
+- **DOC-CONT-03**: No author/date stamps, modified-by history, temporary tags outside the `DOC-LIFE-01` draft carve-out, or dead commented-out code.
 - **DOC-CONT-04**: Document exported APIs, interfaces, and complex types where behavior/contract is not self-evident.
 - **DOC-CONT-05**: Source-code comments must not name standard rule IDs (`DOC-FORM-03`, `TYP-IMPT-07`) or group prefixes (`TST-STRU`). Comments explain intent in their own terms; rule IDs belong in standards files and lint reports.
 
@@ -35,7 +37,7 @@
 
 ### Lifecycle (DOC-LIFE)
 
-- **DOC-LIFE-01**: Never commit temporary tags (`TODO`, `FIXME`, `DEBUG`, `TEMP`, `QUESTION`, `IDEA`, `INTENT`).
+- **DOC-LIFE-01**: Never commit temporary tags (`TODO`, `FIXME`, `DEBUG`, `TEMP`, `QUESTION`, `IDEA`, `INTENT`); a `direction-review` draft and its unfinalized layers may carry `TODO(draft): <finalization task>`, removed before ready under [the rule](rules/doc-life-01.md).
 - **DOC-LIFE-02**: Review tags (`REVIEW`, `REFACTOR`, `OPTIMIZE`) allowed in drafts only, removed before merge.
 - **DOC-LIFE-03**: Persistent tags (`NOTE`, `IMPORTANT`, `WARNING`, `SECURITY`, `PERFORMANCE`, `COMPATIBILITY`, `LIMITATION`, `HACK`, `WORKAROUND`) only when they add long-term value.
 - **DOC-LIFE-04**: When behavior changes, update or remove related comments/JSDoc in the same PR.
@@ -154,6 +156,6 @@ log() { echo "$1"; }
 
 1. Is the reason not obvious? Add a concise comment (`DOC-CONT-01`).
 2. Documenting a function/type contract? Apply JSDoc shape and style rules (`DOC-FORM-02`, `DOC-FORM-03`, `DOC-FORM-04`).
-3. Before commit, remove temporary and review tags (`DOC-LIFE-01`, `DOC-LIFE-02`).
+3. Before commit, remove temporary tags except `TODO(draft):` on a `direction-review` draft or its unfinalized layers; before ready, remove every `TODO(draft):`; before merge, remove review tags (`DOC-LIFE-01`, `DOC-LIFE-02`).
 4. During refactor, update or remove stale comments (`DOC-LIFE-04`).
 5. Grouping members in a data structure? Use section dividers if 3+ logical groups (`DOC-FORM-05`, `DOC-FORM-06`, `DOC-FORM-07`).

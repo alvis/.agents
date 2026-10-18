@@ -1,8 +1,10 @@
 # Testing: Compliant Code Patterns
 
+Protocol: `essential:directions/standards.md`.
+
 ## Key Principles
 
-- 100% statements, branches, functions, and lines; at least one behavioral test per exported runtime function; retain behavioral coverage and distinct supported behavior/edge cases under [TST-CORE-04](rules/tst-core-04.md)
+- 100% statements, branches, functions, and lines before ready or merge (an unapproved `direction-review` draft is exempt); at least one behavioral test per exported runtime function; retain behavioral coverage and distinct supported behavior/edge cases under [TST-CORE-04](rules/tst-core-04.md)
 - A performance-only improvement may use a one-off local before/after measurement when existing tests cover its behavior and the change introduces no new behavior path or meaningful edge case
 - For new supported behavior, write a failing test -> implement -> refactor; for already-correct behavior, prove an initially passing oracle's sensitivity through a temporary mutation or equivalent controlled proof, restore the implementation, and rerun green before retaining it
 - Test descriptions: `it("should ...")`, runtime-symbol or allowed-type-subject suites: `describe("fn:symbol")` / `describe("ty:symbol")`, general suites: plain description
@@ -68,9 +70,9 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 
 ### Coverage (TST-COVR)
 
-- **TST-COVR-01**: 100% statements, branches, functions, and lines required (excluding approved barrel/type-only files), plus at least one behavioral test per exported runtime function.
+- **TST-COVR-01**: 100% statements, branches, functions, and lines required before ready or merge (excluding barrel, type-only, and logic-free route-composition files), plus at least one behavioral test per exported runtime function; an unapproved `direction-review` draft is exempt under [the rule](rules/tst-covr-01.md).
 - **TST-COVR-02**: Critical failure, fallback, and validation branches require full coverage.
-- **TST-COVR-03**: One-test-at-a-time workflow: add one test, run coverage, decide next.
+- **TST-COVR-03**: Behavior-group workflow: write one behavior group's tests, rerun coverage, keep or delete each test, then start the next group under [the rule](rules/tst-covr-03.md).
 - **TST-COVR-04**: Remove zero-coverage-gain tests without a different behavior path, distinct supported behavior, or meaningful edge case.
 
 ### Fixtures & Data (TST-DATA)
@@ -145,10 +147,10 @@ Pick the form by *what you assert*, not by call count:
 ## Coverage Workflow
 
 0. Before measuring, remove dead code — unused constants, regexps, no-value wrappers (`GEN-DESN-04`, `FUNC-ARCH-03`). Coverage applies to living code only.
-1. Write one test -> run coverage -> check delta
+1. Write one behavior group's tests -> rerun coverage -> attribute the delta to the group
 2. For already-correct behavior, prove the initially passing case detects the named regression through a temporary implementation mutation or equivalent controlled proof; restore the implementation and rerun green
 3. Apply `TST-CORE-04`: keep tests for different behavior paths, distinct supported behavior, or meaningful edge cases, subject to `TST-CORE-02`; delete unnecessary tests
-4. Repeat until statements, branches, functions, and lines all reach 100% and each exported runtime function has at least one behavioral test
+4. Repeat until statements, branches, functions, and lines all reach 100% and each exported runtime function has at least one behavioral test; mark barrel, type-only, and logic-free route-composition files with `/* v8 ignore file */` instead of testing them
 
 ## Quick Reference
 
