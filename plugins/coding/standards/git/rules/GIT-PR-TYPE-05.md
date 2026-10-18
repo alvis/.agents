@@ -22,7 +22,7 @@ Remove prohibited artifacts from the submitted head. Keep generated output in ig
 
 - A file maintained and reviewed as source is authored even if a tool originally created it. Manually maintained manifests and projections qualify.
 - Generated snapshots, clients, bundles, and reports remain prohibited even when coupled to the feature or useful to a reviewer; use reproducible checks and external review evidence instead.
-- Package lockfiles remain in the file count while their additions and deletions are excluded from authored net LOC.
+- Package lockfiles contribute no authored lines under `GIT-PR-SIZE-01`; that sizing exclusion is not permission to ship any other generated artifact.
 
 ## Related
 

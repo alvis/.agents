@@ -1,30 +1,38 @@
 {
-  "schema_version": 1,
-  "metrics": {
-    "files_changed": {
-      "unit": "changed paths",
-      "reason": "Every changed path contributes review and integration overhead, including generated files."
+  "schema_version": 2,
+  "unit_bands": [
+    {
+      "zone": "green",
+      "max_units": 15,
+      "reason": "Fifteen logical change units is the review surface one reader can hold at once."
     },
-    "authored_net_loc": {
-      "unit": "lines",
-      "reason": "Authored additions and deletions measure reviewable code after generated-file changes are excluded."
+    {
+      "zone": "yellow",
+      "max_units": 30,
+      "reason": "Each band doubles the previous one, so one zone step always means twice the review surface."
+    },
+    {
+      "zone": "red",
+      "max_units": 60,
+      "reason": "Each band doubles the previous one, so one zone step always means twice the review surface; more units are black."
+    }
+  ],
+  "risk_floors": {
+    "reason": "A floor keeps a small risky change from reaching AI-only direction approval under staged delivery: R2 needs at least the standing delegate and R3 a human.",
+    "floors": {
+      "R0": "green",
+      "R1": "green",
+      "R2": "yellow",
+      "R3": "red"
     }
   },
-  "zones": [
-    {
-      "name": "green",
-      "max_files_changed": 15,
-      "max_authored_net_loc": 500
-    },
-    {
-      "name": "yellow",
-      "max_files_changed": 30,
-      "max_authored_net_loc": 1200
-    },
-    {
-      "name": "red",
-      "max_files_changed": 60,
-      "max_authored_net_loc": 2000
-    }
-  ]
+  "line_bump": {
+    "authored_lines_above": 2500,
+    "steps": 1,
+    "reason": "Beyond this, a reviewer can no longer read every authored line of even a few units in one pass. Black stays black."
+  },
+  "rename_similarity_percent": {
+    "value": 90,
+    "reason": "A move's review is its path change, not its content."
+  }
 }

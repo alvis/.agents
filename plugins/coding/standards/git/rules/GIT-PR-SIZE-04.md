@@ -6,13 +6,13 @@ warning
 
 ## Intent
 
-A black-zone PR changes **> 60 files** OR **> 2000 authored net LOC**. Every changed path contributes to the file threshold; generated-file additions and deletions do not contribute to LOC under `GIT-PR-SIZE-01`. Repository configuration cannot change these thresholds. A genuinely self-contained unit may be published as a draft only when its canonical body gives specific Risk, Test plan, and Why this size evidence. After AI review and hosted CI pass, the ready PR description receives an unchecked exact-revision human verification task.
+A black-zone PR has more than 60 declared units, or a red tier bumped by more than 2,500 authored lines under `GIT-PR-SIZE-01`. Risk floors stop at red, so risk alone never makes a PR black, and renames, generated output, and tests cannot reach it through authored lines; black is rare. Repository configuration cannot change these thresholds. A genuinely self-contained unit may be published as a draft only when its canonical body gives specific Risk, Test plan, and Why this size evidence. After AI review and hosted CI pass, the ready PR description receives an unchecked exact-revision human verification task.
 
-The limits above project the highest bounds in `../../../skills/pr/assets/size-thresholds.json`, the sole numeric threshold authority.
+The numbers above project the highest bounds in `../../../skills/pr/assets/size-thresholds.json`, the sole numeric zone authority.
 
 ## Fix
 
-Explain the concrete coupling that makes this unit indivisible in Why this size, and name the risks and tests. Keep the draft free of reviewer tasks. The ready transition runs `../../../skills/pr/scripts/generate-reviewer-tasks.ts` to add an unchecked black-zone verification task for its exact head and base. Human task completion is visible in the PR description; no comment or programmatic approval check authorizes AI review.
+Explain the concrete coupling that makes this unit indivisible in Why this size, and name the risks and tests. Keep the draft free of reviewer tasks; a `direction-review` draft carries only its direction approval task under [staged delivery](../../../directions/staged-delivery.md). The ready transition runs `../../../skills/pr/scripts/generate-reviewer-tasks.ts` to add an unchecked black-zone verification task for its exact head and base. Human task completion is visible in the PR description; no comment or programmatic approval check authorizes AI review.
 
 ### Why this matters
 
@@ -21,7 +21,8 @@ Explain the concrete coupling that makes this unit indivisible in Why this size,
 
 ## Edge Cases
 
-- More than 60 generated paths remain black through the unchanged file threshold even when they contribute no authored LOC.
+- An R3 change with more than 2,500 authored lines is black: the floor sets red and the line bump adds one step.
+- A reviewer recount that raises a PR to black makes every black requirement apply before approval.
 - A changed head or base invalidates the task and requires a new AI review, hosted CI pass, and task generation.
 
 ## Related
