@@ -56,6 +56,11 @@ Substitution rules:
 <!-- bullets describing observable behavior the result must provide; exclude generic gates such as passing tests, following standards, or keeping CI green -->
 {{requirements_body}}
 
+## 🧮 Change Inventory [ Optional ]
+
+<!-- one bullet per logical change unit, then `Risk class: R<n>` with the trigger that set it; the classifier and reviewer recount size the PR from this, so keep it in every PR and never add line counts or zone metadata -->
+{{change_inventory_body}}
+
 ## 🧵 Context
 
 <!-- why this change is needed: the problem and symptoms, related bug or ticket links, what problem it solves and why, and relevant design background -->
@@ -122,12 +127,12 @@ Example — new screen:
 
 ## 📐 Why This Size [ Optional ]
 
-<!-- concise, specific reason this review surface is one indivisible change; required for red/black; generic justification does not satisfy it. Do not add file counts, zone metadata, or reviewer-time estimates. -->
+<!-- concise, specific reason this review surface is one indivisible change; required for red/black; a red PR set only by the R3 floor names its risk trigger instead, and a direction-review draft names its planned peel-off layers; generic justification does not satisfy it. Do not add file counts, zone metadata, or reviewer-time estimates. -->
 {{why_this_size_body}}
 
 ## 🧪 Verification
 
-<!-- Record change-specific checks and revision-bound evidence. Display abbreviated seven-character SHAs in Verification; keep full OIDs in the evidence and managed reviewer-task metadata. The published draft contains no reviewer tasks. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked block for the exact head/base: `@reviewer reviews <short-head>` for each reviewer and `@author approves <short-head>` for the PR creator. Record any specification deviation as an unchecked task. -->
+<!-- Record change-specific checks and revision-bound evidence. Display abbreviated seven-character SHAs in Verification; keep full OIDs in the evidence and managed reviewer-task metadata. The published draft contains no reviewer tasks, except that a yellow, red, or black `direction-review` draft carries only its direction approval task. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked block for the exact head/base: `@reviewer reviews <short-head>` for each reviewer and `@author approves <short-head>` for the PR creator. Record any specification deviation as an unchecked task. -->
 {{verification_body}}
 
 ## 🚫 Boundary [ Optional ]

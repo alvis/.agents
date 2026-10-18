@@ -212,10 +212,11 @@ Classify each size zone with the canonical read-only helper, then derive `ZONE` 
 
 ```bash
 SIZE_JSON=$(bun run "${CODING_PR_SKILL_DIR}/scripts/classify-pr-size.ts" \
-  --repo "$REVIEW_DIR" --base "$BASE_OID" --head "$HEAD_OID")
+  --repo "$REVIEW_DIR" --base "$BASE_OID" --head "$HEAD_OID" \
+  --units "$UNITS" --risk "$RISK_CLASS")
 ```
 
-Use the classifier's all-path `files_changed` and generated-excluding authored `net_loc`. Generated, vendored, and binary paths remain in the file count. Do not infer the size zone from GitHub's collapsed diff presentation.
+Recount the logical change units and risk class from the diff under `GIT-PR-SIZE-01` before classifying. Pass the higher of the PR's Change Inventory and the recount as `UNITS` and `RISK_CLASS`; a recount never lowers the declared values, and an under-declared inventory is a finding. Use the classifier's `zone` and `authored_lines`; renamed, generated, vendored, snapshot, test, and formatting-only lines are already excluded. When `rename_detection_skipped` is true, git skipped inexact rename detection and `authored_lines` overstates the PR; treat the mass move as its own PR rather than accepting the raised zone. A PR that holds only the move takes its tier without the line bump. A missing Change Inventory leaves the zone undetermined, which is a blocking finding. A recounted large delivery (`essential:references/working-attitude.md#large-delivery`) with neither a direction gate record nor an approved opt-out, or whose recounted zone needs a higher approver than its gate record names, is also blocking: it returns the work to [staged delivery](../../../directions/staged-delivery.md#enter-staged-mode). Do not infer the size zone from GitHub's collapsed diff presentation.
 
 For a stack, classify each PR surface from its own head/base diff. The holistic bottom-base-to-top-head diff supplies review context, not one replacement size zone for every PR in the stack.
 

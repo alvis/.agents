@@ -2,7 +2,7 @@
 
 Load this reference after `coding:pr create` or `coding:pr update` has pushed every selected head and verified each PR's draft state and head/base pair. Independent source evidence may come from the integrated delivery owner through `coding:directions/review-evidence.md`; PR publication review starts only after the hosted draft exists.
 
-Review the published draft against its exact head and base. Black-zone Risk, Test plan, and Why this size evidence remains reviewable; a human verification task is added to the PR description after AI review and CI pass. Do not seek or verify a separate authorization comment.
+Review the published draft against its exact head and base. Black-zone Risk, Test plan, and Why this size evidence remains reviewable; a human verification task is added to the PR description after AI review and CI pass. Do not seek or verify a separate authorization comment. A `direction-review` draft instead takes one direction review under [staged delivery](../../../directions/staged-delivery.md#approve-the-direction) in `coding:review-code` direction-review mode; its verdict becomes a gate record and PR comment, it never enters readiness, and the round cap there replaces `MAX_ITERATION`.
 
 Follow the repository delegation contract at `governance:standards/delegation/`. Partition independent stacks into sequential bottom-to-top batches of at most ten stack review units. A singleton PR is a one-PR stack. One independent reviewer handles each batch. For the initial pass, prefer its already assigned delivery reviewer with verified source evidence; otherwise start a fresh critic. Do not share a session across unrelated batches.
 
