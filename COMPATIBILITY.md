@@ -1,6 +1,6 @@
 # Harness compatibility
 
-This manually maintained matrix covers the 54 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
+This manually maintained matrix covers the 53 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
 
 Claude Code, Codex, and Grok Build are native targets. OpenCode support targets stable V1 through `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
 
@@ -68,7 +68,6 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `coding:sync-tool` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-sync-tool`. Source: [SKILL.md](plugins/coding/skills/sync-tool/SKILL.md). |
 | `coding:write-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-write-code`. Source: [SKILL.md](plugins/coding/skills/write-code/SKILL.md). |
 | `essential:autoresearch` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-autoresearch`. Source: [SKILL.md](plugins/essential/skills/autoresearch/SKILL.md). |
-| `essential:decide` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-decide`. Source: [SKILL.md](plugins/essential/skills/decide/SKILL.md). |
 | `essential:deep-research` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-deep-research`. Source: [SKILL.md](plugins/essential/skills/deep-research/SKILL.md). |
 | `essential:discover` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-discover`. Source: [SKILL.md](plugins/essential/skills/discover/SKILL.md). |
 | `essential:doctor` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-doctor`. Source: [SKILL.md](plugins/essential/skills/doctor/SKILL.md). |

@@ -23,7 +23,7 @@ Store the data and every asset it cites in one directory under `<design-evidence
 bun run "${ESSENTIAL_ROOT}/skills/discover/scripts/render-page/cli.ts" "<board-dir>/board.json" -o "<board-dir>/board.html"
 ```
 
-Open the rendered page and look at it before the user does: broken layout, missing images, or unreadable captions get fixed in the data and re-rendered, never in the HTML. Present it in the order discover prescribes: the harness's built-in viewer, then a suitable artifact store when the content is safe to externalize, then a local browser. Remote users cannot see a local browser window, so when no viewer reaches them, send the concept images themselves with any file or image delivery the harness offers.
+Open the rendered page and look at it before the user does: broken layout, missing images, or unreadable captions get fixed in the data and re-rendered, never in the HTML. Present it as `essential:skills/discover/directions/presentation.md#present-the-board` orders. Remote users cannot see a local browser window, so when no viewer reaches them, send the concept images themselves with any file or image delivery the harness offers.
 
 ## Capture the decision
 

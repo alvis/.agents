@@ -22,4 +22,8 @@ Do not send until it:
 - identifies and justifies the recommendation when material.
 </IMPORTANT>
 
+<IMPORTANT>
+Put every decision the user must make or approve, every explanation — asked or not, including the end-of-task summary — and every status answer on an `essential:discover` board, shown as `{{PLUGIN_DIR}}/skills/discover/directions/presentation.md#present-the-board` orders. The board carries the decision; the question tool only collects the reply and points to the board. Once the user declines boards, questions alone suffice.
+</IMPORTANT>
+
 Before delegating or composing a first task handover, read `{{PLUGIN_DIR}}/directions/delegate.md`; before orchestrating or recording review, read `{{PLUGIN_DIR}}/directions/orchestration.md`.

@@ -1,6 +1,6 @@
 # Presenting discovery results
 
-Use an interactive HTML review surface when visual relationships, comparison, or in-context feedback will reduce ambiguity more than prose alone. HTML is optional except when `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a Discover board; follow that direction if rendering or presentation is unavailable. The board is never evidence by itself. The evidence ledger remains the source of truth after answers and annotations are transferred back.
+Use an interactive HTML review surface when visual relationships, comparison, or in-context feedback will reduce ambiguity more than prose alone. HTML is required for a decision, an explanation, or a status answer, and when `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a Discover board, and optional otherwise. When rendering or presentation is unavailable, a plan board follows that direction, a decision falls back to `essential:directions/questions.md`, and an explanation or status answer falls back to prose that names the board's file path. The board is never evidence by itself. The evidence ledger remains the source of truth after answers and annotations are transferred back.
 
 ## Choose a directional action
 
@@ -109,13 +109,35 @@ The output is one self-contained document that makes no network request: the sty
 
 Never hand-edit the rendered HTML — it is generated, and the next render discards the edit. To change anything about a board, change its data and render again.
 
-Present the rendered file in this order:
+After the user's decisions and annotations are captured in the one generated prompt and transferred to the ledger, discard the whole session workspace and every board rendered from it.
 
-1. the LLM coder's built-in local browser or HTML viewer;
-2. a cloud artifact viewer/store only when a suitable tool exists and the content is safe to externalize;
-3. a local browser such as Chrome.
+## Present the board
 
-Never externalize sensitive discovery content merely to satisfy the preference order. After the user's decisions and annotations are captured in the one generated prompt and transferred to the ledger, discard the whole session workspace and every board rendered from it.
+Show every board in the first of these ways the harness supports. The user can answer, annotate, and copy the generated prompt only in a live page, so each way must hand them one:
+
+1. **Preview in the user's browser view.** Open the board file in a harness preview that renders it in the user's own view. Skip a preview that shows a screenshot, a recording, or a stream of a browser the agent drives — the user watches it but cannot reliably answer in it.
+2. **Inline in the message.** Show the board inside the reply through a harness tool that displays an interactive page loaded from the board's file path. Never paste the board's HTML into the message or the tool. When the tool accepts only markup but loads local image files by path, give it a wrapper that loads the board from an image companion, as below.
+3. **File link.** Reply with `[<board>.html](/absolute/path/<board>.html)`.
+4. **Cloud artifact viewer**, only when the harness cannot open that file for the user and the content is safe to externalize.
+5. **Local desktop browser**, only when no artifact viewer exists either.
+
+The image companion is a valid SVG beside the board whose `data-board` attribute carries the board's bytes in base64; the wrapper names its absolute path as a script string, which the tool replaces with the image's data URL, then decodes the attribute into an iframe of fixed pixel height, because a viewport-relative height makes a frame that grows to fit its page grow without end:
+
+```bash
+python3 -c 'import base64,sys; b=base64.b64encode(open(sys.argv[1],"rb").read()).decode(); open(sys.argv[2],"w").write(f"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\" data-board=\"{b}\"><rect width=\"1\" height=\"1\" fill=\"none\"/></svg>")' <board>.html <board>.board.svg
+```
+
+```html
+<iframe id="board" style="width:100%;height:1600px;border:0;display:block" allow="clipboard-write"></iframe>
+<script>
+fetch("/absolute/path/<board>.board.svg").then((r) => r.text()).then((t) => {
+  const b64 = new DOMParser().parseFromString(t, "image/svg+xml").documentElement.getAttribute("data-board");
+  document.getElementById("board").srcdoc = new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+});
+</script>
+```
+
+The companion carries the whole board, so a board with Mermaid weighs several megabytes; when the tool refuses that size, move on to the file link. Never externalize sensitive discovery content merely to satisfy the preference order.
 
 ## Golden-example confirmation
 

@@ -1,6 +1,6 @@
 # State mode
 
-Use this mode when the unknown is where work already in flight actually stands, and the local state tree is the only honest source for it.
+Use this mode when the unknown is where work already in flight actually stands. The local state tree is the honest source when one holds the work; otherwise the source is labelled evidence.
 
 1. Resolve the target repository's `.state` root. The tree it must contain is `works/<id>/state.md`; a directory without one is not a state tree and the mode says so rather than rendering an empty board.
 2. Read every workstream under `works/` and nothing else. Archived streams live under `.state/archive/` and are excluded by their location alone — the read never enumerates that path, so no name match, flag, or filter can be got wrong. A stream whose phase is `completed` is still shown while its `Updated` timestamp is within three days of the run, because work finished but not yet archived is still what someone needs to see.
@@ -9,6 +9,8 @@ Use this mode when the unknown is where work already in flight actually stands, 
 5. Order the board by what a reader has to act on: blockers and their `unblock:` action first, then a lane per stream, then how far each stream has got, then what changed most recently. Nothing on this board asks the reader a question — it is a report, and it carries no reply.
 6. Say on the board what was hard to read: which streams used which phase key, which table rows did not have the canonical nine columns, and which streams were set aside and why. A board that refuses to open because one workstream spelled a header differently is useless exactly when it is needed, so a data-quality fact is drawn, never raised as a refusal.
 
+When no state tree holds the work, author the board's data from the evidence actually read — version control, pull requests, CI — and tag every claim with its source. Keep step 5's reading order, with each branch or pull request as a lane and blockers first, and carry no reply. In place of step 6, say which sources were not read.
+
 Complete with the live streams, the blockers and their named unblock actions, the streams set aside with the reason for each, and the reading problems the tree presented.
 
-Use the **project state** direction in [presentation](presentation.md). The board is generated from the tree rather than written by hand — `render-page/state/cli.ts` reads `.state` and emits the board data, `scripts/render-page/cli.ts` renders it — so the work in this mode is reading the tree correctly and saying what it could not read, not authoring sections.
+Use the **project state** direction in [presentation](presentation.md). Where a state tree exists, the board is generated from it rather than written by hand — `render-page/state/cli.ts` reads `.state` and emits the board data, `scripts/render-page/cli.ts` renders it — so the work in this mode is reading the tree correctly and saying what it could not read, not authoring sections.

@@ -1,6 +1,6 @@
 ---
 name: discover
-description: "Discovers material unknowns before planning. Use for blindspot passes, brainstorming approaches, architecture and planning interviews, required direction boards before planning, reference semantics, disposable prototypes, readiness checks, local work state, finished-build accounts, or explaining recorded decisions to a newcomer; researched option selection belongs to essential:decide."
+description: "Answers every decision, explanation, and status question with an interactive board and discovers material unknowns before planning. Use for choosing between approaches, explaining anything, work status, blindspot passes, brainstorms, architecture and planning interviews, required pre-plan direction boards, reference semantics, disposable prototypes, readiness checks, finished-build accounts, or explaining recorded decisions to a newcomer."
 requirements:
   model: capable
   effort: deliberate
@@ -8,12 +8,12 @@ requirements:
 
 # Discover
 
-Reduce consequential uncertainty before it becomes an implementation assumption. This skill owns divergent exploration and a decision-ready evidence ledger; `essential:decide` owns converging on one approach, domain skills own production artifacts, and implementing skills own application-source changes.
+Reduce consequential uncertainty before it becomes an implementation assumption. This skill owns divergent exploration, a decision-ready evidence ledger, and converging on one approach under the [decide contract](directions/decide.md); domain skills own production artifacts, and implementing skills own application-source changes.
 
 ## Boundaries
 
-- Use for: explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a pre-plan direction review required by `essential:directions/plan.md#confirm-the-direction-and-architecture` or a multi-round interview, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
-- Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), choosing among already-grounded options (`essential:decide`), or production UI design (`web:design`). Clear bounded implementation needs no exploratory discovery unless `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a board.
+- Use for: every decision the user must make or approve, every explanation (asked or not, including the end-of-task summary), every status answer, explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a pre-plan direction review required by `essential:directions/plan.md#confirm-the-direction-and-architecture` or a multi-round interview, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
+- Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), or production UI design (`web:design`). Clear bounded implementation needs no exploratory discovery unless `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a board.
 - Never claim an unknown unknown has been found merely because it is plausible; record it as a hypothesis until evidence supports it.
 
 ## Inputs and output
@@ -34,7 +34,7 @@ For persistent discovery, follow `state-format.md` linked by the state contract.
 
 Use `DSC01 → {DSC02,DSC03} → DSC04` when the work maps to capture, independent intent/system probes, then synthesis. Otherwise encode the smallest truthful linear or branching sibling DAG; never force this example onto a different dependency shape. Root and child rows use the same immutable definition and mutable execution fields byte-for-byte at reconciliation. After each status transition, update the child, reconcile the complete root registry, re-read the root task definitions when immutable definition fields changed, and read `state.md` and `state/discovery.md` directly to determine runnable/ blocked tasks, owner, and next action from the task table; proceed on that reading — there is no separate validation step. Only the main agent edits root state.
 
-Name temporary review files, including non-HTML disposable prototypes, under `essential:references/naming.md`. When structured comparison, explanation, or preference capture would be easier to understand interactively, follow [presentation](directions/presentation.md). Generated HTML is a temporary review surface, not a durable deliverable: always create it in a collision-safe OS temporary directory and discard it after its decisions and annotations have been transferred. A persisted discovery ledger may record the temporary path and extracted decisions, but must not treat the HTML as long-lived evidence.
+Name temporary review files, including non-HTML disposable prototypes, under `essential:references/naming.md`. For a decision, explanation, or status answer, and whenever structured comparison or preference capture would be easier to understand interactively, follow [presentation](directions/presentation.md). Generated HTML is a temporary review surface, not a durable deliverable: always create it in a collision-safe OS temporary directory and discard it after its decisions and annotations have been transferred. A persisted discovery ledger may record the temporary path and extracted decisions, but must not treat the HTML as long-lived evidence.
 
 The evidence ledger uses these fields:
 
@@ -46,7 +46,7 @@ The evidence ledger uses these fields:
 ## Workflow
 
 1. **Capture the starting map.** State the goal, requested deliverable, why it matters, what the user already knows, their familiarity with the codebase or domain, known questions, hard constraints, and supplied references. Ask only when a missing answer changes which discovery mode is appropriate.
-2. **Resolve exactly one mode.** A mode the request names, such as `/discover interview …`, wins; otherwise infer it from the request:
+2. **Resolve exactly one mode.** A mode the request names, such as `/discover interview …`, wins. Otherwise map the trigger first: a decision → `options`, converging under the [decide contract](directions/decide.md), or `plan` before planning; an explanation → `blindspots` (domain explainer or concept primer), `decisions`, or `implementation`, and an end-of-task summary → `implementation` when the task built a change, otherwise the explanation mode that fits; a status answer → `state`. Every explanation board closes with a [quiz](directions/presentation/components.md#quiz) on what the reader must understand, each question naming the section that explains it. Else infer the mode from the request:
    - `blindspots`: missing constraints, failure modes, history, or integration surfaces may change the problem;
    - `options`: the problem is understood but the solution space is too narrow or too broad;
    - `interview`: the user holds material intent or preferences not yet stated;
@@ -54,7 +54,7 @@ The evidence ledger uses these fields:
    - `reference`: a codebase, document, site, image, or example defines the desired semantics more precisely than prose;
    - `prototype`: the cheapest way to learn is a disposable artifact and the user has authorized creating it;
    - `readiness`: existing evidence needs a plan/implementation go-no-go check;
-   - `state`: the unknown is where work already in flight actually stands, and the local state tree is the only honest source for it;
+   - `state`: the unknown is where work already in flight actually stands — read from the local state tree when one holds the work, else from labelled evidence;
    - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it;
    - `decisions`: someone new to the repository needs the decisions it already rests on — human-approved ADRs and agent-recorded local decisions — explained.
 3. **Load only the selected mode reference** and execute it:
@@ -70,8 +70,8 @@ The evidence ledger uses these fields:
    - [decisions](directions/decisions.md)
 4. **Update the ledger.** Preserve provenance. Move an item between kinds only when evidence or a user decision justifies it; do not collapse inference into observed fact. Record rejected alternatives and why they were rejected when they would otherwise be rediscovered.
 5. **Choose the next probe or stop.** Continue only when another cheap probe can resolve a material unknown. Stop when all material items are resolved, explicitly deferred with an owner, or blocking; remaining assumptions must be low-impact and reversible.
-6. **Route the result.** Recommend exactly one next owner: another discovery mode, `essential:decide`, `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, execution-plan formation under `essential:directions/plan.md` after a `plan` round marked ready, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.
-7. **Present interactive results when useful.** If presentation criteria are met, choose the most suitable directional action from the presentation reference (including the plan/implementation/change lifecycle actions). Write a JSON data file, never HTML: the renderer owns every byte of the page, so what is authored here is content and the shape it takes, and there is no markup, stylesheet, or script to hand-write. Before composing:
+6. **Route the result.** Recommend exactly one next owner: another discovery mode, convergence under the [decide contract](directions/decide.md), `specification:spec-code`, `specification:plan-code`, `web:design`, an implementing skill, execution-plan formation under `essential:directions/plan.md` after a `plan` round marked ready, or stop. Pass the evidence ledger and artifact paths without rewriting them as certainty.
+7. **Present interactive results.** For a decision, an explanation, or a status answer, or when presentation criteria are met, choose the most suitable directional action from the presentation reference (including the plan/implementation/change lifecycle actions). Write a JSON data file, never HTML: the renderer owns every byte of the page, so what is authored here is content and the shape it takes, and there is no markup, stylesheet, or script to hand-write. Before composing:
    - **Check `references/features.md`** — the Floor features are mandatory; the Menu is a shelf of proven devices, never a completeness requirement.
    - **Build a coverage map**: list every ledger finding, unknown, stream, and decision, and assign each to a section. Content that fits no block type goes in prose rather than being dropped — never lose ledger content to satisfy the catalog.
    - **Theme the board**: give the board a `theme`, whose `accent` hue rotates the whole accent ramp from one number (companion boards get distinct hues), and whose `light` and `dark` maps override any `--ui-*` token, including the semantic ramps (`--ui-verdict-*`, `--ui-status-*`, `--ui-k-*`). No token is whitelisted, so the contrast a themed board reaches is yours to hold.
@@ -82,7 +82,7 @@ The evidence ledger uses these fields:
    bun run scripts/render-page/cli.ts --set run.json -o <dir>        # a set, cross-linked
    ```
 
-   Present the rendered file in preference order: the LLM environment's built-in local HTML viewer, then a safe cloud artifact viewer, then a local browser such as Chrome. Capture the user's answers and section annotations in the page's single generated prompt and transfer them back to the ledger.
+   Present the rendered file as [presentation](directions/presentation.md#present-the-board) orders. Capture the user's answers and section annotations in the page's single generated prompt and transfer them back to the ledger.
 8. Run the verification below. Fix a failed check and repeat until it passes or a concrete blocker remains.
 
 ## Verification
@@ -93,6 +93,7 @@ The evidence ledger uses these fields:
 - The recommended next owner receives the ledger and all artifact paths.
 - Any HTML result is stored under the OS temporary root, supports annotation of every user-facing section, and exposes exactly one live prompt intended for replying to the LLM coder.
 - Parity self-check against the ledger: every finding, unknown, stream, and decision appears on the board or in an explicit scope-cuts note — nothing silently dropped. Every recommendation-bearing card captures a response (options with a badged recommendation where alternatives exist; accept otherwise; note everywhere), and each response feeds the generated prompt. Walk the Floor checklist in `references/features.md` before shipping.
+- Every explanation board closes with a quiz; every converged decision passes the [decide contract](directions/decide.md).
 - Validate the Essential plugin and run repository policy plus trigger checks.
 
 ## Completion
