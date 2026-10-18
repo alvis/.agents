@@ -11,7 +11,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 ### `src/app/` (Route)
 
 - DO NOT use `_components/` (Next.js underscore convention) — use `components/` [`RPS-ROUTE-01`]
-- DO NOT put domain logic in `page.tsx` — `page.tsx` only composes feature containers and route-local components [`RPS-ROUTE-02`]
+- DO NOT put domain logic in `page.tsx` — `page.tsx` only composes feature containers and route-local components, and no test imports it [`RPS-ROUTE-02`]
 
 ### `src/components/` (Shared, domain-agnostic UI)
 
@@ -44,7 +44,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 |---|---|---|
 | `RPS-LAYOUT-01` | Code placed out of decision order | `src/utilities/UserCard.tsx` (component in utilities); domain code in `src/types/` |
 | `RPS-ROUTE-01` | Underscore-prefixed route-local folder | `src/app/dashboard/_components/Header.tsx` |
-| `RPS-ROUTE-02` | Domain logic in `page.tsx` | `page.tsx` calls `fetchInvoices()` and renders an invoice table inline |
+| `RPS-ROUTE-02` | Domain logic in `page.tsx`, or a unit test importing it | `page.tsx` calls `fetchInvoices()` and renders an invoice table inline |
 | `RPS-COMPS-01` | Upward import from shared components | `src/components/primitives/Button.tsx` imports from `#features/billing/...` |
 | `RPS-COMPS-02` | Disallowed subfolder under `src/components/` | `src/components/billing/`; `src/components/containers/InvoiceList.tsx` |
 | `RPS-FEAT-01` | Cross-feature import | `src/features/billing/...` imports from `#features/profile/...` |
