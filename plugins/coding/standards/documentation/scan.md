@@ -14,6 +14,7 @@ For TypeScript error documentation, `DOC-CONT-06` has advisory AST support in `c
 - DO NOT ship exported APIs without required docs [`DOC-CONT-04`]
 - DO NOT reference standard rule IDs (`DOC-FORM-03`) or group prefixes (`TST-STRU`) inside source-code comments [`DOC-CONT-05`]
 - DO NOT document errors merely propagated from callees or awaited operations; each error claim needs an escaping local throw, explicit rethrow, or locally created rejection in the owning function [`DOC-CONT-06`]
+- DO NOT mention exact numbers in documentation, JSDoc, or comments unless the value is essential and expected to remain stable; check digits and number words against [DOC-CONT-07](rules/doc-cont-07.md)
 - DO NOT start comments with uppercase (use lowercase), except for code/type references (`UserService`) and section headers (`// --- NAME --- //`), such as `// This validates token` [`DOC-FORM-01`]
 - DO NOT use one-line JSDoc on functions with params or non-void return, or block comments (`/* */`) for section headers, such as `/** one line */ fn(a)` or `/* USER */` [`DOC-FORM-02`]
 - DO NOT write JSDoc prose (function summary, `@returns`, `@throws`, `@example` description, or free `* …` lines) with uppercase first letter or trailing period; must use lowercase third-person verb (`/** validates input */` not `/** Validate input. */`); exception: first word is a code/type/acronym reference [`DOC-FORM-03`]
@@ -36,6 +37,7 @@ For TypeScript error documentation, `DOC-CONT-06` has advisory AST support in `c
 | `DOC-CONT-04` | Exported API lacks docs | `export interface X {}` |
 | `DOC-CONT-05` | Comment references a standard rule ID or group prefix | `// per DOC-FORM-03`; `// ensure TST-STRU-01 compliance`; `/** see RPS-LAYOUT-01 */` |
 | `DOC-CONT-06` | Error documentation lacks direct escaping evidence in its owner | `@throws` copied from an awaited callee; a nested callback throw attributed to its outer function |
+| `DOC-CONT-07` | Nonessential or change-prone number in explanatory prose | `all seven production packages`; `// registers 7 providers` |
 | `DOC-FORM-01` | Comment starts with uppercase (should be lowercase unless code reference or section header) | `// This validates token`; `// This function handles user authentication` |
 | `DOC-FORM-02` | One-line JSDoc on function with params/return, or block comment used for section header | `/** one line */ fn(a)`; `/* USER */` |
 | `DOC-FORM-03` | JSDoc prose (summary, `@returns`, `@throws`, `@example`, free `*` lines) uses uppercase or trailing period instead of lowercase third-person verb (exception: first word is a code/type/acronym reference) | `/** Validate token. */`; `/** validate email format */`; `* @returns The user object.`; `* @throws Error if input is invalid.` |

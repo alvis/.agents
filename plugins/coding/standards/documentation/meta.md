@@ -1,6 +1,6 @@
 # Documentation Standards
 
-_Compact rules for comments, JSDoc, inline documentation, and maintenance._
+_Compact rules for comments, JSDoc, technical documentation, and maintenance._
 
 ## Dependent Standards
 
@@ -19,6 +19,7 @@ This standard enforces requirements beyond common documentation practices:
 | TODO/FIXME can linger             | **Temporary tags must not be committed**                    |
 | JSDoc formatting varies by author | **Canonical sentence style and structure required**         |
 | Callee errors repeated in API docs | **Only directly raised errors belong in the owner’s error documentation** |
+| Prose repeats current implementation counts | **Exact numbers must be essential and expected to remain stable** |
 
 ## Exception Policy
 

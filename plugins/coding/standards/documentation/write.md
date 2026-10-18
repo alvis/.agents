@@ -21,6 +21,7 @@
 - **DOC-CONT-05**: Source-code comments must not name standard rule IDs (`DOC-FORM-03`, `TYP-IMPT-07`) or group prefixes (`TST-STRU`). Comments explain intent in their own terms; rule IDs belong in standards files and lint reports.
 
 - **DOC-CONT-06**: Document only escaping local throws, explicit rethrows, and locally created rejections; omit propagated callee errors. Verify each claim against [the owning function](rules/doc-cont-06.md).
+- **DOC-CONT-07**: Mention exact numbers in documentation, JSDoc, and comments only when essential and expected to remain stable. Describe collections without their current count; use [the numeric-prose guide](rules/doc-cont-07.md) for detection and examples.
 
 ### Formatting (DOC-FORM)
 
