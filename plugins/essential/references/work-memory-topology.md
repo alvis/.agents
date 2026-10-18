@@ -40,6 +40,7 @@ Read this when creating, locating, or migrating ignored local state. `state-syst
     ├── reviews/*.md                    # one area-specific review and its findings
     └── artifacts/                      # non-Markdown evidence and generated receipts
         ├── plan-approvals/              # immutable full text, projections/, receipts, and events/ publication history
+        ├── review/                     # domain gate records, such as coding staged-delivery direction verdicts (JSON)
         └── spec-sync/                  # immutable external synchronization evidence
             ├── bases/<base-id>/        # exact accepted external bytes
             └── materializations/
