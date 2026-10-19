@@ -10,6 +10,17 @@ export interface GitHubApi {
   patch(path: string, fields: Record<string, unknown>): Promise<unknown>;
 }
 
+/** size zone a `direction-review` draft was classified into */
+export type DirectionZone = (typeof DIRECTION_ZONES)[number];
+
+/** human direction approval required for a non-green `direction-review` draft */
+export interface DirectionApproval {
+  /** `@login` of the account that approves the direction */
+  approverMention: string;
+  /** zone whose authority the approver holds */
+  zone: Exclude<DirectionZone, "green">;
+}
+
 /** Inputs required to render an exact-revision reviewer task block. */
 export interface ReviewerTaskBlockInput {
   authorMention: string;
@@ -17,6 +28,13 @@ export interface ReviewerTaskBlockInput {
   hasBlackZoneVerification: boolean;
   headOid: string;
   mentions: string[];
+}
+
+/** inputs required to render the direction-only task block of a non-green `direction-review` draft */
+export interface DirectionTaskBlockInput {
+  baseOid: string;
+  directionApproval: DirectionApproval;
+  headOid: string;
 }
 
 /** Live PR data and resolved reviewer mentions. */
@@ -27,6 +45,7 @@ export interface ReviewerTaskGeneration {
   commitCount: number;
   draft: boolean;
   headOid: string;
+  /** resolved reviewer mentions; empty for a `direction-review` draft */
   mentions: string[];
   state: "open";
 }
@@ -34,7 +53,8 @@ export interface ReviewerTaskGeneration {
 /** Result returned by the reviewer-task CLI workflow. */
 export interface ReviewerTaskCliResult extends ReviewerTaskGeneration {
   applied: boolean;
-  block: string;
+  /** the managed block, or null when a green `direction-review` draft carries no task */
+  block: string | null;
 }
 
 interface PullRequestTarget {
@@ -53,10 +73,12 @@ interface PullRequestSnapshot {
 }
 
 interface ReviewerTaskCliOptions extends PullRequestTarget {
+  directionApproval: DirectionApproval | null;
   expectedBaseOid: string;
   expectedHeadOid: string;
   hasBlackZoneVerification: boolean;
   hostname: string;
+  isDirectionReview: boolean;
   shouldApply: boolean;
 }
 
@@ -78,10 +100,18 @@ const TEAM_SLUG = new RegExp(`^${ACCOUNT_NAME}$`);
 const REVIEWER_MENTION = new RegExp(
   `^@${ACCOUNT_NAME}(?:\\[bot\\])?(?:/${ACCOUNT_NAME})?$`,
 );
+// GitHub usernames hold at most 39 alphanumerics or single inner hyphens; a direction approver is a person, never a bot or team.
+const DIRECTION_APPROVER_LOGIN =
+  /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+const DIRECTION_ZONES = ["green", "yellow", "red", "black"] as const;
+const DIRECTION_TASK =
+  /^(@[^ ]+) approves the direction of ([0-9a-f]+) \((yellow|red|black) zone\) by PR review or comment\.$/;
 const HOSTNAME =
   /^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[1-9]\d{0,4})?$/;
+const NO_DIRECTION_TASK =
+  "no managed task applies: the independent AI gate record approves a green direction-review draft";
 const USAGE =
-  "usage: generate-reviewer-tasks.ts <owner/repo>#<number> --hostname <host> --head <sha> --base <sha> [--black-zone] [--apply]";
+  "usage: generate-reviewer-tasks.ts <owner/repo>#<number> --hostname <host> --head <sha> --base <sha> [--black-zone] [--direction-zone <green|yellow|red|black> [--direction-approver <login>]] [--apply]";
 
 /** Resolve all required reviewer identities from live GitHub metadata. */
 export async function generateReviewerTasks(
@@ -134,8 +164,6 @@ export async function generateReviewerTasks(
     ...fallbackUsers.map(mentionAccount),
     ...codeAuthors.map(mentionAccount),
   ]);
-  if (mentions.length === 0)
-    throw new Error("no reviewer accounts could be resolved");
   return { ...pull, mentions };
 }
 
@@ -162,9 +190,29 @@ export function renderReviewerTaskBlock(input: ReviewerTaskBlockInput): string {
     tasks.push(
       `- [ ] Verify the black-zone scope and risk controls for ${revision}.`,
     );
+  return managedBlock(input.headOid, input.baseOid, tasks);
+}
+
+/** renders the managed block whose only task is the exact-revision direction approval */
+export function renderDirectionTaskBlock(input: DirectionTaskBlockInput): string {
+  validateOid(input.headOid, "head");
+  validateOid(input.baseOid, "base");
+  const { approverMention, zone } = input.directionApproval;
+  const task = `${approverMention} approves the direction of ${input.headOid.slice(0, SHORT_OID_LENGTH)} (${zone} zone) by PR review or comment.`;
+  if (
+    !DIRECTION_TASK.test(task) ||
+    !DIRECTION_APPROVER_LOGIN.test(approverMention.slice(1))
+  )
+    throw new Error(
+      `direction approval is invalid: ${approverMention} (${zone} zone)`,
+    );
+  return managedBlock(input.headOid, input.baseOid, [`- [ ] ${task}`]);
+}
+
+function managedBlock(headOid: string, baseOid: string, tasks: string[]): string {
   return [
     START_MARKER,
-    `<!-- coding:reviewer-tasks:revision head=${input.headOid} base=${input.baseOid} -->`,
+    `<!-- coding:reviewer-tasks:revision head=${headOid} base=${baseOid} -->`,
     ...tasks,
     END_MARKER,
   ].join("\n");
@@ -252,12 +300,36 @@ export function inspectReviewerTaskBlock(
     (baseOid && revision[2] !== baseOid))
     throw new Error("managed reviewer task has invalid revision");
   const shortHead = revision[1]!.slice(0, SHORT_OID_LENGTH);
+  const tasks = lines.slice(2, -1).map((line) => {
+    const task = /^- \[[ xX]\] (.+)$/.exec(line)?.[1];
+    if (!task) throw new Error("managed reviewer task has invalid shape");
+    return task;
+  });
+  if (tasks.some((task) => DIRECTION_TASK.test(task)))
+    inspectDirectionTasks(tasks, shortHead);
+  else inspectReviewerTasks(tasks, shortHead);
+  return { block, start, end };
+}
+
+// a direction-review draft carries the direction approval and nothing else
+function inspectDirectionTasks(tasks: string[], shortHead: string): void {
+  for (const [index, task] of tasks.entries()) {
+    const direction = DIRECTION_TASK.exec(task);
+    if (!direction)
+      throw new Error("direction approval must be the only managed task");
+    if (index > 0) throw new Error("managed reviewer task is duplicated");
+    if (direction[2] !== shortHead)
+      throw new Error("managed reviewer task has invalid revision");
+    if (!DIRECTION_APPROVER_LOGIN.test(direction[1]!.slice(1)))
+      throw new Error("managed reviewer task has invalid shape or revision");
+  }
+}
+
+function inspectReviewerTasks(tasks: string[], shortHead: string): void {
   const seen = new Set<string>();
   let sawAuthorApproval = false;
   let sawBlackZone = false;
-  for (const line of lines.slice(2, -1)) {
-    const task = /^- \[[ xX]\] (.+)$/.exec(line)?.[1];
-    if (!task) throw new Error("managed reviewer task has invalid shape");
+  for (const task of tasks) {
     const black = /^Verify the black-zone scope and risk controls for ([0-9a-f]+)\.$/.exec(task);
     if (black) {
       if (black[1] !== shortHead)
@@ -296,7 +368,6 @@ export function inspectReviewerTaskBlock(
   if (seen.size === 0) throw new Error("managed reviewer task has no reviewer");
   if (!sawAuthorApproval)
     throw new Error("managed reviewer task has no author approval");
-  return { block, start, end };
 }
 
 /** Parse CLI arguments, generate tasks, and optionally update the pinned PR. */
@@ -306,25 +377,38 @@ export async function runReviewerTasksCli(
 ): Promise<ReviewerTaskCliResult> {
   const options = parseCliOptions(args);
   const resolvedGitHub = github ?? createGitHubApi(options.hostname);
-  const generated = await generateReviewerTasks(
-    resolvedGitHub,
-    options.repository,
-    options.number,
-  );
-  assertPinnedRevision(generated, options);
-  const block = renderReviewerTaskBlock({
-    authorMention: generated.authorMention,
-    baseOid: generated.baseOid,
-    hasBlackZoneVerification: options.hasBlackZoneVerification,
-    headOid: generated.headOid,
-    mentions: generated.mentions,
-  });
-  if (!options.shouldApply) return { ...generated, applied: false, block };
-  if (generated.draft)
-    throw new Error(
-      `refusing to add reviewer tasks while PR ${options.repository}#${options.number} is draft`,
-    );
   const pullPath = `repos/${options.repository}/pulls/${options.number}`;
+  // a direction-review draft names no reviewers, so it needs only the PR snapshot
+  const generated: ReviewerTaskGeneration = options.isDirectionReview
+    ? {
+        ...parsePullRequestSnapshot(await resolvedGitHub.get(pullPath)),
+        mentions: [],
+      }
+    : await generateReviewerTasks(
+        resolvedGitHub,
+        options.repository,
+        options.number,
+      );
+  assertPinnedRevision(generated, options);
+  const block = options.directionApproval
+    ? renderDirectionTaskBlock({
+        baseOid: generated.baseOid,
+        directionApproval: options.directionApproval,
+        headOid: generated.headOid,
+      })
+    : options.isDirectionReview
+      ? null
+      : renderReviewerTaskBlock({
+          authorMention: generated.authorMention,
+          baseOid: generated.baseOid,
+          hasBlackZoneVerification: options.hasBlackZoneVerification,
+          headOid: generated.headOid,
+          mentions: generated.mentions,
+        });
+  assertDraftState(generated.draft, options);
+  // parsing rejects --apply for a green direction zone, so an applied run always has a block
+  if (block === null || !options.shouldApply)
+    return { ...generated, applied: false, block };
   const latest = parsePullRequestSnapshot(await resolvedGitHub.get(pullPath));
   if (
     latest.headOid !== options.expectedHeadOid ||
@@ -333,20 +417,17 @@ export async function runReviewerTasksCli(
     latest.authorMention !== generated.authorMention
   )
     throw new Error("PR revision changed before reviewer task update");
-  if (latest.draft)
-    throw new Error(
-      `refusing to add reviewer tasks while PR ${options.repository}#${options.number} is draft`,
-    );
+  assertDraftState(latest.draft, options);
   if (latest.body !== generated.body)
     throw new Error("PR body changed before reviewer task update");
   const updatedBody = upsertReviewerTaskBlock(latest.body, block);
   await resolvedGitHub.patch(pullPath, { body: updatedBody });
+  // upsert always leaves exactly one block, so inspection cannot return null here
   const persistedBlock = inspectReviewerTaskBlock(
     updatedBody,
     options.expectedHeadOid,
     options.expectedBaseOid,
-  )?.block;
-  if (!persistedBlock) throw new Error("reviewer task block is missing after update");
+  )!.block;
   return { ...generated, applied: true, block: persistedBlock, body: updatedBody };
 }
 
@@ -400,6 +481,8 @@ function parseCliOptions(args: string[]): ReviewerTaskCliOptions {
   let expectedHeadOid = "";
   let expectedBaseOid = "";
   let hostname = "";
+  let directionZoneValue: string | null = null;
+  let directionApproverValue: string | null = null;
   let hasBlackZoneVerification = false;
   let shouldApply = false;
   for (let index = 1; index < args.length; index += 1) {
@@ -409,27 +492,81 @@ function parseCliOptions(args: string[]): ReviewerTaskCliOptions {
     else if (
       argument === "--head" ||
       argument === "--base" ||
-      argument === "--hostname"
+      argument === "--hostname" ||
+      argument === "--direction-zone" ||
+      argument === "--direction-approver"
     ) {
       const value = args[index + 1];
       if (!value) throw new Error(`${argument} requires a value\n${USAGE}`);
       if (argument === "--head") expectedHeadOid = value;
       else if (argument === "--base") expectedBaseOid = value;
-      else hostname = value;
+      else if (argument === "--hostname") hostname = value;
+      else if (argument === "--direction-zone") directionZoneValue = value;
+      else directionApproverValue = value;
       index += 1;
     } else throw new Error(`unknown argument: ${argument}\n${USAGE}`);
   }
   validateOid(expectedHeadOid, "head");
   validateOid(expectedBaseOid, "base");
   validateHostname(hostname);
+  const directionZone = parseDirectionZone(directionZoneValue);
+  if (directionZone !== null && hasBlackZoneVerification)
+    throw new Error(
+      `--black-zone is not allowed with --direction-zone, whose draft carries only the direction approval\n${USAGE}`,
+    );
+  if (directionZone === "green" && shouldApply)
+    throw new Error(
+      `--apply is not allowed for a green direction zone, which carries no managed task\n${USAGE}`,
+    );
   return {
     ...target,
+    directionApproval: parseDirectionApproval(
+      directionZone,
+      directionApproverValue,
+    ),
     expectedBaseOid,
     expectedHeadOid,
     hasBlackZoneVerification,
     hostname,
+    isDirectionReview: directionZone !== null,
     shouldApply,
   };
+}
+
+function parseDirectionZone(value: string | null): DirectionZone | null {
+  if (value === null) return null;
+  const zone = DIRECTION_ZONES.find((candidate) => candidate === value);
+  if (!zone)
+    throw new Error(
+      `--direction-zone must be one of ${DIRECTION_ZONES.join(", ")}: ${value}\n${USAGE}`,
+    );
+  return zone;
+}
+
+function parseDirectionApproval(
+  zone: DirectionZone | null,
+  approver: string | null,
+): DirectionApproval | null {
+  if (zone === null) {
+    if (approver !== null)
+      throw new Error(`--direction-approver requires --direction-zone\n${USAGE}`);
+    return null;
+  }
+  if (zone === "green") {
+    if (approver !== null)
+      throw new Error(
+        `--direction-approver is not allowed for a green direction zone, which the independent AI gate record approves\n${USAGE}`,
+      );
+    return null;
+  }
+  if (approver === null)
+    throw new Error(
+      `--direction-zone ${zone} requires --direction-approver\n${USAGE}`,
+    );
+  const login = approver.startsWith("@") ? approver.slice(1) : approver;
+  if (!DIRECTION_APPROVER_LOGIN.test(login))
+    throw new Error(`direction approver login is invalid: ${approver}\n${USAGE}`);
+  return { approverMention: mentionAccount(login), zone };
 }
 
 function parsePullRequestTarget(value: string): PullRequestTarget {
@@ -570,6 +707,21 @@ function mentionAccount(login: string): string {
   return `@${login}`;
 }
 
+// a direction-review PR stays draft through every update; reviewer tasks wait for a ready PR, though a dry run may preflight a draft
+function assertDraftState(
+  draft: boolean,
+  options: ReviewerTaskCliOptions,
+): void {
+  if (options.isDirectionReview && !draft)
+    throw new Error(
+      `direction-review PR ${options.repository}#${options.number} must stay draft`,
+    );
+  if (!options.isDirectionReview && draft && options.shouldApply)
+    throw new Error(
+      `refusing to add reviewer tasks while PR ${options.repository}#${options.number} is draft`,
+    );
+}
+
 function assertPinnedRevision(
   generated: ReviewerTaskGeneration,
   options: ReviewerTaskCliOptions,
@@ -652,20 +804,14 @@ async function runGitHubApi(
     const child = spawn("gh", ["api", ...args], { stdio: "pipe" });
     let stdout = "";
     let stderr = "";
-    let settled = false;
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk: string) => { stdout += chunk; });
     child.stderr.on("data", (chunk: string) => { stderr += chunk; });
-    child.on("error", (error) => {
-      if (!settled) { settled = true; reject(error); }
-    });
-    child.stdin.on("error", (error) => {
-      if (!settled) { settled = true; reject(error); }
-    });
+    // a promise settles once, so whichever of these events arrives first decides the outcome
+    child.on("error", reject);
+    child.stdin.on("error", reject);
     child.on("close", (code, signal) => {
-      if (settled) return;
-      settled = true;
       if (code !== 0)
         reject(new Error(`gh api failed (${code ?? signal}): ${stderr.trim()}`));
       else resolve(stdout);
@@ -679,16 +825,30 @@ async function runGitHubApi(
   }
 }
 
-async function main(args: string[]): Promise<void> {
-  const result = await runReviewerTasksCli(args);
-  process.stdout.write(
-    result.applied ? `${JSON.stringify(result)}\n` : `${result.block}\n`,
-  );
-}
-
-if (import.meta.main)
-  main(process.argv.slice(2)).catch((cause: unknown) => {
+/**
+ * runs the reviewer-task command line and writes its result
+ * @param args - command-line arguments with the executable path already removed
+ * @param github - REST transport, defaulting to the authenticated gh CLI for the parsed host
+ * @returns 0 on success and 1 on failure
+ */
+export async function main(
+  args: string[],
+  github?: GitHubApi,
+): Promise<number> {
+  try {
+    const result = await runReviewerTasksCli(args, github);
+    process.stdout.write(
+      result.applied
+        ? `${JSON.stringify(result)}\n`
+        : `${result.block ?? NO_DIRECTION_TASK}\n`,
+    );
+    return 0;
+  } catch (cause) {
     const error = cause as Error;
     process.stderr.write(`${error.message}\n`);
-    process.exitCode = 1;
-  });
+    return 1;
+  }
+}
+
+/* v8 ignore next */
+if (import.meta.main) process.exitCode = await main(process.argv.slice(2));

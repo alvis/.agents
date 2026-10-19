@@ -10,10 +10,11 @@ Calculate the active size zone with the canonical classifier:
 
 ```bash
 bun run "${CODING_PR_SKILL_DIR}/scripts/classify-pr-size.ts" \
-  --repo "$REPO_ROOT" --base "$BASE_OID" --head "$HEAD_OID"
+  --repo "$REPO_ROOT" --base "$BASE_OID" --head "$HEAD_OID" \
+  --units "$UNITS" --risk "$RISK_CLASS"
 ```
 
-Its file count includes every changed path, including generated, vendored, and binary files. Its authored net LOC excludes additions and deletions from recognized package lockfiles and paths marked `linguist-generated` at the base or head. Use the returned zone; do not inspect or reproduce the classifier's internal threshold data. A green result is the review surface one reader can hold at once.
+Pass the change inventory's unit count and risk class. The zone follows `GIT-PR-SIZE-01`: renamed, generated, vendored, snapshot, test, and formatting-only lines never count, and file count plays no part. Use the returned zone; do not inspect or reproduce the classifier's internal threshold data. A green result is the review surface one reader can hold at once.
 
 Require a split regardless of size or a standalone preference when one PR violates the composition standard, including migration with logic or mechanical refactoring with behaviour. Otherwise respect an explicit standalone-or-stack choice.
 
@@ -31,6 +32,10 @@ Suggested stack:
 ```
 
 Ask whether to use an optional proposed stack. A declined optional suggestion proceeds as one PR with its zone-required sections. A mandatory category split blocks publication until accepted and shaped through `coding:commit`; neither path silently reshapes history.
+
+## Peel off an approved draft
+
+An approved `direction-review` draft becomes its stack by peeling, not by rebuilding branches. Follow [staged delivery](../../../directions/staged-delivery.md#peel-off-the-stack): `coding:commit` uses `jj split` to carve each layer out of the approved draft change into a new change below it with its own `NN-<scope>` bookmark, so the draft stays on top and shrinks. Publish each new layer through `coding:pr create` and restack the draft PR onto the newest layer with `coding:pr update`. Never copy draft content into fresh branches. Before any layer is ready, run the [drift check](../../../directions/staged-delivery.md#check-for-drift). Close the draft PR, linking every layer, when its residual diff is zero.
 
 ## Stack directions
 
@@ -80,6 +85,6 @@ Before publication and after every stack synchronization, confirm:
 - branch/bookmark names and PR bases express the same bottom-to-top chain;
 - each remote PR head SHA equals the recorded local SHA;
 - no merged revision was rewritten;
-- every new PR starts as draft; the review loop promotes only converged approved surfaces to ready for review.
+- every new PR starts as draft; the review loop promotes only converged approved surfaces to ready for review, and never a `direction-review` draft.
 
 The create/update workflow owns publication and CI convergence; the merge workflow owns per-round merge and descendant restacking. This reference owns shape selection and the shared jj/git operator map.
