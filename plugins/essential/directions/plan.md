@@ -82,15 +82,34 @@ Name the working directory and version-control arrangement, such as a separate j
 Present every active task and every task changed since the last approved plan with these columns. Keep unchanged terminal history in the canonical registry; link to that registry and the approved snapshot instead of repeating its rows in a growing plan:
 
 ```markdown
-| ID | Description | Status | Delivery role | Agent | Model | Effort | Change |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| ID | Description | Status | Delivery role | Agent | Model | Effort | Review | Change |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ```
 
 Use stable IDs and the canonical statuses in [state-format.md](../references/state-format.md#task-identity-and-tables). Keep descriptions at most 19 words so the overview remains scannable. Assign every row to `EXPLORE`, `IMPLEMENTATION`, `REVIEW`, or `FOLLOWUP`. Render each nonempty checkpoint as a level-three heading with its own table; omit empty checkpoints. This grouping applies to human and agent delivery alike. Checkpoints are presentation metadata: they never alter dependencies or the canonical registry's single nine-column table.
 
 Name each delivery agent's role and name, including future owners. Distinguish planned settings from observed execution. Select the task's portable Model Tier and Effort under [delegation](delegate.md), then record the supported native model and effort values in the table. Resolve inherited settings from runtime information or the active harness configuration before dispatch; an unexposed value is `unavailable` with its reason, such as `unavailable — human owner has no AI runtime`. Record observed settings when execution begins, including differences from the planned assignment, without rewriting the approved snapshot. Verify both skill minimums against observed settings separately; an assignment does not confer eligibility.
 
-Identify the last approved plan by revision or content hash and compare every row against that snapshot, never an unapproved draft. Mark `new`, `unchanged`, or `changed`; changed rows name fields and before/after values, including status, role, agent, model, and effort changes. With no approved baseline, mark all rows `new`. If an existing baseline is inaccessible, state `comparison unavailable` and the missing source instead of inventing deltas. Retain cancelled and superseded rows. Revisions removing or replacing mapped work must update affected assumption and issue references and required obligations together.
+#### Declare reviews
+
+Decide upfront which tasks get an independent review and what it checks, and record that in each row's `Review` cell. Review a task only when a mistake in it would be expensive to repair later: later tasks build on it, it is a public interface or a contract others consume, it changes data shape or persisted state, it changes architecture or crosses a component boundary, it touches a security or permission boundary, or it is hard to reverse once published. Mark every other row `—`; the implementor's self-check and the workflow's gates cover it.
+
+Fill the cell with the focus codes the review covers. Each code files its findings in the named [review area](../references/reviews.md):
+
+| Code | Checks | Area |
+| --- | --- | --- |
+| 🧭 | Direction adherence to the approved plan, specification, and decisions | `alignment` |
+| 🏛️ | Architecture soundness: boundaries, dependencies, and data and control flows | `quality` |
+| ♻️ | Reuse: no re-invented helpers or duplicated logic | `quality` |
+| 🐞 | Correctness, including edge cases | `correctness` |
+| 🔒 | Security: trust boundaries, data, and permissions | `security` |
+| 🧪 | Test sufficiency | `testing` |
+| 🧹 | Code quality and lint results | `quality`, `style` |
+| 📝 | Documentation accuracy | `docs` |
+
+Run a declared review once its task is done and before any dependent task starts, so a costly mistake is caught before other work builds on it; a task with no dependents may fold its review into the delivery's integrated review. The reviewer examines only the declared focus and reports any P0 or P1 problem it notices outside it without searching for one. Declared reviews add to every review a workflow gate requires, such as publication, and never replace one; those gates reuse matching declared-review evidence instead of repeating it. Select each reviewer under [Select a reviewer](delegate.md#select-a-reviewer).
+
+Identify the last approved plan by revision or content hash and compare every row against that snapshot, never an unapproved draft. Mark `new`, `unchanged`, or `changed`; changed rows name fields and before/after values, including status, role, agent, model, effort, and review changes. With no approved baseline, mark all rows `new`. If an existing baseline is inaccessible, state `comparison unavailable` and the missing source instead of inventing deltas. Retain cancelled and superseded rows. Revisions removing or replacing mapped work must update affected assumption and issue references and required obligations together.
 
 ### 🛠️ Direction
 
@@ -123,4 +142,4 @@ Non-authoritative detail such as `state/plan.md` may expand an existing task ID,
 
 When evidence changes the route but Goal, Requirements, Boundary, and Out of Scope remain fixed, the owning workflow may authorize a Direction adjustment without operator approval. Record that adjustment in mutable `state/` detail keyed by existing task IDs, link it from `state.md`, and journal its reason; preserve the approved remainder under [complete-plan reads](../references/state.md#complete-plan-reads). Surface any proposed contract change to its owner before continuing.
 
-Before handing off, approving, or executing a plan, check these sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Check that Out of Scope lists only drafted, requested, or explicitly excluded items, each with a disposition, and that material plans list Precedents and a Confirmed architecture or its not-applicable reason. Verify the [direction review](#confirm-the-direction-and-architecture) against the current scope and its explicit user confirmation before treating the execution plan as final. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.
+Before handing off, approving, or executing a plan, check these sections in order with emoji prefixes, an explicit improvement and evidenced outcome, and executable scope, dependencies, verification, and stop conditions. Check every assumption's verification task and every issue's corrective task, complete task rows and checkpoint groups, description lengths, Review cells drawn from the [focus codes](#declare-reviews), native delivery settings and their provenance, accurate approved-baseline changes, and task-specific skills. Check that Out of Scope lists only drafted, requested, or explicitly excluded items, each with a disposition, and that material plans list Precedents and a Confirmed architecture or its not-applicable reason. Verify the [direction review](#confirm-the-direction-and-architecture) against the current scope and its explicit user confirmation before treating the execution plan as final. Verify that Current Scenario explains today's behavior and non-delivery consequences, Expected Delivery preserves established commitments, context is current, links resolve, records are directly related, and each record summary is at most 19 words. Semantic quality remains the planner's and reviewer's responsibility; structural guards do not prove it. Hook feedback requires rereading this direction and presenting the corrected plan; an acknowledgement does not resolve rejected plan content.

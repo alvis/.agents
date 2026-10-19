@@ -84,3 +84,11 @@ Apply this procedure to named roles, generic agents, nested launches, and reused
 4. Record the portable profile, native settings, and task reason, distinguishing planned from observed execution. A missing or unexposed native value cannot prove eligibility. Before unexpected work exceeds either selected axis, reassign or relaunch at a suitable configuration; do not treat a warm agent's original launch as silently upgraded.
 
 Check ownership against the *observed* model and effort when exposed, including main sessions and nested agents. If the harness cannot establish that both minimums are met, transfer the task to a qualified owner or report the unsupported control. [ALLAGENT.md](../hooks/ALLAGENT.md) owns the ineligibility handoff.
+
+### Select a reviewer
+
+Every independent reviewer runs one step above the work it reviews. Derive the reviewer's task needs this way, then resolve them through steps 2–4 of [Select model and effort](#select-model-and-effort):
+
+- **Baseline.** Take the implementor's observed Model Tier and Effort, or the planned pair when observed settings are not exposed. With several implementors, take the highest tier and the highest effort among them independently. A human implementor gives no baseline; assess the review's own needs as step 1 does.
+- **Step up.** Raise the tier one level at the same effort: Routine becomes Capable, Capable becomes Expert. An Expert implementor below Exhaustive keeps Expert and raises effort one level.
+- **Ceiling.** For an Expert + Exhaustive implementor, use an Expert model at Exhaustive from another configured provider that can launch that profile, because a different model family has different blind spots. When no other provider can, use the same profile in a fresh agent carrying none of the implementor's context.

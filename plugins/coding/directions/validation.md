@@ -58,7 +58,7 @@ Required gate coverage stays complete: reuse cannot split away failures, omit an
 
 ## Review timing
 
-For a parent-owned delivery, follow [review ownership and evidence](review-evidence.md): children return self-checks, focused validation, and risks; the named parent owns one independent review after integration and documentation, before publication. Internal slice commits do not add independent review. Missing or contradictory ownership falls back to the timing below.
+For a parent-owned delivery, follow [review ownership and evidence](review-evidence.md): children return self-checks, focused validation, and risks; the named parent owns one independent review after integration and documentation, before publication. Internal slice commits do not add independent review. Missing or contradictory ownership falls back to the timing below. Plan-declared task reviews follow `essential:directions/plan.md#declare-reviews`.
 
 At Tier 0–1, the implementing owner self-reviews. When publication is the only independent-review trigger for bounded, non-consequential work, self-review before saving and let `coding:pr` provide the independent pass; do not add a separate local reviewer. Consequential work, Tier 2–3, and explicit local review requests require independent pre-save review through `coding:review-code`, which owns coverage and risk-based staffing.
 
