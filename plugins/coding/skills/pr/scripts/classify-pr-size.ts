@@ -2,7 +2,72 @@
 
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { basename, isAbsolute, join, resolve } from "node:path";
+
+/** zone a PR's review surface falls into, ordered from least to most review */
+export type Zone = (typeof ZONES)[number];
+
+/** semantic risk class of a change, from R0 (least) to R3 (most) */
+export type RiskClass = (typeof RISK_CLASSES)[number];
+
+/** declared change inventory from the PR body or a reviewer's recount */
+export interface ChangeInventory {
+  /** risk class of the whole change */
+  riskClass: RiskClass;
+  /** number of logical change units */
+  units: number;
+}
+
+type AttributePaths = Record<(typeof PATH_ATTRIBUTES)[number], Set<string>>;
+
+type ExclusionBucket = "generated" | "vendored" | "snapshot" | "test";
+
+interface LineCounts {
+  additions: number;
+  deletions: number;
+}
+
+interface DiffEntry {
+  path: string;
+  /** source path of a detected rename, null otherwise */
+  previousPath: string | null;
+  /** null for a binary change */
+  lineCounts: LineCounts | null;
+}
+
+interface UnitBand {
+  zone: Zone;
+  maxUnits: number;
+}
+
+interface SizeThresholds {
+  unitBands: UnitBand[];
+  riskFloors: Record<RiskClass, Zone>;
+  lineBump: { authoredLinesAbove: number; steps: number };
+  renameSimilarityPercent: number;
+}
+
+interface ClassifierArguments {
+  repo: string;
+  base: string;
+  head: string;
+  inventory: ChangeInventory | null;
+}
+
+interface ArgumentExit {
+  exitCode: number;
+}
+
+interface GitResult {
+  stdout: Uint8Array;
+  stderr: Uint8Array;
+  exitCode: number;
+}
+
+const ZONES = ["green", "yellow", "red", "black"] as const;
+const UNIT_BAND_ZONES = ["green", "yellow", "red"] as const;
+const RISK_CLASSES = ["R0", "R1", "R2", "R3"] as const;
+const PATH_ATTRIBUTES = ["linguist-generated", "linguist-vendored"] as const;
 
 const PACKAGE_LOCKFILES = new Set([
   "Cargo.lock",
@@ -20,24 +85,67 @@ const PACKAGE_LOCKFILES = new Set([
   "yarn.lock",
 ]);
 
+// git's current diff.renameLimit default, pinned so a change to git's own default cannot move the counts; it bounds the quadratic similarity matrix
 const RENAME_CANDIDATE_LIMIT = 1_000;
+// git writes this to stderr, untranslated under LC_ALL=C, when it skips inexact renames beyond the limit
+const RENAME_LIMIT_WARNING = "exhaustive rename detection was skipped";
+// PATH finds git, HOME locates the user, TMPDIR places temporary files
+const INHERITED_ENVIRONMENT = ["HOME", "PATH", "TMPDIR"];
+// a promisor fetch alone also needs proxies, CA bundles, SSH programs and variants, and credential prompts; OpenSSH runs SSH_ASKPASS without a TTY only with DISPLAY or SSH_ASKPASS_REQUIRE; none of them change the counts
+const TRANSPORT_ENVIRONMENT = [
+  "ALL_PROXY",
+  "DISPLAY",
+  "GIT_ASKPASS",
+  "GIT_SSH",
+  "GIT_SSH_COMMAND",
+  "GIT_SSH_VARIANT",
+  "GIT_SSL_CAINFO",
+  "GIT_SSL_CAPATH",
+  "HTTPS_PROXY",
+  "NO_PROXY",
+  "SSH_ASKPASS",
+  "SSH_ASKPASS_REQUIRE",
+  "SSH_AUTH_SOCK",
+  "SSL_CERT_DIR",
+  "SSL_CERT_FILE",
+  "all_proxy",
+  "http_proxy",
+  "https_proxy",
+  "no_proxy",
+];
 const GIT_ARGUMENT_BATCH_SIZE = 128;
+// git rejects a rename similarity above 100%
+const MAX_SIMILARITY_PERCENT = 100;
 const SIZE_THRESHOLDS = join(
   import.meta.dirname,
   "../assets/size-thresholds.json",
 );
 
-interface ZoneLimit {
-  name: string;
-  maxFilesChanged: number;
-  maxAuthoredNetLoc: number;
-}
+const USAGE =
+  "usage: classify-pr-size.ts [-h] [--repo REPO] --base BASE --head HEAD [--units UNITS] [--risk {R0,R1,R2,R3}]";
+const HELP = `${USAGE}
 
-interface GitResult {
-  stdout: Uint8Array;
-  stderr: Uint8Array;
-  exitCode: number;
-}
+classify a Git diff into a PR-size zone from authored lines and inventory
+
+options:
+  -h, --help            show this help message and exit
+  --repo REPO
+  --base BASE
+  --head HEAD
+  --units UNITS
+  --risk {R0,R1,R2,R3}
+
+rename_detection_skipped is true when git skipped inexact rename matching because the sources times destinations left after exact and basename matches exceeded ${RENAME_CANDIDATE_LIMIT} squared, so those moves count as authored lines
+`;
+const CLASSIFIER_OPTIONS = [
+  "--help",
+  "--repo",
+  "--base",
+  "--head",
+  "--units",
+  "--risk",
+];
+const ARGPARSE_NEGATIVE_NUMBER = /^-\p{Nd}+$|^-\p{Nd}*\.\p{Nd}+$/u;
 
 class GitCommandError extends Error {
   constructor(readonly result: GitResult) {
@@ -167,50 +275,24 @@ function comparePythonStrings(left: string, right: string): number {
 }
 
 function hermeticEnvironment(): Record<string, string> {
-  const environment = Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    ),
-  );
-  const unsafeNames = new Set([
-    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-    "GIT_ATTR_NOSYSTEM",
-    "GIT_COMMON_DIR",
-    "GIT_CONFIG_COUNT",
-    "GIT_CONFIG_GLOBAL",
-    "GIT_CONFIG_NOSYSTEM",
-    "GIT_CONFIG_PARAMETERS",
-    "GIT_CONFIG_SYSTEM",
-    "GIT_DEFAULT_HASH",
-    "GIT_DIFF_OPTS",
-    "GIT_DIR",
-    "GIT_EXTERNAL_DIFF",
-    "GIT_GLOB_PATHSPECS",
-    "GIT_ICASE_PATHSPECS",
-    "GIT_INDEX_FILE",
-    "GIT_LITERAL_PATHSPECS",
-    "GIT_NOGLOB_PATHSPECS",
-    "GIT_OBJECT_DIRECTORY",
-    "GIT_TEMPLATE_DIR",
-    "GIT_WORK_TREE",
-  ]);
-  for (const name of Object.keys(environment)) {
-    if (
-      unsafeNames.has(name) ||
-      name.startsWith("GIT_CONFIG_KEY_") ||
-      name.startsWith("GIT_CONFIG_VALUE_")
-    ) {
-      delete environment[name];
-    }
-  }
+  // an allowlist, because git keeps adding GIT_* inputs (such as GIT_ATTR_SOURCE) that would change the counts
   return {
-    ...environment,
+    ...inheritedEnvironment(INHERITED_ENVIRONMENT),
     GIT_ATTR_NOSYSTEM: "1",
     GIT_CONFIG_GLOBAL: "/dev/null",
     GIT_CONFIG_NOSYSTEM: "1",
     GIT_NO_REPLACE_OBJECTS: "1",
     LC_ALL: "C",
   };
+}
+
+function inheritedEnvironment(names: string[]): Record<string, string> {
+  return Object.fromEntries(
+    names.flatMap((name) => {
+      const value = process.env[name];
+      return value === undefined ? [] : [[name, value]];
+    }),
+  );
 }
 
 function resolveCommit(
@@ -249,47 +331,17 @@ function resolveBase(
   return resolveCommit(repo, revision, environment);
 }
 
-function nulPaths(output: Uint8Array): string[] {
-  return splitBytes(output, 0)
-    .filter((part) => part.length > 0)
-    .map(surrogateDecode);
-}
-
-function changedFiles(
+function committedAttributes(
   repo: string,
-  base: string,
-  head: string,
-  environment: Record<string, string>,
-): string[] {
-  return nulPaths(
-    runGit(
-      repo,
-      [
-        "diff",
-        "--name-only",
-        "-z",
-        "--no-ext-diff",
-        "--no-textconv",
-        "--diff-algorithm=myers",
-        "--find-renames=50%",
-        `-l${RENAME_CANDIDATE_LIMIT}`,
-        "--ignore-submodules=none",
-        base,
-        head,
-        "--",
-      ],
-      { environment },
-    ).stdout,
-  ).sort(comparePythonStrings);
-}
-
-function generatedAttributes(
-  repo: string,
-  revision: string,
+  revisions: string[],
   paths: Set<string>,
   environment: Record<string, string>,
-): Set<string> {
-  if (paths.size === 0) return new Set();
+): AttributePaths {
+  const attributes: AttributePaths = {
+    "linguist-generated": new Set(),
+    "linguist-vendored": new Set(),
+  };
+  if (paths.size === 0) return attributes;
   const encodedPaths = [...paths]
     .sort(comparePythonStrings)
     .map(surrogateEncode);
@@ -302,78 +354,132 @@ function generatedAttributes(
       ...environment,
       GIT_INDEX_FILE: join(temporary, "index"),
     };
-    runGit(repo, ["read-tree", revision], { environment: indexEnvironment });
-    const fields = splitBytes(
-      runGit(
-        repo,
-        ["check-attr", "-z", "--cached", "--stdin", "linguist-generated"],
-        { input: pathInput, environment: indexEnvironment },
-      ).stdout,
-      0,
-    );
-    const generated = new Set<string>();
-    for (let index = 0; index < fields.length - 2; index += 3) {
-      const value = text(fields[index + 2]!);
-      if (value === "set" || value === "true")
-        generated.add(surrogateDecode(fields[index]!));
+    for (const revision of revisions) {
+      runGit(repo, ["read-tree", revision], { environment: indexEnvironment });
+      const fields = splitBytes(
+        runGit(
+          repo,
+          ["check-attr", "-z", "--cached", "--stdin", ...PATH_ATTRIBUTES],
+          { input: pathInput, environment: indexEnvironment },
+        ).stdout,
+        0,
+      );
+      for (let index = 0; index < fields.length - 2; index += 3) {
+        const name = text(fields[index + 1]!);
+        const attribute = PATH_ATTRIBUTES.find(
+          (candidate) => candidate === name,
+        );
+        const value = text(fields[index + 2]!);
+        if (attribute && (value === "set" || value === "true"))
+          attributes[attribute].add(surrogateDecode(fields[index]!));
+      }
     }
-    return generated;
+    return attributes;
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
 }
 
-function generatedPaths(
-  repo: string,
-  base: string,
-  head: string,
-  paths: Set<string>,
-  environment: Record<string, string>,
-): Set<string> {
-  const generated = new Set(
-    [...paths].filter((path) => PACKAGE_LOCKFILES.has(basename(path))),
-  );
-  for (const path of generatedAttributes(repo, base, paths, environment))
-    generated.add(path);
-  for (const path of generatedAttributes(repo, head, paths, environment))
-    generated.add(path);
-  return generated;
-}
-
-function numstat(
+function diffEntries(
   repo: string,
   base: string,
   head: string,
   environment: Record<string, string>,
-): Array<[string, string, string]> {
-  const output = runGit(
+  diffOptions: string[],
+): { entries: DiffEntry[]; isRenameDetectionSkipped: boolean } {
+  const result = runGit(
     repo,
     [
       "diff",
       "--numstat",
-      "--no-renames",
       "-z",
       "--no-ext-diff",
       "--no-textconv",
       "--diff-algorithm=myers",
       "--ignore-submodules=none",
+      ...diffOptions,
       base,
       head,
       "--",
     ],
     { environment },
-  ).stdout;
-  return splitBytes(output, 0)
-    .filter((entry) => entry.length > 0)
-    .map((entry) => {
-      const firstTab = entry.indexOf(9);
-      const secondTab = entry.indexOf(9, firstTab + 1);
-      return [
-        text(entry.subarray(0, firstTab)),
-        text(entry.subarray(firstTab + 1, secondTab)),
-        surrogateDecode(entry.subarray(secondTab + 1)),
-      ];
+  );
+  const fields = splitBytes(result.stdout, 0);
+  const entries: DiffEntry[] = [];
+  for (let index = 0; index < fields.length; index += 1) {
+    const entry = fields[index]!;
+    if (entry.length === 0) continue;
+    const firstTab = entry.indexOf(9);
+    const secondTab = entry.indexOf(9, firstTab + 1);
+    const added = text(entry.subarray(0, firstTab));
+    const deleted = text(entry.subarray(firstTab + 1, secondTab));
+    const lineCounts =
+      added === "-" || deleted === "-"
+        ? null
+        : {
+            additions: Number.parseInt(added, 10),
+            deletions: Number.parseInt(deleted, 10),
+          };
+    const pathBytes = entry.subarray(secondTab + 1);
+    if (pathBytes.length > 0) {
+      entries.push({
+        path: surrogateDecode(pathBytes),
+        previousPath: null,
+        lineCounts,
+      });
+      continue;
+    }
+    // a rename's numstat record carries its source and destination as the next two fields
+    entries.push({
+      path: surrogateDecode(fields[index + 2]!),
+      previousPath: surrogateDecode(fields[index + 1]!),
+      lineCounts,
     });
+    index += 2;
+  }
+  return {
+    entries,
+    isRenameDetectionSkipped: text(result.stderr).includes(
+      RENAME_LIMIT_WARNING,
+    ),
+  };
+}
+
+function exclusionBucket(
+  entry: DiffEntry,
+  attributes: AttributePaths,
+): ExclusionBucket | null {
+  const paths = entry.previousPath
+    ? [entry.previousPath, entry.path]
+    : [entry.path];
+  if (
+    paths.some(
+      (path) =>
+        PACKAGE_LOCKFILES.has(basename(path)) ||
+        attributes["linguist-generated"].has(path),
+    )
+  )
+    return "generated";
+  if (paths.some((path) => attributes["linguist-vendored"].has(path)))
+    return "vendored";
+  if (paths.some(isSnapshotPath)) return "snapshot";
+  if (paths.some(isTestPath)) return "test";
+  return null;
+}
+
+function isSnapshotPath(path: string): boolean {
+  return (
+    path.endsWith(".snap") ||
+    path.split("/").slice(0, -1).includes("__snapshots__")
+  );
+}
+
+function isTestPath(path: string): boolean {
+  return (
+    // a story with play() is the component test the web testing standard requires
+    /\.(?:spec|stories|test)\./.test(basename(path)) ||
+    path.split("/").slice(0, -1).includes("__tests__")
+  );
 }
 
 function diffObjects(
@@ -407,9 +513,7 @@ function diffObjects(
   const objectIds = new Set<string>();
   const paths = new Set<string>();
   for (let index = 0; index < fields.length - 1; index += 2) {
-    const headerBytes = fields[index]!;
-    if (headerBytes.length === 0) continue;
-    const header = text(headerBytes);
+    const header = text(fields[index]!);
     paths.add(surrogateDecode(fields[index + 1]!));
     const [oldMode, newMode, oldId, newId] = header.slice(1).split(" ", 5);
     for (const [mode, objectId] of [
@@ -425,13 +529,14 @@ function diffObjects(
 
 function attributePaths(paths: Set<string>): Set<string> {
   const attributes = new Set([".gitattributes"]);
-  for (const path of paths) {
-    let parent = dirname(path);
-    while (parent !== ".") {
-      attributes.add(`${parent}/.gitattributes`);
-      parent = dirname(parent);
-    }
-  }
+  // node:path would replace the lone surrogates that carry undecodable path bytes
+  for (const path of paths)
+    for (
+      let end = path.lastIndexOf("/");
+      end > 0;
+      end = path.lastIndexOf("/", end - 1)
+    )
+      attributes.add(`${path.slice(0, end)}/.gitattributes`);
   return attributes;
 }
 
@@ -441,58 +546,51 @@ function blobIdsAtPaths(
   paths: Set<string>,
   environment: Record<string, string>,
 ): Set<string> {
-  const objectIds = new Set<string>();
   const orderedPaths = [...paths].sort(comparePythonStrings);
   const literalEnvironment = { ...environment, GIT_LITERAL_PATHSPECS: "1" };
-  if (orderedPaths.some((path) => /[\udc80-\udcff]/.test(path))) {
-    const output = runGit(
-      repo,
-      ["ls-tree", "-r", "-z", "--full-tree", revision],
-      { environment: literalEnvironment },
-    ).stdout;
-    for (const entry of splitBytes(output, 0).filter(
-      (part) => part.length > 0,
-    )) {
-      const separator = entry.indexOf(9);
-      const path = surrogateDecode(entry.subarray(separator + 1));
-      if (!paths.has(path)) continue;
-      const [, objectType, objectId] = text(entry.subarray(0, separator)).split(
-        " ",
-        3,
+  // undecodable path bytes cannot travel as pathspec arguments, so list the whole tree instead
+  const listings = orderedPaths.some((path) => /[\udc80-\udcff]/.test(path))
+    ? [["-r", "-z", "--full-tree", revision]]
+    : Array.from(
+        {
+          length: Math.ceil(orderedPaths.length / GIT_ARGUMENT_BATCH_SIZE),
+        },
+        (_, batch) => [
+          "-z",
+          "--full-tree",
+          revision,
+          "--",
+          ...orderedPaths.slice(
+            batch * GIT_ARGUMENT_BATCH_SIZE,
+            (batch + 1) * GIT_ARGUMENT_BATCH_SIZE,
+          ),
+        ],
       );
-      if (objectType === "blob") objectIds.add(objectId!);
-    }
-    return objectIds;
-  }
-  for (
-    let start = 0;
-    start < orderedPaths.length;
-    start += GIT_ARGUMENT_BATCH_SIZE
-  ) {
-    const output = runGit(
-      repo,
-      [
-        "ls-tree",
-        "-z",
-        "--full-tree",
-        revision,
-        "--",
-        ...orderedPaths.slice(start, start + GIT_ARGUMENT_BATCH_SIZE),
-      ],
-      { environment: literalEnvironment },
-    ).stdout;
-    for (const entry of splitBytes(output, 0).filter(
-      (part) => part.length > 0,
-    )) {
-      const separator = entry.indexOf(9);
-      const [, objectType, objectId] = text(entry.subarray(0, separator)).split(
-        " ",
-        3,
-      );
-      if (objectType === "blob") objectIds.add(objectId!);
-    }
-  }
-  return objectIds;
+  return new Set(
+    listings
+      .flatMap((listing) =>
+        splitBytes(
+          runGit(repo, ["ls-tree", ...listing], {
+            environment: literalEnvironment,
+          }).stdout,
+          0,
+        ).filter((part) => part.length > 0),
+      )
+      .map((entry) => {
+        const separator = entry.indexOf(9);
+        const [, objectType, objectId] = text(
+          entry.subarray(0, separator),
+        ).split(" ", 3);
+        return {
+          objectId: objectId!,
+          objectType,
+          path: surrogateDecode(entry.subarray(separator + 1)),
+        };
+      })
+      // a gitlink has no blob to hydrate
+      .filter((entry) => entry.objectType === "blob" && paths.has(entry.path))
+      .map((entry) => entry.objectId),
+  );
 }
 
 function hydrateObjects(
@@ -514,7 +612,8 @@ function hydrateObjects(
   const remoteResult = runGit(
     repo,
     ["config", "--local", "--get-regexp", String.raw`^remote\..*\.promisor$`],
-    { environment },
+    // exit 1 with empty output means no promisor key is configured
+    { environment, check: false },
   );
   const remotes: string[] = [];
   for (const line of text(remoteResult.stdout).split(/\r?\n/).filter(Boolean)) {
@@ -530,6 +629,10 @@ function hydrateObjects(
   }
   if (remotes.length === 0)
     throw new Error("missing objects require a configured promisor remote");
+  const fetchEnvironment = {
+    ...inheritedEnvironment(TRANSPORT_ENVIRONMENT),
+    ...environment,
+  };
   for (
     let start = 0;
     start < missingIds.length;
@@ -549,128 +652,216 @@ function hydrateObjects(
           remote,
           ...batch,
         ],
-        { environment, check: false },
+        { environment: fetchEnvironment, check: false },
       );
       if (fetchResult.exitCode === 0) {
         fetched = true;
         break;
       }
-      const failure = text(fetchResult.stderr).trim();
-      if (failure) failures.push(failure);
+      failures.push(text(fetchResult.stderr).trim());
     }
     if (!fetched)
       throw new Error(
-        failures.join("; ") ||
+        failures.filter(Boolean).join("; ") ||
           "promisor remotes could not provide required objects",
       );
   }
 }
 
-function parseZoneLimit(data: unknown): ZoneLimit {
-  const expected = [
-    "max_authored_net_loc",
-    "max_files_changed",
-    "name",
-  ];
-  if (
-    !data ||
-    typeof data !== "object" ||
-    Array.isArray(data) ||
-    Object.keys(data).sort().join() !== expected.join()
-  ) {
-    throw new Error(`invalid PR-size zone shape: ${SIZE_THRESHOLDS}`);
-  }
-  const zone = data as Record<string, unknown>;
-  if (typeof zone.name !== "string")
-    throw new TypeError(
-      `PR-size zone name must be a string: ${SIZE_THRESHOLDS}`,
-    );
-  for (const field of ["max_files_changed", "max_authored_net_loc"] as const) {
-    const value = zone[field];
-    if (!Number.isInteger(value))
-      throw new TypeError(
-        `PR-size zone '${zone.name}' ${field} must be a positive integer: ${SIZE_THRESHOLDS}`,
-      );
-    if ((value as number) <= 0)
-      throw new Error(
-        `PR-size zone '${zone.name}' ${field} must be positive: ${SIZE_THRESHOLDS}`,
-      );
-  }
+function loadSizeThresholds(): SizeThresholds {
+  const source = expectExactObject(
+    JSON.parse(readFileSync(SIZE_THRESHOLDS, "utf8")),
+    [
+      "line_bump",
+      "rename_similarity_percent",
+      "risk_floors",
+      "schema_version",
+      "unit_bands",
+    ],
+    "thresholds",
+  );
+  if (source.schema_version !== 2)
+    throw new Error(`invalid PR-size threshold schema: ${SIZE_THRESHOLDS}`);
   return {
-    name: zone.name,
-    maxFilesChanged: zone.max_files_changed as number,
-    maxAuthoredNetLoc: zone.max_authored_net_loc as number,
+    unitBands: parseUnitBands(source.unit_bands),
+    riskFloors: parseRiskFloors(source.risk_floors),
+    lineBump: parseLineBump(source.line_bump),
+    renameSimilarityPercent: parseRenameSimilarity(
+      source.rename_similarity_percent,
+    ),
   };
 }
 
-function loadZoneLimits(): ZoneLimit[] {
-  const data: unknown = JSON.parse(readFileSync(SIZE_THRESHOLDS, "utf8"));
-  if (!data || typeof data !== "object" || Array.isArray(data))
+function parseUnitBands(value: unknown): UnitBand[] {
+  if (!Array.isArray(value))
     throw new TypeError(
-      `PR-size thresholds must be an object: ${SIZE_THRESHOLDS}`,
+      `PR-size unit_bands must be an array: ${SIZE_THRESHOLDS}`,
     );
-  const source = data as Record<string, unknown>;
-  if (!Number.isInteger(source.schema_version))
-    throw new TypeError(
-      `PR-size threshold schema version must be an integer: ${SIZE_THRESHOLDS}`,
+  const bands = value.map((entry: unknown, index) => {
+    const band = expectExactObject(
+      entry,
+      ["max_units", "reason", "zone"],
+      `unit band ${index + 1}`,
     );
-  if (source.schema_version !== 1)
-    throw new Error(`invalid PR-size threshold schema: ${SIZE_THRESHOLDS}`);
-  const metrics = source.metrics;
+    expectReason(band.reason, `unit band ${index + 1} reason`);
+    return {
+      zone: band.zone,
+      maxUnits: expectPositiveInteger(
+        band.max_units,
+        `unit band ${index + 1} max_units`,
+      ),
+    };
+  });
   if (
-    !metrics ||
-    typeof metrics !== "object" ||
-    Array.isArray(metrics) ||
-    Object.keys(metrics).sort().join() !==
-      ["authored_net_loc", "files_changed"].join()
-  ) {
-    throw new Error(`invalid PR-size metrics: ${SIZE_THRESHOLDS}`);
-  }
-  for (const metric of Object.values(metrics)) {
-    if (
-      !metric ||
-      typeof metric !== "object" ||
-      Array.isArray(metric) ||
-      Object.keys(metric).sort().join() !== "reason,unit" ||
-      Object.values(metric).some((value) => typeof value !== "string" || !value)
-    ) {
-      throw new Error(`invalid PR-size metric metadata: ${SIZE_THRESHOLDS}`);
-    }
-  }
-  if (!Array.isArray(source.zones))
-    throw new TypeError(`invalid PR-size zones: ${SIZE_THRESHOLDS}`);
-  const limits = source.zones.map(parseZoneLimit);
-  if (limits.map((limit) => limit.name).join() !== "green,yellow,red")
+    bands.length !== UNIT_BAND_ZONES.length ||
+    bands.some((band, index) => band.zone !== UNIT_BAND_ZONES[index])
+  )
     throw new Error(
-      `PR-size zones must be ordered green, yellow, red: ${SIZE_THRESHOLDS}`,
+      `PR-size unit bands must be ordered green, yellow, red: ${SIZE_THRESHOLDS}`,
     );
-  for (let index = 1; index < limits.length; index += 1) {
-    const earlier = limits[index - 1]!;
-    const later = limits[index]!;
-    if (
-      earlier.maxFilesChanged >= later.maxFilesChanged ||
-      earlier.maxAuthoredNetLoc >= later.maxAuthoredNetLoc
-    ) {
+  for (let index = 1; index < bands.length; index += 1) {
+    if (bands[index - 1]!.maxUnits >= bands[index]!.maxUnits)
       throw new Error(
-        `PR-size zone maxima must increase (${earlier.name} -> ${later.name}): ${SIZE_THRESHOLDS}`,
+        `PR-size unit band maxima must increase (${UNIT_BAND_ZONES[index - 1]} -> ${UNIT_BAND_ZONES[index]}): ${SIZE_THRESHOLDS}`,
       );
-    }
   }
-  return limits;
+  return bands.map((band, index) => ({
+    zone: UNIT_BAND_ZONES[index]!,
+    maxUnits: band.maxUnits,
+  }));
 }
 
-function zoneFor(
-  filesChanged: number,
-  netLoc: number,
-  limits: ZoneLimit[],
-): string {
-  return (
-    limits.find(
-      (limit) =>
-        filesChanged <= limit.maxFilesChanged &&
-        netLoc <= limit.maxAuthoredNetLoc,
-    )?.name ?? "black"
+function parseRiskFloors(value: unknown): Record<RiskClass, Zone> {
+  const riskFloors = expectExactObject(
+    value,
+    ["floors", "reason"],
+    "risk_floors",
   );
+  expectReason(riskFloors.reason, "risk_floors reason");
+  const floors = expectExactObject(
+    riskFloors.floors,
+    [...RISK_CLASSES],
+    "risk_floors floors",
+  );
+  return {
+    R0: expectZone(floors.R0, "R0"),
+    R1: expectZone(floors.R1, "R1"),
+    R2: expectZone(floors.R2, "R2"),
+    R3: expectZone(floors.R3, "R3"),
+  };
+}
+
+function parseLineBump(value: unknown): SizeThresholds["lineBump"] {
+  const lineBump = expectExactObject(
+    value,
+    ["authored_lines_above", "reason", "steps"],
+    "line_bump",
+  );
+  expectReason(lineBump.reason, "line_bump reason");
+  return {
+    authoredLinesAbove: expectPositiveInteger(
+      lineBump.authored_lines_above,
+      "line_bump authored_lines_above",
+    ),
+    steps: expectPositiveInteger(lineBump.steps, "line_bump steps"),
+  };
+}
+
+function parseRenameSimilarity(value: unknown): number {
+  const similarity = expectExactObject(
+    value,
+    ["reason", "value"],
+    "rename_similarity_percent",
+  );
+  expectReason(similarity.reason, "rename_similarity_percent reason");
+  return expectPositiveInteger(
+    similarity.value,
+    "rename_similarity_percent value",
+    MAX_SIMILARITY_PERCENT,
+  );
+}
+
+function expectExactObject(
+  value: unknown,
+  keys: string[],
+  label: string,
+): Record<string, unknown> {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    Object.keys(value).sort().join() !== [...keys].sort().join()
+  )
+    throw new Error(
+      `invalid PR-size ${label} shape, expected keys ${keys.join(", ")}: ${SIZE_THRESHOLDS}`,
+    );
+  return value as Record<string, unknown>;
+}
+
+function expectReason(value: unknown, label: string): void {
+  if (typeof value !== "string" || value.trim() === "")
+    throw new TypeError(
+      `PR-size ${label} must be a non-empty string: ${SIZE_THRESHOLDS}`,
+    );
+}
+
+function expectPositiveInteger(
+  value: unknown,
+  label: string,
+  maximum = Number.POSITIVE_INFINITY,
+): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value <= 0 ||
+    value > maximum
+  )
+    throw new Error(
+      `PR-size ${label} must be a positive integer${maximum === Number.POSITIVE_INFINITY ? "" : ` of at most ${maximum}`}: ${SIZE_THRESHOLDS}`,
+    );
+  return value;
+}
+
+function expectZone(value: unknown, riskClass: RiskClass): Zone {
+  const zone = ZONES.find((candidate) => candidate === value);
+  if (!zone)
+    throw new Error(
+      `PR-size risk floor ${riskClass} must be one of ${ZONES.join(", ")}: ${SIZE_THRESHOLDS}`,
+    );
+  return zone;
+}
+
+function zoneFields(
+  inventory: ChangeInventory | null,
+  hasLineBump: boolean,
+  thresholds: SizeThresholds,
+): Record<string, unknown> {
+  if (!inventory)
+    return {
+      risk_class: null,
+      risk_floor: null,
+      tier: null,
+      unit_band: null,
+      units: null,
+      zone: null,
+    };
+  const unitBand =
+    thresholds.unitBands.find((band) => inventory.units <= band.maxUnits)
+      ?.zone ?? "black";
+  const riskFloor = thresholds.riskFloors[inventory.riskClass];
+  const tier = Math.max(ZONES.indexOf(unitBand), ZONES.indexOf(riskFloor));
+  const zone = Math.min(
+    tier + (hasLineBump ? thresholds.lineBump.steps : 0),
+    ZONES.length - 1,
+  );
+  return {
+    risk_class: inventory.riskClass,
+    risk_floor: riskFloor,
+    tier: ZONES[tier],
+    unit_band: unitBand,
+    units: inventory.units,
+    zone: ZONES[zone],
+  };
 }
 
 function withIsolatedRepository<T>(
@@ -725,17 +916,20 @@ function withIsolatedRepository<T>(
 }
 
 /**
- * classifies the diff between two revisions into the fixed PR-size zones
+ * classifies the diff between two revisions into authored lines and, with an inventory, a PR-size zone
  * @param repo - path to the repository holding both revisions
  * @param baseRevision - base revision, resolved to a commit or the empty tree
  * @param headRevision - head revision, resolved to a commit
- * @returns zone metrics keyed by their wire-format snake_case names
+ * @param inventory - declared units and risk class, or null when the zone stays undetermined
+ * @returns size metrics keyed by their wire-format snake_case names
  */
 export function classify(
   repo: string,
   baseRevision: string,
   headRevision: string,
+  inventory: ChangeInventory | null = null,
 ): Record<string, unknown> {
+  const thresholds = loadSizeThresholds();
   const environment = hermeticEnvironment();
   const base = resolveBase(repo, baseRevision, environment);
   const head = resolveCommit(repo, headRevision, environment);
@@ -759,51 +953,93 @@ export function classify(
     new Set([...sourceObjectIds, ...attributeObjectIds]),
     environment,
   );
-  generatedAttributes(repo, base, sourcePaths, environment);
-  generatedAttributes(repo, head, sourcePaths, environment);
-
-  const { files, stats, generatedFiles } = withIsolatedRepository(
-    repo,
-    environment,
-    (isolatedRepo, isolatedEnvironment) => {
-      const stats = numstat(isolatedRepo, base, head, isolatedEnvironment);
-      return {
-        files: changedFiles(isolatedRepo, base, head, isolatedEnvironment),
-        stats,
-        generatedFiles: generatedPaths(
+  const renameOptions = [
+    `--find-renames=${thresholds.renameSimilarityPercent}%`,
+    `-l${RENAME_CANDIDATE_LIMIT}`,
+  ];
+  const { changes, isRenameDetectionSkipped, authoredCounts, pathAttributes } =
+    withIsolatedRepository(
+      repo,
+      environment,
+      (isolatedRepo, isolatedEnvironment) => {
+        const { entries: changes, isRenameDetectionSkipped } = diffEntries(
           isolatedRepo,
           base,
           head,
-          new Set(stats.map((entry) => entry[2])),
           isolatedEnvironment,
-        ),
-      };
-    },
-  );
+          renameOptions,
+        );
+        // formatting-only hunks drop out under ignore-all-space plus ignore-blank-lines
+        const { entries: authoredEntries } = diffEntries(
+          isolatedRepo,
+          base,
+          head,
+          isolatedEnvironment,
+          [...renameOptions, "--ignore-all-space", "--ignore-blank-lines"],
+        );
+        return {
+          changes,
+          isRenameDetectionSkipped,
+          authoredCounts: new Map(
+            authoredEntries.map((entry) => [entry.path, entry.lineCounts]),
+          ),
+          pathAttributes: committedAttributes(
+            isolatedRepo,
+            [base, head],
+            new Set(
+              changes.flatMap((entry) =>
+                entry.previousPath
+                  ? [entry.previousPath, entry.path]
+                  : [entry.path],
+              ),
+            ),
+            isolatedEnvironment,
+          ),
+        };
+      },
+    );
+
   let additions = 0;
   let deletions = 0;
-  const binaryFiles = new Set<string>();
-  for (const [added, deleted, path] of stats) {
-    if (generatedFiles.has(path)) continue;
-    if (added === "-" || deleted === "-") binaryFiles.add(path);
+  const buckets: Record<ExclusionBucket, string[]> = {
+    generated: [],
+    snapshot: [],
+    test: [],
+    vendored: [],
+  };
+  const binaryFiles: string[] = [];
+  for (const entry of changes) {
+    const bucket = exclusionBucket(entry, pathAttributes);
+    if (bucket) buckets[bucket].push(entry.path);
+    else if (!entry.lineCounts) binaryFiles.push(entry.path);
     else {
-      additions += Number.parseInt(added, 10);
-      deletions += Number.parseInt(deleted, 10);
+      const counts = authoredCounts.get(entry.path);
+      additions += counts?.additions ?? 0;
+      deletions += counts?.deletions ?? 0;
     }
   }
-  const netLoc = Math.abs(additions - deletions);
-  const limits = loadZoneLimits();
-  const zone = zoneFor(files.length, netLoc, limits);
+  const authoredLines = additions + deletions;
+  const hasLineBump = authoredLines > thresholds.lineBump.authoredLinesAbove;
   return {
     authored_additions: additions,
     authored_deletions: deletions,
+    authored_lines: authoredLines,
     base_oid: base,
-    binary_files: [...binaryFiles].sort(comparePythonStrings),
-    files_changed: files.length,
-    generated_files: [...generatedFiles].sort(comparePythonStrings),
+    binary_files: binaryFiles.sort(comparePythonStrings),
+    excluded_files: {
+      snapshot: buckets.snapshot.sort(comparePythonStrings),
+      test: buckets.test.sort(comparePythonStrings),
+      vendored: buckets.vendored.sort(comparePythonStrings),
+    },
+    generated_files: buckets.generated.sort(comparePythonStrings),
     head_oid: head,
-    net_loc: netLoc,
-    zone,
+    line_bump: hasLineBump,
+    renamed_files: changes
+      .filter((entry) => entry.previousPath !== null)
+      .map((entry) => ({ from: entry.previousPath, to: entry.path }))
+      .sort((left, right) => comparePythonStrings(left.to, right.to)),
+    rename_detection_skipped: isRenameDetectionSkipped,
+    ...zoneFields(inventory, hasLineBump, thresholds),
   };
 }
 
@@ -811,7 +1047,7 @@ function pythonJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(pythonJson).join(", ")}]`;
   if (value && typeof value === "object")
     return `{${Object.entries(value)
-      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .sort(([left], [right]) => comparePythonStrings(left, right))
       .map(([key, item]) => `${pythonString(key)}: ${pythonJson(item)}`)
       .join(", ")}}`;
   return typeof value === "string"
@@ -827,11 +1063,6 @@ function pythonString(value: string): string {
   );
 }
 
-const USAGE =
-  "usage: classify-pr-size.ts [-h] [--repo REPO] --base BASE --head HEAD";
-const CLASSIFIER_OPTIONS = ["--help", "--repo", "--base", "--head"];
-const ARGPARSE_NEGATIVE_NUMBER = /^-\p{Nd}+$|^-\p{Nd}*\.\p{Nd}+$/u;
-
 function isSeparatedArgumentValue(value: string): boolean {
   return (
     !value.startsWith("-") ||
@@ -840,33 +1071,35 @@ function isSeparatedArgumentValue(value: string): boolean {
   );
 }
 
-function classifierArgumentError(message: string): null {
+function classifierArgumentError(message: string): ArgumentExit {
   process.stderr.write(`${USAGE}\nclassify-pr-size.ts: error: ${message}\n`);
-  process.exitCode = 2;
-  return null;
+  return { exitCode: 2 };
 }
 
-function resolveClassifierOption(rawArgument: string): string | null {
+function showHelp(): ArgumentExit {
+  process.stdout.write(HELP);
+  return { exitCode: 0 };
+}
+
+function resolveClassifierOption(rawArgument: string): string | ArgumentExit {
   const name = rawArgument.split("=", 1)[0]!;
   const candidates = CLASSIFIER_OPTIONS.filter((option) =>
     option.startsWith(name),
   );
   if (candidates.includes(name)) return name;
-  if (candidates.length > 1) {
-    classifierArgumentError(
+  if (candidates.length > 1)
+    return classifierArgumentError(
       `ambiguous option: ${rawArgument} could match ${candidates.join(", ")}`,
     );
-    return null;
-  }
   return candidates[0] ?? rawArgument;
 }
 
-function parseArguments(
-  argv: string[],
-): { repo: string; base: string; head: string } | null {
+function parseArguments(argv: string[]): ClassifierArguments | ArgumentExit {
   let repo = process.cwd();
   let base: string | undefined;
   let head: string | undefined;
+  let units: number | undefined;
+  let riskClass: RiskClass | undefined;
   const unknown: string[] = [];
   for (let index = 0; index < argv.length; index += 1) {
     const rawArgument = argv[index]!;
@@ -876,42 +1109,49 @@ function parseArguments(
         return classifierArgumentError(
           `argument -h/--help: ignored explicit argument '${rawArgument.slice(3)}'`,
         );
-      process.stdout.write(
-        `${USAGE}\n\nclassify a Git diff using fixed PR-size zones\n\noptions:\n  -h, --help   show this help message and exit\n  --repo REPO\n  --base BASE\n  --head HEAD\n`,
-      );
-      return null;
+      return showHelp();
     }
     const argument = rawArgument.startsWith("--")
       ? resolveClassifierOption(rawArgument)
       : rawArgument;
-    if (argument === null) return null;
+    if (typeof argument !== "string") return argument;
     if (argument === "--help") {
       if (equals >= 0)
         return classifierArgumentError(
           `argument -h/--help: ignored explicit argument '${rawArgument.slice(equals + 1)}'`,
         );
-      process.stdout.write(
-        `${USAGE}\n\nclassify a Git diff using fixed PR-size zones\n\noptions:\n  -h, --help   show this help message and exit\n  --repo REPO\n  --base BASE\n  --head HEAD\n`,
-      );
-      return null;
+      return showHelp();
     }
-    if (["--repo", "--base", "--head"].includes(argument)) {
-      const inlineValue =
-        equals < 0 ? undefined : rawArgument.slice(equals + 1);
-      const value = inlineValue ?? argv[index + 1];
-      if (
-        value === undefined ||
-        (inlineValue === undefined && !isSeparatedArgumentValue(value))
-      ) {
+    if (!CLASSIFIER_OPTIONS.includes(argument)) {
+      unknown.push(rawArgument);
+      continue;
+    }
+    const inlineValue = equals < 0 ? undefined : rawArgument.slice(equals + 1);
+    const value = inlineValue ?? argv[index + 1];
+    if (
+      value === undefined ||
+      (inlineValue === undefined && !isSeparatedArgumentValue(value))
+    )
+      return classifierArgumentError(
+        `argument ${argument}: expected one argument`,
+      );
+    if (inlineValue === undefined) index += 1;
+    if (argument === "--repo") repo = value;
+    else if (argument === "--base") base = value;
+    else if (argument === "--head") head = value;
+    else if (argument === "--units") {
+      if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))
         return classifierArgumentError(
-          `argument ${argument}: expected one argument`,
+          `argument --units: invalid non-negative integer value: '${value}'`,
         );
-      }
-      if (argument === "--repo") repo = value;
-      if (argument === "--base") base = value;
-      if (argument === "--head") head = value;
-      if (inlineValue === undefined) index += 1;
-    } else unknown.push(rawArgument);
+      units = Number(value);
+    } else {
+      riskClass = RISK_CLASSES.find((candidate) => candidate === value);
+      if (!riskClass)
+        return classifierArgumentError(
+          `argument --risk: invalid choice: '${value}' (choose from ${RISK_CLASSES.map((candidate) => `'${candidate}'`).join(", ")})`,
+        );
+    }
   }
   const missing = [
     ["--base", base],
@@ -919,34 +1159,40 @@ function parseArguments(
   ]
     .filter(([, value]) => value === undefined)
     .map(([name]) => name);
-  if (missing.length) {
-    process.stderr.write(
-      `${USAGE}\nclassify-pr-size.ts: error: the following arguments are required: ${missing.join(", ")}\n`,
+  if (missing.length)
+    return classifierArgumentError(
+      `the following arguments are required: ${missing.join(", ")}`,
     );
-    process.exitCode = 2;
-    return null;
-  }
-  if (unknown.length) {
-    process.stderr.write(
-      `${USAGE}\nclassify-pr-size.ts: error: unrecognized arguments: ${unknown.join(" ")}\n`,
+  if (unknown.length)
+    return classifierArgumentError(
+      `unrecognized arguments: ${unknown.join(" ")}`,
     );
-    process.exitCode = 2;
-    return null;
-  }
-  return { repo, base: base!, head: head! };
+  if ((units === undefined) !== (riskClass === undefined))
+    return classifierArgumentError(
+      "arguments --units and --risk must be given together",
+    );
+  return {
+    repo,
+    base: base!,
+    head: head!,
+    inventory:
+      units === undefined || riskClass === undefined
+        ? null
+        : { riskClass, units },
+  };
 }
 
 /**
  * runs the command-line entry point and writes the classification as JSON
  * @param argv - command-line arguments with the executable path already removed
- * @returns 0 on success, and the usage-error or failure code otherwise
+ * @returns 0 on success or help, 2 on a usage error, and 1 on a classification failure
  */
 export function main(argv = process.argv.slice(2)): number {
-  const args = parseArguments(argv);
-  if (!args) return process.exitCode ?? 0;
+  const parsed = parseArguments(argv);
+  if ("exitCode" in parsed) return parsed.exitCode;
   try {
     process.stdout.write(
-      `${pythonJson(classify(resolve(args.repo), args.base, args.head))}\n`,
+      `${pythonJson(classify(resolve(parsed.repo), parsed.base, parsed.head, parsed.inventory))}\n`,
     );
     return 0;
   } catch (error) {
@@ -956,4 +1202,5 @@ export function main(argv = process.argv.slice(2)): number {
   }
 }
 
+/* v8 ignore next */
 if (import.meta.main) process.exitCode = main();
