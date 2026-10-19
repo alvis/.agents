@@ -16,6 +16,10 @@ Before any dispatch, record the risk, reviewer roles/count, specialist scopes, a
 
 Launch an initial holistic reviewer without inherited implementation context; retain that reviewer for evidence-driven follow-ups under `coding:directions/review-evidence.md`. An already assigned independent reviewer, including one running `specification:review-implementation`, performs this skill in the same session. Reviewers never redispatch or add specialists themselves; they return a bounded request to the main agent when additional expertise is needed. The main agent dispatches independent specialist scopes together, supplies their revision-bound evidence to the holistic reviewer, and waits for that reviewer to incorporate it before finalization. Specialists do not write canonical area reports; the holistic reviewer assigns each finding to its single owning area and preserves stable IDs.
 
+## Direction-review mode
+
+A `direction-review` draft under [staged delivery](../../../directions/staged-delivery.md#approve-the-direction) gets one independent reviewer and none of the seven area reports. Give that reviewer only the charter, the draft diff at its exact head, and the demo evidence; withhold implementation reasoning. The reviewer returns the direction verdict (approve, approve-with-major-rework, revise, or reject) with findings on direction, architecture, major misbehavior, and scope fit, plus an independent recount of logical change units and risk class. Style, lint, and coverage findings are out of scope until finalization. The main agent records the gate record, reruns the classifier with any raised recount, and never lowers the declared zone.
+
 ## Preparation and capsule
 
 The main-agent caller allocates one collision-safe OS temporary directory with a distinct `<area>.md` path per missing or affected selected area, all assigned to the holistic reviewer. Preserve valid selected-area reports without assigning another writer. Keep these files until the main agent has validated and persisted them under `reviews/`; then remove the temporary directory. A failed write or import blocks presentation.
