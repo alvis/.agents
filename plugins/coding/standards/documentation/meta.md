@@ -16,7 +16,7 @@ This standard enforces requirements beyond common documentation practices:
 |-----------------------------------|-------------------------------------------------------------|
 | Comments may restate code         | **Comments must explain intent, constraints, or rationale** |
 | Flexible casing in comments       | **Lowercase sentence style by default**                     |
-| TODO/FIXME can linger             | **Temporary tags must not be committed**                    |
+| TODO/FIXME can linger             | **Temporary tags must not be committed; only `TODO(draft):` on a `direction-review` draft or its unfinalized layers, removed before ready** |
 | JSDoc formatting varies by author | **Canonical sentence style and structure required**         |
 | Callee errors repeated in API docs | **Only directly raised errors belong in the owner’s error documentation** |
 | Prose repeats current implementation counts | **Exact numbers must be essential and expected to remain stable** |

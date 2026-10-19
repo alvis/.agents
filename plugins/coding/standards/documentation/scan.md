@@ -19,7 +19,7 @@ For TypeScript error documentation, `DOC-CONT-06` has advisory AST support in `c
 - DO NOT use one-line JSDoc on functions with params or non-void return, or block comments (`/* */`) for section headers, such as `/** one line */ fn(a)` or `/* USER */` [`DOC-FORM-02`]
 - DO NOT write JSDoc prose (function summary, `@returns`, `@throws`, `@example` description, or free `* …` lines) with uppercase first letter or trailing period; must use lowercase third-person verb (`/** validates input */` not `/** Validate input. */`); exception: first word is a code/type/acronym reference [`DOC-FORM-03`]
 - DO NOT capitalize `@param` descriptions unless the first word is a type/interface/acronym reference, such as `@param userId unique identifier` not `@param userId User Identifier` [`DOC-FORM-04`]
-- DO NOT commit temporary tags [`DOC-LIFE-01`]
+- DO NOT commit temporary tags; the only exception is `TODO(draft): <finalization task>` on a `direction-review` draft or its unfinalized layers, and none may remain once a PR is ready [`DOC-LIFE-01`](rules/doc-life-01.md)
 - DO NOT leave review-only markers in merged code [`DOC-LIFE-02`]
 - DO NOT use persistent tags inconsistently [`DOC-LIFE-03`]
 - DO NOT leave comments that drift from implementation [`DOC-LIFE-04`]
@@ -42,7 +42,7 @@ For TypeScript error documentation, `DOC-CONT-06` has advisory AST support in `c
 | `DOC-FORM-02` | One-line JSDoc on function with params/return, or block comment used for section header | `/** one line */ fn(a)`; `/* USER */` |
 | `DOC-FORM-03` | JSDoc prose (summary, `@returns`, `@throws`, `@example`, free `*` lines) uses uppercase or trailing period instead of lowercase third-person verb (exception: first word is a code/type/acronym reference) | `/** Validate token. */`; `/** validate email format */`; `* @returns The user object.`; `* @throws Error if input is invalid.` |
 | `DOC-FORM-04` | `@param` description capitalized without type/interface/acronym justification | `@param userId User Identifier`; `@param userId The unique identifier` |
-| `DOC-LIFE-01` | Temporary tags committed | `// TODO: fix this later` |
+| `DOC-LIFE-01` | Temporary tags committed, or `TODO(draft)` outside a direction-review draft and its unfinalized layers | `// TODO: fix this later`; `// TODO(draft): reject expired coupons` in a ready PR |
 | `DOC-LIFE-02` | Review-only marker left in code | `// REVIEW: revisit this` |
 | `DOC-LIFE-03` | Persistent tags used inconsistently | `// NOTE NOTE NOTE` |
 | `DOC-LIFE-04` | Comment drifted from implementation | `// returns age` on a function that returns `user.name`; `/** returns user count */ function getActiveUsers(): User[]` |

@@ -17,9 +17,9 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT assert log output via scattered `toHaveBeenCalledWith(...)` or count-only checks; capture the logger as `vi.fn<LogFn>()` / `satisfies Partial<Logger>` and assert the full call sequence with `expect(log.mock.calls).toEqual([...])` [`TST-CORE-09`]
 - DO NOT pin incidental warning, log, error, or other output wording without an explicit supported contract; assert supported behavior under [TST-CORE-10](rules/tst-core-10.md). DO NOT pin static declaration inventories or checked-in repository content: exact type/interface members, generic parameters or defaults, function signatures or overload sets, export or symbol inventories, schema declaration inventories, barrel/re-export layout, file existence or content, committed snapshots, or parity between checked-in files. `TST-CORE-10` is the sole whitelist for compiler-observable type-test subjects; a declaration's existence alone never requires a test [`TST-CORE-10`]
 - DO NOT silently skip tests on missing env/config; `describe.runIf(...)`, `it.skipIf(process.env.X)`, or `if (!env.X) return` at suite/test level are forbidden — gate with a file-level `throw` so missing config hard-fails [`TST-CORE-11`]
-- DO NOT merge with statements, branches, functions, or lines below 100%, or without at least one behavioral test for each exported runtime function [`TST-COVR-01`]
+- DO NOT mark ready or merge with statements, branches, functions, or lines below 100%, or without at least one behavioral test for each exported runtime function; only an unapproved `direction-review` draft is exempt, and `/* v8 ignore file */` is valid only on barrel, type-only, and logic-free route-composition files [`TST-COVR-01`](rules/tst-covr-01.md)
 - DO NOT leave critical branch paths untested [`TST-COVR-02`]
-- DO NOT batch multiple tests before checking coverage [`TST-COVR-03`]
+- DO NOT write tests for more than one behavior group before rerunning coverage [`TST-COVR-03`](rules/tst-covr-03.md)
 - DO NOT keep zero-coverage-gain tests unless they exercise a different behavior path, distinct supported behavior, or meaningful edge case [`TST-COVR-04`](rules/tst-covr-04.md)
 - DO NOT use mutable shared fixtures [`TST-DATA-01`]
 - DO NOT assert object/array fields one-by-one [`TST-DATA-02`]
@@ -65,9 +65,9 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `TST-CORE-09` | Log output asserted with scattered calls / count-only / untyped mock | `expect(log).toHaveBeenCalledWith('x')` + `expect(log).toHaveBeenCalledTimes(2)`; `const log = vi.fn()` without generic |
 | `TST-CORE-10` | Test pins incidental output wording, an exact declaration inventory/layout, or checked-in content | `expectTypeOf<Api>().toEqualTypeOf<{ id: string; run(): void }>()` mirroring `Api`; `expect(Object.keys(exports)).toEqual([...])`; `expect(readFileSync(repoFile, 'utf8')).toContain('literal')` |
 | `TST-CORE-11` | Test silently skips on missing env/config | `describe.runIf(process.env.TEST_DATABASE_URL)("fn:fetchUser", ...)`; `it.skipIf(!process.env.TEST_DATABASE_URL)("should ...", ...)`; `if (!process.env.TEST_DATABASE_URL) return` inside `describe("fn:fetchUser", ...)` |
-| `TST-COVR-01` | Statements, branches, functions, or lines are below 100%, or an exported runtime function lacks a behavioral test | `branches: 98 // required: 100`; exported `parse()` has no behavior assertion |
+| `TST-COVR-01` | Statements, branches, functions, or lines are below 100% outside an unapproved `direction-review` draft, an exported runtime function lacks a behavioral test, or an ignore marker excludes logic | `branches: 98 // required: 100`; exported `parse()` has no behavior assertion; `/* v8 ignore file */` on a `page.tsx` that fetches data |
 | `TST-COVR-02` | Critical branch path is untested | `if (err) throw err // untested` |
-| `TST-COVR-03` | Multiple tests written before coverage check | `it.each(cases)(...)` |
+| `TST-COVR-03` | Tests for several behavior groups written before a coverage rerun | `describe("fn:parse")`, `describe("fn:format")`, and `describe("fn:validate")` written, then one coverage run |
 | `TST-COVR-04` | Zero-coverage-gain test without a different behavior path, distinct supported behavior, or meaningful edge case is kept | `coverageDelta === 0 // duplicate behavior` |
 | `TST-DATA-01` | Shared fixture is mutable | `let user = { id: "u1" }`; `let service: UserService;` |
 | `TST-DATA-02` | Object/array assertion is field-by-field | `expect(result.id).toBe("1")`; `expect(result.mime).toBe('application/octet-stream');` |
