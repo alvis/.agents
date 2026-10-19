@@ -30,7 +30,8 @@ Select every row matching the artifact, read its scans before editing, and apply
 | Light, dark, and system color modes | [CSS](../standards/css/scan.md), [Design](../standards/design/scan.md), and [Theming](../standards/theming/scan.md) |
 | Brand and token theming | [Theming](../standards/theming/scan.md) plus [CSS](../standards/css/scan.md) and [Design](../standards/design/scan.md) |
 | Color-mode or brand token names and scope identifiers | `coding:standards/naming/scan.md` |
-| Frontend implementation | `coding:standards/universal/scan.md`, `coding:standards/function/scan.md`, `coding:standards/typescript/scan.md`, `coding:standards/naming/scan.md`, `coding:standards/testing/scan.md`, and `coding:standards/documentation/scan.md` |
+| Page, route, component, and end-to-end testing | [Testing](../standards/testing/scan.md) plus `coding:standards/testing/scan.md` |
+| Frontend implementation | [Testing](../standards/testing/scan.md), `coding:standards/universal/scan.md`, `coding:standards/function/scan.md`, `coding:standards/typescript/scan.md`, `coding:standards/naming/scan.md`, `coding:standards/testing/scan.md`, and `coding:standards/documentation/scan.md` |
 | Files and project setup | `coding:standards/file-structure/scan.md` |
 | Review | `coding:standards/code-review/scan.md` plus the Web scans above |
 | Rendered PR messages and implementation-diff size or composition | `coding:standards/git/scan.md` |

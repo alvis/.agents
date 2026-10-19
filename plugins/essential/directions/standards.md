@@ -10,7 +10,7 @@ Use the Standards table in each relevant plugin workflow and take every row whos
 | --- | --- |
 | `coding:directions/WORKFLOW.md` | Implementation, tests, commits, pull requests, documentation, files |
 | `react:directions/WORKFLOW.md` | Components, hooks, project structure, stories, accessibility |
-| `web:directions/WORKFLOW.md` | Visual design, color modes, brand theming |
+| `web:directions/WORKFLOW.md` | Visual design, color modes, brand theming, page/component/end-to-end testing layers |
 | `governance:directions/WORKFLOW.md` | Authored agents, skills, standards, and delegated execution |
 
 Those rows together are the whole selection. A `meta.md` dependency list explains relationships; it never adds a standard. Select only the owning plugin and its declared dependencies. A cross-standard requirement belongs in the applicable workflow row, or as a specific trigger in an already-selected scan with a canonical link to its rule guide. A link does not authorize loading an undeclared plugin; such a dependency must be resolved by the owning plugin before the standard can claim that check.
