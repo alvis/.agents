@@ -4,7 +4,7 @@ Protocol: `essential:directions/standards.md`.
 
 ## Key Principles
 
-- 100% statements, branches, functions, and lines before ready or merge (an unapproved `direction-review` draft is exempt); at least one behavioral test per exported runtime function; retain behavioral coverage and distinct supported behavior/edge cases under [TST-CORE-04](rules/tst-core-04.md)
+- 100% statements, branches, functions, and lines before ready or merge (an unapproved `direction-review` draft is exempt); at least one behavioral test per non-static-data exported runtime function; retain behavioral coverage and distinct supported behavior/edge cases under [TST-CORE-04](rules/tst-core-04.md)
 - A performance-only improvement may use a one-off local before/after measurement when existing tests cover its behavior and the change introduces no new behavior path or meaningful edge case
 - For new supported behavior, write a failing test -> implement -> refactor; for already-correct behavior, prove an initially passing oracle's sensitivity through a temporary mutation or equivalent controlled proof, restore the implementation, and rerun green before retaining it
 - Test descriptions: `it("should ...")`, runtime-symbol or allowed-type-subject suites: `describe("fn:symbol")` / `describe("ty:symbol")`, general suites: plain description
@@ -12,7 +12,9 @@ Protocol: `essential:directions/standards.md`.
 - Happy-path defaults inline: `vi.fn(() => value)`, never `.mockResolvedValue()`
 - No `beforeEach` for mock setup — only for non-Vitest mock history resets (`client.resetHistory()`) or registering `ctx.onTestFailed(...)` debug-dump hooks
 - Log-observable behavior: capture logger as typed `vi.fn<LogFn>()` and assert `log.mock.calls` structurally
-- Test observable runtime behavior; compiler-observable type tests are limited to the subjects permitted by `TST-CORE-10`; never mirror declaration or signature inventories or checked-in content
+- Test observable runtime behavior; compiler-observable type tests are limited to [TST-CORE-10](rules/tst-core-10.md)
+- Test consumers instead of export contracts or static data under [TST-CORE-12](rules/tst-core-12.md), and executed consumer/generator behavior instead of checked-in content under [TST-CORE-13](rules/tst-core-13.md)
+- Match incidental wording asymmetrically; exact wording requires an explicit supported contract under [TST-CORE-14](rules/tst-core-14.md)
 - `const` for shared fixtures; file-level instances by default
 - Structural assertions (`toEqual`), not field-by-field
 - No silent skips: missing env/config must hard-fail at file load (`throw`), never `runIf`/`skipIf`/conditional-return
@@ -64,13 +66,16 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-CORE-06**: Do not test only that dependencies were called. Assert behavior and outcome.
 - **TST-CORE-07**: Do not spy on internals when external behavior can be tested.
 - **TST-CORE-08**: Avoid `await import(...)` in tests. Keep imports static and predictable.
-- **TST-CORE-09**: For log-observable behavior, capture the logger as `vi.fn<LogFn>()` or `{ info: vi.fn<Logger['info']>() } satisfies Partial<Logger>` and assert the full call record with `expect(log.mock.calls).toEqual([...])` — the array asserts the complete sequence and supported argument structure (one call `[[...]]` or many); match incidental wording asymmetrically under `TST-CORE-10`. Do not use `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs, count-only assertions, or `log.mock.calls[N]` indexing. Prefer the SUT's exported `Log` type; a local alias is acceptable only when no real type is exported.
-- **TST-CORE-10**: Assert supported output effects and structure; exact wording requires an explicit supported contract. Never pin an exact declaration inventory/layout, including generic parameters, defaults, or signatures, or checked-in content. This rule is the sole whitelist for compiler-observable type-test subjects; a focused representative compiler case may observe a generic parameter's default only when the consumer omits that type argument, while ordinary declarations need no test merely because they exist, so use type diagnostics and affected-consumer builds for other declaration changes.
+- **TST-CORE-09**: For log-observable behavior, capture the logger as `vi.fn<LogFn>()` or `{ info: vi.fn<Logger['info']>() } satisfies Partial<Logger>` and assert the full call record with `expect(log.mock.calls).toEqual([...])` — the array asserts the complete sequence and supported argument structure (one call `[[...]]` or many); match incidental wording asymmetrically under `TST-CORE-14`. Do not use `toHaveBeenCalledTimes(...)` + scattered `toHaveBeenCalledWith(...)` pairs, count-only assertions, or `log.mock.calls[N]` indexing. Prefer the SUT's exported `Log` type; a local alias is acceptable only when no real type is exported.
+- **TST-CORE-10**: Use only the compiler-observable type-test whitelist in [the rule](rules/tst-core-10.md); never mirror type/interface members, generic parameters/defaults, signatures/overloads, or schema fields. Ordinary declarations need no test merely because they exist; use diagnostics and affected-consumer builds.
 - **TST-CORE-11**: Tests must run or hard-fail. Never gate with `describe.runIf`/`it.skipIf`/`if (!env.X) return`. Required env vars are validated at file load with `throw new Error(...)` so missing config breaks the suite loudly.
+- **TST-CORE-12**: Test consumer behavior instead of export contracts, exported static data, or static-data function return values; [the rule](rules/tst-core-12.md) owns allowed boundaries.
+- **TST-CORE-13**: Supply checked-in artifacts to executed consumers/generators and assert resulting behavior or fresh generated structure; never assert the artifacts' existence, layout, inventories, content, parity, or systematic properties under [the rule](rules/tst-core-13.md).
+- **TST-CORE-14**: Assert supported output effects and structure; pin exact wording only for an explicit supported contract under [the rule](rules/tst-core-14.md).
 
 ### Coverage (TST-COVR)
 
-- **TST-COVR-01**: 100% statements, branches, functions, and lines required before ready or merge (excluding barrel, type-only, and logic-free route-composition files), plus at least one behavioral test per exported runtime function; an unapproved `direction-review` draft is exempt under [the rule](rules/tst-covr-01.md).
+- **TST-COVR-01**: 100% statements, branches, functions, and lines required before ready or merge (excluding barrel, type-only, logic-free route-composition, and logic-free static-data files), plus at least one behavioral test per non-static-data exported runtime function; an unapproved `direction-review` draft is exempt under [the rule](rules/tst-covr-01.md).
 - **TST-COVR-02**: Critical failure, fallback, and validation branches require full coverage.
 - **TST-COVR-03**: Behavior-group workflow: write one behavior group's tests, rerun coverage, keep or delete each test, then start the next group under [the rule](rules/tst-covr-03.md).
 - **TST-COVR-04**: Remove zero-coverage-gain tests without a different behavior path, distinct supported behavior, or meaningful edge case.
@@ -83,7 +88,7 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-DATA-04**: Do not pass explicit `undefined` in override objects. Omit the field or argument.
 - **TST-DATA-05**: Create instances at file/describe level by default. Per-test only when tests mutate state.
 - **TST-DATA-06**: Compare structural values with `toEqual`; reserve `toBe` for primitives or deliberate referential identity under [the rule](rules/tst-data-06.md).
-- **TST-DATA-07**: Match incidental message wording asymmetrically under `TST-CORE-10`; assert errors as a whole — `expect(error).toEqual(new Error('msg'))`. Never split into `toBeInstanceOf` + a separate `.message`/`.cause` check (`toEqual` ignores `cause`).
+- **TST-DATA-07**: Match incidental message wording asymmetrically under `TST-CORE-14`; assert errors as a whole — `expect(error).toEqual(new Error('msg'))`. Never split into `toBeInstanceOf` + a separate `.message`/`.cause` check (`toEqual` ignores `cause`).
 
 ### Mocks (TST-MOCK)
 
@@ -150,7 +155,7 @@ Pick the form by *what you assert*, not by call count:
 1. Write one behavior group's tests -> rerun coverage -> attribute the delta to the group
 2. For already-correct behavior, prove the initially passing case detects the named regression through a temporary implementation mutation or equivalent controlled proof; restore the implementation and rerun green
 3. Apply `TST-CORE-04`: keep tests for different behavior paths, distinct supported behavior, or meaningful edge cases, subject to `TST-CORE-02`; delete unnecessary tests
-4. Repeat until statements, branches, functions, and lines all reach 100% and each exported runtime function has at least one behavioral test; mark barrel, type-only, and logic-free route-composition files with `/* v8 ignore file */` instead of testing them
+4. Repeat until statements, branches, functions, and lines all reach 100% and each non-static-data exported runtime function has at least one behavioral test; mark barrel, type-only, logic-free route-composition, and logic-free static-data files with `/* v8 ignore file */` instead of testing them
 
 ## Quick Reference
 
@@ -168,8 +173,8 @@ Patterns derive from [`TST-STRU-01`].
 ## Anti-Patterns
 
 - Repeating nearly identical tests to inflate coverage numbers.
-- Asserting a checked-in file's existence, absence, layout, inventory, bytes, literals, or parity, including through a snapshot or golden-output mirror.
-- Using exact-type, signature, export, schema-field, or barrel assertions to mirror a static declaration inventory.
+- Asserting a checked-in file's existence, absence, layout, inventory, bytes, literals, or parity, including through a snapshot or golden-output mirror (`TST-CORE-13`).
+- Using exact-type, signature, or schema-field assertions to mirror a declaration inventory (`TST-CORE-10`), or export/static-data assertions (`TST-CORE-12`).
 - Mocking internal pure functions instead of testing outcomes.
 - Reassigning shared test data with `let` in suites.
 - Building large fake interfaces that diverge from real contracts.
@@ -180,7 +185,7 @@ Patterns derive from [`TST-STRU-01`].
 
 ## Quick Decision Tree
 
-1. Does the test add behavioral coverage, protect distinct supported behavior, or exercise a meaningful edge case? If none, remove the proposed/existing test and orphaned helpers; keep one-time proof in validation notes (`TST-CORE-04`). Exact output wording requires an explicit supported contract (`TST-CORE-10`).
+1. Does the test add behavioral coverage, protect distinct supported behavior, or exercise a meaningful edge case? If none, remove the proposed/existing test and orphaned helpers; keep one-time proof in validation notes (`TST-CORE-04`). Exact output wording requires an explicit supported contract (`TST-CORE-14`).
 2. Are you testing only call-through behavior? Assert business outcome instead (`TST-CORE-06`).
 3. Need a mock? Only if dependency is IO/external/control-sensitive (`TST-MOCK-01`).
 4. Need hoisted mocks? Use only for call spying or error-path overrides (`TST-MOCK-02`).
@@ -188,4 +193,4 @@ Patterns derive from [`TST-STRU-01`].
 6. Adding a permanent test now? For new supported behavior or a diagnosed failure, confirm red first. For already-correct behavior, record sensitivity proof, restore the implementation, and rerun green before retaining the case; test value under `TST-CORE-04` does not replace `TST-CORE-02` (`TST-COVR-03`, `TST-COVR-04`).
 7. Structuring a test file? Enforce naming, canonical layout, and AAA spacing (`TST-STRU-01`, `TST-STRU-02`, `TST-STRU-03`).
 8. Needs an env var? Validate at file top with `throw`; never `runIf`/`skipIf` (`TST-CORE-11`).
-9. Does a type assertion protect a compiler-observable behavior permitted by `TST-CORE-10`? Keep it. Otherwise use diagnostics and consumer builds; declaration/signature inventories, layout, and checked-in content remain forbidden.
+9. Does a type assertion protect a compiler-observable behavior permitted by `TST-CORE-10`? Keep it. Otherwise use diagnostics and consumer builds; export/static-data tests (`TST-CORE-12`) and checked-in-content tests (`TST-CORE-13`) remain forbidden.

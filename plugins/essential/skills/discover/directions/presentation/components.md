@@ -509,4 +509,4 @@ Every refusal names the problem *and* the JSON path it is at, so an author never
 | the `variants` block | `scripts/render-page/types/block.ts` |
 | the run set | `scripts/render-page/types/set.ts` |
 
-`scripts/render-page/block.ts` is the dispatcher every entry above answers to. Nothing checks the two against each other: a test comparing this file to that one would assert agreement between two checked-in artifacts, which `TST-CORE-10` forbids. Adding a block type therefore means adding its entry here in the same change.
+`scripts/render-page/block.ts` is the dispatcher every entry above answers to. Nothing checks the two against each other: a test comparing this file to that one would assert agreement between two checked-in artifacts, which `TST-CORE-13` forbids. Adding a block type therefore means adding its entry here in the same change.

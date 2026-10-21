@@ -18,7 +18,7 @@ export const logo = "███ EXAMPLE";
 // ✅ GOOD: delete the unreferenced symbol entirely
 ```
 
-If shape correctness of a *live* constant matters, encode it at compile time next to the constant (`satisfies`, `as const`) — see `TST-CORE-10`. If the symbol has a consumer it is not dead; keep it and test the consumer.
+If shape correctness of a *live* constant matters, encode it at compile time next to the constant (`satisfies`, `as const`) — see `TST-CORE-12`. If the symbol has a consumer it is not dead; keep it and test the consumer.
 
 ## Detection
 
@@ -48,4 +48,4 @@ A misconfigured fallow run false-positives — most often test code flagged as d
 
 ## Related
 
-GEN-DESN-01, GEN-DESN-02, GEN-DESN-03, FUNC-ARCH-03, DOC-CONT-03, TST-CORE-10
+GEN-DESN-01, GEN-DESN-02, GEN-DESN-03, FUNC-ARCH-03, DOC-CONT-03, TST-CORE-12
