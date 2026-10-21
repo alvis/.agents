@@ -20,7 +20,10 @@ This standard enforces requirements beyond typical Vitest practices:
 | Broad test sets encouraged            | **Retain behavioral coverage or distinct supported behavior/edge cases; remove one-time proof with neither (`TST-CORE-04`)** |
 | Initially passing regression cases accepted on assertion strength | **Already-correct behavior requires sensitivity proof and restored green evidence under `TST-CORE-02`** |
 | Declaration inventories pinned in tests | **Only compiler-observable behavior permitted by `TST-CORE-10`; diagnostics and consumer builds cover ordinary declarations** |
-| Coverage thresholds tuned per project | **100% statements, branches, functions, and lines before ready or merge, with at least one behavioral test per exported runtime function; only an unapproved `direction-review` draft is exempt (`TST-COVR-01`)** |
+| Export contracts and static data pinned in tests | **Delete export/static-data tests and test consumers instead ([TST-CORE-12](rules/tst-core-12.md))** |
+| Checked-in artifacts verified by tests | **Assert executed consumer/generator behavior instead of repository content ([TST-CORE-13](rules/tst-core-13.md))** |
+| Output wording pinned for regression detection | **Exact wording requires an explicit supported contract ([TST-CORE-14](rules/tst-core-14.md))** |
+| Coverage thresholds tuned per project | **100% statements, branches, functions, and lines before ready or merge, with at least one behavioral test per non-static-data exported runtime function; only an unapproved `direction-review` draft is exempt (`TST-COVR-01`)** |
 | Hoisted mocks used broadly            | **`vi.hoisted` only for spy/error scenarios**  |
 | Mock typing treated as optional       | **`satisfies`-based mock typing is mandatory** |
 | Per-test setup as default             | **File/describe instances by default**         |

@@ -7,7 +7,7 @@
 Default to `toEqual` for value equality. Reach for `toBe` only when:
 
 - the asserted value is a **primitive** (`string`, `number`, `boolean`, `bigint`, `symbol`, `null`, `undefined`); or
-- the test is **deliberately** asserting referential identity — e.g. a cache returns the same instance, or a barrel re-exports the same symbol (see `TST-CORE-10`).
+- the test is **deliberately** asserting referential identity — e.g. a cache returns the same instance.
 
 ## Fix
 
@@ -52,9 +52,9 @@ Pick the matcher based on what is being asserted:
 
 - **`toStrictEqual`** is permitted (and preferred over `toEqual`) when the test must distinguish a class instance from a plain object, or detect a missing/extra `undefined` field, or differentiate `[1, , 3]` from `[1, undefined, 3]`.
 - **Primitive `toBe`** — `expect(x).toBe(0)`, `expect(x).toBe(true)`, `expect(x).toBe(null)`, `expect(x).toBe(undefined)` remain correct and are not flagged.
-- **Barrel-identity assertions** — `expect(barrel.UserService).toBe(UserService)` is governed by `TST-CORE-10` (which forbids the whole assertion as low-value), not by this rule.
+- **Barrel-identity assertions** — `expect(barrel.UserService).toBe(UserService)` is governed by `TST-CORE-12` (which forbids the whole assertion as low-value), not by this rule.
 - **Intentional identity checks** — when the contract under test *is* "returns the same reference" (e.g. memoization, interning, singleton), `toBe` is the correct matcher; document the intent inline if it would otherwise read as a structural compare.
 
 ## Related
 
-TST-DATA-02, TST-CORE-09, TST-CORE-10
+TST-DATA-02, TST-CORE-09, TST-CORE-12

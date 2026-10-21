@@ -55,7 +55,7 @@ flowchart LR
     Decision -->|No| Dismissed[Candidate dismissed]
 ```
 
-Candidate generation and violation decisions are deliberately separate. A scanner may trade precision for recall when its label and rule guide make the review requirement explicit. For example, the `TST-CORE-10` scanner flags static file reads in test files because they often precede assertions over checked-in prose; reading a generated output file can be valid and must be dismissed after review.
+Candidate generation and violation decisions are deliberately separate. A scanner may trade precision for recall when its label and rule guide make the review requirement explicit. For example, the `TST-CORE-13` scanner flags static file reads in test files because they often precede assertions over checked-in prose; reading a generated output file can be valid and must be dismissed after review.
 
 ### Invocation lifecycle
 
@@ -90,7 +90,7 @@ export const RULE: Rule = {
   scan,
   order: 100,
   appliesTo: candidateFiles,
-  ruleRefs: ["TST-CORE-10"],
+  ruleRefs: ["TST-CORE-13"],
 };
 ```
 

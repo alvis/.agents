@@ -207,10 +207,10 @@ function candidateFiles(path: string, context: ApplicabilityContext): boolean {
 /** Flags static file reads inside tests as review candidates only. */
 export const RULE: Rule = {
   id: "test-static-file-read",
-  label: "Static file read in test — review candidate only (TST-CORE-10)",
+  label: "Static file read in test — review candidate only (TST-CORE-13)",
   order: 100,
   appliesTo: candidateFiles,
-  ruleRefs: ["TST-CORE-10"],
+  ruleRefs: ["TST-CORE-13"],
   scan: ({ path, lines, matches }) => {
     const suffix = extname(path).toLowerCase();
     const codeLines =
