@@ -5,7 +5,7 @@ This is the coding plugin's canonical source for how to run Jujutsu (`jj`). [His
 Read through the situation guide for shared setup and safety, then read only the recipe selected there. Reuse the guide within the task; its state checks still run at each operation that requires them.
 
 <IMPORTANT>
-Never rewrite published or merged history — squashing, rebasing, abandoning, or describing a change that has already been pushed or landed. Correct it with a new change unless explicit authority permits rewriting shared history. This applies to every operation below, not only the merged-work row of the situation guide.
+Never rewrite shared or merged history — squashing, rebasing, abandoning, or describing a change that has landed or that another author's work builds on. Correct it with a new change unless explicit authority permits rewriting shared history. Your own unmerged PR heads that no other author builds on are not shared history: `coding:commit` authorizes folding fixes into their owning change even after a push. This applies to every operation below, not only the merged-work row of the situation guide.
 
 Never use `--all` for routine publication. Push all and only the bookmarks selected by the PR workflow, then verify every remote head and PR base. After every rewrite, verify the stack is linear, conflict-free, and self-contained; run [applicable affected gates](validation.md#classify-documentation-only-changes) before publication.
 </IMPORTANT>
@@ -144,10 +144,10 @@ Higher-level workflows own the revision set, execution order, failure attributio
 
 ## Fix a review bug in a stack
 
-When review finds a bug in a stack whose rewrite is authorized, repair the earliest mutable change that owns the faulty artifact. Unmerged does not mean unpublished: without authority to rewrite every affected published revision, create a corrective change instead.
+When review finds a bug in a stack whose rewrite is authorized, repair the earliest mutable change that owns the faulty artifact. Your own unmerged PR revisions carry that authority under `coding:commit`; a pushed revision that another author's work builds on does not, so create a corrective change for it instead.
 
 1. Resolve and inspect the owning change and its descendants. Record the current stack-tip change ID before switching revisions.
-2. Confirm it is mutable and not merged into the destination. Check the owning change and every descendant that will be rebased for publication; require explicit rewrite authority for each published revision before continuing.
+2. Confirm it is mutable and not merged into the destination. Check the owning change and every descendant that will be rebased for publication; require rewrite authority, as defined above, for each pushed revision before continuing.
 3. Capture the current operation ID.
 4. Run `jj edit <owning-change>`.
 5. Apply the bug fix and run the focused validation while `@` is that change.
