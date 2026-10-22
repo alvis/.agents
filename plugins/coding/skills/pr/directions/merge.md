@@ -6,7 +6,7 @@ Load [stacked-prs.md](stacked-prs.md) first for the shared stack contract and jj
 
 ## Boundaries
 
-- Use for: `/coding:pr merge 12 13 14`, "merge this stack of PRs", or any request to merge dependent GitHub PRs while automatically rebasing downstream PR branches.
+- Use for: `/coding:pr merge 12 13 14`, "merge this stack of PRs", or any request to merge dependent GitHub PRs while automatically rebasing downstream PR branches, and the automatic merges [landing.md](landing.md) authorizes by zone, which take the place of the user's merge instruction and always use `--method=squash`.
 - Do not use for: creating PRs (`coding:commit --create-pr` + `coding:pr create`), saving local changes (`coding:commit`), writing code fixes (`coding:fix`), or validating unpushed commits before opening PRs (`coding:finalize-commits`).
 
 ## Inputs
