@@ -4,7 +4,7 @@
 
 Do not commit temporary drafting tags (`TODO`, `FIXME`, `DEBUG`, `TEMP`, `QUESTION`, `IDEA`, `INTENT`) outside the carve-out below. Move unfinished work context to issues/tasks before merge.
 
-One carve-out exists: a [staged-delivery](../../../directions/staged-delivery.md) draft may commit `TODO(draft): <explicit finalization work>` markers. They are allowed only on a PR labelled `direction-review` and on the unfinalized stack layers peeled from it, so a draft can show direction without finishing every edge. Finalization removes every `TODO(draft):` marker before a layer is ready for review; a ready or merged PR carries none. The carve-out covers only that exact form — a bare `TODO`, any other temporary tag, or a `TODO(draft)` without a stated finalization task remains a violation everywhere.
+One carve-out exists: a [staged-delivery](../../../directions/staged-delivery.md) draft may commit `TODO(draft): <explicit finalization work>` markers. They are allowed only on a draft PR whose head is a `wip/<work-id>` branch and on the unfinalized stack layers peeled from it, so a draft can show direction without finishing every edge. Finalization removes every `TODO(draft):` marker before a layer is ready for review; a ready or merged PR carries none. The carve-out covers only that exact form — a bare `TODO`, any other temporary tag, or a `TODO(draft)` without a stated finalization task remains a violation everywhere.
 
 ## Fix
 

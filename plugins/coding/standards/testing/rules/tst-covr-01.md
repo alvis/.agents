@@ -4,7 +4,7 @@
 
 Statements, branches, functions, and lines must each reach 100% for target code before a PR is ready for review or merges, excluding approved ignore-file exceptions (barrel, type-only, logic-free route-composition, and logic-free static-data files). Each exported runtime function except a static-data function under [TST-CORE-12](tst-core-12.md) must also have at least one permanent test that asserts its observable behavior, giving each public runtime entry point an explicit oracle even when incidental execution reaches 100% coverage. An existing consumer test counts when it explicitly exercises the function and asserts its observable effect; re-exports do not create another function or require another test. This minimum does not justify a duplicate test under `TST-CORE-04`; remove a no-value exported wrapper rather than manufacturing a call-only test for it.
 
-The threshold applies at every stage except one: an unapproved direction-review draft. A draft PR labelled `direction-review` that has not yet received direction approval carries the draft evidence floor of [staged delivery](../../../directions/staged-delivery.md#build-the-draft) instead of a coverage threshold. From direction approval onward, every layer peeled from that draft and the finalized top layer must reach 100% before it is ready; approval never carries a coverage gap forward.
+The threshold applies at every stage except one: an unapproved direction-review draft. A draft PR whose head is a `wip/<work-id>` branch and that has not yet received direction approval carries the draft evidence floor of [staged delivery](../../../directions/staged-delivery.md#build-the-draft) instead of a coverage threshold. From direction approval onward, every layer peeled from that draft and the finalized top layer must reach 100% before it is ready; approval never carries a coverage gap forward.
 
 ## Fix
 
@@ -57,7 +57,7 @@ For the behavior-group coverage workflow, see `TST-COVR-03`.
 - Barrel files are ignore-marked with `/* v8 ignore file */`; do not write re-export tests to chase their coverage.
 - Pure type files are excluded from runtime coverage. A focused compile-time test remains valid only for a compiler-observable behavior permitted by `TST-CORE-10`; exact declaration shape stays with type diagnostics and affected-consumer builds.
 - `/* v8 ignore file */` on a route file that fetches data, branches, or holds state is a violation, not an exclusion.
-- The `direction-review` exemption ends at direction approval. The approved draft is closed once peeled to zero residual diff and never merges; a PR that only carries the label without being that unapproved draft is not exempt.
+- The `direction-review` exemption ends at direction approval. The approved draft is closed once peeled to zero residual diff and never merges; a PR that only uses a `wip/` branch without being that unapproved draft is not exempt.
 
 ## Related
 
