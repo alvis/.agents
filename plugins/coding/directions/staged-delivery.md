@@ -46,7 +46,7 @@ The verdict is one of:
 
 After 3 rounds without approve, hand the decision to a human regardless of zone; repeated revision means the direction, not the draft, is in question. Revise and approve-with-major-rework rounds share one count; only a reject whose direction the pre-code board re-approves starts a new count.
 
-Record each verdict as a JSON gate record at `.state/works/<work-id>/artifacts/review/direction-<seven-char-head>-<round>.json` with the approval binding in `essential:references/approvals.md`: the draft head SHA, the reviewer and authority, the zone and tier, the approved scope, the verdict, the approval evidence, and any exceptions. Mirror it as a PR comment on the draft. An AI reviewer publishes `COMMENT` reviews only, so the gate record, not a GitHub approval event, is the approval. Approval binds that SHA alone.
+Record each verdict as a JSON gate record at `.state/works/<work-id>/artifacts/review/direction-<seven-char-head>-<round>.json` with the approval binding in `essential:references/approvals.md`: the draft head SHA, the reviewer and authority, the zone and tier, the approved scope, the verdict, the approval evidence, and any exceptions. Mirror it as one PR comment on the draft, written from the [direction review template](../skills/pr/templates/direction-review.md). An AI reviewer publishes `COMMENT` reviews only, so the gate record, not a GitHub approval event, is the approval. Approval binds that SHA alone.
 
 ## Peel off the stack
 
