@@ -1,6 +1,6 @@
 # Staged delivery
 
-Read this when implementation work is a large delivery (`essential:references/working-attitude.md#large-delivery`), when a PR carries the `direction-review` label, or when peeling an approved draft into a stack. It stages proof by spending: a cheap working draft earns direction approval before the expensive 100% coverage and stack finalization. [WORKFLOW.md](WORKFLOW.md) owns risk class, [`GIT-PR-SIZE-01`](../standards/git/rules/GIT-PR-SIZE-01.md) owns tier and zone, [`TST-COVR-01`](../standards/testing/rules/tst-covr-01.md) owns the coverage bar, and [publication.md](publication.md) owns PR mechanics.
+Read this when implementation work is a large delivery (`essential:references/working-attitude.md#large-delivery`), when a draft PR's head is a `wip/<work-id>` branch, or when peeling an approved draft into a stack. It stages proof by spending: a cheap working draft earns direction approval before the expensive 100% coverage and stack finalization. [WORKFLOW.md](WORKFLOW.md) owns risk class, [`GIT-PR-SIZE-01`](../standards/git/rules/GIT-PR-SIZE-01.md) owns tier and zone, [`TST-COVR-01`](../standards/testing/rules/tst-covr-01.md) owns the coverage bar, and [publication.md](publication.md) owns PR mechanics.
 
 ## Enter staged mode
 
@@ -10,7 +10,7 @@ The author may opt out when the direction is already proven, such as a mechanica
 
 ## Build the draft
 
-Develop the whole direction on one jj change bookmarked `<type>/<work-id>/00-draft`, using jj as the default VCS so the later split needs no copy-and-paste; follow [jj.md](jj.md). A bare `<type>/<work-id>` bookmark would block its own `<type>/<work-id>/01-<scope>` layers, because a Git ref cannot also be a ref directory. The draft meets its evidence floor and nothing more:
+Develop the whole direction on one jj change bookmarked `wip/<work-id>`, using jj as the default VCS so the later split needs no copy-and-paste; follow [jj.md](jj.md). The `wip` group marks a branch that never merges as published; only the peeled layers take the delivery's conventional type. The draft meets its evidence floor and nothing more:
 
 | Draft kind | Evidence floor |
 | --- | --- |
@@ -19,7 +19,7 @@ Develop the whole direction on one jj change bookmarked `<type>/<work-id>/00-dra
 
 No coverage threshold applies to an unapproved draft. Unfinished edges are marked `TODO(draft): <finalization task>` under [`DOC-LIFE-01`](../standards/documentation/rules/doc-life-01.md). Mixed drafts meet the web floor on the web target and the non-web floor on every other module.
 
-Publish exactly one draft PR labelled `direction-review` through `coding:pr create`. It stays draft through every create, update, and CI-green event, and its body carries the change inventory: each logical change unit and the risk class. It is exempt from the size rules' indivisibility evidence because it will not merge as published; its Why this size names the planned peel-off layers instead, rendered by `coding:pr`. A project that enforces coverage in CI must let a `direction-review` PR bypass that threshold; the plugin cannot change a project's CI, so report a blocked draft rather than padding tests.
+Publish exactly one draft PR from that bookmark through `coding:pr create`; every other direction calls it the `direction-review` draft. It stays draft through every create, update, and CI-green event. Its summary opens by naming it a direction review for the delivery's outcome, such as `Direction review for zone-driven PR landing: …`, so no reader mistakes it for a mergeable change, and its body carries the change inventory: each logical change unit and the risk class. It is exempt from the size rules' indivisibility evidence because it will not merge as published; its Why this size names the planned peel-off layers instead, rendered by `coding:pr`. A project that enforces coverage in CI must let a PR whose head branch starts with `wip/` bypass that threshold; the plugin cannot change a project's CI, so report a blocked draft rather than padding tests.
 
 ## Approve the direction
 
@@ -46,7 +46,7 @@ The verdict is one of:
 
 After 3 rounds without approve, hand the decision to a human regardless of zone; repeated revision means the direction, not the draft, is in question. Revise and approve-with-major-rework rounds share one count; only a reject whose direction the pre-code board re-approves starts a new count.
 
-Record each verdict as a JSON gate record at `.state/works/<work-id>/artifacts/review/direction-<seven-char-head>-<round>.json` with the approval binding in `essential:references/approvals.md`: the draft head SHA, the reviewer and authority, the zone and tier, the approved scope, the verdict, the approval evidence, and any exceptions. Mirror it as a PR comment on the draft. An AI reviewer publishes `COMMENT` reviews only, so the gate record, not a GitHub approval event, is the approval. Approval binds that SHA alone.
+Record each verdict as a JSON gate record at `.state/works/<work-id>/artifacts/review/direction-<seven-char-head>-<round>.json` with the approval binding in `essential:references/approvals.md`: the draft head SHA, the reviewer and authority, the zone and tier, the approved scope, the verdict, the approval evidence, and any exceptions. Mirror it as one PR comment on the draft, written from the [direction review template](../skills/pr/templates/direction-review.md). An AI reviewer publishes `COMMENT` reviews only, so the gate record, not a GitHub approval event, is the approval. Approval binds that SHA alone.
 
 ## Peel off the stack
 

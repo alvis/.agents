@@ -174,6 +174,20 @@ describe("Codex plan Stop validator", () => {
     });
   });
 
+  it("should accept a staged-delivery draft bookmark only as wip/<work-id>", () => {
+    const declaration = "Bookmark(s): `wip/work`, `fix/work/01-parser` (jj)";
+    const plan = validPlan.replace("Branch(es): `fix/plan-validation` (git)", declaration);
+    const allowed = runHook({ lastAssistantMessage: plan });
+    expect(allowed.status, allowed.stderr).toBe(0);
+    expect(allowed.stdout).toBe("");
+    for (const invalid of ["wip/work/00-draft", "wip/work/01-parser"]) {
+      expect(parseHookOutput(runHook({ lastAssistantMessage: plan.replace("`wip/work`", `\`${invalid}\``) }))).toMatchObject({
+        decision: "block",
+        reason: expect.stringContaining(invalid),
+      });
+    }
+  }, 15_000); // Three hook subprocesses took about 6s locally; allow CI contention.
+
   it("should forward the Git event directory when Stop runs outside Git", () => {
     const root = mkdtempSync(resolve(tmpdir(), "validate-plan-stop-cwd-"));
     try {

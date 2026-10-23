@@ -43,9 +43,10 @@ feat/<work-id>                    # the whole stream, one PR
 feat/<work-id>/01-resolver        # a stack or sub-task split
 feat/<work-id>/02-contract
 feat/<work-id>/03-docs
+wip/<work-id>                     # a staged-delivery draft
 ```
 
-So a work ID of `work-id-naming` gives `feat/work-id-naming`, and its numbered branches are `feat/work-id-naming/01-resolver` and so on. The type describes the branch, never the identity: it is not part of the ID or the state path, and `fix/work-id-naming` resolves to the same stream as `feat/work-id-naming`.
+A large delivery under `coding:directions/staged-delivery.md` first builds its draft on `wip/<work-id>`: the `wip` group marks a branch that never merges, and the draft's layers take the numbered branches. So a work ID of `work-id-naming` gives `feat/work-id-naming`, and its numbered branches are `feat/work-id-naming/01-resolver` and so on. The type describes the branch, never the identity: it is not part of the ID or the state path, and `fix/work-id-naming` resolves to the same stream as `feat/work-id-naming`.
 
 Git stores refs as files, so `feat/<work-id>` and `feat/<work-id>/01-resolver` cannot both exist — creating the second while the first is present fails with `cannot lock ref`, locally and on the remote alike. A stream that grows past one pull request therefore cannot add a numbered branch beside the bare one; it **renames** the bare branch into the first numbered branch, which frees the namespace in the same operation that vacates it. Both refs need it: `git branch -m` (or `jj bookmark rename`) clears the local namespace, and the forge's own branch rename clears the remote one while retargeting the open pull request — never delete the remote ref instead, since that closes the pull request on it.
 
