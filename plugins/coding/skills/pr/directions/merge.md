@@ -6,7 +6,7 @@ Load [stacked-prs.md](stacked-prs.md) first for the shared stack contract and jj
 
 ## Boundaries
 
-- Use for: `/coding:pr merge 12 13 14`, "merge this stack of PRs", or any request to merge dependent GitHub PRs while automatically rebasing downstream PR branches.
+- Use for: `/coding:pr merge 12 13 14`, "merge this stack of PRs", or any request to merge dependent GitHub PRs while automatically rebasing downstream PR branches, and the automatic merges [landing.md](landing.md) authorizes by zone, which take the place of the user's merge instruction and always use `--method=squash`.
 - Do not use for: creating PRs (`coding:commit --create-pr` + `coding:pr create`), saving local changes (`coding:commit`), writing code fixes (`coding:fix`), or validating unpushed commits before opening PRs (`coding:finalize-commits`).
 
 ## Inputs
@@ -26,7 +26,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 <IMPORTANT>
 - Do not merge any PR until all supplied PRs are proven to form one linear base chain.
 - Without `--force`, do not merge any PR unless every PR currently in the stack has green CI.
-- If you make or request fixes for failing CI, summarize the changes to the user and post the same summary as a PR comment, then wait for explicit user approval before merging.
+- If you make or request fixes for failing CI during an explicit merge run, summarize the changes to the user and post the same summary as a PR comment, then wait for explicit user approval before merging. An automatic merge under [landing.md](landing.md) never makes fixes; its repaired head waits for review and CI to pass again instead.
 - Never rebase a descendant onto an assumed default branch. Before each merge, snapshot the current tip of every PR still in the stack, then restack with `git rebase --onto <new-parent> <round-parent-tip> <child>` in git repos or the equivalent jj rebase. Keep that round's snapshot unchanged until every descendant has been restacked, then refresh the saved tips before the next merge.
 - On conflicts, stop with the current branch, conflicted files, and exact recovery commands; do not resolve unless the user asks.
 </IMPORTANT>
@@ -131,7 +131,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
    git fetch --prune -- "$REMOTE"
    ```
 
-   d. Restack every remaining downstream PR through the repository's native VCS path. Plain Git iterates link by link: the immediate child replays only child-exclusive commits onto `"$REMOTE"/"$DESTINATION"` using the merged parent's `round_tip`; each deeper descendant replays onto its freshly restacked parent using that parent's pre-restack `round_tip`:
+   d. Remove every landing label that [landing.md](landing.md#apply-the-landing-label) recorded on a remaining downstream PR, then restack each one through the repository's native VCS path. Plain Git iterates link by link: the immediate child replays only child-exclusive commits onto `"$REMOTE"/"$DESTINATION"` using the merged parent's `round_tip`; each deeper descendant replays onto its freshly restacked parent using that parent's pre-restack `round_tip`:
 
    ```bash
    git rebase --onto <new-parent-ref> <round-parent-tip-sha> <child-head-branch>

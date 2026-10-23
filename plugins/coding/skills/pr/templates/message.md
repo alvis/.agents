@@ -132,7 +132,7 @@ Example — new screen:
 
 ## 🧪 Verification
 
-<!-- Record change-specific checks and revision-bound evidence. Display abbreviated seven-character SHAs in Verification; keep full OIDs in the evidence and managed reviewer-task metadata. The published draft contains no reviewer tasks, except that a yellow, red, or black `direction-review` draft carries only its direction approval task. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked block for the exact head/base: `@reviewer reviews <short-head>` for each reviewer and `@author approves <short-head>` for the PR creator. Record any specification deviation as an unchecked task. -->
+<!-- Record change-specific checks and revision-bound evidence. Display abbreviated seven-character SHAs in Verification; keep full OIDs in the evidence and managed reviewer-task metadata. The published draft contains no reviewer tasks, except that a yellow, red, or black `direction-review` draft carries only its direction approval task. After AI review and hosted CI pass, the ready transition runs `generate-reviewer-tasks.ts` to add one managed unchecked block for the exact head/base: `@reviewer reviews <short-head>` for each reviewer and `@author approves <short-head>` for the PR creator; a green PR that lands automatically gets no such block. Record any specification deviation as an unchecked task, which holds automatic landing until a person checks it. -->
 {{verification_body}}
 
 ## 🚫 Boundary [ Optional ]
