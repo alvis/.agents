@@ -31,6 +31,8 @@ const REVIEWER_TASK_MARKER = /^<!-- coding:reviewer-tasks:(?:start|end|revision 
 const PLACEHOLDER = /\{\{[^{}]+\}\}/g;
 const FULL_OID = /^[0-9a-f]{40}$/;
 const HEADING = /^ {0,3}(## .+?)\s*$/;
+const SUBHEADING = /^ {0,3}(### .+?)\s*$/;
+const HEADING_MARKER = /^#{2,3} /;
 const CHECKBOX = /^\s*[-*]\s+\[[ xX]\]\s+\S/m;
 const LIST_MARKER = /^\s*(?:[-*+]|\d+[.)])\s+/;
 const KEYCAP_EMOJI = /^[#*0-9]\ufe0f?\u20e3$/;
@@ -283,9 +285,13 @@ function readUtf8(source: string | number): string {
 /**
  * splits a rendered message into its preamble, headings, and section bodies
  * @param value - Markdown body whose HTML comments are dropped before parsing
+ * @param ownsSubheading - whether a `###` heading opens its own section rather than staying content of its parent
  * @returns trimmed content keyed by exact heading text, in document order
  */
-export function parseMessage(value: string): ParsedMessage {
+export function parseMessage(
+  value: string,
+  ownsSubheading: (heading: string) => boolean = () => false,
+): ParsedMessage {
   const lines = splitLines(value.replace(COMMENT, ""));
   const preamble: string[] = [];
   const headings: string[] = [];
@@ -301,9 +307,13 @@ export function parseMessage(value: string): ParsedMessage {
       continue;
     }
     if (marker === "```" || marker === "~~~") fence = marker;
-    const heading = fence ? null : line.match(HEADING);
+    const subheading = line.match(SUBHEADING)?.[1];
+    const heading = fence
+      ? undefined
+      : (line.match(HEADING)?.[1] ??
+        (subheading && ownsSubheading(subheading) ? subheading : undefined));
     if (heading) {
-      current = heading[1]!;
+      current = heading;
       headings.push(current);
       if (!sectionLines.has(current)) sectionLines.set(current, []);
       continue;
@@ -450,7 +460,9 @@ function isEmojiPrefix(prefix: string): boolean {
 }
 
 function headingName(heading: string): string {
-  const label = heading.replace(/^## /, "").replace(/ \[ Optional \]$/, "");
+  const label = heading
+    .replace(HEADING_MARKER, "")
+    .replace(/ \[ Optional \]$/, "");
   const space = label.indexOf(" ");
   const prefix = space < 0 ? label : label.slice(0, space);
   return semanticHeadingCasefold(
@@ -493,7 +505,7 @@ function addHeadingContractViolations(
   template: ParsedMessage,
 ): void {
   for (const heading of template.headings) {
-    const prefix = heading.replace(/^## /, "").split(/\s+/, 1)[0];
+    const prefix = heading.replace(HEADING_MARKER, "").split(/\s+/, 1)[0];
     if (!prefix || !isEmojiPrefix(prefix))
       violations.push({
         rule_id: "GIT-PR-02",
@@ -627,11 +639,20 @@ export function scan(options: ScanOptions): Violation[] {
   } catch (cause) {
     violations.push({ rule_id: "GIT-PR-02", message: (cause as Error).message });
   }
-  const parsed = parseMessage(body);
-  const parsedTemplate = parseMessage(template);
-  const bundledTemplate = parseMessage(readUtf8(DEFAULT_TEMPLATE));
+  // only the bundled template owns `###` subsections; a repository template's `###` lines stay content
+  const parsedTemplate = parseMessage(template, () => forbidComments);
+  const bundledTemplate = parseMessage(readUtf8(DEFAULT_TEMPLATE), () => true);
   const rendered = (heading: string) =>
     forbidComments ? heading.replace(/ \[ Optional \]$/, "") : heading;
+  const subheadings = new Set(
+    parsedTemplate.headings
+      .filter((heading) => heading.startsWith("### "))
+      .map(rendered),
+  );
+  // a leftover `[ Optional ]` still opens the section, so the ownership check rejects the marker
+  const parsed = parseMessage(body, (heading) =>
+    subheadings.has(rendered(heading)),
+  );
   const selected = (name: string) =>
     rendered(
       headingFor(parsedTemplate, name, headingFor(bundledTemplate, name)),
