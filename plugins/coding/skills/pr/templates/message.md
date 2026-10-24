@@ -6,7 +6,7 @@ This is the **default** PR template used when the repo has no GitHub PR template
 
 Body and scanner metadata: classify every PR with the archetype selected in [create-update.md](../directions/create-update.md#select-the-pr-archetype). Archetype drives conditional body evidence and scanner input only. Repository label discovery, selection, and attachment follow [create-update.md](../directions/create-update.md#discover-and-select-repository-labels). Attached labels are never rendered in the title or body.
 
-Always required: Summary + Goal + Requirements + Context + Verification + Additional Notes. Goal states the outcome; Requirements lists observable behavior, never generic process gates. Yellow, red, and black zones also require Risk + Test Plan; red and black require Why This Size. Specification, Implementation, Breaking, Rollback, Feature Flag, Screenshots, Generated Files, Risk, Test Plan, Why This Size, Related and Boundary are conditional and carry the `[ Optional ]` suffix in this authoring template even when a zone, archetype, or diff makes one mandatory for that PR. Remove `[ Optional ]` from every heading in the final rendered PR message. Every section heading starts with an emoji.
+Always required: Summary + Goal + Requirements + Context + Verification + Additional Notes. Goal states the outcome; Requirements lists observable behavior, never generic process gates. A behavior-changing PR shows its behavior by example. Change Inventory carries the new-behavior example: a Mermaid diagram of the new behavior and a code snippet showing how a caller uses it. Context's `💣 If this PR is not merged` subsection carries the current-behavior example: one sentence naming the consequence, a Mermaid diagram of today's behavior, and, when something breaks, a code snippet that triggers the break with its failure shown in comments. A new feature may drop the subsection because no prior behavior exists; a PR that changes no behavior drops both examples. Yellow, red, and black zones also require Risk + Test Plan; red and black require Why This Size. `💣 If this PR is not merged`, Specification, Implementation, Breaking, Rollback, Feature Flag, Screenshots, Generated Files, Risk, Test Plan, Why This Size, Related and Boundary are conditional and carry the `[ Optional ]` suffix in this authoring template even when a zone, archetype, or diff makes one mandatory for that PR. Remove `[ Optional ]` from every heading in the final rendered PR message. Every section heading starts with an emoji.
 
 The order is a single arc — why, what, what it costs, what to check, where it stops — with lookup material last. Authors fill placeholders in `{{double_braces}}` and write Screenshots directly; each section's guidance comment says what belongs there.
 
@@ -17,7 +17,9 @@ Placeholders (for non-LLM callers performing literal substitution):
   summary_paragraph          yes       Plain-language purpose, ≤3 sentences. Derived from commit body lead paragraph.
   goal_body                  yes       Outcome this PR is intended to achieve and why it matters; no implementation detail.
   requirements_body          yes       Testable, observable behavior required from the result; no generic quality/process gates.
+  change_inventory_body      yes       One bullet per logical change unit, `Risk class: R<n>`, then any new-behavior example.
   context_body               yes       Why this change is needed; bug links; design background.
+  if_not_merged_body         no        The current-behavior example. Drop the `###` subsection if empty.
   specification_body         no        A canonical committed-doc path or external page such as Notion. Drop section if empty.
   implementation_body        no        What was implemented; trade-offs; design choices; evidence and results. Drop section if empty.
   breaking_changes_body      no        Breaking-change list + migration notes. Drop section if commit subject lacks `!` and no `BREAKING CHANGE:` trailer.
@@ -34,7 +36,7 @@ Placeholders (for non-LLM callers performing literal substitution):
 
 Substitution rules:
 - All placeholders are literal `{{name}}` tokens; no nesting, no expressions.
-- An optional placeholder whose value is empty/whitespace MUST cause its entire section header (`## ...`) and body to be omitted from the rendered output, except Additional Notes, whose fixed review instruction is always retained.
+- An optional placeholder whose value is empty/whitespace MUST cause its entire section or subsection header (`## ...` or `### ...`) and body to be omitted from the rendered output, except Additional Notes, whose fixed review instruction is always retained.
 - Every guidance comment is author-facing and MUST be stripped from the rendered body, including this block.
 - Verification is required: standards checks are green before submission; reviewer and hosted-CI tasks may remain unticked until their gates run.
 - Zone-required placeholders are never dropped or filled with generic stubs.
@@ -58,13 +60,18 @@ Substitution rules:
 
 ## 🧮 Change Inventory [ Optional ]
 
-<!-- one bullet per logical change unit, then `Risk class: R<n>` with the trigger that set it; the classifier and reviewer recount size the PR from this, so keep it in every PR and never add line counts or zone metadata -->
+<!-- one bullet per logical change unit, then `Risk class: R<n>` with the trigger that set it; the classifier and reviewer recount size the PR from this, so keep it in every PR and never add line counts or zone metadata. For a behavior change, follow the lines with the new-behavior example defined at the top of this template -->
 {{change_inventory_body}}
 
 ## 🧵 Context
 
 <!-- why this change is needed: the problem and symptoms, related bug or ticket links, what problem it solves and why, and relevant design background -->
 {{context_body}}
+
+### 💣 If this PR is not merged [ Optional ]
+
+<!-- the current-behavior example defined at the top of this template, for the behavior this PR replaces -->
+{{if_not_merged_body}}
 
 ## 📘 Specification [ Optional ]
 

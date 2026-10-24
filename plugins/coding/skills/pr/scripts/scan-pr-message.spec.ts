@@ -615,6 +615,77 @@ describe("PR message scanner", () => {
       ),
     ).toBe(true);
   });
+  it("should accept a filled bundled-template subsection", async () => {
+    const scanned = await run(
+      message(
+        [
+          "### 💣 If this PR is not merged",
+          "Each author decides whether to show the old behavior.",
+        ],
+        verification(),
+      ),
+    );
+    expect(scanned).toMatchObject({ code: 0, result: { valid: true } });
+  });
+  it("should reject a bundled-template subsection kept without content", async () => {
+    const scanned = await run(
+      message(["### 💣 If this PR is not merged", ""], verification()),
+    );
+    expect(scanned.code).toBe(1);
+    expect(scanned.result.violations).toContainEqual({
+      rule_id: "GIT-PR-02",
+      message:
+        "included section has no specific content: ### 💣 If this PR is not merged",
+    });
+  });
+  it("should reject a bundled-template subsection that keeps its authoring marker", async () => {
+    const scanned = await run(
+      message(
+        [
+          "### 💣 If this PR is not merged [ Optional ]",
+          "Each author decides whether to show the old behavior.",
+        ],
+        verification(),
+      ),
+    );
+    expect(scanned.code).toBe(1);
+    expect(scanned.result.violations).toContainEqual({
+      rule_id: "GIT-PR-02",
+      message:
+        "section is not owned by the selected template: ### 💣 If this PR is not merged [ Optional ]",
+    });
+  });
+  it("should reject a Context whose only content is its subsection", async () => {
+    const scanned = await run(
+      message(
+        [
+          "### 💣 If this PR is not merged",
+          "Each author decides whether to show the old behavior.",
+        ],
+        verification(),
+      ).replace(
+        "Authors need PR messages whose intent and behavior are explicit.\n",
+        "",
+      ),
+    );
+    expect(scanned.code).toBe(1);
+    expect(scanned.result.violations).toContainEqual({
+      rule_id: "GIT-PR-02",
+      message: "missing specific evidence: ## 🧵 Context",
+    });
+  });
+  it("should keep repository-template subsections inside their section", async () => {
+    const custom =
+      requiredTemplate +
+      "### 🔎 Details\n\n{{details}}\n\n## 🧪 Verification\n\n{{verification}}\n";
+    const body =
+      requiredBody +
+      "### 🔎 Details\n\n## 🧪 Verification\n\n- [x] Run the scanner.\n";
+    expect(await run(body, { templateBody: custom })).toMatchObject({
+      code: 0,
+      result: { valid: true },
+    });
+  });
   it("rejects generic Specification content", async () => {
     const scanned = await run(
       message(["## 📘 Specification", "None."], verification()),
