@@ -5,7 +5,7 @@
  * through REST and the Claude Code cloud proxy's `/ccr/` routes.
  */
 
-import { JSON_FLAGS, parseArgs, value } from "./args.ts";
+import { CLOSE_FLAGS, JSON_FLAGS, parseArgs, value } from "./args.ts";
 import {
   checkFromRun,
   checkFromStatus,
@@ -407,6 +407,52 @@ async function comment(argv: readonly string[]): Promise<number> {
 }
 comment.routesItself = true;
 
+/**
+ * closes one pull request. `--force` belongs to this drop-in alone: the coding
+ * close hook skips its changed-files check for a forced close, and gh, which
+ * has no such flag, never receives it
+ * @param argv - arguments after the subcommand
+ * @returns the exit code
+ */
+async function close(argv: readonly string[]): Promise<number> {
+  const parsed = parseArgs(argv, CLOSE_FLAGS);
+  const selector = parsed.positionals[0];
+  const repo = value(parsed, "repo");
+  const closing = value(parsed, "comment");
+  if (detectRoute(process.env) === "native") {
+    // rebuilt from the parsed values, so gh closes exactly the pull request the hook checked
+    const child = Bun.spawn(
+      [
+        "gh",
+        "pr",
+        "close",
+        ...(selector === undefined ? [] : [selector]),
+        ...(repo === undefined ? [] : ["--repo", repo]),
+        ...(closing === undefined ? [] : ["--comment", closing]),
+        ...(parsed.booleans.has("delete-branch") ? ["--delete-branch"] : []),
+      ],
+      { stdout: "inherit", stderr: "inherit" },
+    );
+    return await child.exited;
+  }
+  // refused before any write, so a close never half-completes
+  if (parsed.booleans.has("delete-branch"))
+    throw new WrapperError(`gh pr close --delete-branch is unavailable through REST: ${UNSUPPORTED["--delete-branch"]}`);
+  const { repository, pull } = await selectPull(await repositoryFor(parsed), selector);
+  // a pull request's conversation comments are issue comments in REST
+  if (closing !== undefined)
+    await api(repository, `repos/${repository.owner}/${repository.repo}/issues/${pull.number}/comments`, {
+      method: "POST",
+      body: { body: closing },
+    });
+  await api(repository, `repos/${repository.owner}/${repository.repo}/pulls/${pull.number}`, {
+    method: "PATCH",
+    body: { state: "closed" },
+  });
+  return 0;
+}
+close.routesItself = true;
+
 async function checks(argv: readonly string[]): Promise<number> {
   const parsed = parseArgs(argv, {});
   const { repository, pull } = await selectPull(await repositoryFor(parsed), parsed.positionals[0]);
@@ -428,6 +474,7 @@ export const SUBCOMMANDS: Readonly<Record<string, Handler>> = {
   edit,
   ready,
   merge,
+  close,
   checks,
   comment,
 };

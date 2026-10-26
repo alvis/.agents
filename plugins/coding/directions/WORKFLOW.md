@@ -32,6 +32,7 @@ Skills own actions; never delegate work “to” a skill or pass a skill name as
 | --- | --- | --- |
 | Implement new behavior | [Implementation](implementation.md) | `coding:write-code` or `coding:draft-code` |
 | Deliver a large delivery (`essential:references/working-attitude.md#large-delivery`) as a draft, then a stack | [Staged delivery](staged-delivery.md) | `coding:write-code`, then `coding:pr` |
+| Finalize an approved `direction-review` draft into a stack, from any skill or plan | [Peel off the stack](staged-delivery.md#peel-off-the-stack) and [Check for drift](staged-delivery.md#check-for-drift) | `coding:commit`, then `coding:pr create\|update` |
 | Set up a project | [Implementation](implementation.md) | `coding:setup-project` |
 | Complete a production stub | [Implementation](implementation.md) | `coding:complete-code` |
 | Diagnose or fix a failure | [Diagnosis and fix](diagnosis.md) | `coding:fix` |

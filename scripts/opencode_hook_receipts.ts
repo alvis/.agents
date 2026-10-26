@@ -231,8 +231,10 @@ function nativeScriptCommand(scriptName: string, policy: JsonObject): string {
       ? PLUGIN_ROOT_GUARD.replace("exit 1", "exit 2")
       : PLUGIN_ROOT_GUARD;
   const command = `${guard}"${PLUGIN_ROOT_ANCHOR}/hooks/scripts/${scriptName}"${argumentsText}`;
+  // `validate-review-publication` reports "review publication hook unavailable"
+  const label = scriptName.replace(/^validate-/u, "").replaceAll("-", " ");
   return failureMode === "block"
-    ? `${command} || { echo "review publication hook unavailable" >&2; exit 2; }`
+    ? `${command} || { echo "${label} hook unavailable" >&2; exit 2; }`
     : command;
 }
 

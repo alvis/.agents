@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+plugin_root="${PLUGIN_ROOT:-${GROK_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}}"
+[ -n "$plugin_root" ] || { echo "plugin root unset" >&2; exit 2; }
+guard="$plugin_root/hooks/scripts/validate-pr-close.ts"
+[ -f "$guard" ] || { echo "pr close guard unavailable" >&2; exit 2; }
+bun "$guard" "$plugin_root" || { echo "pr close validation failed" >&2; exit 2; }
