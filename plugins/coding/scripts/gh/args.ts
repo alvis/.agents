@@ -30,6 +30,13 @@ export const JSON_FLAGS = {
   aliases: { q: "jq" },
 } as const satisfies FlagSpec;
 
+/** the flags `gh pr close` accepts, plus the close drop-in's own `--force`, shared with the coding close hook */
+export const CLOSE_FLAGS = {
+  values: ["comment"],
+  booleans: ["delete-branch", "force"],
+  aliases: { c: "comment", d: "delete-branch" },
+} as const satisfies FlagSpec;
+
 /**
  * parses `gh`-style arguments. unknown flags are refused by name rather than
  * ignored, so a caller never believes a flag took effect when the REST route

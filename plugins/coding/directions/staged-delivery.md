@@ -1,6 +1,6 @@
 # Staged delivery
 
-Read this when implementation work is a large delivery (`essential:references/working-attitude.md#large-delivery`), when a draft PR's head is a `wip/<work-id>` branch, or when peeling an approved draft into a stack. It stages proof by spending: a cheap working draft earns direction approval before the expensive 100% coverage and stack finalization. [WORKFLOW.md](WORKFLOW.md) owns risk class, [`GIT-PR-SIZE-01`](../standards/git/rules/GIT-PR-SIZE-01.md) owns tier and zone, [`TST-COVR-01`](../standards/testing/rules/tst-covr-01.md) owns the coverage bar, and [publication.md](publication.md) owns PR mechanics.
+Read this when implementation work is a large delivery (`essential:references/working-attitude.md#large-delivery`), when work touches a [`direction-review` draft](#build-the-draft) in any state, or when finalizing an approved draft into a stack, whichever skill or plan reaches that step. It stages proof by spending: a cheap working draft earns direction approval before the expensive 100% coverage and stack finalization. [WORKFLOW.md](WORKFLOW.md) owns risk class, [`GIT-PR-SIZE-01`](../standards/git/rules/GIT-PR-SIZE-01.md) owns tier and zone, [`TST-COVR-01`](../standards/testing/rules/tst-covr-01.md) owns the coverage bar, and [publication.md](publication.md) owns PR mechanics.
 
 ## Enter staged mode
 
@@ -19,7 +19,7 @@ Develop the whole direction on one jj change bookmarked `wip/<work-id>`, using j
 
 No coverage threshold applies to an unapproved draft. Unfinished edges are marked `TODO(draft): <finalization task>` under [`DOC-LIFE-01`](../standards/documentation/rules/doc-life-01.md). Mixed drafts meet the web floor on the web target and the non-web floor on every other module.
 
-Publish exactly one draft PR from that bookmark through `coding:pr create`; every other direction calls it the `direction-review` draft. It stays draft through every create, update, and CI-green event. Its summary opens by naming it a direction review for the delivery's outcome, such as `Direction review for zone-driven PR landing: …`, so no reader mistakes it for a mergeable change, and its body carries the change inventory: each logical change unit and the risk class. It is exempt from the size rules' indivisibility evidence because it will not merge as published; its Why this size names the planned peel-off layers instead, rendered by `coding:pr`. A project that enforces coverage in CI must let a PR whose head branch starts with `wip/` bypass that threshold; the plugin cannot change a project's CI, so report a blocked draft rather than padding tests.
+Publish exactly one draft PR from that bookmark through `coding:pr create`. A `direction-review` draft is an open draft PR whose head is `wip/<work-id>`, or `<type>/<work-id>/00-draft` for a draft opened before the `wip` group existed; a legacy draft keeps that head through finalization. It stays draft through every create, update, and CI-green event. Its summary opens by naming it a direction review for the delivery's outcome, such as `Direction review for zone-driven PR landing: …`, so no reader mistakes it for a mergeable change, and its body carries the change inventory: each logical change unit and the risk class. It is exempt from the size rules' indivisibility evidence because it will not merge as published; its Why this size names the planned peel-off layers instead, rendered by `coding:pr`. A project that enforces coverage in CI must let a PR whose head branch starts with `wip/` bypass that threshold; the plugin cannot change a project's CI, so report a blocked draft rather than padding tests.
 
 ## Approve the direction
 
@@ -50,19 +50,22 @@ Record each verdict as a JSON gate record at `.state/works/<work-id>/artifacts/r
 
 ## Peel off the stack
 
-After approval, carve the approved draft into a logical stack beneath it, or into one PR when its unit band is green or yellow with no line bump; a risk floor alone does not force a split:
+After approval, carve the approved draft into a logical stack beneath it, or into one PR when its unit band is green or yellow with no line bump; a risk floor alone does not force a split. Every finalization follows these steps, whether it starts from `coding:write-code`, `essential:takeover`, a plan formed through `essential:discover plan`, or `coding:pr`, and a brief that hands finalization to another agent names this section and [Check for drift](#check-for-drift):
 
-1. Keep the approved draft change on top. With `coding:commit`, `jj split` the first logical layer out of it into a new change below the draft and give it the bookmark `<type>/<work-id>/01-<scope>`.
-2. Repeat for each layer in dependency order. Each layer is its own PR in the stack; the draft PR shrinks as layers leave it.
-3. Finalize each layer before it is ready: 100% coverage under `TST-COVR-01`, every `TODO(draft):` removed, the full gates, and independent AI review under [review-evidence.md](review-evidence.md). Each layer's normal zone applies to its own review and size evidence.
-4. When the draft's residual diff reaches zero, close the draft PR with a comment linking every layer. A zero-diff PR stays valid on GitHub, so do not close it early.
+1. Keep a draft change on top. The draft's bookmark stays on its own change above every layer and never shares a commit with a layer's bookmark; once every layer has left it, that change is empty and keeps its description so jj can push it.
+2. With `coding:commit`, carve each layer out in dependency order: `jj split -r <draft> -B <draft> -m "<layer subject>" <layer paths>` moves the layer's paths into a new change below the draft and leaves the draft's change and bookmark on top; the new change takes the bookmark `<type>/<work-id>/NN-<scope>`. A draft already split into commits keeps those commits as its layers: bookmark each in order, then create the draft change with `jj new <top layer> -m "<draft subject>"` and move the draft's bookmark onto it with `jj bookmark move <draft> --to @`.
+3. Publish each new layer through `coding:pr create` with the draft as the top head of the same publication, so the push that publishes the layer restacks the draft PR onto it; every later `coding:pr update` over the layers does the same. The draft PR shrinks as layers leave it.
+4. Finalize each layer before it is ready: 100% coverage under `TST-COVR-01`, every `TODO(draft):` removed, the full gates, independent AI review under [review-evidence.md](review-evidence.md), and a clean [drift record](#check-for-drift). Each layer's normal zone applies to its own review and size evidence.
+5. Close the draft PR last, once its residual diff against the newest layer is zero and every layer is ready, with a comment linking every layer. A zero-diff PR stays valid on GitHub, so do not close it early. Only zero residual decides the close: a plan or caller that calls the draft superseded does not, and the coding plugin's close hook refuses to close a pull request that still has changes.
 
 Never copy draft content into new branches by hand; `jj split` and bookmarks keep one history and prove the content was distributed.
 
 ## Check for drift
 
-Before any layer is marked ready, diff the approved SHA against the stack tip, the current draft head, which holds the approved tree plus every finalization edit in the layers below it. The difference may contain only tests, hardening, reviewer-requested fixes, and `TODO(draft):` removal. Any other hunk is a new direction: return that delta to direction review under the same authority table before readiness. A zero residual plus a clean drift diff proves the stack is the approved direction, fully distributed.
+Before any layer is marked ready, diff the commit the approving gate record binds against the current draft head, which holds the approved tree plus every finalization edit in the layers below it. The difference may contain only tests, hardening, reviewer-requested fixes, and `TODO(draft):` removal. Any other hunk is a new direction: return that delta to direction review under the same authority table before readiness.
+
+Record each run as one comment on the draft PR from the [drift check template](../skills/pr/templates/drift-check.md); its marker binds both full commits and the result. A finalization edit to any layer moves the draft head, so a record holds only for the head it names: a layer becomes ready only on a clean record naming the draft's current head, including when the user asks for it to be marked ready or review was skipped. A zero residual plus a clean drift record proves the stack is the approved direction, fully distributed.
 
 ## Completion
 
-Staged delivery is complete when every layer is finalized, reviewed, and ready, the drift diff is clean, and the draft PR is closed with links. A reject verdict or an unresolved approval leaves the work blocked, with the gate record naming the outstanding approver.
+Staged delivery is complete when every layer is finalized, reviewed, and ready, the newest drift record is clean, and the draft PR is closed with links. A reject verdict or an unresolved approval leaves the work blocked, with the gate record naming the outstanding approver.

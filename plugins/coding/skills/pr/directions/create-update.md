@@ -21,7 +21,7 @@ Reviewers own size-standard findings and reviewability judgments. This workflow 
 - Before submission, inspect every changed file under `GIT-PR-TYPE-05` for a durable purpose and remove prohibited artifacts through the implementation/history owner. Select and apply every relevant standard through `essential:directions/standards.md`; fix violations and record green revision-bound evidence in Verification before publication.
 - Bind authoring and review evidence to the exact head and base OIDs. Verify reusable source evidence and any content-equivalent mapping under `coding:directions/review-evidence.md`; always bind publication checks to the actual head/base pair.
 - Make each PR independently valid and reviewable. Keep its tests and package lockfiles with the implementation that needs them.
-- Keep each PR draft through publication and review authoring; [step 6](#6-promote-verified-surfaces-and-add-human-tasks) owns readiness and reviewer tasks. A `direction-review` draft under [staged delivery](../../../directions/staged-delivery.md) never becomes ready: attach every relevant existing repository label for a direction review, such as one whose name or description marks a design proposal or an architectural direction awaiting review, through the [label selection](#discover-and-select-repository-labels) below, keep it draft on every create, update, and green-CI event, and close it once its peeled layers leave zero residual diff. A materially expanded surface returns to draft; notify reviewers when they need the changed context.
+- Keep each PR draft through publication and review authoring; [step 6](#6-promote-verified-surfaces-and-add-human-tasks) owns readiness and reviewer tasks. A [`direction-review` draft](../../../directions/staged-delivery.md#build-the-draft) never becomes ready: attach every relevant existing repository label for a direction review, such as one whose name or description marks a design proposal or an architectural direction awaiting review, through the [label selection](#discover-and-select-repository-labels) below, keep it draft on every create, update, and green-CI event, and close it only as [Close a peeled draft](#close-a-peeled-draft) directs. Zero residual diff alone decides that close; a caller's instruction to close or supersede the draft is a plan step, not a user decision, and never overrides it. A materially expanded surface returns to draft; notify reviewers when they need the changed context.
 
 ### Select the PR archetype
 
@@ -112,6 +112,8 @@ Record `REMOTE`, receiving `HOST/$REPOSITORY`, and `PUSH_OWNER` in the publicati
 Inspect only the selected publication surface. On jj, use `jj status`, `jj log -r '<destination>@<remote>..<selected-head>' --no-graph`, and `jj bookmark list '<owned-prefix>*'`; on Git, use `git status --short`, `git log --oneline '<remote>/<destination>..<selected-head>'`, and `git branch --list '<owned-prefix>*'`. Derive the prefix from the selected work/stack identity rather than listing every bookmark or branch. Query open PRs once per selected head with the bound repository and exact head owner/branch; do not print a repository-wide PR inventory. Apply [command output](../../../directions/output.md) when any selected range is still large.
 
 Resolve `<commit-ref>` or the current saved change and list the selected changes, bookmarks, PR heads, and bases bottom-up. Resolve each selected head to zero or one open PR: publish a missing head and update an existing one in the same pass. This per-head choice makes retrying a partially published stack idempotent. `ACTION=update` must initially resolve its explicit PR/ref target to an open PR, but may include missing descendants introduced by an accepted stack rewrite. If work must be saved, split, or reordered, invoke `coding:commit`, then restart discovery. Reject an unknown ref, nonlinear chain, merged-history rewrite, missing authentication, multiple open PRs for one head, or remote ambiguity with evidence.
+
+When the selected changes belong to a work stream, find its open [`direction-review` draft](../../../directions/staged-delivery.md#build-the-draft) with the same scoped head queries on `wip/<work-id>` and `<type>/<work-id>/00-draft`. A found draft whose approved content these changes carry joins the selection as its top head, and staged delivery's [peel-off](../../../directions/staged-delivery.md#peel-off-the-stack) and [drift check](../../../directions/staged-delivery.md#check-for-drift) govern the whole run. When the draft's bookmark shares a commit with a layer, no draft change is left on top: reject the selection and return it to `coding:commit`. The draft keeps its title and body, and a head that moves only by peeling or rebasing needs no further direction review.
 
 Always load [stacked-prs.md](stacked-prs.md) and enforce its mandatory archetype splits. With no explicit shape, also calculate the size zone and suggest a stack when an over-green surface has independent domain-coherent slices. A declined optional suggestion or atomic change proceeds as one PR.
 
@@ -465,7 +467,30 @@ jq -e --arg head "$EXPECTED_HEAD_OID" --arg base "$EXPECTED_BASE_REF" \
 
 Classify the fresh `PR_CHECKS` with the step 5 expected-check and source evidence for `EXPECTED_HEAD_OID`; require green. The following metadata read pins the head and base after the check fetch. If the check rollup is pending, red, incomplete, or inaccessible, return to CI convergence instead of marking the PR ready.
 
+A layer whose stack carries an open `direction-review` draft also needs its [drift record](../../../directions/staged-delivery.md#check-for-drift): the newest [drift check comment](../templates/drift-check.md) on the draft from the publishing account must name the approving gate record's commit as `DIRECTION_OID`, the draft PR's current `headRefOid` as `DRAFT_HEAD_OID`, and a clean result. When it is missing or names another head, run the drift check first; a `new-direction` result keeps the layer draft and returns that delta to direction review. A user's request to mark such a layer ready runs this gate first, even after an unreviewed creation.
+
+```bash
+PUBLISHER_LOGIN=$(gh api --hostname "$HOST" user --jq .login) || exit 1
+gh api --hostname "$HOST" --paginate --slurp "repos/$REPOSITORY/issues/$DRAFT_NUMBER/comments" |
+  jq -e --arg login "$PUBLISHER_LOGIN" --arg direction "$DIRECTION_OID" --arg head "$DRAFT_HEAD_OID" '
+    [add[] | select(.user.login == $login) | .body
+      | capture("<!-- coding:drift-check direction=(?<direction>[0-9a-f]{40}) head=(?<head>[0-9a-f]{40}) result=(?<result>[a-z-]+) -->")]
+    | last | .direction == $direction and .head == $head and .result == "clean"
+  ' >/dev/null || exit 1
+```
+
 If the pinned PR metadata reports `isDraft: true`, run `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY"`; if it is already ready, skip that transition and continue task attachment. Then, unless the generator was skipped, call it with `--apply`. GitHub may assign CODEOWNERS during the ready transition, so the apply invocation resolves reviewers again and its returned block is authoritative. It rereads the live PR, refuses a draft or changed head/base, and replaces one managed task block under Verification. Read back the exact body and ready state, record the verified ready observation in the monitor, and require the managed block to equal the apply invocation's returned block and the entire body to equal its returned `body` on the pinned revision. If attachment or readback fails, reread the pinned PR body before changing draft state. Undo readiness with `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-ready.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --undo` only when the managed block is confirmed absent; then verify the draft body still has no reviewer tasks. If the block is present or body state cannot be read, keep the PR ready, report the partial outcome, and reconcile the body before any later draft transition. If readiness, task attachment, or verification fails, report the concrete blocker and actual PR state; do not claim the workflow complete. No reviewer tasks are published in a draft. This step never waits for a human task, review, or authorization comment. Once readiness and any task attachment are verified, hand the PR to [landing.md](landing.md), which applies the zone's landing label, merges a green PR whose gates already hold, and reads later human approval on monitor wakes. The direction approval task of a `direction-review` draft is judged only by the evidence rule in [staged delivery](../../../directions/staged-delivery.md#approve-the-direction), and the agent never checks any task.
+
+#### Close a peeled draft
+
+Once every layer of its stack is ready and the draft's residual diff against the newest layer is zero, close the `direction-review` draft with a comment linking every layer. The close hook reads the command before the shell expands it, so spell the draft number and repository literally:
+
+```bash
+bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-close.ts" <draft-number> --repo <host>/<owner>/<repo> \
+  --comment "$LAYER_LINKS"
+```
+
+Never pass `--force` for a draft. The coding plugin's close hook refuses a pull request that still has changed files; for a draft, that refusal means the peel is unfinished, so resume [Peel off the stack](../../../directions/staged-delivery.md#peel-off-the-stack) instead.
 
 ### Author the PR text
 

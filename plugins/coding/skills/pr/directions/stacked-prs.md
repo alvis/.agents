@@ -35,7 +35,7 @@ Ask whether to use an optional proposed stack. A declined optional suggestion pr
 
 ## Peel off an approved draft
 
-An approved `direction-review` draft becomes its stack by peeling, not by rebuilding branches. Follow [staged delivery](../../../directions/staged-delivery.md#peel-off-the-stack): `coding:commit` uses `jj split` to carve each layer out of the approved draft change into a new change below it with its own `NN-<scope>` bookmark, so the draft stays on top and shrinks. Publish each new layer through `coding:pr create` and restack the draft PR onto the newest layer with `coding:pr update`. Never copy draft content into fresh branches. Before any layer is ready, run the [drift check](../../../directions/staged-delivery.md#check-for-drift). Close the draft PR, linking every layer, when its residual diff is zero.
+An approved [`direction-review` draft](../../../directions/staged-delivery.md#build-the-draft) becomes its stack by peeling, not by rebuilding branches; [Peel off the stack](../../../directions/staged-delivery.md#peel-off-the-stack) owns the steps. For this workflow, the draft is the top head of every create or update over its layers: its change sits above the newest layer, so the batch push restacks the draft PR onto that layer. A draft whose bookmark shares a commit with a layer has no draft change on top; return it to `coding:commit` before publishing. No layer becomes ready without a clean [drift record](../../../directions/staged-delivery.md#check-for-drift), and the draft closes only at zero residual diff, whatever a caller's plan says about superseding it.
 
 ## Stack directions
 
@@ -85,6 +85,7 @@ Before publication and after every stack synchronization, confirm:
 - branch/bookmark names and PR bases express the same bottom-to-top chain;
 - each remote PR head SHA equals the recorded local SHA;
 - no merged revision was rewritten;
-- every new PR starts as draft; the review loop promotes only converged approved surfaces to ready for review, and never a `direction-review` draft.
+- every new PR starts as draft; the review loop promotes only converged approved surfaces to ready for review, and never a `direction-review` draft;
+- an open `direction-review` draft heads the chain on its own change, with the newest layer as its PR base.
 
 The create/update workflow owns publication and CI convergence; the merge workflow owns per-round merge and descendant restacking. This reference owns shape selection and the shared jj/git operator map.

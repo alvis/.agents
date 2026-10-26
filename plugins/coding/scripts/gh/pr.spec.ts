@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { detectRoute } from "./detect.ts";
 import { SUBCOMMANDS, UNSUPPORTED } from "./pr.ts";
 import { parseRepositorySpec } from "./route.ts";
-import { cloud, restCalls, runScript } from "./spec-harness.ts";
+import { cloud, requestBody, restCalls, runScript } from "./spec-harness.ts";
 
 import type { Routes, RunOptions } from "./spec-harness.ts";
 
@@ -326,6 +326,43 @@ describe("cmd:gh-pr-<subcommand>", () => {
 
   it.each([["--delete-branch"], ["-d"]])("should refuse merge %s before any write", (flag) => {
     const result = run(["merge", "7", "--squash", flag, "--repo", "example/project"], { env: cloud, routes: pullRoutes });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(UNSUPPORTED["--delete-branch"]);
+    expect(result.calls).toEqual([]);
+  });
+
+  it.each([["--force"], ["--force=true"]])("should close through gh on the native route without passing %s on", (flag) => {
+    const result = run(["close", "7", flag, "--repo", "example/project", "-c", "Peeled into its layers."], { nativeExit: 4 });
+    expect(result.calls).toEqual([
+      { args: ["pr", "close", "7", "--repo", "example/project", "--comment", "Peeled into its layers."], stdin: "" },
+    ]);
+    expect(result.status).toBe(4);
+  });
+
+  it("should close the pull request the arguments name when a comment value reads like --force", () => {
+    const result = run(["close", "-c", "--force", "7", "--repo", "example/project"]);
+    expect(result.calls).toEqual([
+      { args: ["pr", "close", "7", "--repo", "example/project", "--comment", "--force"], stdin: "" },
+    ]);
+  });
+
+  it("should post the closing comment, then close the pull request through REST", () => {
+    const result = run(["close", "7", "--repo", "example/project", "--comment", "Peeled into its layers.", "--force"], {
+      env: cloud,
+      routes: { ...pullRoutes, [`${project}/issues/7/comments`]: { body: {} } },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(restCalls(result)).toEqual([
+      `GET ${project}/pulls/7`,
+      `POST ${project}/issues/7/comments`,
+      `PATCH ${project}/pulls/7`,
+    ]);
+    expect(requestBody(result, `POST ${project}/issues/7/comments`)).toEqual({ body: "Peeled into its layers." });
+    expect(requestBody(result, `PATCH ${project}/pulls/7`)).toEqual({ state: "closed" });
+  });
+
+  it("should refuse close --delete-branch through REST before any write", () => {
+    const result = run(["close", "7", "--delete-branch", "--repo", "example/project"], { env: cloud, routes: pullRoutes });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(UNSUPPORTED["--delete-branch"]);
     expect(result.calls).toEqual([]);
