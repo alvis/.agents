@@ -9,5 +9,5 @@ export const RULE = lineRule({
   appliesTo: sourceFiles,
   ruleRefs: ["NAM-CORE-03"],
   pattern:
-    /\b(?:const|let|var)\s+(?:cfg|usr|repo|ctx|tmp|env|btn|msg|err|req|res|val|obj|arr|str|num|idx|len|fn2)\b/,
+    /\b(?:const|let|var)\s+(?:cfg|usr|repo|ctx|tmp|btn|msg|err|req|res|val|obj|arr|str|num|idx|len|fn2)\b/,
 });

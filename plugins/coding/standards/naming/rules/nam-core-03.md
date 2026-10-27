@@ -2,7 +2,7 @@
 
 ## Intent
 
-Only allowlisted abbreviations are permitted: `fn`, `params`, `args`, `id`, `url`, `urn`, `uri`, `meta`, `info`. All other abbreviations MUST be expanded to full words for readability and consistency.
+Only allowlisted abbreviations are permitted: `fn`, `params`, `args`, `id`, `url`, `urn`, `uri`, `meta`, `info`, `cwd`, `env`, `config`, `min`, `max`, `ref`. Names must still communicate their purpose in context. All other abbreviations MUST be expanded to full words for readability and consistency.
 
 ## Fix
 
@@ -11,6 +11,11 @@ Only allowlisted abbreviations are permitted: `fn`, `params`, `args`, `id`, `url
 const userId = "user-123";
 const requestUrl = buildEndpointUrl(baseUrl, params);
 const callbackFn = () => processResult();
+const cwd = process.cwd();
+const env = process.env;
+const config = loadAppConfiguration();
+const { min, max } = allowedRange;
+const userRef = createReference(userId);
 ```
 
 ### Expanded Names
@@ -19,7 +24,6 @@ const callbackFn = () => processResult();
 // expanded names instead of abbreviations
 const configuration = loadAppConfiguration();   // not cfg
 const repository = createUserRepository();       // not repo
-const environment = process.env.NODE_ENV;        // not env
 const administrator = getAdminUser();            // not admin (not on allowlist)
 ```
 
