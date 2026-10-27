@@ -202,6 +202,40 @@ function expectStructuralReport(
   expect(report.findings).toContainEqual(expectedFinding);
 }
 
+describe("abbreviation allowlist", () => {
+  it("should accept approved short names while reporting non-allowlisted abbreviations", async () => {
+    const root = temporaryRoot();
+    writeFileSync(
+      resolve(root, "input.ts"),
+      [
+        "cwd",
+        "env",
+        "config",
+        "min",
+        "max",
+        "ref",
+        "usr",
+        "cfg",
+        "repo",
+        "err",
+        "req",
+        "res",
+      ]
+        .map((name) => `const ${name} = source;`)
+        .join("\n"),
+    );
+
+    const result = await capture([root, "--category", "abbreviation-denylist"]);
+
+    expect(result.code).toBe(0);
+    expect(
+      [...result.stdout.matchAll(/^.+input\.ts:(\d+)  /gm)].map(
+        ([, lineNumber]) => Number(lineNumber),
+      ),
+    ).toEqual([7, 8, 9, 10, 11, 12]);
+  });
+});
+
 describe("conditional object spread reports", () => {
   it("should report guarded object spreads without flagging direct properties or ordinary spreads", async () => {
     const root = temporaryRoot();
