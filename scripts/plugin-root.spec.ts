@@ -41,6 +41,15 @@ function createPlugin(root: string, name: string, harness: string): string {
   return root;
 }
 
+function declareDependencies(root: string, dependencies: unknown[]): string {
+  mkdirSync(join(root, ".claude-plugin"), { recursive: true });
+  writeFileSync(
+    join(root, ".claude-plugin/plugin.json"),
+    `${JSON.stringify({ name: "core", dependencies })}\n`,
+  );
+  return root;
+}
+
 function runResolver(
   name: string,
   environment: NodeJS.ProcessEnv,
@@ -170,6 +179,314 @@ describe("installed plugin root resolution", () => {
           CLAUDE_PLUGIN_ROOT: join(root, "wrong"),
         }).stdout,
       ).toBe(`${realpathSync(grokEssential)}\n`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should resolve a Claude dependency from the marketplace its declaration names", () => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-claude-declared-"));
+    try {
+      const core = declareDependencies(
+        createPlugin(join(root, "downstream/core"), "core", "claude"),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      const essential = createPlugin(
+        join(root, "alvis/essential"),
+        "essential",
+        "claude",
+      );
+      const configuration = join(root, "configuration");
+      mkdirSync(join(configuration, "plugins"), { recursive: true });
+      writeFileSync(
+        join(configuration, "plugins/installed_plugins.json"),
+        `${JSON.stringify({ plugins: { "core@downstream": [{ installPath: core }], "essential@alvis": [{ installPath: essential }] } })}\n`,
+      );
+
+      expect(
+        runResolver("essential", {
+          CLAUDE_CONFIG_DIR: configuration,
+          CLAUDE_PLUGIN_ROOT: core,
+        }),
+      ).toMatchObject({
+        status: 0,
+        stdout: `${realpathSync(essential)}\n`,
+        stderr: "",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ["a string", "essential"],
+    [
+      "an object without a marketplace",
+      { name: "essential", version: "^1.0.0" },
+    ],
+  ])(
+    "should keep a Claude dependency declared as %s inside the invoking marketplace",
+    (_case, dependency) => {
+      const root = mkdtempSync(
+        join(tmpdir(), "plugin-root-claude-undeclared-"),
+      );
+      try {
+        const core = declareDependencies(
+          createPlugin(join(root, "downstream/core"), "core", "claude"),
+          [dependency],
+        );
+        const local = createPlugin(
+          join(root, "downstream/essential"),
+          "essential",
+          "claude",
+        );
+        const foreign = createPlugin(
+          join(root, "alvis/essential"),
+          "essential",
+          "claude",
+        );
+        const configuration = join(root, "configuration");
+        mkdirSync(join(configuration, "plugins"), { recursive: true });
+        writeFileSync(
+          join(configuration, "plugins/installed_plugins.json"),
+          `${JSON.stringify({ plugins: { "core@downstream": [{ installPath: core }], "essential@downstream": [{ installPath: local }], "essential@alvis": [{ installPath: foreign }] } })}\n`,
+        );
+
+        expect(
+          runResolver("essential", {
+            CLAUDE_CONFIG_DIR: configuration,
+            CLAUDE_PLUGIN_ROOT: core,
+          }),
+        ).toMatchObject({
+          status: 0,
+          stdout: `${realpathSync(local)}\n`,
+          stderr: "",
+        });
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("should resolve a declared Claude dependency for a plugin absent from the registry", () => {
+    const root = mkdtempSync(
+      join(tmpdir(), "plugin-root-claude-unregistered-"),
+    );
+    try {
+      const core = declareDependencies(
+        createPlugin(join(root, "checkout/core"), "core", "claude"),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      const essential = createPlugin(
+        join(root, "alvis/essential"),
+        "essential",
+        "claude",
+      );
+      const configuration = join(root, "configuration");
+      mkdirSync(join(configuration, "plugins"), { recursive: true });
+      writeFileSync(
+        join(configuration, "plugins/installed_plugins.json"),
+        `${JSON.stringify({ plugins: { "essential@alvis": [{ installPath: essential }] } })}\n`,
+      );
+
+      expect(
+        runResolver("essential", {
+          CLAUDE_CONFIG_DIR: configuration,
+          CLAUDE_PLUGIN_ROOT: core,
+        }),
+      ).toMatchObject({
+        status: 0,
+        stdout: `${realpathSync(essential)}\n`,
+        stderr: "",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should resolve a Codex dependency from the cache of the declared marketplace", () => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-codex-declared-"));
+    try {
+      const core = declareDependencies(
+        createPlugin(
+          join(root, "cache/downstream/core/1.0.0"),
+          "core",
+          "codex",
+        ),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      createPlugin(
+        join(root, "cache/downstream/essential/1.0.0"),
+        "essential",
+        "codex",
+      );
+      const essential = createPlugin(
+        join(root, "cache/alvis/essential/3.2.0"),
+        "essential",
+        "codex",
+      );
+
+      expect(runResolver("essential", { PLUGIN_ROOT: core })).toMatchObject({
+        status: 0,
+        stdout: `${realpathSync(essential)}\n`,
+        stderr: "",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should prefer the same Codex version when the declaration names the invoking marketplace", () => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-codex-own-"));
+    try {
+      const core = declareDependencies(
+        createPlugin(join(root, "cache/alvis/core/2.0.0"), "core", "codex"),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      createPlugin(
+        join(root, "cache/alvis/essential/1.0.0"),
+        "essential",
+        "codex",
+      );
+      const essential = createPlugin(
+        join(root, "cache/alvis/essential/2.0.0"),
+        "essential",
+        "codex",
+      );
+
+      expect(runResolver("essential", { PLUGIN_ROOT: core })).toMatchObject({
+        status: 0,
+        stdout: `${realpathSync(essential)}\n`,
+        stderr: "",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should resolve a source neighbor when the declaration names its enclosing marketplace", () => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-grok-own-"));
+    try {
+      mkdirSync(join(root, ".claude-plugin"));
+      writeFileSync(
+        join(root, ".claude-plugin/marketplace.json"),
+        `${JSON.stringify({ name: "alvis" })}\n`,
+      );
+      const core = declareDependencies(
+        createPlugin(join(root, "plugins/core"), "core", "grok"),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      const essential = createPlugin(
+        join(root, "plugins/essential"),
+        "essential",
+        "grok",
+      );
+
+      expect(
+        runResolver("essential", { GROK_PLUGIN_ROOT: core }),
+      ).toMatchObject({
+        status: 0,
+        stdout: `${realpathSync(essential)}\n`,
+        stderr: "",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should not resolve a same-named sibling when the dependency names another marketplace", () => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-grok-declared-"));
+    try {
+      const core = declareDependencies(
+        createPlugin(join(root, "plugins/core"), "core", "grok"),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      createPlugin(join(root, "plugins/essential"), "essential", "grok");
+
+      expect(
+        runResolver("essential", { GROK_PLUGIN_ROOT: core }),
+      ).toMatchObject({ status: 1, stdout: "", stderr: "" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    [
+      "conflicting marketplaces",
+      JSON.stringify({
+        dependencies: [
+          { name: "essential", marketplace: "alvis" },
+          { name: "essential", marketplace: "other" },
+        ],
+      }),
+    ],
+    [
+      "an invalid marketplace",
+      JSON.stringify({
+        dependencies: [{ name: "essential", marketplace: "../cache/alvis" }],
+      }),
+    ],
+    ["an unparsable manifest", "{"],
+  ])("should fail silently for %s in the declaration", (_case, manifest) => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-ambiguous-"));
+    try {
+      const core = createPlugin(
+        join(root, "cache/downstream/core/1.0.0"),
+        "core",
+        "codex",
+      );
+      mkdirSync(join(core, ".claude-plugin"));
+      writeFileSync(join(core, ".claude-plugin/plugin.json"), manifest);
+      // a resolvable same-marketplace fallback proves the declaration itself fails
+      createPlugin(
+        join(root, "cache/downstream/essential/1.0.0"),
+        "essential",
+        "codex",
+      );
+      createPlugin(
+        join(root, "cache/alvis/essential/1.0.0"),
+        "essential",
+        "codex",
+      );
+
+      expect(runResolver("essential", { PLUGIN_ROOT: core })).toMatchObject({
+        status: 1,
+        stdout: "",
+        stderr: "",
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("should fail silently when the declared Codex marketplace caches several versions", () => {
+    const root = mkdtempSync(join(tmpdir(), "plugin-root-codex-versions-"));
+    try {
+      const core = declareDependencies(
+        createPlugin(
+          join(root, "cache/downstream/core/1.0.0"),
+          "core",
+          "codex",
+        ),
+        [{ name: "essential", marketplace: "alvis" }],
+      );
+      createPlugin(
+        join(root, "cache/alvis/essential/1.0.0"),
+        "essential",
+        "codex",
+      );
+      createPlugin(
+        join(root, "cache/alvis/essential/1.0.0-next"),
+        "essential",
+        "codex",
+      );
+
+      expect(runResolver("essential", { PLUGIN_ROOT: core })).toMatchObject({
+        status: 1,
+        stdout: "",
+        stderr: "",
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

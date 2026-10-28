@@ -1,3 +1,9 @@
+> **Status:** Superseded
+>
+> **Superseded by:** [ADR-2 — Resolve installed plugins from their declared marketplace](../../harness/adr-2-declared-marketplace-plugin-resolution.md)
+>
+> **What changed:** Partial change: the resolver now searches the marketplace that the invoking plugin's manifest names for a dependency, instead of only the invoking plugin's own marketplace, and under Claude Code a declared dependency no longer requires the invoking plugin to appear in the installed-plugin registry; everything else is unchanged.
+
 # ADR-1: Resolve installed plugins through a projected harness adapter
 
 📌

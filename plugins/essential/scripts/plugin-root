@@ -21,6 +21,19 @@ fi
 current_root_input=$current_root
 current_root=$(cd "$current_root" 2>/dev/null && pwd -P) || exit 1
 
+# a dependency object naming a marketplace redirects the lookup there; plain
+# string dependencies and objects without a marketplace stay in the invoking
+# plugin's own marketplace
+declared_marketplace=
+declaring_manifest="$current_root/.claude-plugin/plugin.json"
+if [[ -f "$declaring_manifest" ]]; then
+  declared_marketplace=$(jq -er --arg name "$plugin_name" '
+    [.dependencies[]? | objects | select(.name == $name and has("marketplace")) | .marketplace] | unique |
+    if length == 0 then "" elif length == 1 and (.[0] | type) == "string" then .[0] else error("ambiguous") end
+  ' "$declaring_manifest" 2>/dev/null) || exit 1
+  [[ -z "$declared_marketplace" || "$declared_marketplace" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || exit 1
+fi
+
 is_plugin_root() {
   local candidate=$1
   local manifest
@@ -39,9 +52,13 @@ emit_plugin_root() {
   (cd "$candidate" && pwd -P)
 }
 
+# a source-shaped neighbor belongs to the marketplace whose catalog encloses it
 plugins_parent=$(dirname "$current_root")
-if [[ $(basename "$plugins_parent") == plugins ]] && emit_plugin_root "$plugins_parent/$plugin_name"; then
-  exit 0
+if [[ $(basename "$plugins_parent") == plugins ]]; then
+  source_marketplace=$(jq -r '.name // empty' "$(dirname "$plugins_parent")/.claude-plugin/marketplace.json" 2>/dev/null) || source_marketplace=
+  if [[ -z "$declared_marketplace" || "$declared_marketplace" == "$source_marketplace" ]] && emit_plugin_root "$plugins_parent/$plugin_name"; then
+    exit 0
+  fi
 fi
 
 if [[ "$harness" == claude ]]; then
@@ -49,9 +66,13 @@ if [[ "$harness" == claude ]]; then
   [[ -n "$claude_home" ]] || exit 1
   registry="$claude_home/plugins/installed_plugins.json"
   [[ -f "$registry" ]] || exit 1
-  marketplace=$(jq -er --arg root "$current_root" --arg input "$current_root_input" '
-    [.plugins | to_entries[] | select(any(.value[]?; .installPath == $root or .installPath == $input)) | (.key | split("@") | .[1])] | unique | if length == 1 then .[0] else empty end
-  ' "$registry" 2>/dev/null) || exit 1
+  # only an undeclared lookup needs the registry to name the invoking marketplace
+  marketplace=$declared_marketplace
+  if [[ -z "$marketplace" ]]; then
+    marketplace=$(jq -er --arg root "$current_root" --arg input "$current_root_input" '
+      [.plugins | to_entries[] | select(any(.value[]?; .installPath == $root or .installPath == $input)) | (.key | split("@") | .[1])] | unique | if length == 1 then .[0] else empty end
+    ' "$registry" 2>/dev/null) || exit 1
+  fi
   candidates=$(jq -er --arg key "$plugin_name@$marketplace" '
     [.plugins[$key][]?.installPath | select(type == "string")] | unique[]
   ' "$registry" 2>/dev/null) || exit 1
@@ -73,9 +94,14 @@ version=$(basename "$current_root")
 marketplace_root=$(dirname "$(dirname "$current_root")")
 cache_root=$(dirname "$marketplace_root")
 [[ $(basename "$cache_root") == cache ]] || exit 1
-target_root="$marketplace_root/$plugin_name"
-if emit_plugin_root "$target_root/$version"; then
-  exit 0
+if [[ -n "$declared_marketplace" && "$declared_marketplace" != "$(basename "$marketplace_root")" ]]; then
+  # versions of another marketplace are unrelated, so only a unique candidate qualifies
+  target_root="$cache_root/$declared_marketplace/$plugin_name"
+else
+  target_root="$marketplace_root/$plugin_name"
+  if emit_plugin_root "$target_root/$version"; then
+    exit 0
+  fi
 fi
 
 resolved=

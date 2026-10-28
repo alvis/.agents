@@ -12,4 +12,4 @@
 
 | Document | Status |
 | --- | --- |
-| [ADR-1: Resolve installed plugins through a projected harness adapter](decisions/harness/adr-1-installed-plugin-resolution.md) | Accepted |
+| [ADR-2: Resolve installed plugins from their declared marketplace](decisions/harness/adr-2-declared-marketplace-plugin-resolution.md) | Accepted |
