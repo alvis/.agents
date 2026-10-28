@@ -14,7 +14,7 @@ Give every fact one authoritative file. A second mention links to that authority
 
 Do not hard-wrap prose: every paragraph occupies one source line. Within a plugin, relative file references stay inside that plugin; name a cross-plugin file as `<plugin>:<path-within-plugin>` instead of escaping through `../` or spelling a repository-relative `plugins/<plugin>/...` path.
 
-A plugin may load or execute scripts only inside itself or a declared dependency. Resolve a dependency with the invoking plugin's `scripts/plugin-root <plugin>` projection; never infer sibling or cache layouts in a hook. [`ADR-1`](docs/architecture/decisions/harness/adr-1-installed-plugin-resolution.md) owns the accepted resolver design and its single duplication exception.
+A plugin may load or execute scripts only inside itself or a declared dependency. Resolve a dependency with the invoking plugin's `scripts/plugin-root <plugin>` projection; never infer sibling or cache layouts in a hook. [`ADR-2`](docs/architecture/decisions/harness/adr-2-declared-marketplace-plugin-resolution.md) owns the accepted resolver design and its single duplication exception.
 
 ## Route the task
 

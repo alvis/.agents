@@ -145,7 +145,7 @@
           "type": "prose",
           "text": [
             "The one alternative the record weighs is the guess itself: work out Essential's folder from Coding's own. It was rejected because the three harnesses lay plugins out differently, so a guessed path either misses Essential or finds an unrelated copy. The price of the chosen design is small and stated: every plugin carries the same short file, and the copy step has to be kept current. ",
-            { "kind": "source", "text": "ADR-1, Alternatives and Consequences", "ref": "docs/architecture/decisions/harness/adr-1-installed-plugin-resolution.md" }
+            { "kind": "source", "text": "ADR-1, Alternatives and Consequences", "ref": "docs/architecture/decisions/superseded/harness/adr-1-installed-plugin-resolution.md" }
           ]
         },
         {
@@ -367,7 +367,7 @@
     }
   ],
   "sources": [
-    { "label": "ADR-1: Resolve installed plugins through a projected harness adapter", "ref": "docs/architecture/decisions/harness/adr-1-installed-plugin-resolution.md" },
+    { "label": "ADR-1: Resolve installed plugins through a projected harness adapter", "ref": "docs/architecture/decisions/superseded/harness/adr-1-installed-plugin-resolution.md" },
     { "label": "L1 · do not rebind working-attitude.md", "ref": ".state/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" },
     { "label": "L2 · the superseded first version", "ref": ".state/works/plugin-context-slimming/decisions/superseded/working-attitude-binding.md" },
     { "label": "The resolver each plugin carries", "ref": "scripts/plugin-root" },

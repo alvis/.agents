@@ -42,9 +42,9 @@ Native static `SessionStart` payload commands derive from [`nativePayloadCommand
 
 ## Installed dependency resolution
 
-Native hooks execute only plugin-local scripts or scripts in declared dependencies. Each plugin carries a generated `scripts/plugin-root` projection from the canonical root `scripts/plugin-root`; [ADR-1](decisions/harness/adr-1-installed-plugin-resolution.md) owns why this resolver is the single permitted duplicated executable.
+Native hooks execute only plugin-local scripts or scripts in declared dependencies. Each plugin carries a generated `scripts/plugin-root` projection from the canonical root `scripts/plugin-root`; [ADR-2](decisions/harness/adr-2-declared-marketplace-plugin-resolution.md) owns why this resolver is the single permitted duplicated executable.
 
-The resolver takes one plugin name and returns that plugin's canonical installed root. Claude Code uses its installed-plugin registry, Codex uses the invoking marketplace cache with ambiguity rejection, and Grok Build uses the source-shaped marketplace plugin set. Every candidate is verified against its harness manifest, and an absent or ambiguous dependency exits 1 with empty stdout.
+The resolver takes one plugin name and returns that plugin's canonical installed root. The lookup targets the marketplace that the invoking plugin's manifest declares for that dependency, or the invoking plugin's own marketplace otherwise. Claude Code uses its installed-plugin registry, Codex uses the target marketplace cache with ambiguity rejection, and Grok Build uses the source-shaped plugin set of the enclosing marketplace. Every candidate is verified against its harness manifest, and an absent or ambiguous dependency exits 1 with empty stdout.
 
 ## Conditional domain context
 
