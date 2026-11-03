@@ -5,17 +5,18 @@ This is the long-form companion to the "Tabs Placement — Brief" section of `st
 Cross-references:
 
 - `standard:project-structure/rules/rps-comps-02.md` (allowed buckets under `src/components/`)
+- `standard:project-structure/rules/rps-comps-03.md` (one folder per shared component, imported through its `index.ts`)
 - `standard:project-structure/rules/rps-feat-02.md` (container/presentational split)
 - `standard:project-structure/rules/rps-promo-01.md` (second-consumer promotion)
 
 ---
 
-## 1. Headless Tabs (`src/components/headless/Tabs.tsx`)
+## 1. Headless Tabs (`src/components/headless/Tabs/Tabs.tsx`)
 
 **Purpose**: Behavior + ARIA only. No styled JSX. Other styled wrappers consume this primitive.
 
 ```typescript
-// src/components/headless/Tabs.tsx
+// src/components/headless/Tabs/Tabs.tsx
 import type { FC, PropsWithChildren } from 'react';
 
 export type TabsProps = PropsWithChildren<{
@@ -34,16 +35,16 @@ export const Tabs: FC<TabsProps> = ({ defaultValue, value, onValueChange, childr
 
 **When to use**: You need tabs behavior (state, keyboard nav, ARIA roles) without committing to a visual style.
 
-**Escalate to next bucket when**: A styled wrapper around this primitive is needed — move the styled version to `composites/Tabs.tsx` (section 2). The headless primitive stays here.
+**Escalate to next bucket when**: A styled wrapper around this primitive is needed — move the styled version to `composites/Tabs/Tabs.tsx` (section 2). The headless primitive stays here.
 
 ---
 
-## 2. Styled Generic Tabs (`src/components/composites/Tabs.tsx`)
+## 2. Styled Generic Tabs (`src/components/composites/Tabs/Tabs.tsx`)
 
 **Purpose**: Styled wrapper around the headless primitive. App-wide default look. Domain-agnostic.
 
 ```typescript
-// src/components/composites/Tabs.tsx
+// src/components/composites/Tabs/Tabs.tsx
 import type { ComponentPropsWithoutRef, FC, PropsWithChildren } from 'react';
 import { Tabs as HeadlessTabs } from '#components/headless/Tabs';
 
@@ -86,7 +87,7 @@ export const Tabs = Object.assign(TabsRoot, {
 ```typescript
 // src/components/composites/Tabs/variants/PillTabs.tsx
 import type { ComponentPropsWithoutRef, FC, PropsWithChildren } from 'react';
-import { Tabs } from '#components/composites/Tabs';
+import { Tabs } from '../Tabs';
 
 export type PillTabsProps = PropsWithChildren<ComponentPropsWithoutRef<typeof Tabs>>;
 
@@ -96,6 +97,8 @@ export const PillTabs: FC<PillTabsProps> = (props) => (
 ```
 
 **When to use**: You have 2+ visual treatments of the same Tabs behavior (pill, underline, segmented) and want to keep them grouped.
+
+Variants are parts of the `Tabs` folder: they import `Tabs` relatively, and `Tabs/index.ts` exports each public variant, so callers write `import { PillTabs } from '#components/composites/Tabs'` (`RPS-COMPS-03`).
 
 **Escalate to next bucket when**: A variant becomes tightly coupled to a single domain — move it into `src/features/<domain>/components/` (section 4).
 
@@ -238,12 +241,12 @@ export const ProjectTabsContainer: FC = () => {
 
 ---
 
-## 8. Third-Party Wrapping (`src/components/adapters/RadixTabsAdapter.tsx`)
+## 8. Third-Party Wrapping (`src/components/adapters/RadixTabsAdapter/RadixTabsAdapter.tsx`)
 
 **Purpose**: Quarantine a third-party tabs library (Radix UI, Headless UI, Reach UI) behind a project-local API so call sites never import the library directly.
 
 ```typescript
-// src/components/adapters/RadixTabsAdapter.tsx
+// src/components/adapters/RadixTabsAdapter/RadixTabsAdapter.tsx
 import * as RadixTabs from '@radix-ui/react-tabs';
 import type { ComponentPropsWithoutRef, ComponentType, FC, PropsWithChildren } from 'react';
 
@@ -278,11 +281,11 @@ export const Tabs: FC<TabsProps> & {
 
 | Section | Path                                                      | Trigger                                                      |
 |---------|-----------------------------------------------------------|--------------------------------------------------------------|
-| 1       | `src/components/headless/Tabs.tsx`                        | Need behavior + ARIA only                                    |
-| 2       | `src/components/composites/Tabs.tsx`                      | Need a project-default styled Tabs reused across the app     |
+| 1       | `src/components/headless/Tabs/Tabs.tsx`                        | Need behavior + ARIA only                                    |
+| 2       | `src/components/composites/Tabs/Tabs.tsx`                      | Need a project-default styled Tabs reused across the app     |
 | 3       | `src/components/composites/Tabs/variants/`                | Multiple visual variants share behavior                      |
 | 4       | `src/features/<domain>/components/`                       | Tab list is dictated by a domain                             |
 | 5       | `src/app/<route>/components/`                             | One-off tab orchestration for a single route                 |
 | 6       | `src/app/<section>/layout.tsx` + route-local Tabs         | Tabs ARE the routing                                         |
 | 7       | feature container + composite Tabs                        | Tab list fetched from API                                    |
-| 8       | `src/components/adapters/RadixTabsAdapter.tsx`            | Wrapping a third-party tabs library                          |
+| 8       | `src/components/adapters/RadixTabsAdapter/RadixTabsAdapter.tsx`            | Wrapping a third-party tabs library                          |

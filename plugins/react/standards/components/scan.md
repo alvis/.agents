@@ -58,5 +58,5 @@ Any single violation blocks approval by default. Protocol: `essential:directions
 | `RC-STATE-02` | Deep prop drilling | Same `user` prop threaded through 4 components instead of Context |
 | `RC-PERF-01` | Object/array created inline in render | `style={{ margin: 10 }}`; `options={{ showEmail: true }}` in JSX |
 | `RC-PERF-02` | Missing memoization on hot paths | Expensive sort each render; new handler each render passed to memoized child |
-| `RC-NEXT-01` | Heavy import without `dynamic`; raw `<img>` instead of `next/image` | `import HeavyChart from '#components/Chart'`; `<img src="/hero.jpg">` |
+| `RC-NEXT-01` | Heavy import without `dynamic`; raw `<img>` instead of `next/image` | `import HeavyChart from '#components/composites/Chart'`; `<img src="/hero.jpg">` |
 | `RC-DOC-01` | Missing per-component Storybook coverage | Exported `Button.tsx` without `Button.stories.tsx`; composed `<Form><Field/></Form>` without `Form.demo.stories.tsx` |

@@ -6,7 +6,7 @@
 
 ## Fix
 
-When `src/components/<bucket>/<File>.tsx` imports from `features/**` or `app/**`:
+When a file under `src/components/**` imports from `features/**` or `app/**`:
 
 - **If the import is a domain type**: the component is not domain-agnostic. Move it into the owning feature's `components/` folder, or refactor to accept generic props (e.g., `id: string`, `label: string`) instead of a domain shape.
 - **If the import is a feature component**: the dependency is upward. Either inline the needed piece into this shared component, or invert — turn the shared component into a "slot" that the feature composes.
@@ -20,7 +20,7 @@ When `src/components/<bucket>/<File>.tsx` imports from `features/**` or `app/**`
 
 ## Common Mistakes
 
-1. Importing `Invoice` from `#features/billing/types/Invoice` into `src/components/composites/Card.tsx` instead of accepting `{ title, subtitle, body }` props.
+1. Importing `Invoice` from `#features/billing/types/Invoice` into `src/components/composites/Card/Card.tsx` instead of accepting `{ title, subtitle, body }` props.
 2. A "shared" `UserBadge` that imports `useCurrentUser` from `#features/auth/hooks/` — the badge should accept the user as a prop.
 3. A shared layout reaching into `#app/dashboard/...` for a config value — config should be passed in.
 

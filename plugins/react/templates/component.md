@@ -4,6 +4,24 @@ _Complete boilerplate template for React components with TypeScript, testing, an
 
 ## Basic Component Template
 
+### File Layout
+
+A shared component under `src/components/<bucket>/` gets its own folder with an `index.ts` entry (`RPS-COMPS-03`, `standard:project-structure`):
+
+```plaintext
+ComponentName/
+  index.ts
+  ComponentName.tsx
+  ComponentName.stories.tsx
+```
+
+```typescript
+// ComponentName/index.ts
+export { ComponentName } from './ComponentName';
+
+export type { ComponentNameProps } from './ComponentName';
+```
+
 ### Component Implementation
 
 ````typescript
@@ -66,15 +84,14 @@ export const ComponentName: FC<ComponentNameProps> = ({
 
 ```typescript
 // ComponentName.stories.tsx
-import { expect, jest } from '@storybook/jest';
-import { userEvent, within } from '@storybook/testing-library';
+import { expect, fn } from 'storybook/test';
 
 import { ComponentName } from './ComponentName';
 
 import type { Meta, StoryObj } from '@storybook/react';
 
 const meta = {
-  title: 'Components/ComponentName',
+  title: 'Components/<Bucket>/ComponentName',
   component: ComponentName,
   parameters: {
     layout: 'centered',
@@ -177,11 +194,11 @@ export const Large: Story = {
 export const Disabled: Story = {
   args: {
     disabled: true,
-    onClick: jest.fn(),
+    onClick: fn(),
     children: 'Disabled Component'
   },
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole('button');
+  play: async ({ args, canvas, userEvent }) => {
+    const button = canvas.getByRole('button');
     await expect(button).toBeDisabled();
     await expect(button).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(button);
@@ -202,8 +219,8 @@ export const WithAriaLabel: Story = {
       }
     }
   },
-  play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByRole('button');
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole('button');
     await expect(button).toHaveAccessibleName('Custom accessible description');
   }
 };
@@ -212,7 +229,7 @@ export const WithAriaLabel: Story = {
 export const Interactive: Story = {
   args: {
     children: 'Click me!',
-    onClick: jest.fn()
+    onClick: fn()
   },
   parameters: {
     docs: {
@@ -221,8 +238,8 @@ export const Interactive: Story = {
       }
     }
   },
-  play: async ({ args, canvasElement }) => {
-    const button = within(canvasElement).getByRole('button', { name: 'Click me!' });
+  play: async ({ args, canvas, userEvent }) => {
+    const button = canvas.getByRole('button', { name: 'Click me!' });
     await userEvent.click(button);
     await expect(args.onClick).toHaveBeenCalledOnce();
   }

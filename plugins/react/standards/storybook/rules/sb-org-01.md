@@ -12,11 +12,11 @@ Story titles must reflect component file structure for clear navigation in the S
 
 ```typescript
 // ✅ GOOD: path reflects file location
-// File: components/forms/Button.stories.tsx
+// File: src/components/primitives/Button/Button.stories.tsx
 import type { Meta } from '@storybook/react';
 
 const meta = {
-  title: 'Components/Forms/Button',
+  title: 'Components/Primitives/Button',
   component: Button,
   tags: ['autodocs'],
 } satisfies Meta<typeof Button>;
@@ -30,17 +30,7 @@ export default {
 };
 ```
 
-```plaintext
-components/
-  Button/
-    Button.tsx
-    Button.stories.tsx
-  Forms/
-    PaymentForm/
-      PaymentForm.tsx
-      PaymentForm.stories.tsx
-      PaymentForm.demo.stories.tsx  # Complex scenarios only
-```
+See the [aligned directory layout](../write.md#directory-alignment).
 
 ## Code Superpowers
 

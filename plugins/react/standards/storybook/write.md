@@ -66,41 +66,42 @@ export const CompleteCheckout: Story = {
 
 ### Helpers and Fixtures
 
-Follow [`SB-ORG-02`](rules/sb-org-02.md) to decide whether story-only support stays inline or is shared. In this example, both story files consume both support modules, so `Forms/` is their nearest common parent:
+Follow [`SB-ORG-02`](rules/sb-org-02.md): interaction helpers always live in `.stories.helpers.ts`; fixtures stay inline until a second story file needs them. In this example, both story files consume both support modules, so `components/` is their nearest common parent:
 
 ```plaintext
-components/
-  Forms/
-    .stories.helpers.ts
-    .stories.fixtures.ts
-    PaymentForm/
-      PaymentForm.stories.tsx
-    OrderSummary/
-      OrderSummary.stories.tsx
+features/checkout/components/
+  .stories.helpers.ts
+  .stories.fixtures.ts
+  PaymentForm/
+    PaymentForm.stories.tsx
+  OrderSummary/
+    OrderSummary.stories.tsx
 ```
 
 ```typescript
 // PaymentForm/PaymentForm.stories.tsx
-import { formatAmount } from '../.stories.helpers';
+import { fillCard } from '../.stories.helpers';
 import { orderFixture } from '../.stories.fixtures';
 
 // OrderSummary/OrderSummary.stories.tsx
-import { formatAmount } from '../.stories.helpers';
+import { fillCard } from '../.stories.helpers';
 import { orderFixture } from '../.stories.fixtures';
 ```
 
 ### Directory Alignment
 
+Shared components follow the folder layout in `RPS-COMPS-03` (`standard:project-structure`); story files and their single-consumer interaction helpers sit beside the component:
+
 ```plaintext
-components/
-  Button/
-    Button.tsx
-    Button.stories.tsx
-  Forms/
-    PaymentForm/
-      PaymentForm.tsx
-      PaymentForm.stories.tsx
-      PaymentForm.demo.stories.tsx  # Complex scenarios only
+components/primitives/Button/
+  index.ts
+  Button.tsx
+  Button.stories.tsx
+  .stories.helpers.ts             # interaction helpers (SB-ORG-02)
+features/checkout/components/PaymentForm/
+  PaymentForm.tsx
+  PaymentForm.stories.tsx
+  PaymentForm.demo.stories.tsx    # Complex scenarios only
 ```
 
 ## Interactive Stories
@@ -109,12 +110,10 @@ components/
 
 ```typescript
 // ✅ GOOD: interactive story with play function
-import { expect } from '@storybook/jest';
-import { userEvent, within } from '@storybook/testing-library';
+import { expect } from 'storybook/test';
 
 export const Interactive: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas, userEvent }) => {
     const button = canvas.getByRole('button');
     await userEvent.click(button);
     await expect(button).toBeEnabled();
@@ -123,8 +122,7 @@ export const Interactive: Story = {
 
 // ✅ GOOD: form interaction story
 export const FormInteraction: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
+  play: async ({ canvas, userEvent }) => {
     const input = canvas.getByLabelText('Email');
     await userEvent.type(input, 'test@example.com');
     await userEvent.click(canvas.getByRole('button', { name: 'Submit' }));
@@ -132,6 +130,18 @@ export const FormInteraction: Story = {
   },
 };
 ```
+
+### When a Story File Grows
+
+Apply these in order and stop when the file reads well:
+
+1. Move props most stories share into `meta.args`; each story lists only what differs.
+2. Move validation, formatting, and other non-UI rules into a hook or function with its own unit test; stories test what a user sees and does.
+3. Split a `play` that checks unrelated behaviors into named stories, and reuse setup through another story's `play` or an interaction helper ([`SB-PLAY-02`](rules/sb-play-02.md)).
+4. Hide stories that exist only to test with `tags: ['!dev', '!autodocs']` ([`SB-PLAY-02`](rules/sb-play-02.md)).
+5. Split the component when it still needs more stories than one file holds within the project's `max-lines`; each part gets its own story file.
+
+Never split one component's stories into numbered files (`PaymentForm.part2.stories.tsx`).
 
 ## Controls and Documentation
 

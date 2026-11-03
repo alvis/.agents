@@ -21,7 +21,7 @@ After moving, update imports project-wide and remove the now-empty disallowed fo
 
 - List immediate children of `src/components/`. Flag any folder name not in `{primitives, layouts, composites, headless, boundaries, providers, adapters}`.
 - For each file in `src/components/`, classify by capability (atomic styled element, layout wrapper, etc.) and confirm it lives in the matching bucket.
-- Flag any file under `src/components/<bucket>/<DomainName>/` where `<DomainName>` matches a known domain in `src/features/<DomainName>/`.
+- Flag any component under `src/components/<bucket>/` that imports from, or takes props typed by, a domain in `src/features/<domain>/`; a folder name that matches a feature is not evidence by itself.
 
 ## Common Mistakes
 

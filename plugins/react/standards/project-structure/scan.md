@@ -17,6 +17,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 
 - DO NOT import from `features/**` or `app/**` inside `src/components/**` [`RPS-COMPS-01`]
 - DO NOT create domain-named folders (e.g., `components/billing/`) or a `containers/` folder under `src/components/` — allowed buckets are `primitives/`, `layouts/`, `composites/`, `headless/`, `boundaries/`, `providers/`, `adapters/` [`RPS-COMPS-02`]
+- DO NOT place a component file directly in a bucket, omit its folder's `index.ts`, import past that entry, or map components other than `"#components/*": "./src/components/*/index.ts"` — each shared component lives in `<bucket>/<Name>/<Name>.tsx` behind `<Name>/index.ts` [`RPS-COMPS-03`](rules/rps-comps-03.md)
 
 ### `src/features/<domain>/`
 
@@ -45,8 +46,9 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `RPS-LAYOUT-01` | Code placed out of decision order | `src/utilities/UserCard.tsx` (component in utilities); domain code in `src/types/` |
 | `RPS-ROUTE-01` | Underscore-prefixed route-local folder | `src/app/dashboard/_components/Header.tsx` |
 | `RPS-ROUTE-02` | Domain logic in `page.tsx`, or a unit test importing it | `page.tsx` calls `fetchInvoices()` and renders an invoice table inline |
-| `RPS-COMPS-01` | Upward import from shared components | `src/components/primitives/Button.tsx` imports from `#features/billing/...` |
-| `RPS-COMPS-02` | Disallowed subfolder under `src/components/` | `src/components/billing/`; `src/components/containers/InvoiceList.tsx` |
+| `RPS-COMPS-01` | Upward import from shared components | `src/components/primitives/Button/Button.tsx` imports from `#features/billing/...` |
+| `RPS-COMPS-02` | Disallowed subfolder under `src/components/` | `src/components/billing/`; `src/components/containers/InvoiceList/InvoiceList.tsx` |
+| [`RPS-COMPS-03`](rules/rps-comps-03.md) | Shared component outside its own folder, missing `index.ts`, or imported past it | `src/components/primitives/Button.tsx`; `import { Tabs } from '#components/composites/Tabs/Tabs'`; `"#*": "./src/*/index.ts"` |
 | `RPS-FEAT-01` | Cross-feature import | `src/features/billing/...` imports from `#features/profile/...` |
 | `RPS-FEAT-02` | Container/presentational mix | `features/billing/components/InvoiceList.tsx` calls `useQuery(...)` and renders styled JSX |
 | `RPS-FEAT-03` | "shared" or "ui" used as a domain | `src/features/shared/Button.tsx`; `src/features/ui/Card.tsx` |
