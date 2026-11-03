@@ -33,7 +33,7 @@ src/app/dashboard/components/InvoiceCard.tsx
 src/features/billing/components/InvoiceCard.tsx
         │ second consumer in a DIFFERENT domain → promote
         ▼
-src/components/composites/InvoiceCard.tsx
+src/components/composites/InvoiceCard/InvoiceCard.tsx
                                   // but wait — does it know about `Invoice`?
                                   // If yes, this is not domain-agnostic.
                                   // Refactor to accept generic props or keep in feature.

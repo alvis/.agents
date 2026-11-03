@@ -25,15 +25,13 @@ ButtonStories.tsx               # Missing .stories suffix
 
 Story titles must reflect component file structure for clear navigation.
 
-[Story helper and fixture placement](rules/sb-org-02.md) keeps single-file setup readable in context and shared setup close to its consumers.
-
 ```typescript
 // ✅ GOOD: path reflects file location
-// File: components/forms/Button.stories.tsx
+// File: src/components/primitives/Button/Button.stories.tsx
 import type { Meta } from '@storybook/react';
 
 const meta = {
-  title: 'Components/Forms/Button',
+  title: 'Components/Primitives/Button',
   component: Button,
   tags: ['autodocs'],
 } satisfies Meta<typeof Button>;
@@ -65,14 +63,14 @@ export const Default: Story = {};
 
 ### Typed, Interactive, Controllable Stories
 
-Declare `const meta = { ... } satisfies Meta<typeof Component>`, export it as default, and derive `StoryObj<typeof meta>`. Interactive stories import `within` and `userEvent` from `@storybook/testing-library`, await every user interaction, and assert the observable result. Give each configurable prop a documented `argTypes` control; set function and complex-object controls to `false`.
+Declare `const meta = { ... } satisfies Meta<typeof Component>`, export it as default, and derive `StoryObj<typeof meta>`. Interactive stories take `canvas` and `userEvent` from the `play` context, import `expect` from `storybook/test`, await every user interaction, assert the observable result, and prove one behavior each. Give each configurable prop a documented `argTypes` control; set function and complex-object controls to `false`.
 
 ## Rule Groups
 
 - `SB-NAME-*`: File naming — PascalCase with `.stories.tsx`, optional `.demo.stories.tsx` for complex scenarios.
-- `SB-ORG-*`: Organization — path-based titles, directory alignment, and story helper and fixture placement.
+- `SB-ORG-*`: Organization — path-based titles, directory alignment, interaction helpers in `.stories.helpers.ts`, and fixture placement.
 - `SB-COVERAGE-*`: Story coverage — all variants and states (default, disabled, loading, error, edge cases).
 - `SB-STRUCT-*`: Story structure — `Meta` / `StoryObj` typing, `tags: ['autodocs']`, demo stories for multi-component scenarios.
-- `SB-PLAY-*`: Interactive stories — `play` functions import from `@storybook/testing-library`, await interactions, and assert observable behavior.
+- `SB-PLAY-*`: Interactive stories — `play` functions use the `play` context and `storybook/test`, await interactions, assert observable behavior, prove one behavior each, and hide test-only stories.
 - `SB-CONTROLS-*`: Controls and argTypes — comprehensive `argTypes` with descriptions, disabled controls for functions.
 - `SB-PURE-*`: Pure stories — no inline component definitions, no real API calls; use existing components and mock data.

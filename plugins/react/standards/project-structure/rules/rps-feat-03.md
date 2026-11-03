@@ -27,7 +27,7 @@ src/features/
 
 // ✅ GOOD layout
 src/
-├── components/primitives/Button.tsx
+├── components/primitives/Button/Button.tsx
 ├── utilities/formatDate.ts
 ├── features/billing/...
 └── ... (useDebounce placed adjacent to its primary consumer)
@@ -48,7 +48,7 @@ src/
 
 - **`features/auth/`**: auth is a real domain (current user, sessions, permissions) and is allowed. Multiple features importing from `auth/` is fine — that's its purpose.
 - **`features/i18n/`**: internationalization is a real cross-cutting concern; if you model it as a feature it can have hooks, types, and a provider. Alternative: keep the provider in `src/components/providers/` and the lookup utility in `src/utilities/`. Pick one approach and document it.
-- **Design tokens, theming**: these are not a feature. They live in `src/components/providers/ThemeProvider.tsx` and a theme module imported from `src/utilities/` or `src/types/`.
+- **Design tokens, theming**: these are not a feature. They live in `src/components/providers/ThemeProvider/ThemeProvider.tsx` and a theme module imported from `src/utilities/` or `src/types/`.
 
 ## Related
 

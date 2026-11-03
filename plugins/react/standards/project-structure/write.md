@@ -24,6 +24,7 @@
 
 - **RPS-COMPS-01**: `src/components/**` must not import from `features/**` or `app/**`.
 - **RPS-COMPS-02**: Allowed buckets are primitives, layouts, composites, headless, boundaries, providers, adapters. No domain-named folders. No `containers/`.
+- **RPS-COMPS-03**: Each shared component lives in `<bucket>/<Name>/<Name>.tsx` with an `index.ts` entry; `package.json` maps `"#components/*": "./src/components/*/index.ts"` and callers import `#components/<bucket>/<Name>`.
 
 ### Features (RPS-FEAT)
 
@@ -152,6 +153,15 @@ export default async function DashboardPage() {
 | `adapters/`     | Third-party wrapping: `RadixTabsAdapter`, `DateAdapter`, `AnalyticsAdapter`        |
 
 Forbidden under `src/components/`: domain-named folders (`components/billing/`), `containers/`, `components/shared/`, free-form catch-all buckets.
+
+Inside a bucket, each component owns a folder whose `index.ts` is its only entry (`RPS-COMPS-03`):
+
+```plaintext
+src/components/composites/Tabs/
+  index.ts            # export { Tabs } + export type { TabsProps }
+  Tabs.tsx
+  Tabs.stories.tsx
+```
 
 ### `src/features/<domain>/` Layout
 
@@ -326,25 +336,25 @@ import type { Invoice } from 'apps/web/src/features/billing/types/Invoice'; // �
 
 Tabs are the canonical "where does this go?" puzzle. Formula:
 
-- **Headless Tabs primitive** → `src/components/headless/Tabs.tsx`
-- **Styled wrapper for the headless primitive** → `src/components/composites/Tabs.tsx`
+- **Headless Tabs primitive** → `src/components/headless/Tabs/Tabs.tsx`
+- **Styled wrapper for the headless primitive** → `src/components/composites/Tabs/Tabs.tsx`
 - **Visual variants** (pill / underline / segmented) → `src/components/composites/Tabs/variants/`
 - **Feature-specific tab content** (e.g., billing settings tabs) → `src/features/billing/components/BillingTabs.tsx`
 - **Page-specific tab orchestration** (one-off for one route) → `src/app/dashboard/components/DashboardTabs.tsx`
-- **Third-party tabs library wrapping** (Radix, Headless UI) → `src/components/adapters/RadixTabsAdapter.tsx`
+- **Third-party tabs library wrapping** (Radix, Headless UI) → `src/components/adapters/RadixTabsAdapter/RadixTabsAdapter.tsx`
 
 Brief decision matrix:
 
 | Use Case                                            | Placement                                       | Why                                                              |
 |-----------------------------------------------------|-------------------------------------------------|------------------------------------------------------------------|
-| Pure behavior, no styled JSX                        | `src/components/headless/Tabs.tsx`              | Reused across many styled wrappers                               |
-| Styled, generic, app-wide                           | `src/components/composites/Tabs.tsx`            | Domain-agnostic UI                                               |
+| Pure behavior, no styled JSX                        | `src/components/headless/Tabs/Tabs.tsx`              | Reused across many styled wrappers                               |
+| Styled, generic, app-wide                           | `src/components/composites/Tabs/Tabs.tsx`            | Domain-agnostic UI                                               |
 | Visual variant of the generic Tabs                  | `src/components/composites/Tabs/variants/`      | Variant is a styling concern, not a new component                |
 | Tabs whose tab list is dictated by a domain         | `src/features/<domain>/components/`             | Knows about domain shape; composes generic Tabs                  |
 | Tabs only one route ever uses                       | `src/app/<route>/components/`                   | Route-local; do not pollute features or shared                   |
 | Tabs driving routing (URL per tab)                  | `src/app/<section>/layout.tsx` + route-local    | Tabs are a routing concern at that layout level                  |
 | Tab list fetched from API                           | feature container fetches → composite Tabs      | Container/presentational split — see `RPS-FEAT-02`               |
-| Wrapping Radix/Headless UI Tabs                     | `src/components/adapters/RadixTabsAdapter.tsx`  | Quarantine third-party API surface                               |
+| Wrapping Radix/Headless UI Tabs                     | `src/components/adapters/RadixTabsAdapter/RadixTabsAdapter.tsx`  | Quarantine third-party API surface                               |
 
 See `examples/tabs-placement.md` for the full 8-section case study.
 

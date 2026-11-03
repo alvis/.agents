@@ -31,7 +31,7 @@ When code is in the wrong tier:
 ## Edge Cases
 
 - **Cross-domain primitive type** (e.g., `Pagination`, `ApiResponse<T>`): genuinely cross-cutting types belong in `src/types/`. The test: does any feature own this concept? If no — it goes in `src/types/`.
-- **Auth/Session**: typically promoted to `src/features/auth/` with a provider exported into `src/components/providers/AppProviders.tsx`. The provider is shared, the domain logic is not.
+- **Auth/Session**: typically promoted to `src/features/auth/` with a provider exported into `src/components/providers/AppProviders/AppProviders.tsx`. The provider is shared, the domain logic is not.
 - **Marketing pages**: large public-facing pages are usually all route-local under `src/app/`. They rarely need a `features/` entry.
 
 ## Related

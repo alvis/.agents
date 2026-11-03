@@ -17,7 +17,8 @@ Button.spec.tsx         # Component tests live in stories — use play() in Butt
 ### Directory Structure
 
 ```plaintext
-components/
+components/primitives/Button/
+├── index.ts            # Public entry (RPS-COMPS-03 in standard:project-structure)
 ├── Button.tsx          # Implementation
 └── Button.stories.tsx  # Storybook stories (required; interaction tests via play())
 ```
@@ -142,7 +143,7 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
 
 ```typescript
 // ✅ GOOD: dynamic imports for performance
-const HeavyChart = dynamic(() => import('#components/Chart'), {
+const HeavyChart = dynamic(() => import('#components/composites/Chart'), {
   loading: () => <Skeleton />,
   ssr: false,
 });
@@ -229,27 +230,32 @@ If your story only renders `<MyComponent>`, it's `.stories.tsx`. If your story r
 
 ```plaintext
 ✅ GOOD: simple component — one story file
-components/
+components/primitives/Button/
+├── index.ts
 ├── Button.tsx
 └── Button.stories.tsx
 
 ✅ GOOD: composition component — story + demo
-components/
+components/composites/Form/
+├── index.ts
 ├── Form.tsx
 ├── Form.stories.tsx          # Form rendered alone (empty, with one field, etc.)
 └── Form.demo.stories.tsx     # Form composed with TextField + SubmitButton
 
 ❌ BAD: exported component, no story
-components/
+components/primitives/Button/
+├── index.ts
 └── Button.tsx                # missing Button.stories.tsx
 
 ❌ BAD: composition demo placed inside the basic story
-components/
+components/composites/Form/
+├── index.ts
 ├── Form.tsx
 └── Form.stories.tsx          # contains <Form><TextField/></Form> — should be .demo.stories.tsx
 
 ❌ BAD: component co-located with a .spec.tsx
-components/
+components/primitives/Button/
+├── index.ts
 ├── Button.tsx
 ├── Button.stories.tsx
 └── Button.spec.tsx           # interaction coverage belongs in Button.stories.tsx play()

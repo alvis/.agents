@@ -12,7 +12,7 @@ Use Next.js's built-in primitives for code-splitting and image optimization: `dy
 
 ```typescript
 // ✅ GOOD: dynamic imports for performance
-const HeavyChart = dynamic(() => import('#components/Chart'), {
+const HeavyChart = dynamic(() => import('#components/composites/Chart'), {
   loading: () => <Skeleton />,
   ssr: false,
 });

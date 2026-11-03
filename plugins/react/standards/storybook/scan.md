@@ -10,8 +10,9 @@ Any single P0 violation blocks approval by default. Protocol: `essential:directi
 
 ### Organization
 
-- DO NOT use flat story titles (`title: 'Button'`) — titles must mirror the file path (`Components/Forms/Button`) [`SB-ORG-01`]
-- DO NOT extract helpers or fixtures used by only one story file, even when reused by its story exports or the file is long; keep them inline [`SB-ORG-02`](rules/sb-org-02.md)
+- DO NOT use flat story titles (`title: 'Button'`) — titles must mirror the file path (`Components/Primitives/Button`) [`SB-ORG-01`]
+- DO NOT define interaction helpers inside a `.stories.tsx` file or call `expect` inside `.stories.helpers.ts` — interaction helpers live in `.stories.helpers.ts` even with one consumer, and every assertion stays in its story [`SB-ORG-02`](rules/sb-org-02.md)
+- DO NOT extract fixtures or non-interaction helpers used by only one story file, even when reused by its story exports or the file is long; keep them inline [`SB-ORG-02`](rules/sb-org-02.md)
 - DO NOT duplicate helpers or fixtures shared across story files, or place them outside `.stories.helpers.ts` / `.stories.fixtures.ts` in those files' nearest common parent directory [`SB-ORG-02`](rules/sb-org-02.md)
 
 ### Story Coverage
@@ -24,8 +25,10 @@ Any single P0 violation blocks approval by default. Protocol: `essential:directi
 
 ### Interactive Stories
 
-- DO NOT import `within` or `userEvent` from another package — use `@storybook/testing-library` [`SB-PLAY-01`]
-- DO NOT leave `userEvent` calls unawaited or omit an assertion of observable behavior from a `play` function [`SB-PLAY-01`]
+- DO NOT import test utilities from `@storybook/testing-library`, `@storybook/jest`, or `@storybook/test`, or wrap `canvasElement` with `within()` — take `canvas` and `userEvent` from the `play` context and import `expect` from `storybook/test` [`SB-PLAY-01`](rules/sb-play-01.md)
+- DO NOT leave `userEvent` calls unawaited or omit an assertion of observable behavior from a `play` function [`SB-PLAY-01`](rules/sb-play-01.md)
+- DO NOT check unrelated behaviors in one `play`, or copy an interaction sequence between stories — one named behavior per story; reuse another story's `play` or an interaction helper [`SB-PLAY-02`](rules/sb-play-02.md)
+- DO NOT show a test-only story in the sidebar or the Docs page — tag it `tags: ['!dev', '!autodocs']` [`SB-PLAY-02`](rules/sb-play-02.md)
 
 ### Controls
 
@@ -92,9 +95,10 @@ export const GoodData: Story = {
 
 | Rule ID | Violation | Bad Examples |
 |---|---|---|
-| [`SB-ORG-02`](rules/sb-org-02.md) | Story-only support extracted without cross-file reuse, duplicated across files, or placed incorrectly | Single-consumer `Button.helpers.ts`; shared data in a distant `fixtures/` directory |
+| [`SB-ORG-02`](rules/sb-org-02.md) | Interaction helper kept in a story file or asserting; fixture extracted without cross-file reuse, duplicated across files, or placed incorrectly | `const fillCard = async (...) => {...}` inside `PaymentForm.stories.tsx`; `expect(...)` in `.stories.helpers.ts`; single-consumer `Button.fixtures.ts`; shared data in a distant `fixtures/` directory |
 | `SB-STRUCT-01` | Meta is not declared with the canonical `satisfies` typing, or component stories omit autodocs/derived story typing | `export default { component: Button } as Meta<typeof Button>`; `type Story = StoryObj<typeof Button>` |
-| `SB-PLAY-01` | Play helpers use the wrong package, interactions are not awaited, or the result is not asserted | `import { userEvent } from '@storybook/test'`; `userEvent.click(button)`; a play function with no `expect(...)` |
+| [`SB-PLAY-01`](rules/sb-play-01.md) | Test utilities come from a retired package, interactions are not awaited, or the result is not asserted | `import { userEvent, within } from '@storybook/testing-library'`; `userEvent.click(button)`; a play function with no `expect(...)` |
+| [`SB-PLAY-02`](rules/sb-play-02.md) | One story checks unrelated behaviors, copies another story's interactions, or a test-only story stays visible | A `Default` play with geometry, focus, selection, and ARIA steps; a test-only edge case without `!dev` and `!autodocs` |
 | `SB-CONTROLS-01` | A configurable prop lacks a suitable documented control, or a function/complex value exposes an unusable control | Enum prop without `options`; `onClick` without `control: false` |
 
 ## Quick Reference
@@ -104,6 +108,7 @@ export const GoodData: Story = {
 | Component | `Button.stories.tsx` | `Components/UI/Button` | Basic component docs |
 | Demo | `Flow.demo.stories.tsx` | `Demos/Feature/Flow` | Multi-component scenarios |
 | Interactive | Any story file | N/A | User interaction testing |
+| Test-only | Component's story file, `tags: ['!dev', '!autodocs']` | N/A | Edge cases with no new visual state |
 | Controls | Any story file | N/A | Prop exploration |
 
 | Control Type | Use Case | Example |
@@ -119,7 +124,8 @@ export const GoodData: Story = {
 1. **What type of story is needed?**
    - If single component → Use `Component.stories.tsx`
    - If multi-component scenario → Use `Flow.demo.stories.tsx`
-   - If interaction testing → Add `play` functions
+   - If interaction testing → Add `play` functions, one behavior per story
+   - If a story file grows long → Follow [When a story file grows](write.md#when-a-story-file-grows)
 
 2. **How complex is the component?**
    - If simple → Include all variants in one file
