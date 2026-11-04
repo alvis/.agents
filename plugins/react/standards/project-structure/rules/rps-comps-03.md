@@ -19,7 +19,7 @@ src/components/composites/Tabs/
   index.ts
   Tabs.tsx
   Tabs.stories.tsx
-  .stories.helpers.ts
+  Tabs.stories.helpers.ts
   variants/PillTabs.tsx
 ```
 

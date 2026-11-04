@@ -68,7 +68,7 @@ Declare `const meta = { ... } satisfies Meta<typeof Component>`, export it as de
 ## Rule Groups
 
 - `SB-NAME-*`: File naming — PascalCase with `.stories.tsx`, optional `.demo.stories.tsx` for complex scenarios.
-- `SB-ORG-*`: Organization — path-based titles, directory alignment, interaction helpers in `.stories.helpers.ts`, and fixture placement.
+- `SB-ORG-*`: Organization — path-based titles, directory alignment, interaction helpers in component- or concern-prefixed story helper modules, and fixture placement.
 - `SB-COVERAGE-*`: Story coverage — all variants and states (default, disabled, loading, error, edge cases).
 - `SB-STRUCT-*`: Story structure — `Meta` / `StoryObj` typing, `tags: ['autodocs']`, demo stories for multi-component scenarios.
 - `SB-PLAY-*`: Interactive stories — `play` functions use the `play` context and `storybook/test`, await interactions, assert observable behavior, prove one behavior each, and hide test-only stories.

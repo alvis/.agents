@@ -11,9 +11,9 @@ Any single P0 violation blocks approval by default. Protocol: `essential:directi
 ### Organization
 
 - DO NOT use flat story titles (`title: 'Button'`) — titles must mirror the file path (`Components/Primitives/Button`) [`SB-ORG-01`]
-- DO NOT define interaction helpers inside a `.stories.tsx` file or call `expect` inside `.stories.helpers.ts` — interaction helpers live in `.stories.helpers.ts` even with one consumer, and every assertion stays in its story [`SB-ORG-02`](rules/sb-org-02.md)
+- DO NOT define interaction helpers inside a `.stories.tsx` file or call `expect` inside a story helper module — interaction helpers live in a support module even with one consumer, and every assertion stays in its story [`SB-ORG-02`](rules/sb-org-02.md)
 - DO NOT extract fixtures or non-interaction helpers used by only one story file, even when reused by its story exports or the file is long; keep them inline [`SB-ORG-02`](rules/sb-org-02.md)
-- DO NOT duplicate helpers or fixtures shared across story files, or place them outside `.stories.helpers.ts` / `.stories.fixtures.ts` in those files' nearest common parent directory [`SB-ORG-02`](rules/sb-org-02.md)
+- DO NOT use dot-prefixed story helper filenames, omit the owning component name in a component folder (`<Name>.stories.helpers.ts`), duplicate helpers or fixtures shared across story files, or place shared support outside those files' nearest common parent directory; name shared helpers after their concern and shared fixtures `.stories.fixtures.ts` [`SB-ORG-02`](rules/sb-org-02.md)
 
 ### Story Coverage
 
@@ -95,7 +95,7 @@ export const GoodData: Story = {
 
 | Rule ID | Violation | Bad Examples |
 |---|---|---|
-| [`SB-ORG-02`](rules/sb-org-02.md) | Interaction helper kept in a story file or asserting; fixture extracted without cross-file reuse, duplicated across files, or placed incorrectly | `const fillCard = async (...) => {...}` inside `PaymentForm.stories.tsx`; `expect(...)` in `.stories.helpers.ts`; single-consumer `Button.fixtures.ts`; shared data in a distant `fixtures/` directory |
+| [`SB-ORG-02`](rules/sb-org-02.md) | Interaction helper kept in a story file, asserting, or misnamed; fixture extracted without cross-file reuse, duplicated across files, or placed incorrectly | `const fillCard = async (...) => {...}` inside `PaymentForm.stories.tsx`; `expect(...)` in `PaymentForm.stories.helpers.ts`; `.stories.helpers.ts` as a helper filename; single-consumer `Button.fixtures.ts`; shared data in a distant `fixtures/` directory |
 | `SB-STRUCT-01` | Meta is not declared with the canonical `satisfies` typing, or component stories omit autodocs/derived story typing | `export default { component: Button } as Meta<typeof Button>`; `type Story = StoryObj<typeof Button>` |
 | [`SB-PLAY-01`](rules/sb-play-01.md) | Test utilities come from a retired package, interactions are not awaited, or the result is not asserted | `import { userEvent, within } from '@storybook/testing-library'`; `userEvent.click(button)`; a play function with no `expect(...)` |
 | [`SB-PLAY-02`](rules/sb-play-02.md) | One story checks unrelated behaviors, copies another story's interactions, or a test-only story stays visible | A `Default` play with geometry, focus, selection, and ARIA steps; a test-only edge case without `!dev` and `!autodocs` |
