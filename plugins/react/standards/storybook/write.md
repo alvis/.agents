@@ -66,11 +66,11 @@ export const CompleteCheckout: Story = {
 
 ### Helpers and Fixtures
 
-Follow [`SB-ORG-02`](rules/sb-org-02.md): interaction helpers always live in `.stories.helpers.ts`; fixtures stay inline until a second story file needs them. In this example, both story files consume both support modules, so `components/` is their nearest common parent:
+Follow [`SB-ORG-02`](rules/sb-org-02.md): interaction helpers always live in a story helper module, named `<Name>.stories.helpers.ts` inside a component folder or after the shared concern outside one; helpers never use a leading dot. Fixtures stay inline until a second story file needs them. In this example, both story files consume both support modules, so `components/` is their nearest common parent:
 
 ```plaintext
 features/checkout/components/
-  .stories.helpers.ts
+  checkout.stories.helpers.ts
   .stories.fixtures.ts
   PaymentForm/
     PaymentForm.stories.tsx
@@ -80,11 +80,11 @@ features/checkout/components/
 
 ```typescript
 // PaymentForm/PaymentForm.stories.tsx
-import { fillCard } from '../.stories.helpers';
+import { fillCard } from '../checkout.stories.helpers';
 import { orderFixture } from '../.stories.fixtures';
 
 // OrderSummary/OrderSummary.stories.tsx
-import { fillCard } from '../.stories.helpers';
+import { fillCard } from '../checkout.stories.helpers';
 import { orderFixture } from '../.stories.fixtures';
 ```
 
@@ -97,7 +97,7 @@ components/primitives/Button/
   index.ts
   Button.tsx
   Button.stories.tsx
-  .stories.helpers.ts             # interaction helpers (SB-ORG-02)
+  Button.stories.helpers.ts      # interaction helpers (SB-ORG-02)
 features/checkout/components/PaymentForm/
   PaymentForm.tsx
   PaymentForm.stories.tsx

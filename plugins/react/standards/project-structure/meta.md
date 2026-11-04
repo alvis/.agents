@@ -29,7 +29,7 @@ This standard enforces requirements beyond typical React/Next.js conventions:
 | Mix presentational and container components freely    | **Strict container/presentational split inside `features/<domain>/`**               |
 | Group shared UI under any bucket name                 | **Allowed buckets are: primitives, layouts, composites, headless, boundaries, providers, adapters** |
 | `containers/` folder under shared components          | **Containers belong inside features only — never under `src/components/`**          |
-| Flat component files, imported by any path            | **One folder per shared component: components through `index.ts`, dot-prefixed helpers through a dedicated higher-priority subpath** |
+| Flat component files, imported by any path            | **One folder per shared component: components through `index.ts`, component-prefixed helpers through a dedicated higher-priority subpath** |
 | `features/shared/` or `features/ui/` as a catch-all   | **"shared" is not a domain — domain-agnostic UI lives under `src/components/`**     |
 | `utilities/` may import React for "helper hooks"      | **`utilities/` is React-unaware: no JSX, no hooks, no React imports**               |
 | Promote to shared on first guess                      | **Promote only on the second real consumer; demote when reuse evaporates**          |
