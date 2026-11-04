@@ -25,6 +25,7 @@
 - **RPS-COMPS-01**: `src/components/**` must not import from `features/**` or `app/**`.
 - **RPS-COMPS-02**: Allowed buckets are primitives, layouts, composites, headless, boundaries, providers, adapters. No domain-named folders. No `containers/`.
 - **RPS-COMPS-03**: Each shared component lives in `<bucket>/<Name>/<Name>.tsx` with an `index.ts` entry; `package.json` maps `"#components/*": "./src/components/*/index.ts"` and callers import `#components/<bucket>/<Name>`.
+- **RPS-COMPS-04**: Name component-folder helpers `.helpers.ts` or `.<domain>.helpers.ts`; map `"#components/*.helpers": "./src/components/*.helpers.ts"` with priority over `#components/*`, use helper aliases from outside the folder, and relative imports inside it. See the [helper naming and import examples](rules/rps-comps-04.md).
 
 ### Features (RPS-FEAT)
 
@@ -154,7 +155,7 @@ export default async function DashboardPage() {
 
 Forbidden under `src/components/`: domain-named folders (`components/billing/`), `containers/`, `components/shared/`, free-form catch-all buckets.
 
-Inside a bucket, each component owns a folder whose `index.ts` is its only entry (`RPS-COMPS-03`):
+Inside a bucket, each component owns a folder whose `index.ts` is its component entry (`RPS-COMPS-03`); [helper modules have their own subpath](rules/rps-comps-04.md) (`RPS-COMPS-04`):
 
 ```plaintext
 src/components/composites/Tabs/
