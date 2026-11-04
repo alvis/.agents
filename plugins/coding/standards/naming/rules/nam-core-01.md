@@ -34,7 +34,7 @@ const onOrderStatusChange = (status: OrderStatus) => refreshDashboard(status);
 | Processors | `*Processor` suffix | `PaymentProcessor`, `DataProcessor` |
 | Errors | `*Error` suffix | `ValidationError`, `NotFoundError`, `AuthError` |
 | Configs | `*Config` suffix | `DatabaseConfig`, `ServerConfig`, `AuthConfig` |
-| Test doubles | `Mock*`, `Stub*`, `Test*` prefix | `MockUser`, `StubRepository`, `TestFixture` |
+| Test-double types and interfaces | `Mock*` encouraged under [TST-MOCK-13](../../testing/rules/tst-mock-13.md) | `MockClient`, `MockRepository` |
 
 ### Disallowed Placeholders
 

@@ -104,7 +104,7 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-MOCK-10**: Vitest cleanup options enabled in config. Do not call mock/stub cleanup methods (`mockReset()`, `mockClear()`, `mockRestore()`, `mock.reset()`, `client.reset()`, `vi.resetAllMocks()`, `vi.clearAllMocks()`, `vi.restoreAllMocks()`, `vi.unstubAllEnvs()`, `vi.unstubAllGlobals()`) or add manual cleanup hooks. For non-Vitest mocks, use history-only clears (`client.resetHistory()`).
 - **TST-MOCK-11**: Use `vi.stubGlobal` and `vi.stubEnv` at the beginning of each `it()` that needs the override. File scope is permitted only when every test needs the same value; config automatically restores stubs after each test.
 - **TST-MOCK-12**: Set shared `vi.useFakeTimers()` and `vi.setSystemTime()` at file or describe level directly (no `beforeAll` wrapper). Per-test overrides for different times are acceptable.
-- **TST-MOCK-13**: No `mock*` or `mocked` identifier prefixes. Use semantic names: `userRepository`, `emailGateway`, `clockStub`.
+- **TST-MOCK-13**: Remove test-double prefixes (`mock`, `mocked`, `stub`, `fake`) from value and helper names instead of substituting another prefix: `mockClient` → `client`. Occurrences later in a name are allowed; factory names such as `createMockClient` and `Mock`-prefixed type/interface names are permitted and encouraged under [the rule](rules/tst-mock-13.md).
 - **TST-MOCK-14**: Use `InstanceType<typeof import("...")["ClassName"]>` for class instance typing, not module-level `typeof import(...)`.
 - **TST-MOCK-15**: Return existing mock instances directly from `vi.mock()` factories. Never re-wrap with `vi.fn((...args) => existing(...args))`.
 
@@ -139,7 +139,7 @@ Mock only IO/external/control dependencies. Keep pure internal logic real.
 
 ### Identifier Names
 
-No `mock*` or `mocked` prefixes. Use semantic names: `userRepository`, `emailGateway`, `clockStub`.
+Follow [TST-MOCK-13](rules/tst-mock-13.md): use semantic value names such as `client`, `userRepository`, and `clock`. Only leading test-double labels are restricted; factory names such as `createMockClient` and `Mock`-prefixed type/interface names are permitted and encouraged.
 
 ### Asserting Calls
 

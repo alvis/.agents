@@ -25,6 +25,7 @@ This standard enforces requirements beyond typical Vitest practices:
 | Output wording pinned for regression detection | **Exact wording requires an explicit supported contract ([TST-CORE-14](rules/tst-core-14.md))** |
 | Coverage thresholds tuned per project | **100% statements, branches, functions, and lines before ready or merge, with at least one behavioral test per non-static-data exported runtime function; only an unapproved `direction-review` draft is exempt (`TST-COVR-01`)** |
 | Hoisted mocks used broadly            | **`vi.hoisted` only for spy/error scenarios**  |
+| Test-double value prefixes accepted | **Semantic names without test-double prefixes ([TST-MOCK-13](rules/tst-mock-13.md))** |
 | Mock typing treated as optional       | **`satisfies`-based mock typing is mandatory** |
 | Per-test setup as default             | **File/describe instances by default**         |
 | Async setup via lifecycle hooks       | **Runner `globalSetup` + `provide`/`inject`, teardown returned** |

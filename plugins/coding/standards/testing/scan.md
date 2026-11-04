@@ -43,7 +43,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT call mock/stub cleanup methods such as `mockReset()`, `mockClear()`, `mockRestore()`, `mock.reset()`, `client.reset()`, `vi.resetAllMocks()`, `vi.clearAllMocks()`, `vi.restoreAllMocks()`, `vi.unstubAllEnvs()`, or `vi.unstubAllGlobals()`; configured Vitest cleanup runs after each test, while `resetHistory()` remains the non-Vitest history-only exception [`TST-MOCK-10`]
 - DO NOT mutate `process.env` or global-object members directly; use `vi.stubEnv`/`vi.stubGlobal` at the beginning of the `it()` that needs the override, or at file scope only when every test needs the same value [`TST-MOCK-11`]
 - DO NOT repeat shared system time setup in individual test cases; set default `vi.useFakeTimers()` and `vi.setSystemTime(...)` at file or describe level [`TST-MOCK-12`]
-- DO NOT use test identifiers that start with `mock` or `mocked` [`TST-MOCK-13`]
+- DO NOT prefix test value or helper names with test-double labels such as `mock`, `mocked`, `stub`, or `fake`, or replace one such prefix with another; remove the prefix (`mockClient` → `client`). Occurrences later in a name are allowed; factory names such as `createMockClient` and `Mock`-prefixed type/interface names are permitted and encouraged [`TST-MOCK-13`](rules/tst-mock-13.md)
 - DO NOT use module types for class instance mock typing, such as `typeof import("#svc")` for instance doubles [`TST-MOCK-14`]
 - DO NOT wrap existing mock instances with nested `vi.fn` in `vi.mock` factories [`TST-MOCK-15`]
 - DO NOT flag existing `vi.fn<T>()` type generics as a violation; typed `vi.fn<T>` is encouraged when named types are available and is not required only when the type can be inferred within a `satisfies` container [`TST-MOCK-16`]
@@ -94,7 +94,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `TST-MOCK-10` | Mock/stub full-reset cleanup is called manually instead of using configured automatic cleanup | `mock.reset(); client.reset(); mockClear(); vi.resetAllMocks(); vi.clearAllMocks(); vi.restoreAllMocks(); vi.unstubAllEnvs()` |
 | `TST-MOCK-11` | A test mutates `process.env` or a global without a Vitest stub | `process.env.API_URL = "x"`; `process["env"].API_URL = "x"`; `globalThis.fetch = fakeFetch` |
 | `TST-MOCK-12` | Shared system time is repeated in individual test cases or wrapped in hooks | `it("x", () => vi.setSystemTime(now))`; `beforeAll(() => { vi.useFakeTimers(); vi.setSystemTime(date) })` |
-| `TST-MOCK-13` | Test identifier starts with forbidden `mock` or `mocked` | `const mockUserRepo = {}` |
+| `TST-MOCK-13` | Test value/helper retains or substitutes a test-double prefix | `mockClient` → `stubClient`; `fakeClient` |
 | `TST-MOCK-14` | Module type is used for class instance mock typing | `Partial<typeof import("#svc")>`; `const client: typeof import("#svc") = { ... }` for an instance double |
 | `TST-MOCK-15` | Existing mock instance is wrapped by nested `vi.fn` in `vi.mock` factory | `existsSync: vi.fn((...args: unknown[]) => existsSync(...args))`; `upload: vi.fn(async (...args) => upload(...args))` |
 | `TST-MOCK-16` | Existing `vi.fn<T>()` type generic is incorrectly removed | `vi.fn<HttpReply>()` changed to `vi.fn()`; `vi.fn<(req: Request) => Response>()` changed to `vi.fn()` |
