@@ -29,7 +29,7 @@ This standard enforces requirements beyond typical React/Next.js conventions:
 | Mix presentational and container components freely    | **Strict container/presentational split inside `features/<domain>/`**               |
 | Group shared UI under any bucket name                 | **Allowed buckets are: primitives, layouts, composites, headless, boundaries, providers, adapters** |
 | `containers/` folder under shared components          | **Containers belong inside features only — never under `src/components/`**          |
-| Flat component files, imported by any path            | **One folder per shared component, imported only through its `index.ts` via `#components/*`** |
+| Flat component files, imported by any path            | **One folder per shared component: components through `index.ts`, dot-prefixed helpers through a dedicated higher-priority subpath** |
 | `features/shared/` or `features/ui/` as a catch-all   | **"shared" is not a domain — domain-agnostic UI lives under `src/components/`**     |
 | `utilities/` may import React for "helper hooks"      | **`utilities/` is React-unaware: no JSX, no hooks, no React imports**               |
 | Promote to shared on first guess                      | **Promote only on the second real consumer; demote when reuse evaporates**          |
@@ -56,7 +56,7 @@ If exception note is missing, submission is rejected.
 
 - `RPS-LAYOUT-*`: Top-level decision order — which tier code belongs to (route → feature → shared → utility → type).
 - `RPS-ROUTE-*`: `src/app/` rules — route-local `components/` folder naming; `page.tsx` as composition layer only.
-- `RPS-COMPS-*`: `src/components/` rules — allowed bucket subfolders, no domain names, no upward imports, one folder per component behind its `index.ts`.
+- `RPS-COMPS-*`: `src/components/` rules — allowed bucket subfolders, no domain names, no upward imports, one folder per component behind its `index.ts`, with named helper modules exposed through their own subpath.
 - `RPS-FEAT-*`: `src/features/<domain>/` rules — container/presentational split, no cross-feature imports, no `shared/`/`ui/` domain.
 - `RPS-UTIL-*`: `src/utilities/` and `src/types/` rules — pure & React-unaware; no domain types in global `types/`.
 - `RPS-PROMO-*`: Promotion rules — second-consumer trigger, demotion when reuse evaporates.

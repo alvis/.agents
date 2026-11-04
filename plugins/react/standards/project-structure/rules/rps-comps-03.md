@@ -2,7 +2,7 @@
 
 ## Intent
 
-Each component under `src/components/<bucket>/` lives in its own PascalCase folder: `<Name>/<Name>.tsx`, its stories, its story helpers, and an `index.ts` that is the folder's only public entry. A growing component then splits into sibling files without moving anything or changing a caller, and its private parts stay unreachable from outside. The package imports map points `#components/*` at folder entries, so `#components/composites/Tabs` resolves to `composites/Tabs/index.ts` and no import path reaches a file the entry does not export.
+Each component under `src/components/<bucket>/` lives in its own PascalCase folder: `<Name>/<Name>.tsx`, its stories, its story helpers, and an `index.ts` that is the component's public entry. A growing component then splits into sibling files without moving anything or changing a caller. The package imports map points `#components/*` at folder entries, so `#components/composites/Tabs` resolves to `composites/Tabs/index.ts`. [Helper modules use a dedicated subpath](rps-comps-04.md); other component parts stay behind the entry.
 
 Components are the exception to the thin `<domain>.ts` entry of `FST-MODL-03` (`coding:standards/file-structure/write.md`): a component folder's entry is `index.ts`, because the `#components/*` mapping resolves only folder entries. For `TYP-IMPT-04` and `TYP-IMPT-05`, each `#components/<bucket>/<Name>` entry is its own subpath module: imports between component folders use the alias, and imports inside one folder are relative.
 
@@ -10,7 +10,7 @@ Components are the exception to the thin `<domain>.ts` entry of `FST-MODL-03` (`
 
 1. Move `src/components/<bucket>/<Name>.tsx` to `src/components/<bucket>/<Name>/<Name>.tsx`, with its `.stories.tsx` files beside it.
 2. Add `<Name>/index.ts` with explicit exports of its public components and their `<Name>Props` types, and no logic (`TYP-MODL-04`, `RC-STRUCT-05`).
-3. Map shared components in `package.json` with one scoped key: `"#components/*": "./src/components/*/index.ts"`.
+3. Map component entries in `package.json` with `"#components/*": "./src/components/*/index.ts"`, alongside the higher-priority [helper mapping](rps-comps-04.md).
 4. Import a shared component from outside its folder as `#components/<bucket>/<Name>`; inside the folder, import siblings relatively (`TYP-IMPT-05`).
 5. Keep a component's parts as files inside its folder (`composites/Tabs/variants/PillTabs.tsx`) and export only the public ones from `index.ts`.
 
@@ -38,6 +38,7 @@ import { PillTabs, Tabs } from '#components/composites/Tabs';
 ```json
 {
   "imports": {
+    "#components/*.helpers": "./src/components/*.helpers.ts",
     "#components/*": "./src/components/*/index.ts"
   }
 }
@@ -47,7 +48,7 @@ import { PillTabs, Tabs } from '#components/composites/Tabs';
 
 - Flag any `.tsx` file directly under `src/components/<bucket>/`.
 - Flag a component folder without `index.ts`, or an `index.ts` holding logic or wildcard-exporting a leaf.
-- Flag an import that reaches past a folder entry (`#components/composites/Tabs/Tabs`) and a `package.json` whose imports do not map `#components/*` to `./src/components/*/index.ts`.
+- Flag a component import that reaches past a folder entry (`#components/composites/Tabs/Tabs`) and a `package.json` whose imports do not map `#components/*` to `./src/components/*/index.ts`.
 
 ## Common Mistakes
 
@@ -58,6 +59,7 @@ import { PillTabs, Tabs } from '#components/composites/Tabs';
 
 ## Edge Cases
 
+- Helper imports are the explicit entry-boundary exception under [RPS-COMPS-04](rps-comps-04.md).
 - Feature and route-local components sit outside this rule; their placement follows `RPS-FEAT-02` and `RPS-ROUTE-01`.
 - A workspace UI package follows its own package exports (`RPS-WS-01`).
 
