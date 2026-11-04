@@ -1,4 +1,5 @@
 import type { Rich } from "./inline.ts";
+import type { LedgerFact } from "./ledger.ts";
 
 // the repeated shapes blocks are built from: figures, cells, and entries.
 
@@ -155,12 +156,31 @@ export interface Deviation {
   revisit?: Rich;
 }
 
+/**
+ * a `kanban` card that opens for the whole of its record
+ *
+ * the face is what the lane shows and the detail is what a reader opens it
+ * for: a card can carry three of a record's nine fields, and a lane wide
+ * enough for all nine is not a lane anyone can scan
+ */
+export interface DetailedCard {
+  /** what the card shows in its lane */
+  face: Rich;
+  /** what opening it shows, in a modal */
+  detail: {
+    /** the modal's heading, naming the record */
+    title: string;
+    /** every field the record holds, by name */
+    facts: LedgerFact[];
+  };
+}
+
 /** one lane of a `kanban` block. */
 export interface Lane {
   /** the lane's name, which is what lane membership means */
   label: string;
   /** the cards in it, in the order the author put them */
-  cards: Rich[];
+  cards: (Rich | DetailedCard)[];
 }
 
 /**

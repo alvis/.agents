@@ -30,6 +30,7 @@ const STREAM: Stream = {
   updated: "2026-08-29T09:00:00Z",
   owner: "Ada",
   next: "finish the parser",
+  blockedOn: "",
   tasks: [DONE],
   malformed: 0,
 };
@@ -51,6 +52,8 @@ function board(
       project,
       streams: streams.map((stream) => ({ ...STREAM, ...stream })),
       excluded,
+      leases: [],
+      leaseProblems: [],
     },
     "2026-08-29 12:00Z",
   );
@@ -93,6 +96,21 @@ describe("fn:stateBoard", () => {
     // under one id is a run refused for a duplicate no author ever wrote
     expect(board([{}], [], "alpha").id).toBe("project-state-alpha");
     expect(board([{}], [], "beta").id).toBe("project-state-beta");
+  });
+
+  it("should leave lease problems to the status board", () => {
+    const data = stateBoard(
+      {
+        project: "sample",
+        streams: [STREAM],
+        excluded: [],
+        leases: [],
+        leaseProblems: [{ id: "alpha", reason: "unreadable" }],
+      },
+      "2026-08-29 12:00Z",
+    );
+
+    expect(blocksOf(data, "reading", "callout")).toEqual([]);
   });
 
   it("should still name itself where the tree names no project", () => {

@@ -81,11 +81,40 @@ export const CONTENT_CSS = `
 .moment-tags span{padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:9999px; font-size:.72rem; color:var(--ui-muted)}
 
 .kanban{margin:0; padding:0; list-style:none; display:grid; gap:.8rem; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); align-items:start}
-.kanban-lane{padding:.8rem .85rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
+.kanban-lane{min-width:0; padding:.8rem .85rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
 .kanban-lane h4{margin:0 0 .55rem; display:flex; gap:.5rem; align-items:baseline; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .kanban-count{margin-left:auto; font-variant-numeric:tabular-nums; color:var(--ui-muted)}
 .kanban-cards{margin:0; padding:0; list-style:none; display:grid; gap:.45rem}
-.kanban-card{padding:.5rem .65rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised); font-size:.88rem}
+.kanban-card{min-width:0; overflow-wrap:anywhere; padding:.5rem .65rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised); font-size:.88rem}
+/* a pointer opens a detailed card from anywhere on its face, which stays
+   selectable text; the open control is what the keyboard reaches, kept out of
+   sight and drawn as the card's own focus ring when it has focus */
+.kanban-card.is-detailed{position:relative; cursor:pointer}
+.kanban-card.is-detailed:hover{border-color:var(--ui-border-strong); background:var(--ui-surface)}
+.kanban-card.is-detailed:has(.kanban-open:focus-visible){outline:2px solid var(--ui-focus); outline-offset:2px}
+.kanban-open{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0}
+.kanban-open[hidden]{display:none}
+.kanban-dialog{width:min(40rem,calc(100vw - 2rem)); max-height:min(85vh,48rem); padding:0; overflow:auto; border:1px solid var(--ui-border-strong); border-radius:var(--radius-card); background:var(--ui-surface); color:var(--ui-ink); font-size:1rem}
+.kanban-dialog::backdrop{background:rgba(20,20,19,.44)}
+.kanban-dialog-body{display:grid; gap:.85rem; padding:1rem 1.1rem 1.2rem}
+.kanban-dialog-head{display:flex; gap:.8rem; align-items:start; justify-content:space-between}
+.kanban-dialog-head h3{margin:0; font:700 1rem/1.35 var(--font-display)}
+.kanban-dialog-head form{flex:none; margin:0}
+.kanban-close{padding:.3rem .7rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-raised); color:var(--ui-ink); font:650 .78rem/1.4 var(--font-body); cursor:pointer}
+.kanban-close:focus-visible{outline:2px solid var(--ui-focus); outline-offset:2px}
+/* a phone-width modal cannot spare a third of its width for labels, so each
+   fact stacks its label over its value there */
+@media (max-width:30rem){.kanban-dialog .ledger-fact{grid-template-columns:minmax(0,1fr)}}
+/* named facts and the line drawn where there are none, shared by a ledger and
+   a kanban card's modal, so they sit in the sheet every board carries rather
+   than in the ledger's own. The value track is floored at zero rather than left to its own content: a
+   recorded path or shell command is one unbreakable word, and an auto minimum
+   lets that one word widen the whole row past the card it sits in */
+.ledger-facts{display:grid; gap:.3rem; margin:0}
+.ledger-fact{display:grid; grid-template-columns:minmax(5.5rem,9rem) minmax(0,1fr); gap:.1rem .8rem}
+.ledger-fact dt{color:var(--ui-faint); font:700 .72rem/1.8 var(--font-mono); letter-spacing:.08em; text-transform:uppercase}
+.ledger-fact dd{margin:0; color:var(--ui-ink); font:.86rem/1.6 var(--font-body); overflow-wrap:anywhere}
+.ledger-empty{margin:0; color:var(--ui-faint); font:italic .86rem/1.6 var(--font-body)}
 
 /* the tone word carries the stance; these rules only repeat it in colour. A
    tone paints the whole aside — edge and wash together — because an edge alone

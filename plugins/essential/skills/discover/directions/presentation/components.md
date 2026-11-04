@@ -316,7 +316,7 @@ Who each piece of work is routed to: `people` of `{ name, initials?, role?, due?
 
 #### `kanban`
 
-Lanes whose membership is itself the claim: `lanes` of `{ label, cards }`.
+Lanes whose membership is itself the claim: `lanes` of `{ label, cards }`. A card is inline text, or `{ face, detail }` where `face` is that text and `detail` is `{ title, facts }` with `facts` shaped as a `ledger` fact; a detailed card opens its facts in a modal and, without the runtime, shows only its face. Give cards a detail when each stands for a record the reader will want to open one at a time without leaving the lanes.
 
 #### `ledger`
 

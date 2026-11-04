@@ -6,7 +6,7 @@ import { parseStream, says } from "./parse.ts";
 import type { Stream } from "./parse.ts";
 
 /** how long after finishing a stream stays on the board, in days. */
-const GRACE_DAYS = 3;
+export const GRACE_DAYS = 3;
 
 /** a date and time with nothing on the end saying which zone they are in. */
 const ZONELESS = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)$/;
@@ -36,6 +36,16 @@ export interface Excluded {
   reason: string;
 }
 
+/** who holds one live stream's main-agent lease, and until when. */
+export interface Lease {
+  /** the stream the lease is on */
+  stream: string;
+  /** the session that holds it */
+  session: string;
+  /** when it lapses, in seconds since the epoch */
+  expiresAtSeconds: number;
+}
+
 /** everything one `.state` tree had to say. */
 export interface Tree {
   /** the project the tree was read from, named after its directory */
@@ -44,6 +54,10 @@ export interface Tree {
   streams: Stream[];
   /** the ones it read and set aside, each with its reason */
   excluded: Excluded[];
+  /** the leases held on the streams it draws */
+  leases: Lease[];
+  /** the lease files it found and could not read, each with its reason */
+  leaseProblems: Excluded[];
 }
 
 /**
@@ -107,6 +121,8 @@ export async function readTree(stateDir: string, now: Date): Promise<Tree> {
 
   const streams: Stream[] = [];
   const excluded: Excluded[] = [];
+  const leases: Lease[] = [];
+  const leaseProblems: Excluded[] = [];
   // sorted, because a board built twice from one tree must be the same board,
   // and readdir order is the filesystem's business rather than a promise
   const found = entries
@@ -139,7 +155,59 @@ export async function readTree(stateDir: string, now: Date): Promise<Tree> {
       continue;
     }
     streams.push(stream);
+    const lease = await readLease(join(works, entry, "lease.json"), entry);
+    if (typeof lease === "string") leaseProblems.push({ id: entry, reason: lease });
+    else if (lease) leases.push(lease);
   }
 
-  return { project: projectOf(stateDir), streams, excluded };
+  return {
+    project: projectOf(stateDir),
+    streams,
+    excluded,
+    leases,
+    leaseProblems,
+  };
+}
+
+/**
+ * reads who holds one stream's lease.
+ *
+ * only the holder and the expiry are taken; the token digest beside them is
+ * never read, because nothing here has any use for it. A link is refused for
+ * the same reason a linked `state.md` is: it can point anywhere, and a lease
+ * borrowed from another stream would put this session inside the wrong one.
+ * @param file the lease file
+ * @param stream the stream it sits in
+ * @returns the lease; a sentence saying why it could not be read; or nothing
+ *   where the stream holds no lease
+ */
+async function readLease(
+  file: string,
+  stream: string,
+): Promise<Lease | string | undefined> {
+  const stats = await lstat(file).catch(() => undefined);
+  if (!stats) return undefined;
+  if (!stats.isFile())
+    return "holds a lease.json that is a link rather than a file, so whoever it names is not taken to hold this stream";
+  const recorded = await readFile(file, "utf8")
+    .then((text): unknown => JSON.parse(text))
+    .catch(() => undefined);
+  const session = field(recorded, "owner_session");
+  const expires = field(recorded, "expires_at_epoch");
+  if (typeof session !== "string" || !session || typeof expires !== "number" || !Number.isFinite(expires))
+    return "holds a lease.json that does not record a holder and an expiry, so nobody is taken to hold this stream";
+
+  return { stream, session, expiresAtSeconds: expires };
+}
+
+/**
+ * reads one field of a parsed JSON value without trusting its shape
+ * @param value whatever the file parsed to
+ * @param key the field wanted
+ * @returns the field's value, or undefined where the value is not an object
+ */
+function field(value: unknown, key: string): unknown {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
 }

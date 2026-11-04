@@ -86,6 +86,7 @@ describe("fn:parseStream", () => {
       updated: "",
       owner: "",
       next: "",
+      blockedOn: "",
       tasks: [],
       malformed: 0,
     });
@@ -308,5 +309,14 @@ describe("fn:parseStream", () => {
 
     expect(stream.tasks).toStrictEqual([]);
     expect(stream.phase).toBe("planning");
+  });
+
+  it("should read what a stopped stream is blocked on", () => {
+    const stream = parseStream(
+      "lambda",
+      stateFile("- Phase: `reviewing`\n- Blocked on: `reviewer sign-off`"),
+    );
+
+    expect(stream.blockedOn).toBe("reviewer sign-off");
   });
 });

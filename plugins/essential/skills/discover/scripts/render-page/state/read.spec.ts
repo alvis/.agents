@@ -221,3 +221,64 @@ describe("fn:readTree", () => {
     );
   });
 });
+
+describe("fn:readTree leases", () => {
+  /** a lease that runs past the moment every case is read at. */
+  const LIVE = {
+    work_id: "alpha",
+    owner_session: "session-a",
+    token_sha256: "digest",
+    expires_at_epoch: NOW.getTime() / 1000 + 600,
+  };
+
+  it("should read who holds a live stream's lease and until when", async () => {
+    await stream("works/alpha", "working");
+    await fixture(root, "works/alpha/lease.json", JSON.stringify(LIVE));
+
+    const tree = await readTree(root, NOW);
+
+    expect(tree.leases).toStrictEqual([
+      { stream: "alpha", session: "session-a", expiresAtSeconds: LIVE.expires_at_epoch },
+    ]);
+    expect(tree.leaseProblems).toStrictEqual([]);
+  });
+
+  it("should read a stream with no lease file as unheld rather than unreadable", async () => {
+    await stream("works/alpha", "working");
+
+    const tree = await readTree(root, NOW);
+
+    expect(tree.leases).toStrictEqual([]);
+    expect(tree.leaseProblems).toStrictEqual([]);
+  });
+
+  it("should not follow a lease file that is a link", async () => {
+    await stream("works/alpha", "working");
+    const elsewhere = await fixture(root, "elsewhere.json", JSON.stringify(LIVE));
+    await symlink(elsewhere, join(root, "works", "alpha", "lease.json"));
+
+    const tree = await readTree(root, NOW);
+
+    expect(tree.leases).toStrictEqual([]);
+    expect(tree.leaseProblems.map(({ id }) => id)).toStrictEqual(["alpha"]);
+  });
+
+  it("should say which lease it could not read rather than guess a holder", async () => {
+    await stream("works/alpha", "working");
+    await stream("works/beta", "working");
+    await fixture(root, "works/alpha/lease.json", "{ not json");
+    await fixture(
+      root,
+      "works/beta/lease.json",
+      JSON.stringify({ owner_session: "session-b" }),
+    );
+
+    const tree = await readTree(root, NOW);
+
+    expect(tree.leases).toStrictEqual([]);
+    expect(tree.leaseProblems.map(({ id }) => id)).toStrictEqual([
+      "alpha",
+      "beta",
+    ]);
+  });
+});
