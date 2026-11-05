@@ -81,7 +81,7 @@ describe("fn:main", () => {
   it("should refuse a run with no output path, and print how to give one", async () => {
     expect(await main([join(root, "state")], NOW)).toBe(2);
     expect(said.join("\n")).toBe(
-      "usage: bun scripts/render-page/state/cli.ts <.state> -o <board.json>\n" +
+      "usage: bun scripts/render-page/state/cli.ts <.state> -o <board.json> [--kanban [--stream <work-id>] [--session <id>]]\n" +
         "state/cli.ts: error: missing the -o <board.json> flag",
     );
   });
@@ -105,5 +105,80 @@ describe("fn:main", () => {
     expect(said.join("\n")).toBe(
       `state/cli.ts: error: no workstreams to read: ${join(root, "works")} is not a directory, so this is not a .state tree`,
     );
+  });
+});
+
+describe("fn:main --kanban", () => {
+  /** a lease the session "me" holds on alpha, running past the read time. */
+  const LEASE = JSON.stringify({
+    owner_session: "me",
+    expires_at_epoch: NOW.getTime() / 1000 + 600,
+  });
+
+  /**
+   * runs the command and reads back the board it wrote
+   * @param flags the flags after the tree
+   * @param env the environment it runs with
+   * @returns the exit code and the board's title
+   */
+  async function run(
+    flags: string[],
+    env: Record<string, string | undefined> = {},
+  ): Promise<[number, string]> {
+    const out = join(root, "status.json");
+    const code = await main([join(root, "state"), ...flags, "-o", out], NOW, env);
+    const data = code
+      ? undefined
+      : (JSON.parse(await readFile(out, "utf8")) as PageData);
+
+    return [code, data?.title ?? ""];
+  }
+
+  it("should draw every stream when no lease names this session", async () => {
+    await stream("state/works/alpha", "working");
+    await fixture(root, "state/works/alpha/lease.json", LEASE);
+
+    expect(await run(["--kanban", "--session", "someone-else"])).toEqual([
+      0,
+      "Status",
+    ]);
+  });
+
+  it("should draw the stream whose lease names this session", async () => {
+    await stream("state/works/alpha", "working");
+    await stream("state/works/beta", "working");
+    await fixture(root, "state/works/alpha/lease.json", LEASE);
+
+    expect(await run(["--kanban", "--session", "me"])).toEqual([
+      0,
+      "Status: alpha",
+    ]);
+  });
+
+  it("should look for the session in the environment when none is given", async () => {
+    await stream("state/works/alpha", "working");
+    await fixture(root, "state/works/alpha/lease.json", LEASE);
+
+    expect(await run(["--kanban"], { CLAUDE_SESSION_ID: "me" })).toEqual([
+      0,
+      "Status: alpha",
+    ]);
+  });
+
+  it("should refuse a named stream that is not live", async () => {
+    await stream("state/works/alpha", "working");
+
+    expect((await run(["--kanban", "--stream", "gamma"]))[0]).toBe(1);
+  });
+
+  it("should refuse a stream or session flag without the kanban flag", async () => {
+    await stream("state/works/alpha", "working");
+
+    expect((await run(["--stream", "alpha"]))[0]).toBe(2);
+    expect((await run(["--session", "me"]))[0]).toBe(2);
+  });
+
+  it("should refuse a stream flag that swallowed the next flag", async () => {
+    expect((await run(["--kanban", "--stream"]))[0]).toBe(2);
   });
 });

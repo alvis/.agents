@@ -55,6 +55,7 @@ The evidence ledger uses these fields:
    - `prototype`: the cheapest way to learn is a disposable artifact and the user has authorized creating it;
    - `readiness`: existing evidence needs a plan/implementation go-no-go check;
    - `state`: the unknown is where work already in flight actually stands — read from the local state tree when one holds the work, else from labelled evidence;
+   - `status`: only when named, as in `/discover status` — a Kanban glance at the current workstream's tasks when this session started or resumed one, otherwise at every live workstream by phase;
    - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it;
    - `decisions`: someone new to the repository needs the decisions it already rests on — human-approved ADRs and agent-recorded local decisions — explained.
 3. **Load only the selected mode reference** and execute it:
@@ -66,6 +67,7 @@ The evidence ledger uses these fields:
    - [prototype](directions/prototype.md)
    - [readiness](directions/readiness.md)
    - [state](directions/state.md)
+   - [status](directions/status.md)
    - [implementation](directions/implementation.md)
    - [decisions](directions/decisions.md)
 4. **Update the ledger.** Preserve provenance. Move an item between kinds only when evidence or a user decision justifies it; do not collapse inference into observed fact. Record rejected alternatives and why they were rejected when they would otherwise be rediscovered.

@@ -29,14 +29,6 @@ export const LEDGER_CSS = `
    with them: they describe the group, and read as a first row otherwise */
 .ledger-group-body>.ledger-facts{margin-bottom:.75rem; padding-bottom:.75rem; border-bottom:1px dashed var(--ui-border)}
 
-.ledger-facts{display:grid; gap:.3rem; margin:0}
-/* the value track is floored at zero rather than left to its own content: a
-   recorded path or shell command is one unbreakable word, and an auto minimum
-   lets that one word widen the whole row past the card it sits in */
-.ledger-fact{display:grid; grid-template-columns:minmax(5.5rem,9rem) minmax(0,1fr); gap:.1rem .8rem}
-.ledger-fact dt{color:var(--ui-faint); font:700 .72rem/1.8 var(--font-mono); letter-spacing:.08em; text-transform:uppercase}
-.ledger-fact dd{margin:0; color:var(--ui-ink); font:.86rem/1.6 var(--font-body); overflow-wrap:anywhere}
-
 .ledger-entries{display:grid; gap:.35rem; margin:0; padding:0; list-style:none}
 .ledger-entry{border:1px solid var(--ui-border); border-left:3px solid var(--row-edge); border-radius:var(--radius-control); background:var(--ui-canvas)}
 .ledger-row>summary,.ledger-row.is-flat{display:grid; grid-template-columns:auto auto minmax(0,1fr) auto; gap:.15rem .65rem; align-items:baseline; padding:.45rem .6rem}
@@ -49,7 +41,6 @@ export const LEDGER_CSS = `
    the same thing in colour, and a reader who cannot use colour still reads it */
 .ledger-status{justify-self:end; padding:.05rem .5rem; border-radius:9999px; background:var(--row-wash); color:var(--row-ink); font:700 .72rem/1.7 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; white-space:nowrap}
 .ledger-detail{margin:0 .6rem; padding:.55rem 0 .65rem; border-top:1px dashed var(--ui-border)}
-.ledger-empty{margin:0; color:var(--ui-faint); font:italic .86rem/1.6 var(--font-body)}
 
 .ledger-entry[data-tone="neutral"]{--row-edge:var(--ui-border-strong); --row-wash:var(--ui-surface); --row-ink:var(--ui-muted)}
 .ledger-entry[data-tone="busy"]{--row-edge:var(--ui-accent); --row-wash:var(--ui-accent-soft); --row-ink:var(--ui-accent-ink)}

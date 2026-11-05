@@ -15,6 +15,7 @@ import { installDrawer } from "./drawer.ts";
 import { installEmbeds } from "./embed.ts";
 import { installFilters } from "./filter.ts";
 import { installJumps } from "./fold.ts";
+import { installKanbanDetail } from "./kanban.ts";
 import { installKeys } from "./keys.ts";
 import { installNoteDialog } from "./note-dialog.ts";
 import { rowsOf } from "./note-view.ts";
@@ -222,6 +223,7 @@ export function start(): void {
   // they are live before the first paint and stay live whatever the reader does
   installTies();
   installDiagramDetail();
+  installKanbanDetail();
   installFilters();
   installNotes({
     state: saved,

@@ -11,11 +11,7 @@ const NEEDED = {
   evidence: "Evidence",
 };
 
-/**
- * lists optional table columns displayed where present
- *
- * missing columns leave their task values empty
- */
+/** the optional columns, read where present and left empty where missing. */
 const WANTED = {
   depends: "Depends on",
   required: "Required",
@@ -73,6 +69,8 @@ export interface Stream {
   owner: string;
   /** what happens next, as one line */
   next: string;
+  /** what has stopped it, empty where it records no blocker */
+  blockedOn: string;
   /** its tasks, in table order */
   tasks: Task[];
   /** rows the table held that could not be read as tasks */
@@ -293,6 +291,7 @@ export function parseStream(id: string, text: string): Stream {
     updated: header(lines, "Updated"),
     owner: header(lines, "Next owner"),
     next: header(lines, "Next action"),
+    blockedOn: header(lines, "Blocked on"),
     tasks: found,
     malformed,
   };

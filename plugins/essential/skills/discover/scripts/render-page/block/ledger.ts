@@ -35,7 +35,7 @@ function requireCount(value: unknown, path: string): number {
 }
 
 /**
- * draws the named facts a group or a row opens for.
+ * draws the named facts a group, a row or a kanban card opens for
  *
  * a definition list, because that is what these are: a reader looking for the
  * owner of a row finds it by its name, and a list of sentences would make them
@@ -44,7 +44,7 @@ function requireCount(value: unknown, path: string): number {
  * @param path JSON path of `facts`, named verbatim by any refusal
  * @returns the list as HTML, or nothing where there are no facts to draw
  */
-function renderFacts(facts: unknown, path: string): string {
+export function renderFacts(facts: unknown, path: string): string {
   const rows = requireArray<LedgerFact>(facts, path)
     .map((fact, index) => {
       const at = `${path}[${index}]`;

@@ -1,5 +1,6 @@
 import { escapeHtml } from "../escape.ts";
 import { renderInline } from "../inline.ts";
+import { renderFacts } from "./ledger.ts";
 import {
   requireArray,
   requireFilledArray,
@@ -9,7 +10,7 @@ import {
 } from "../validate.ts";
 import { MOMENT_KIND_LABEL, MOMENT_STATE_LABEL } from "../vocabulary.ts";
 
-import type { Block, Lane, Moment } from "../types.ts";
+import type { Block, DetailedCard, Lane, Moment, Rich } from "../types.ts";
 
 /** the states a moment may report. */
 const STATES = Object.keys(
@@ -60,6 +61,35 @@ export function renderTimeline(
 }
 
 /**
+ * draws one card, which may open for the whole of its record
+ *
+ * the control that opens a detailed card ships hidden beside its face rather
+ * than around it: a face may hold a link, which a button cannot contain, and
+ * without a runtime there is no modal to open; the modal is the platform's own
+ * `dialog`, so focus, the backdrop and Escape are the browser's
+ * @param card the card
+ * @param path JSON path of `card`, named verbatim by any refusal
+ * @returns the card as HTML
+ */
+function renderCard(card: Rich | DetailedCard, path: string): string {
+  if (card === null || typeof card !== "object" || Array.isArray(card))
+    return `<li class="kanban-card">${renderInline(card, path)}</li>`;
+
+  requireObject<DetailedCard["detail"]>(card.detail, `${path}.detail`);
+  const title = escapeHtml(requireString(card.detail.title, `${path}.detail.title`));
+  const facts = renderFacts(card.detail.facts, `${path}.detail.facts`);
+
+  return [
+    `<li class="kanban-card is-detailed">${renderInline(card.face, `${path}.face`)}`,
+    `<button type="button" class="kanban-open" data-kanban-open hidden aria-haspopup="dialog"><span class="sr-only">Details: ${title}</span></button>`,
+    `<dialog class="kanban-dialog" data-kanban-dialog aria-label="${title}"><div class="kanban-dialog-body">`,
+    `<div class="kanban-dialog-head"><h3>${title}</h3><form method="dialog"><button type="submit" class="kanban-close">Close</button></form></div>`,
+    facts || `<p class="ledger-empty">nothing more is recorded</p>`,
+    `</div></dialog></li>`,
+  ].join("");
+}
+
+/**
  * draws lanes whose membership is itself the claim
  * @param block the kanban block
  * @param path JSON path of `block`, named verbatim by any refusal
@@ -74,11 +104,8 @@ export function renderKanban(
       const at = `${path}.lanes[${index}]`;
       requireObject<Lane>(lane, at);
       const label = escapeHtml(requireString(lane.label, `${at}.label`));
-      const cards = requireArray(lane.cards, `${at}.cards`)
-        .map(
-          (card, cardIndex) =>
-            `<li class="kanban-card">${renderInline(card, `${at}.cards[${cardIndex}]`)}</li>`,
-        )
+      const cards = requireArray<Rich | DetailedCard>(lane.cards, `${at}.cards`)
+        .map((card, cardIndex) => renderCard(card, `${at}.cards[${cardIndex}]`))
         .join("");
       // the count is drawn because an empty lane is a claim too — "nothing is
       // parked" reads differently from a lane the reader assumes was cut off

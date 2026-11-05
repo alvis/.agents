@@ -20,6 +20,7 @@ Use an interactive HTML review surface when visual relationships, comparison, or
 | `readiness`      | plan review           | A drafted plan's judgment calls need user confirmation before hand-off  |
 | `readiness`      | change walkthrough    | A finished change needs to be genuinely understood before it merges     |
 | `state`          | project state         | Work already in flight, read from the state tree rather than retold     |
+| `status`         | project state         | A Kanban glance: this session's stream by task, else every stream       |
 | `implementation` | implementation notes  | A finished change owes its merger an account of what it departed from   |
 | `decisions`      | decision explainer    | Recorded decisions explained to someone new to the repository           |
 
@@ -31,7 +32,7 @@ Each action must nevertheless feel complete for its own job. Build from one cred
 
 The approved [domain explainer](presentation/actions/domain-explainer.md) and its data at `examples/data/domain-explainer.json` define the shared visual hierarchy, responsive shell, annotation flow, and folded single-prompt experience. Render it to see them: `examples/html/` is generated, not committed, so the data is what to read and one `--set` run is what to look at. Every action example follows that contract while changing its content density and its blocks to fit the action.
 
-Together, the sixteen action examples and four convention boards (specimen-board, board-hub, architecture-board, triage-board) must cover the complete reusable pattern catalog — sixteen against sixteen mode rows: build-journal has no row because it is authored rather than chosen, as above, and `plan`'s row reuses the guided interview. Use the [presentation coverage map](presentation/coverage.md) to see which action owns each demonstration. This is suite-level coverage: generated pages still select only the components that improve their task-specific UX. Neither is checked mechanically beyond `examples.spec.ts`, which renders the whole run and refuses a block type that reaches no board; rendered review is what judges whether an action is complete.
+Together, the sixteen action examples and four convention boards (specimen-board, board-hub, architecture-board, triage-board) must cover the complete reusable pattern catalog — sixteen against seventeen mode rows: build-journal has no row because it is authored rather than chosen, as above, `plan`'s row reuses the guided interview, and `status`'s row reuses project state. Use the [presentation coverage map](presentation/coverage.md) to see which action owns each demonstration. This is suite-level coverage: generated pages still select only the components that improve their task-specific UX. Neither is checked mechanically beyond `examples.spec.ts`, which renders the whole run and refuses a block type that reaches no board; rendered review is what judges whether an action is complete.
 
 ## Variable length, modular sources
 

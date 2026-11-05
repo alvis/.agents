@@ -33,6 +33,7 @@ export type {
   Cell,
   Column,
   Definition,
+  DetailedCard,
   Deviation,
   Finding,
   Lane,

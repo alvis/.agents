@@ -269,6 +269,49 @@ describe("fn:renderBlock kanban", () => {
     expect(drawn).toContain('Cut <span class="kanban-count">0</span>');
     expect(drawn).toContain('<li class="kanban-card">Ship the fix</li>');
   });
+
+  const DETAILED = {
+    type: "kanban",
+    lanes: [
+      {
+        label: "Now",
+        cards: [
+          {
+            face: [{ kind: "code", text: "API" }, " Ship the fix"],
+            detail: { title: "API <ship>", facts: [{ label: "Owner", value: "Ada" }] },
+          },
+        ],
+      },
+    ],
+  };
+
+  it("should keep a detailed card's face where a plain card's text would be", () => {
+    expect(html(DETAILED)).toContain('<code class="mono">API</code> Ship the fix');
+  });
+
+  it("should ship the control that opens a card hidden, named for what it opens", () => {
+    // without a runtime there is no modal to open, so the control waits for one
+    expect(html(DETAILED)).toMatch(
+      /<button type="button" class="kanban-open" data-kanban-open hidden aria-haspopup="dialog"><span class="sr-only">Details: API &lt;ship&gt;<\/span><\/button>/u,
+    );
+  });
+
+  it("should hold a card's facts in a closed dialog named by its title", () => {
+    const drawn = html(DETAILED);
+
+    expect(drawn).toContain('<dialog class="kanban-dialog" data-kanban-dialog aria-label="API &lt;ship&gt;">');
+    expect(drawn).toContain("<dt>Owner</dt><dd>Ada</dd>");
+    expect(drawn).not.toMatch(/<dialog[^>]* open/u);
+  });
+
+  it("should refuse a detailed card with no title, naming its path", () => {
+    const untitled = structuredClone(DETAILED);
+    (untitled.lanes[0]!.cards[0]!.detail as { title?: string }).title = undefined;
+
+    expect(() => html(untitled)).toThrow(
+      new RenderError("b.lanes[0].cards[0].detail.title: required non-empty string, received undefined"),
+    );
+  });
 });
 
 describe("fn:renderBlock callout", () => {

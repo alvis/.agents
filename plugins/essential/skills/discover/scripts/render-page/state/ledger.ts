@@ -13,7 +13,7 @@ import type { Stream, Task } from "./parse.ts";
  * @param pairs each label against what the record wrote under it
  * @returns the facts worth drawing
  */
-function factsOf(pairs: [string, string][]): LedgerFact[] {
+export function factsOf(pairs: [string, string][]): LedgerFact[] {
   return pairs
     .filter(([, value]) => value.trim())
     .map(([label, value]) => ({ label, value }));
@@ -30,31 +30,41 @@ function factsOf(pairs: [string, string][]): LedgerFact[] {
  * @returns the row
  */
 function taskEntry(task: Task): LedgerEntry {
-  const stuck = isBlocked(task);
-
   return {
     code: task.id || "unnumbered",
     title: task.task || "no description recorded",
     status: task.status || "unrecorded",
-    tone: stuck
+    tone: isBlocked(task)
       ? "bad"
       : isDone(task)
         ? "good"
         : says(task.status, "working")
           ? "busy"
           : "neutral",
-    facts: factsOf([
-      ["Mark", task.mark],
-      ["Owner", task.owner || "unassigned"],
-      ["Depends on", task.depends],
-      ["Required", task.required],
-      ["Acceptance", task.acceptance],
-      ["Evidence", task.evidence],
-      // named separately from the evidence it was written inside, because a
-      // blocked row is read for one thing and this is it
-      ["Unblock", stuck ? task.unblock || "no unblock: action recorded" : ""],
-    ]),
+    facts: taskFacts(task),
   };
+}
+
+/**
+ * lists what a task row records beyond its id, description and status
+ *
+ * shared with the status board's task modal, so a field opened on either board
+ * reads the same and a column added to the table reaches both
+ * @param task the task
+ * @returns the facts worth drawing
+ */
+export function taskFacts(task: Task): LedgerFact[] {
+  return factsOf([
+    ["Mark", task.mark],
+    ["Owner", task.owner || "unassigned"],
+    ["Depends on", task.depends],
+    ["Required", task.required],
+    ["Acceptance", task.acceptance],
+    ["Evidence", task.evidence],
+    // named separately from the evidence it was written inside, because a
+    // blocked row is read for one thing and this is it
+    ["Unblock", isBlocked(task) ? task.unblock || "no unblock: action recorded" : ""],
+  ]);
 }
 
 /**
@@ -83,31 +93,7 @@ function streamGroup(stream: Stream): LedgerGroup {
           },
         }
       : {}),
-    facts: factsOf([
-      [
-        "Phase",
-        stream.phase && stream.phaseKey
-          ? `${stream.phase} (from the ${stream.phaseKey} header)`
-          : stream.phase,
-      ],
-      ["Updated", stream.updated],
-      ["Next owner", stream.owner],
-      ["Next action", stream.next],
-      // the file naming itself something other than its directory is a fact
-      // about the record, not an instruction: the directory is what this board
-      // addresses a stream by, and obeying the claim would let one stream take
-      // another's place, or take the name of one the board excludes
-      [
-        "Claims work id",
-        stream.claimed ? `${stream.claimed}, which is not its directory` : "",
-      ],
-      [
-        "Unreadable rows",
-        stream.malformed
-          ? `${stream.malformed} row${stream.malformed === 1 ? "" : "s"} of its task table could not be read`
-          : "",
-      ],
-    ]),
+    facts: streamFacts(stream),
     entries: open.map(taskEntry),
     empty: stream.tasks.length === 0
       ? "no task table could be read here"
@@ -115,6 +101,42 @@ function streamGroup(stream: Stream): LedgerGroup {
         ? "every recorded task is done"
         : "no recorded task remains open",
   };
+}
+
+/**
+ * lists what a stream's state file records about the stream itself
+ *
+ * shared with the status board's stream modal, for the same reason the task
+ * facts are
+ * @param stream the stream
+ * @returns the facts worth drawing
+ */
+export function streamFacts(stream: Stream): LedgerFact[] {
+  return factsOf([
+    [
+      "Phase",
+      stream.phase && stream.phaseKey
+        ? `${stream.phase} (from the ${stream.phaseKey} header)`
+        : stream.phase,
+    ],
+    ["Updated", stream.updated],
+    ["Next owner", stream.owner],
+    ["Next action", stream.next],
+    // the file naming itself something other than its directory is a fact
+    // about the record, not an instruction: the directory is what this board
+    // addresses a stream by, and obeying the claim would let one stream take
+    // another's place, or take the name of one the board excludes
+    [
+      "Claims work id",
+      stream.claimed ? `${stream.claimed}, which is not its directory` : "",
+    ],
+    [
+      "Unreadable rows",
+      stream.malformed
+        ? `${stream.malformed} row${stream.malformed === 1 ? "" : "s"} of its task table could not be read`
+        : "",
+    ],
+  ]);
 }
 
 /**
