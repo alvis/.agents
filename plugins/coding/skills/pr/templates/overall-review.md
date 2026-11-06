@@ -5,7 +5,7 @@ Fill this and submit it as the review `body`, in the voice from [review-tone.md]
 ```markdown
 📌
 
-{{verdict_glyph}} Reviewed `{{head_sha_short}}` — {{files_changed}} files, +{{additions}}/-{{deletions}}, {{zone}} zone.
+{{verdict_status}} Reviewed `{{head_sha_short}}` — {{files_changed}} files, +{{additions}}/-{{deletions}}, {{zone}} zone {{zone_glyph}}
 
 {{one_paragraph_read}}
 
@@ -91,7 +91,7 @@ Fill this and submit it as the review `body`, in the voice from [review-tone.md]
 
 Notes for the sections where the guidance is not self-evident:
 
-- **Opening marker** — render `📌` on its own line, then a blank line and the review facts prefixed by `❌` for a failed review or CI, `⏳` while CI runs, `⚠️` for green CI awaiting required human sign-off or a review trust cap, or `✅` after the recorded gates pass. A known failure takes precedence over a pending state. Preserve one space between `{{zone}}` and `zone`.
+- **Opening marker** — render `📌` on its own line, then a blank line and the review facts prefixed by the review's result: `❌ Changes requested.`, `❌ CI failed.`, or `❌ Changes requested, CI failed.` for a failure; `⏳ Waiting for CI.` while CI runs; `⚠️ Not fully verified.` for a review trust cap; `✅✋ Passed, awaiting human approval.` for an uncapped pass with green CI that still needs required human sign-off; or `✅ Passed.` after every recorded gate passes. A known failure takes precedence over a pending state. End the line with the zone square: `🟩` green, `🟨` yellow, `🟥` red, `⬛` black. Preserve one space between `{{zone}}`, `zone`, and `{{zone_glyph}}`.
 - **Section headings** — every `###` heading starts with its template emoji; use Title Case exactly as shown, preserving conjunctions and prepositions such as “and” and “to”; never emit an unprefixed review section.
 - **Opening paragraph** — lead with the judgement, not a summary of the diff the author already knows: "This gets the retry logic right and the shape is good; two things need to change before it merges." Name the zone when it is not green, and lead with it when it is black.
 - **Markers** — every bullet opens with the same marker its inline comment carries, per [review-tone.md](../directions/review-tone.md): a P0–P4 badge when the finding claims a consequence, a tag when it demands a process step, an emoji when it demands nothing. The body and the inline comment must not disagree about a finding's level.
@@ -113,7 +113,7 @@ Notes for the sections where the guidance is not self-evident:
 |---|---|
 | `REQUEST_CHANGES` or red CI, regardless of pending evidence elsewhere | `CAUTION` — name what failed and what clears it |
 | Pending CI without a known failure | `WARNING` — explicitly say the review is waiting for CI |
-| Green CI with required human sign-off or a review trust cap | `WARNING` — name the outstanding sign-off or evidence gap |
-| Green CI and `PASS` without an outstanding sign-off or cap | `NOTE` — say so plainly and name anything to watch after merge |
+| Green CI with a review trust cap | `WARNING` — name the evidence gap |
+| Green CI and `PASS` without a cap | `NOTE` — say so plainly, name any required human sign-off still outstanding, and name anything to watch after merge |
 
 A trust cap makes the review evidence incomplete; report the limitation in the verdict while retaining any concrete findings.

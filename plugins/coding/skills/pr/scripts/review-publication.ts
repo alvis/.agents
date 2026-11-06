@@ -2078,14 +2078,20 @@ function renderOverallReview(
       ? `Runtime execution waived by ${assessment.tests.execution.waiver.authorized_by} for ${assessment.tests.execution.waiver.scope}: ${assessment.tests.execution.waiver.reason}`
       : `${assessment.tests.execution.status}: ${assessment.tests.execution.evidence}`;
   const hasCap = assessment.trust_caps.length > 0;
-  const failed =
-    (assessment.substantive_verdict === "REQUEST_CHANGES" && !hasCap) ||
-    ciState === "red";
+  const changesRequested =
+    assessment.substantive_verdict === "REQUEST_CHANGES" && !hasCap;
+  const ciRed = ciState === "red";
+  const failed = changesRequested || ciRed;
   const pending = !failed && ciState === "pending";
-  const warning =
-    !failed &&
-    !pending &&
-    (hasCap || input.review_context.human_signoff_required);
+  const capped = !failed && !pending && hasCap;
+  const awaitingHuman =
+    !failed && !pending && !hasCap && input.review_context.human_signoff_required;
+  const zoneGlyph = {
+    black: "⬛",
+    green: "🟩",
+    red: "🟥",
+    yellow: "🟨",
+  } satisfies Record<typeof input.review_context.zone, string>;
   const ciSentence =
     ciState === "pending"
       ? "Hosted CI is still running; waiting for its result."
@@ -2118,12 +2124,21 @@ function renderOverallReview(
       unanchored_alert: assessment.alerts.unanchored ?? "",
       verdict_alert: failed
         ? "CAUTION"
-        : pending || warning
+        : pending || capped
           ? "WARNING"
           : "NOTE",
-      verdict_glyph: failed ? "❌" : pending ? "⏳" : warning ? "⚠️" : "✅",
+      verdict_status: failed
+        ? `❌ ${[changesRequested && "Changes requested", ciRed && "CI failed"].filter(Boolean).join(", ")}.`
+        : pending
+          ? "⏳ Waiting for CI."
+          : capped
+            ? "⚠️ Not fully verified."
+            : awaitingHuman
+              ? "✅✋ Passed, awaiting human approval."
+              : "✅ Passed.",
       verdict_sentence: `${assessment.verdict_sentence} ${ciSentence}${humanSentence}`,
       zone: input.review_context.zone,
+      zone_glyph: zoneGlyph[input.review_context.zone],
     },
     {
       excluded_paths: {

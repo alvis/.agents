@@ -238,7 +238,7 @@ function reviewStructure(body: string): {
   alert: string | null;
 } {
   return {
-    summary: /^(✅|❌|⚠️|⏳)/u.exec(body.split("\n")[2] ?? "")?.[1] ?? null,
+    summary: /^(.+?) Reviewed `/u.exec(body.split("\n")[2] ?? "")?.[1] ?? null,
     alert:
       [...body.matchAll(/^> \[!(WARNING|CAUTION|NOTE|TIP)\]$/gm)].at(-1)?.[1] ??
       null,
@@ -342,7 +342,7 @@ describe("cmd:review-publication", () => {
     expect(body).toContain("The task contract is unavailable.");
     expect(body).toContain("Removal impact could not be assessed.");
     expect(body).not.toMatch(/\b(?:null|undefined)\b/);
-    expect(reviewStructure(body)).toEqual({ summary: "⚠️", alert: "WARNING" });
+    expect(reviewStructure(body)).toEqual({ summary: "⚠️ Not fully verified.", alert: "WARNING" });
   });
 
   it.each([
@@ -369,7 +369,7 @@ describe("cmd:review-publication", () => {
       },
     });
     expect(approval.binding.substantive_verdict).toBe("REQUEST_CHANGES");
-    expect(reviewStructure(approvedBody(approval, "green"))).toEqual({ summary: "❌", alert: "CAUTION" });
+    expect(reviewStructure(approvedBody(approval, "green"))).toEqual({ summary: "❌ Changes requested.", alert: "CAUTION" });
   });
 
   it.each(["head", "base"])(
@@ -524,28 +524,32 @@ describe("cmd:review-publication", () => {
     expect(result.records).toEqual([]);
   });
 
-  it("should preserve a known review failure while CI is pending", () => {
-    const approval = createReviewPublicationReceipt({
-      ...review,
-      assessment: {
-        ...review.assessment,
-        substantive_verdict: "REQUEST_CHANGES",
-        alerts: {
-          must_change: "Fix the failure.",
-          worth_considering: null,
-          unanchored: null,
+  it.each([
+    { ciState: "pending", run: runningRun, status: "❌ Changes requested." },
+    { ciState: "red", run: failedRun, status: "❌ Changes requested, CI failed." },
+  ] as const)(
+    "should name a known review failure when CI is $ciState",
+    ({ ciState, run, status }) => {
+      const approval = createReviewPublicationReceipt({
+        ...review,
+        assessment: {
+          ...review.assessment,
+          substantive_verdict: "REQUEST_CHANGES",
+          alerts: {
+            must_change: "Fix the failure.",
+            worth_considering: null,
+            unanchored: null,
+          },
+          findings: [{ ...finding, kind: null, priority: "P1" }],
         },
-        findings: [{ ...finding, kind: null, priority: "P1" }],
-      },
-    });
-    const result = runCommand(approval, {
-      checkRuns: checkRunPages(runningRun),
-    });
-    expect(result.status).toBe(0);
-    const published = JSON.parse(result.writes[0]!.body).body;
-    expect(published).toBe(approvedBody(approval, "pending"));
-    expect(reviewStructure(published).summary).toBe("❌");
-  });
+      });
+      const result = runCommand(approval, { checkRuns: checkRunPages(run) });
+      expect(result.status).toBe(0);
+      const published = JSON.parse(result.writes[0]!.body).body;
+      expect(published).toBe(approvedBody(approval, ciState));
+      expect(reviewStructure(published).summary).toBe(status);
+    },
+  );
 
   it("should check live CI and publish a waiting summary while checks run", () => {
     const result = runCommand(receipt, {
@@ -554,27 +558,63 @@ describe("cmd:review-publication", () => {
     expect(result.status).toBe(0);
     const payload = JSON.parse(result.writes[0]!.body);
     expect(payload.body).toBe(approvedBody(receipt, "pending"));
-    expect(reviewStructure(payload.body).summary).toBe("⏳");
+    expect(reviewStructure(payload.body).summary).toBe("⏳ Waiting for CI.");
     expect(payload.event).toBe("COMMENT");
     expect(payload.comments).toHaveLength(1);
   });
 
-  it("should warn when human sign-off remains after AI review and CI pass", () => {
+  it("should mark a pass awaiting human approval without warning when CI is green", () => {
     const approval = createReviewPublicationReceipt({
       ...review,
       review_context: {
         ...review.review_context,
         human_signoff_required: true,
+        zone: "black",
       },
     });
     const result = runCommand(approval);
     expect(result.status).toBe(0);
     const payload = JSON.parse(result.writes[0]!.body);
     expect(payload.body).toBe(approvedBody(approval, "green"));
+    expect(payload.body.split("\n")[2]).toBe(
+      "✅✋ Passed, awaiting human approval. Reviewed `1111111` — 2 files, +8/-1, black zone ⬛",
+    );
     expect(reviewStructure(payload.body)).toEqual({
-      summary: "⚠️",
+      summary: "✅✋ Passed, awaiting human approval.",
+      alert: "NOTE",
+    });
+  });
+
+  it("should keep a trust-capped review a warning when human sign-off is also required", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      assessment: { ...review.assessment, trust_caps: ["ci-red"] },
+      review_context: {
+        ...review.review_context,
+        human_signoff_required: true,
+      },
+    });
+
+    expect(reviewStructure(approvedBody(approval, "green"))).toEqual({
+      summary: "⚠️ Not fully verified.",
       alert: "WARNING",
     });
+  });
+
+  it.each([
+    { zone: "green", square: "🟩" },
+    { zone: "yellow", square: "🟨" },
+    { zone: "red", square: "🟥" },
+    { zone: "black", square: "⬛" },
+  ] as const)("should end the $zone zone status line with $square", ({ zone, square }) => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: { ...review.review_context, zone },
+    });
+
+    expect(approvedBody(approval, "green").split("\n")[2]).toMatch(
+      new RegExp(` ${zone} zone ${square}$`, "u"),
+    );
   });
 
   it("should warn about a retained CI-red trust cap after live CI passes", () => {
@@ -586,7 +626,7 @@ describe("cmd:review-publication", () => {
     expect(result.status).toBe(0);
     expect(JSON.parse(result.writes[0]!.body).event).toBe("COMMENT");
     expect(reviewStructure(JSON.parse(result.writes[0]!.body).body)).toEqual({
-      summary: "⚠️",
+      summary: "⚠️ Not fully verified.",
       alert: "WARNING",
     });
   });
@@ -987,7 +1027,7 @@ describe("cmd:review-publication", () => {
     expect(result.status).toBe(0);
     const published = JSON.parse(result.writes[0]!.body).body;
     expect(published).toBe(approvedBody(receipt, "red"));
-    expect(reviewStructure(published).summary).toBe("❌");
+    expect(reviewStructure(published).summary).toBe("❌ CI failed.");
   });
 
   it.each(["pass", "fail"])(
@@ -1026,7 +1066,7 @@ describe("cmd:review-publication", () => {
         approvedBody(receipt, bucket === "pass" ? "green" : "red"),
       );
       expect(reviewStructure(updated.body).summary).toBe(
-        bucket === "pass" ? "✅" : "❌",
+        bucket === "pass" ? "✅ Passed." : "❌ CI failed.",
       );
     },
   );
@@ -1302,7 +1342,7 @@ describe("cmd:review-publication", () => {
       [
         "📌",
         "",
-        "✅ Reviewed `1111111` — 2 files, +8/-1, green zone.",
+        "✅ Passed. Reviewed `1111111` — 2 files, +8/-1, green zone 🟩",
         "",
         review.assessment.summary,
         "",
@@ -1471,7 +1511,7 @@ describe("cmd:review-publication", () => {
     expect(payload.body).toContain("vendor/generated.ts");
     expect(payload.body).toContain("Generated dependency output excluded.");
     expect(reviewStructure(payload.body)).toEqual({
-      summary: "⚠️",
+      summary: "⚠️ Not fully verified.",
       alert: "WARNING",
     });
   });
@@ -2189,10 +2229,10 @@ describe("cmd:review-publication", () => {
       const payload = JSON.parse(result.writes[0]!.body);
       expect(reviewStructure(payload.body)).toEqual(
         ciState === "red"
-          ? { summary: "❌", alert: "CAUTION" }
+          ? { summary: "❌ CI failed.", alert: "CAUTION" }
           : ciState === "pending"
-            ? { summary: "⏳", alert: "WARNING" }
-            : { summary: "⚠️", alert: "WARNING" },
+            ? { summary: "⏳ Waiting for CI.", alert: "WARNING" }
+            : { summary: "⚠️ Not fully verified.", alert: "WARNING" },
       );
     },
   );
