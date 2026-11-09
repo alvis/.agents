@@ -95,7 +95,7 @@ Merge a stack bottom-to-top. Before each merge, require configured approvals, gr
 
    Require each jj command to produce a non-empty commit ID. If any git link fails or any jj containment query is empty, stop and show the expected chain as `base <- PR1 head <- PR2 head ...` plus the detected mismatch.
 
-4. **Check CI unless forced.** Without `--force`, require every status check on every PR to be successful, skipped, or neutral. Treat pending, queued, expected, action-required, cancelled, timed-out, failure, error, or missing required checks as not green. Use both `mergeStateStatus` and `statusCheckRollup` from the [`gh-pr-view.ts`](../../../scripts/gh-pr-view.ts) read.
+4. **Check CI unless forced.** Without `--force`, require every required check, and every expected check the PR's monitor records, to have succeeded on each PR's head; any other status check may be successful, skipped, or neutral. A skipped required or expected check has not run, so it is not green. Treat pending, queued, expected, action-required, cancelled, timed-out, failure, error, or missing required checks as not green. Use both `mergeStateStatus` and `statusCheckRollup` from the [`gh-pr-view.ts`](../../../scripts/gh-pr-view.ts) read.
 
    If CI is not green, print a concise summary of failing checks and likely issue areas by PR, then ask whether the user wants to fix the issues locally and update the affected PRs. Suggest running `coding:fix` on the detected CI issues, updating the stacked PRs, then reusing the [PR monitor](monitor.md) to observe checks and route further repair. Stop before merging until the user chooses a fix or force path.
 

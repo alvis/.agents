@@ -40,6 +40,8 @@ interface RunOptions {
   existingReview?: Record<string, unknown>;
   reviewAfterCi?: Record<string, unknown>;
   checkRuns?: string;
+  prEvents?: readonly Record<string, unknown>[];
+  prEventsExit?: number;
   workflowRun?: Record<string, unknown>;
   policyRules?: readonly unknown[];
   policyRulePages?: readonly (readonly unknown[])[];
@@ -93,6 +95,11 @@ const runningRun = {
   completed_at: null,
 } as const;
 const failedRun = { ...passingRun, conclusion: "failure" } as const;
+const skippedRun = { ...passingRun, conclusion: "skipped" } as const;
+/** a `ready_for_review` issue event at the given time */
+function readyEvent(createdAt: string): Record<string, unknown> {
+  return { event: "ready_for_review", created_at: createdAt };
+}
 
 /** serializes check runs as the single REST page `gh api --paginate --slurp` returns */
 function checkRunPages(...runs: readonly Record<string, unknown>[]): string {
@@ -226,7 +233,7 @@ const receipt = createReviewPublicationReceipt(review);
 
 function approvedBody(
   approval: ReviewPublicationReceipt,
-  state: "pending" | "green" | "red",
+  state: "pending" | "green" | "red" | "not_run",
 ): string {
   const payload = approval.ci_variants?.[state].payload_utf8_base64;
   if (!payload) throw new Error(`missing approved ${state} CI variant`);
@@ -527,6 +534,7 @@ describe("cmd:review-publication", () => {
   it.each([
     { ciState: "pending", run: runningRun, status: "❌ Changes requested." },
     { ciState: "red", run: failedRun, status: "❌ Changes requested, CI failed." },
+    { ciState: "not_run", run: skippedRun, status: "❌ Changes requested." },
   ] as const)(
     "should name a known review failure when CI is $ciState",
     ({ ciState, run, status }) => {
@@ -558,9 +566,132 @@ describe("cmd:review-publication", () => {
     expect(result.status).toBe(0);
     const payload = JSON.parse(result.writes[0]!.body);
     expect(payload.body).toBe(approvedBody(receipt, "pending"));
-    expect(reviewStructure(payload.body).summary).toBe("⏳ Waiting for CI.");
+    expect(reviewStructure(payload.body).summary).toBe("⏳ CI running.");
     expect(payload.event).toBe("COMMENT");
     expect(payload.comments).toHaveLength(1);
+  });
+
+  it("should publish a not-run summary when the expected check was only skipped", () => {
+    const result = runCommand(receipt, {
+      checkRuns: checkRunPages(skippedRun),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const published = JSON.parse(result.writes[0]!.body).body;
+    expect(published).toBe(approvedBody(receipt, "not_run"));
+    expect(reviewStructure(published)).toEqual({
+      summary: "⏸️ CI not run.",
+      alert: "WARNING",
+    });
+  });
+
+  it("should report an app-scoped expected check that was only skipped as not run", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: {
+        ...review.review_context,
+        ci: {
+          ...review.review_context.ci,
+          expected_checks: [{ name: "test", app_id: 15368 }],
+        },
+      },
+    });
+    const result = runCommand(approval, {
+      checkRuns: checkRunPages(skippedRun),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(approval, "not_run"),
+    );
+  });
+
+  it("should publish a passed summary when a manually dispatched run passed after the skip", () => {
+    const result = runCommand(receipt, {
+      checkRuns: checkRunPages(skippedRun, {
+        ...passingRun,
+        completed_at: "2026-09-28T11:00:00Z",
+      }),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "green"),
+    );
+  });
+
+  it("should ignore a skipped check that is not expected", () => {
+    const result = runCommand(receipt, {
+      checkRuns: checkRunPages(passingRun, { ...skippedRun, name: "e2e" }),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(receipt, "green"),
+    );
+  });
+
+  it("should publish a passed summary when an app-scoped run passed after the skip", () => {
+    const approval = createReviewPublicationReceipt({
+      ...review,
+      review_context: {
+        ...review.review_context,
+        ci: {
+          ...review.review_context.ci,
+          expected_checks: [{ name: "test", app_id: 15368 }],
+        },
+      },
+    });
+    const result = runCommand(approval, {
+      checkRuns: checkRunPages(skippedRun, passingRun),
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.writes[0]!.body).body).toBe(
+      approvedBody(approval, "green"),
+    );
+  });
+
+  it.each([
+    {
+      label: "after the latest ready transition",
+      events: [readyEvent("2026-09-28T09:55:00Z")],
+      ciState: "not_run",
+    },
+    {
+      label: "before the latest ready transition",
+      events: [
+        readyEvent("2026-09-28T09:50:00Z"),
+        { event: "convert_to_draft", created_at: "2026-09-28T09:55:00Z" },
+        { event: "labeled", created_at: "2026-09-28T10:10:00Z" },
+        readyEvent("2026-09-28T10:05:00Z"),
+      ],
+      ciState: "pending",
+    },
+    {
+      label: "before a ready transition the PR has since reverted to draft",
+      events: [
+        readyEvent("2026-09-28T10:05:00Z"),
+        { event: "convert_to_draft", created_at: "2026-09-28T10:07:00Z" },
+      ],
+      ciState: "not_run",
+    },
+  ] as const)(
+    "should read a skip completed $label as $ciState",
+    ({ events, ciState }) => {
+      const result = runCommand(receipt, {
+        checkRuns: checkRunPages(skippedRun),
+        prEvents: events,
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.writes[0]!.body).body).toBe(
+        approvedBody(receipt, ciState),
+      );
+    },
+  );
+
+  it("should block publication when the PR draft history cannot be read", () => {
+    const result = runCommand(receipt, {
+      checkRuns: checkRunPages(skippedRun),
+      prEventsExit: 4,
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.writes).toEqual([]);
   });
 
   it("should mark a pass awaiting human approval without warning when CI is green", () => {
@@ -1090,6 +1221,71 @@ describe("cmd:review-publication", () => {
     });
     expect(result.status).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ ci_state: "pending" });
+    expect(result.writes).toEqual([]);
+  });
+
+  it.each([
+    { run: runningRun, ciState: "pending" },
+    { run: passingRun, ciState: "green" },
+    { run: failedRun, ciState: "red" },
+  ] as const)(
+    "should move a not-run review to $ciState once CI starts or finishes",
+    ({ run, ciState }) => {
+      const result = runCommand(receipt, {
+        action: "update",
+        checkRuns: checkRunPages(skippedRun, {
+          ...run,
+          completed_at: run.completed_at && "2026-09-28T11:00:00Z",
+        }),
+        existingReview: {
+          id: 91,
+          user: { login: "publisher" },
+          commit_id: headOid,
+          body: approvedBody(receipt, "not_run"),
+          state: "COMMENTED",
+        },
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toMatchObject({ ci_state: ciState });
+      expect(result.writes.map((write) => JSON.parse(write.body))).toEqual([
+        { body: approvedBody(receipt, ciState) },
+      ]);
+    },
+  );
+
+  it("should move a pending review to not run when its expected check ends skipped", () => {
+    const result = runCommand(receipt, {
+      action: "update",
+      checkRuns: checkRunPages(skippedRun),
+      existingReview: {
+        id: 91,
+        user: { login: "publisher" },
+        commit_id: headOid,
+        body: approvedBody(receipt, "pending"),
+        state: "COMMENTED",
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ ci_state: "not_run" });
+    expect(result.writes.map((write) => JSON.parse(write.body))).toEqual([
+      { body: approvedBody(receipt, "not_run") },
+    ]);
+  });
+
+  it("should leave a not-run review untouched while CI has still not run", () => {
+    const result = runCommand(receipt, {
+      action: "update",
+      checkRuns: checkRunPages(skippedRun),
+      existingReview: {
+        id: 91,
+        user: { login: "publisher" },
+        commit_id: headOid,
+        body: approvedBody(receipt, "not_run"),
+        state: "COMMENTED",
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ ci_state: "not_run" });
     expect(result.writes).toEqual([]);
   });
 
@@ -2231,7 +2427,7 @@ describe("cmd:review-publication", () => {
         ciState === "red"
           ? { summary: "❌ CI failed.", alert: "CAUTION" }
           : ciState === "pending"
-            ? { summary: "⏳ Waiting for CI.", alert: "WARNING" }
+            ? { summary: "⏳ CI running.", alert: "WARNING" }
             : { summary: "⚠️ Not fully verified.", alert: "WARNING" },
       );
     },
@@ -2335,6 +2531,7 @@ else if (args.some(arg => arg.endsWith("/branches/main"))) process.stdout.write(
 else if (args.some(arg => arg.includes("/rules/branches/main?"))) { const pages = JSON.parse(process.env.PUBLICATION_POLICY_RULES_AFTER_CI && readFileSync(process.env.PUBLICATION_RECORD, "utf8").includes('/check-runs?') ? process.env.PUBLICATION_POLICY_RULES_AFTER_CI : process.env.PUBLICATION_POLICY_RULES); process.stdout.write(JSON.stringify(args.includes("--paginate") && args.includes("--slurp") ? pages : pages[0])); }
 else if (args.includes("user")) process.stdout.write(JSON.stringify({login: process.env.PUBLICATION_USER}));
 else if (args.some(arg => /actions\\/runs\\/12$/.test(arg))) process.stdout.write(process.env.PUBLICATION_WORKFLOW_RUN);
+else if (args.some(arg => arg.includes("/issues/35/events?"))) { process.stdout.write(process.env.PUBLICATION_PR_EVENTS); process.exit(Number(process.env.PUBLICATION_PR_EVENTS_EXIT)); }
 else if (args.some(arg => arg.includes("/check-runs?"))) { process.stdout.write(process.env.PUBLICATION_CHECK_RUNS); process.exit(Number(process.env.PUBLICATION_CHECK_RUNS_EXIT)); }
 else if (args.some(arg => arg.includes("/status?"))) { process.stdout.write(process.env.PUBLICATION_STATUSES_BODY || JSON.stringify([{state: "pending", statuses: JSON.parse(process.env.PUBLICATION_STATUSES)}])); process.exit(Number(process.env.PUBLICATION_STATUSES_EXIT)); }
 else if (args.some(arg => /pulls\\/36\\/reviews\\/91$/.test(arg))) { process.stderr.write("Not Found (HTTP 404)"); process.exit(1); }
@@ -2434,6 +2631,8 @@ else process.stdout.write(process.env.PUBLICATION_METADATA_AFTER_CI && readFileS
           ? JSON.stringify(options.reviewAfterCi)
           : "",
         PUBLICATION_CHECK_RUNS: options.checkRuns ?? checkRunPages(passingRun),
+        PUBLICATION_PR_EVENTS: JSON.stringify([options.prEvents ?? []]),
+        PUBLICATION_PR_EVENTS_EXIT: String(options.prEventsExit ?? 0),
         PUBLICATION_USER: options.publisher ?? "publisher",
         PUBLICATION_RELATION: String(options.relationPullNumber ?? 35),
         GH_ROUTE: options.route ?? "native",
