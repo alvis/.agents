@@ -96,6 +96,6 @@ Review convergence passes only when all of these hold for every current head:
 - every acted-on comment has a reply tied to remote evidence;
 - each PR head/base target and OID still equal the reviewed surface.
 
-After the exit gate passes, end review convergence without another speculative pass. Keep the surface draft until hosted CI passes. Bind `SUBSTANTIVE_VERDICT` and `REVIEWED_HEAD_OID`, `REVIEWED_BASE_REF`, and `REVIEWED_BASE_OID` from that surface's latest independent publication review evidence, not its submitted GitHub event. Retain the expected surface map from publication; never replace it with observed values to clear a mismatch.
+After the exit gate passes, end review convergence without another speculative pass. Keep the surface draft until hosted CI passes or, for draft-gated checks, has [not run](create-update.md#poll-contract). Bind `SUBSTANTIVE_VERDICT` and `REVIEWED_HEAD_OID`, `REVIEWED_BASE_REF`, and `REVIEWED_BASE_OID` from that surface's latest independent publication review evidence, not its submitted GitHub event. Retain the expected surface map from publication; never replace it with observed values to clear a mismatch.
 
 Return the converged head map and review evidence to the caller. The publication or red-CI repair caller continues consuming the existing [monitor](monitor.md). Do not start another listener or CI schedule here.

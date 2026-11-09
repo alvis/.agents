@@ -23,7 +23,11 @@ type JsonObject = Record<string, unknown>;
 type PublicationKind =
   "discussion-reply" | "review" | "review-supplement" | "status";
 type ReviewEvent = "COMMENT" | "REQUEST_CHANGES";
-type CiState = "pending" | "green" | "red";
+/** `not_run` means every expected check that ran on the head was skipped, as a draft-gated job is */
+const CI_STATES = ["pending", "green", "red", "not_run"] as const;
+type CiState = (typeof CI_STATES)[number];
+/** states a posted review may still leave once CI starts or finishes */
+const OPEN_CI_STATES = ["pending", "not_run"] as const;
 type TrustCap =
   "ci-red" | "partial-review" | "spec-unreadable" | "tests-unconvincing";
 
@@ -287,7 +291,7 @@ interface PublishOptions {
 }
 
 export const CONTRACT_VERSION = "coding-pr-review-publication/v4" as const;
-export const RECEIPT_VERSION = 3 as const;
+export const RECEIPT_VERSION = 4 as const;
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const OID_PATTERN = /^[0-9a-f]{40}$/;
@@ -357,7 +361,7 @@ export function createReviewPublicationReceipt(
     review === null
       ? null
       : (Object.fromEntries(
-          (["pending", "green", "red"] as const).map((state) => {
+          CI_STATES.map((state) => {
             const variant = renderReview(review, templates!, state);
             const bytes = Buffer.from(
               `${JSON.stringify(variant.body)}\n`,
@@ -660,7 +664,7 @@ export function updateReviewPublication(
   const currentBody = stringValue(liveReview.body, "live review body");
   const variants = validated.ci_variants!;
   const bodies = Object.fromEntries(
-    (["pending", "green", "red"] as const).map((state) => [
+    CI_STATES.map((state) => [
       state,
       stringValue(
         JSON.parse(
@@ -672,16 +676,20 @@ export function updateReviewPublication(
       ),
     ]),
   ) as Record<CiState, string>;
-  if (currentBody !== bodies.pending) {
+  const postedState = OPEN_CI_STATES.find((state) => bodies[state] === currentBody);
+  if (postedState === undefined) {
     throw new Error(
-      "review update refused: current body is not the approved pending variant",
+      "review update refused: current body is not an approved pending or not-run variant",
     );
   }
   const ciState = readLiveCiState(validated, executable);
-  if (ciState === "pending")
+  if (ciState === postedState)
     return `${JSON.stringify({
-      ci_state: "pending",
-      waiting: "Hosted CI is still running; waiting for its result.",
+      ci_state: ciState,
+      waiting:
+        ciState === "pending"
+          ? "Hosted CI is still running; waiting for its result."
+          : "Hosted CI has not run; waiting for it to start.",
     })}\n`;
   assertLiveReviewTarget(validated, executable);
   assertLiveRequiredPolicy(validated, executable);
@@ -897,10 +905,12 @@ function readLiveCiState(
     )
       pending = true;
   }
-  const appRuns = runs;
+  // completion time of the newest skip of each expected check that only ever
+  // ran as skipped on this head: such a check has not run, so it is not green
+  const skippedAt: string[] = [];
   for (const expected of context.expected_checks) {
     if (expected.app_id !== undefined && expected.app_id !== -1) {
-      const matchingRuns = appRuns.filter((run) => {
+      const matchingRuns = runs.filter((run) => {
         const app = objectValue(run.app, "CI check app");
         return (
           matchesExpectedCheckName(
@@ -932,23 +942,85 @@ function readLiveCiState(
           !["success", "skipped"].includes(conclusion)
         ) pending = true;
       }
+      if (
+        matchingRuns.every(
+          (run) => typeof run.conclusion === "string" && run.conclusion.toLowerCase() === "skipped",
+        )
+      )
+        skippedAt.push(latestCompletion(matchingRuns.map((run) => run.completed_at)));
       continue;
     }
-    if (
-      !checks.some((check) => {
-          const name = stringValue(check.name, "CI check name");
-          return (
-            matchesExpectedCheckName(expected.name, name) &&
-            (expected.workflow === undefined ||
-              checkMatchesWorkflowPath(check, expected.workflow, target, executable)) &&
-            (expected.link_prefix === undefined ||
-              (typeof check.link === "string" &&
-                matchesCiLinkSource(expected.link_prefix, check.link)))
-          );
-      })
-    ) pending = true;
+    const matchingChecks = checks.filter((check) => {
+      const name = stringValue(check.name, "CI check name");
+      return (
+        matchesExpectedCheckName(expected.name, name) &&
+        (expected.workflow === undefined ||
+          checkMatchesWorkflowPath(check, expected.workflow, target, executable)) &&
+        (expected.link_prefix === undefined ||
+          (typeof check.link === "string" &&
+            matchesCiLinkSource(expected.link_prefix, check.link)))
+      );
+    });
+    if (matchingChecks.length === 0) pending = true;
+    else if (matchingChecks.every((check) => check.state === "SKIPPED"))
+      skippedAt.push(latestCompletion(matchingChecks.map((check) => check.completedAt)));
   }
-  return pending ? "pending" : "green";
+  if (pending) return "pending";
+  if (skippedAt.length === 0) return "green";
+  // leaving draft starts the checks a draft skips, so a skip recorded before
+  // that transition is superseded by a run GitHub may not have listed yet
+  const readyAt = readReadyForReviewAt(executable, target);
+  return readyAt !== null && skippedAt.some((at) => at < readyAt)
+    ? "pending"
+    : "not_run";
+}
+
+/** GitHub's UTC ISO-8601 timestamps share one width, so they sort as text; an incomplete check already reads as pending */
+function latestCompletion(times: readonly unknown[]): string {
+  return times.filter((time): time is string => typeof time === "string").sort().at(-1) ?? "";
+}
+
+/**
+ * reads when the PR last left draft over REST
+ * @returns the newest `ready_for_review` event time, or null while the PR is a draft or never was one
+ */
+function readReadyForReviewAt(
+  executable: string,
+  target: PublicationTarget,
+): string | null {
+  const completed = spawnSync(
+    executable,
+    [
+      "api",
+      "--hostname",
+      target.host,
+      "--paginate",
+      "--slurp",
+      `repos/${target.owner}/${target.repo}/issues/${target.pull_number}/events?per_page=100`,
+    ],
+    { encoding: "utf8" },
+  );
+  if (completed.status !== 0)
+    throw new Error(
+      `PR event lookup failed: ${completed.stderr.trim() || `exit ${completed.status}`}`,
+    );
+  let pages: unknown;
+  try {
+    pages = JSON.parse(completed.stdout);
+  } catch {
+    throw new Error("PR event lookup returned malformed JSON");
+  }
+  const latest = arrayValue(pages, "PR event pages")
+    .flatMap((page) => arrayValue(page, "PR events"))
+    .map((event) => objectValue(event, "PR event"))
+    .filter((event) => event.event === "ready_for_review" || event.event === "convert_to_draft")
+    .map((event) => ({
+      event: event.event,
+      at: stringValue(event.created_at, "PR draft event time"),
+    }))
+    .sort((left, right) => left.at.localeCompare(right.at))
+    .at(-1);
+  return latest?.event === "ready_for_review" ? latest.at : null;
 }
 
 function matchesExpectedCheckName(expected: string, observed: string): boolean {
@@ -2083,21 +2155,24 @@ function renderOverallReview(
   const ciRed = ciState === "red";
   const failed = changesRequested || ciRed;
   const pending = !failed && ciState === "pending";
-  const capped = !failed && !pending && hasCap;
+  const notRun = !failed && ciState === "not_run";
+  const capped = !failed && !pending && !notRun && hasCap;
   const awaitingHuman =
-    !failed && !pending && !hasCap && input.review_context.human_signoff_required;
+    !failed && !pending && !notRun && !hasCap && input.review_context.human_signoff_required;
   const zoneGlyph = {
     black: "⬛",
     green: "🟩",
     red: "🟥",
     yellow: "🟨",
   } satisfies Record<typeof input.review_context.zone, string>;
-  const ciSentence =
-    ciState === "pending"
-      ? "Hosted CI is still running; waiting for its result."
-      : ciState === "red"
-        ? "Hosted CI failed."
-        : "Hosted CI passed.";
+  const ciSentence = (
+    {
+      pending: "Hosted CI is still running; waiting for its result.",
+      not_run: "Hosted CI has not run: its expected checks were skipped.",
+      red: "Hosted CI failed.",
+      green: "Hosted CI passed.",
+    } satisfies Record<CiState, string>
+  )[ciState];
   const humanSentence = input.review_context.human_signoff_required
     ? " Human reviewer sign-off is still required."
     : "";
@@ -2124,18 +2199,20 @@ function renderOverallReview(
       unanchored_alert: assessment.alerts.unanchored ?? "",
       verdict_alert: failed
         ? "CAUTION"
-        : pending || capped
+        : pending || notRun || capped
           ? "WARNING"
           : "NOTE",
       verdict_status: failed
         ? `❌ ${[changesRequested && "Changes requested", ciRed && "CI failed"].filter(Boolean).join(", ")}.`
         : pending
-          ? "⏳ Waiting for CI."
-          : capped
-            ? "⚠️ Not fully verified."
-            : awaitingHuman
-              ? "✅✋ Passed, awaiting human approval."
-              : "✅ Passed.",
+          ? "⏳ CI running."
+          : notRun
+            ? "⏸️ CI not run."
+            : capped
+              ? "⚠️ Not fully verified."
+              : awaitingHuman
+                ? "✅✋ Passed, awaiting human approval."
+                : "✅ Passed.",
       verdict_sentence: `${assessment.verdict_sentence} ${ciSentence}${humanSentence}`,
       zone: input.review_context.zone,
       zone_glyph: zoneGlyph[input.review_context.zone],
