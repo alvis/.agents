@@ -60,6 +60,7 @@ Select every row matching the artifact, read its scan before editing, and apply 
 | Python | [Python](../standards/python/scan.md) |
 | Rust | [Rust](../standards/rust/scan.md) |
 | Identifiers and operation names | [Naming](../standards/naming/scan.md) |
+| Environment variable names, including credentials | [Environment](../standards/environment/scan.md) |
 | Tests and testable implementation | [Testing](../standards/testing/scan.md) |
 | Commit message text | [Commit](../standards/commit/scan.md) |
 | Rendered PR messages and implementation-diff size or composition | [Git](../standards/git/scan.md) |
