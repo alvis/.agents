@@ -39,6 +39,7 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | Agent write fences | ✅ Native | 🟡 Adapted | 🟡 Adapted | 🟡 Adapted | Recognized critic fences allow only rooted memory and canonical review-state paths; shell and external-directory access are denied. |
 | Browser automation | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires a compatible browser tool or MCP server in every harness. |
 | Notion synchronization | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires the documented Notion transport profile and credentials. |
+| External tracker and document sync | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | `essential:sync` writes through an MCP server for each external host and asks the user to install a missing one. Source: [connectors.md](plugins/essential/skills/sync/directions/connectors.md). |
 | Image generation | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires a supported image provider or tool. |
 | Claude output styles | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | The repository intentionally scopes output-style installation to Claude Code. |
 | Claude statusline | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | The repository intentionally scopes statusline installation to Claude Code. |
@@ -78,6 +79,7 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `essential:uninstall` skill | ✅ Native | ✅ Native | ✅ Native | ❌ Unavailable | Removes unmodified installer-owned agents and the Grok attachment; preserves edited and unrelated files. Source: [SKILL.md](plugins/essential/skills/uninstall/SKILL.md). |
 | `essential:install-output-styles` skill | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | Claude-only by contract. Source: [SKILL.md](plugins/essential/skills/install-output-styles/SKILL.md). |
 | `essential:install-statusline` skill | ✅ Native | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | Claude-only by contract. Source: [SKILL.md](plugins/essential/skills/install-statusline/SKILL.md). |
+| `essential:sync` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-sync`. Source: [SKILL.md](plugins/essential/skills/sync/SKILL.md). |
 | `essential:takeover` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-takeover`. Source: [SKILL.md](plugins/essential/skills/takeover/SKILL.md). |
 | `governance:create-agent` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `governance-create-agent`. Source: [SKILL.md](plugins/governance/skills/create-agent/SKILL.md). |
 | `governance:create-standard` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `governance-create-standard`. Source: [SKILL.md](plugins/governance/skills/create-standard/SKILL.md). |
