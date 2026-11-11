@@ -1,6 +1,6 @@
 # Land pull requests by zone
 
-Load this after [create-update.md](create-update.md#6-promote-verified-surfaces-and-add-human-tasks) promotes a PR, and on every [monitor.md](monitor.md) wake that can change a PR's landing state: a review, a description edit, a CI result, or a merge. This direction owns the zone's landing label, its reviewer tasks, automatic merging, stack landing, and the after-merge learnings comment. The zone is the one `classify-pr-size.ts` computed after any reviewer recount under [`GIT-PR-SIZE-01`](../../../standards/git/rules/GIT-PR-SIZE-01.md); this file restates no threshold. [merge.md](merge.md) owns merge gates and transport, and direction approval under [staged delivery](../../../directions/staged-delivery.md#approve-the-direction) is a separate gate that never merges anything.
+Load this after [create-update.md](create-update.md#6-promote-verified-surfaces-and-add-human-tasks) promotes a PR, and on every [monitor.md](monitor.md) wake that can change a PR's landing state: a review, a description edit, a CI result, or a merge. This direction owns the zone's landing label, its reviewer tasks, automatic merging, stack landing, the after-merge learnings comment, and the after-merge sync trigger. The zone is the one `classify-pr-size.ts` computed after any reviewer recount under [`GIT-PR-SIZE-01`](../../../standards/git/rules/GIT-PR-SIZE-01.md); this file restates no threshold. [merge.md](merge.md) owns merge gates and transport, and direction approval under [staged delivery](../../../directions/staged-delivery.md#approve-the-direction) is a separate gate that never merges anything.
 
 ## Zone policy
 
@@ -45,3 +45,5 @@ After GitHub reports a PR `MERGED`, whether the agent or a person merged it, a r
 4. Post it with `bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-comment.ts" "$PR_NUMBER" --repo "$HOST/$OWNER/$REPO" --body-file <body>`, read it back, and record its URL in `state/pr-monitor.md` before [landing and settlement](monitor.md#landing-and-settlement) continues.
 
 For a stack, post one comment per merged PR covering that PR's own reviews.
+
+Then hand the merge to `essential:sync` on this work's location, or on the PR URL when the PR has no work stream, whether or not a learnings comment was posted, so the external tasks and documents the PR body names reflect what merged. The lease holder runs it when it reconciles this merge under [landing and settlement](monitor.md#landing-and-settlement). Sync's pending items never block landing and settlement.
