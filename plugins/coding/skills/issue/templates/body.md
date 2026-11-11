@@ -9,7 +9,7 @@ Use this shape only when `directions/templates.md` selects the body fallback. Om
 
 ## 🎯 Expected Behavior
 
-{{intended behavior and supporting contract if known}}
+{{intended behavior; then, when known and verified, the governing specification and, inline, each related ADR as `[ADR-<number>: <title>](<permalink pinned to the default branch's current commit>)` and each external design document as `[<page title>](<URL>)`}}
 
 ## 🐛 Observed Behavior
 

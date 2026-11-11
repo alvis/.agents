@@ -51,6 +51,7 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 | `essential:deep-research` | Multi-source fact-finding with adversarial claim verification and citations. |
 | `essential:autoresearch` | Metric-driven optimization loops (define metric → evolve candidates → verify → mutate). |
 | `essential:handover` | Pausing work: persists all stream state, updates the global overview, releases leases. |
+| `essential:sync` | Writing delivered work back to external trackers and design documents: task status, deviation comments, and approved document edits. |
 | `essential:takeover` | Resuming paused work from the on-disk work directories: checks leases, resolves blocking decisions, and drives streams to their success criteria. |
 | [`essential:doctor`](skills/doctor/SKILL.md) | Structural diagnosis and scoped repair of `.state/`. |
 | `essential:handoff` | A zero-context cross-domain orchestration plan another agent can execute verbatim. |
