@@ -18,9 +18,9 @@ Placeholders (for non-LLM callers performing literal substitution):
   goal_body                  yes       Outcome this PR is intended to achieve and why it matters; no implementation detail.
   requirements_body          yes       Testable, observable behavior required from the result; no generic quality/process gates.
   change_inventory_body      yes       One bullet per logical change unit, `Risk class: R<n>`, then any new-behavior example.
-  context_body               yes       Why this change is needed; bug links; design background.
+  context_body               yes       The work's source, then why this change is needed and its design background.
   if_not_merged_body         no        The current-behavior example. Drop the `###` subsection if empty.
-  specification_body         no        A canonical committed-doc path or external page such as Notion. Drop section if empty.
+  specification_body         no        Governing specification, then inline ADR permalinks and design-document links. Drop section if empty.
   implementation_body        no        What was implemented; trade-offs; design choices; evidence and results. Drop section if empty.
   breaking_changes_body      no        Breaking-change list + migration notes. Drop section if commit subject lacks `!` and no `BREAKING CHANGE:` trailer.
   risk_body                  by zone   Concrete failure modes and mitigations. Required for yellow/red/black.
@@ -32,7 +32,7 @@ Placeholders (for non-LLM callers performing literal substitution):
   verification_body          yes       Checklist of the checks that must pass before sign-off, ticked as each is confirmed.
   boundary_body              no        Related work the instruction placed outside this change. Drop section if empty.
   additional_notes_body      no        Deviations from the spec or original request (what changed and why), known limitations, follow-ups. Keep the section and its review instruction when empty.
-  related_issues_body        no        One closing line for resolving issues (`Closes #<n>, closes #<m>`), then plain issue and discussion references. Drop section if empty.
+  related_body               no        `- #<n> <relationship>` per related issue or discussion, then non-specification external documents. Drop section if empty.
 
 Substitution rules:
 - All placeholders are literal `{{name}}` tokens; no nesting, no expressions.
@@ -65,7 +65,7 @@ Substitution rules:
 
 ## 🧵 Context
 
-<!-- why this change is needed: the problem and symptoms, related bug or ticket links, what problem it solves and why, and relevant design background -->
+<!-- open with the work's source when it came from one: a GitHub issue or discussion as `#<number>` (`<owner>/<repo>#<number>` in another repository); a task in any other tracker, such as Linear, Jira, or Notion, as `[<PREFIX>-<number>](<task URL>)`, or `[<task title>](<task URL>)` when the tracker shows no prefixed number. Then why this change is needed: the problem and symptoms, what problem it solves and why, and relevant design background -->
 {{context_body}}
 
 ### 💣 If this PR is not merged [ Optional ]
@@ -75,7 +75,7 @@ Substitution rules:
 
 ## 📘 Specification [ Optional ]
 
-<!-- a canonical committed-doc path or external page such as Notion -->
+<!-- the governing specification as a canonical committed-doc path or external page such as Notion; then, inline, every ADR this change follows, amends, or adds as `[ADR-<number>: <title>](<permalink>)`, pinned to the base commit or, for an ADR this PR adds, the head commit, and every external design document as `[<page title>](<URL>)` -->
 {{specification_body}}
 
 ## 🛠️ Implementation [ Optional ]
@@ -154,7 +154,7 @@ Publish review findings and the verdict as a separate PR review or comment. Neve
 <!-- deviations from the spec or original request (what changed and why), known limitations, follow-ups, anything else a maintainer needs -->
 {{additional_notes_body}}
 
-## 🔗 Related Issues [ Optional ]
+## 🔗 Related [ Optional ]
 
-<!-- first, one closing line naming every resolving issue with its own keyword (`Closes #<n>, closes #<m>`); then plain references to related tickets, issues, RFCs, and discussions -->
-{{related_issues_body}}
+<!-- one bullet per reference: `- #<number> <relationship>` for every issue this change resolves, partially addresses, or relates to and every related discussion, then `- [<page title>](<URL>)` for external documents outside the specification, such as a library's API reference; never an issue-closing keyword -->
+{{related_body}}

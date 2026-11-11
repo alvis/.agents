@@ -72,7 +72,7 @@ interface Pull {
  */
 export const UNSUPPORTED: Readonly<Record<string, string>> = {
   "closing-issue links":
-    "closingIssuesReferences and add/removeCloseIssueReferences are GraphQL-only; list resolving issues on the PR body's closing line (`Closes #<n>, closes #<m>`) instead",
+    "closingIssuesReferences and add/removeCloseIssueReferences are GraphQL-only; publish without them and report each resolving issue for a maintainer to link in the PR's Development sidebar",
   "gh stack":
     "the gh-stack extension calls GitHub itself and cannot be rerouted by this wrapper",
   "--delete-branch":
