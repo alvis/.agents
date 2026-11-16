@@ -22,7 +22,7 @@ Before workspace bootstrap, settle three separately answerable items. Infer them
 
 1. **Goal.** State one verifiable outcome and the evidence that will confirm it.
 2. **Behavioral requirements.** State only the observable behavior the work must demonstrate. Exclude universal delivery obligations such as passing tests, updating documentation, following standards, or routine review.
-3. **Direction.** When material alternatives remain, present at least two viable approaches with their trade-offs, mark one `Recommended`, and ask which approach or adjustment should guide the work. A direction becomes a requirement only when the user explicitly promotes it.
+3. **Direction.** When material alternatives remain, present at least two viable approaches with their trade-offs, mark one `Recommended`, and ask which approach or adjustment should guide the work. A direction becomes a requirement only when the user explicitly promotes it. When research planned before discovery could change the choice, as in `essential:plan`, leave this item to that discovery round instead of asking now.
 
 The questions may share one harness prompt, but each unsettled item needs its own answer. When an answer changes, revisit only the items it affects.
 

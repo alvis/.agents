@@ -15,6 +15,7 @@ Two mechanisms make saves and publication safe around AI-driven edits:
 
 | Skill | Use when |
 | --- | --- |
+| `coding:research` | Pre-planning research for a coding task: related PRs, ADRs, docs, and code, through semantic search when available, as an evidence brief for `essential:plan`. |
 | `coding:write-code` | New functions, features, modules, or endpoints via a TDD lifecycle. |
 | `coding:draft-code` | Typed skeletons with canonical `TODO(implementation)` placeholders. |
 | `coding:complete-code` | Completing explicit production stubs and draft sentinels. |
