@@ -5,14 +5,14 @@
   "title": "Decision explainer — plugin resolution and the working-attitude mandate",
   "theme": { "accent": 200 },
   "masthead": {
-    "eyebrow": "Decision explainer · /discover decisions --only=active,proposed,superseded ADR-1 plugin-context-slimming",
-    "headline": "Three decisions this repository already rests on, explained for someone who was not there when they were made.",
+    "eyebrow": "Decision explainer · /discover decisions --range=de09540e^..de09540e --only=active,proposed,superseded plugin-context-slimming",
+    "headline": "One decision a change proposes, the one it replaces, and two this repository already rests on — explained before you agree to the first.",
     "lede": "Each section tells the story a decision answered, what was chosen in plain words, what else was on the table, and what it changes about your own work. Nothing here asks you to agree: leave a decision on “I'm good with it”, or press “Tell me more about it” and say what is still unclear.",
     "meta": [
-      { "label": "ADRs", "value": "1" },
+      { "label": "Proposed in this change", "value": "1" },
+      { "label": "Archived by this change", "value": "1" },
       { "label": "Local decisions", "value": "2" },
-      { "label": "Active", "value": "2" },
-      { "label": "Proposed", "value": "0" },
+      { "label": "Active", "value": "1" },
       { "label": "Superseded", "value": "1" },
       { "label": "Set aside", "value": "2" }
     ]
@@ -69,11 +69,143 @@
       ]
     },
     {
+      "id": "adr-2",
+      "label": "ADR-2 · Declared marketplace",
+      "eyebrow": "ADR · proposed in this change · not yet agreed",
+      "title": "A plugin may find a dependency in another marketplace — but only one its own manifest names.",
+      "blocks": [
+        {
+          "type": "tldr",
+          "points": [
+            {
+              "lead": "Same lookup command, wider search.",
+              "text": [
+                "The resolver still finds Essential by name, but now looks in the marketplace the calling plugin's ",
+                { "kind": "code", "text": ".claude-plugin/plugin.json" },
+                " declares for it, not only in its own."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            "Picture a company that publishes its own plugins from its own ",
+            { "kind": "term", "text": "marketplace", "definition": "a set of plugins distributed together" },
+            ", built on top of this one. Its hooks need Essential's runtime, but Essential lives in this marketplace, not theirs. Under ADR-1 the lookup only ever searched the caller's own marketplace, so that company's hook could never find Essential and would have to copy or fork the runtime."
+          ]
+        },
+        {
+          "type": "diff",
+          "title": "What the decision was, and what it becomes",
+          "pairs": [
+            {
+              "label": "Where the lookup searches",
+              "before": "It resolves only an installation from the same marketplace as the invoking plugin.",
+              "after": "It looks in the invoking plugin's own marketplace, or in the marketplace that the invoking plugin's manifest names for that dependency."
+            },
+            {
+              "label": "Claude Code registry",
+              "before": "The resolver matches the invoking plugin's location to installed_plugins.json and selects the requested plugin from that marketplace.",
+              "after": "The resolver selects the requested plugin from the target marketplace in installed_plugins.json; only when no marketplace is declared must the invoking plugin's location appear there."
+            },
+            { "label": "Downstream use", "before": "", "after": "Downstream marketplaces copy the same file unchanged." }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": "Implications — what changes elsewhere if you agree."
+        },
+        {
+          "type": "table",
+          "columns": ["Area", "What it must now do", "Shown by", "Evidence"],
+          "rows": [
+            [
+              { "text": "Every plugin's resolver copy" },
+              { "text": "Regenerate the eight plugin copies from the new root source." },
+              { "text": [{ "kind": "code", "text": "plugins/*/scripts/plugin-root" }] },
+              { "text": "observed" }
+            ],
+            [
+              { "text": "Resolver tests" },
+              { "text": "Cover declared, conflicting, and malformed marketplace entries." },
+              { "text": [{ "kind": "code", "text": "scripts/plugin-root.spec.ts" }] },
+              { "text": "observed" }
+            ],
+            [
+              { "text": "Repository contract" },
+              { "text": "Point the plugin execution rule at ADR-2 instead of ADR-1." },
+              { "text": [{ "kind": "code", "text": "AGENTS.md" }] },
+              { "text": "observed" }
+            ],
+            [
+              { "text": "Harness projections" },
+              { "text": "Describe the target marketplace, not only the caller's." },
+              { "text": [{ "kind": "code", "text": "docs/architecture/harness-projections.md" }] },
+              { "text": "observed" }
+            ],
+            [
+              { "text": "Downstream marketplaces" },
+              { "text": "Declare Essential with its marketplace and allow it in allowCrossMarketplaceDependenciesOn." },
+              { "text": "ADR-2, Context" },
+              { "text": "inference" }
+            ],
+            [
+              { "text": "Grok Build" },
+              { "text": "Cannot resolve another marketplace's plugin until its multi-marketplace layout is known." },
+              { "text": "ADR-2, Consequences" },
+              { "text": "observed" }
+            ]
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            {
+              "lead": "What this means for you:",
+              "text": [
+                "nothing changes in a hook — still call ",
+                { "kind": "code", "text": "\"$plugin_root/scripts/plugin-root\" essential" },
+                ". What changes is that a manifest entry can now widen where that call looks, so a new marketplace name in a manifest is a security-relevant edit."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "text": [
+            {
+              "kind": "source",
+              "text": "ADR-2, Decision and Consequences",
+              "ref": "docs/architecture/decisions/harness/adr-2-declared-marketplace-plugin-resolution.md"
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "response": "follow-up",
+          "default": "approve",
+          "id": "adr-2-more",
+          "ref": "ADR-2",
+          "label": "Declared marketplace resolution",
+          "ask": "Want this explained further?",
+          "labels": { "approve": "I'm good with it", "change": "Tell me more about it", "note": "What would you like to know? (optional)" },
+          "placeholder": "e.g. why not let every marketplace be searched?"
+        }
+      ]
+    },
+    {
       "id": "adr-1",
       "label": "ADR-1 · Plugin resolution",
-      "eyebrow": "ADR · human-approved · active",
+      "eyebrow": "ADR · archived by this change · replaced if it lands",
       "title": "A hook finds the plugins it depends on by asking, never by guessing a folder.",
       "blocks": [
+        {
+          "type": "callout",
+          "tone": "neutral",
+          "title": "This is what ADR-2 would replace",
+          "text": "The change moves this record to superseded/ and names ADR-2 as its successor. Read it as the rule today; ADR-2 above keeps most of it and widens one part."
+        },
         {
           "type": "tldr",
           "points": [
@@ -347,26 +479,95 @@
       ]
     },
     {
+      "id": "check",
+      "label": "Check your understanding",
+      "eyebrow": "Before you agree",
+      "title": "Three questions on what ADR-2 would change.",
+      "blocks": [
+        {
+          "type": "quiz",
+          "id": "q-where",
+          "ref": "Q1",
+          "label": "Where it looks",
+          "ask": "A company plugin declares essential as a plain string, with no marketplace. Where does the resolver look for Essential?",
+          "explains": "adr-2",
+          "options": [
+            {
+              "value": "In the company plugin's own marketplace",
+              "correct": true,
+              "because": "a plain string names a plugin in the same marketplace; only an object entry with a marketplace widens the search"
+            },
+            {
+              "value": "In this marketplace, because Essential lives here",
+              "because": "the resolver never infers where a plugin lives; the manifest must say so"
+            },
+            { "value": "In every installed marketplace", "because": "searching everywhere is exactly what the decision avoids" }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "q-copy",
+          "ref": "Q2",
+          "label": "Editing the resolver",
+          "ask": "You need to change how the resolver handles Codex caches. Which file do you edit?",
+          "explains": "adr-1",
+          "options": [
+            {
+              "value": "scripts/plugin-root at the repository root",
+              "correct": true,
+              "because": "it is the one maintained source; every plugin copy is regenerated from it, and ADR-2 keeps that rule"
+            },
+            { "value": "plugins/coding/scripts/plugin-root", "because": "that is a generated copy and would be overwritten" },
+            { "value": "Each plugin's copy, one by one", "because": "the copies must stay byte-identical, so they are projected, never hand-edited" }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "q-grok",
+          "ref": "Q3",
+          "label": "Grok Build",
+          "ask": "Once ADR-2 lands, can a Grok Build hook resolve Essential from another marketplace?",
+          "explains": "adr-2",
+          "options": [
+            {
+              "value": "No, not until Grok's multi-marketplace layout is known",
+              "correct": true,
+              "because": "ADR-2's Consequences say so; agreeing to ADR-2 accepts that gap"
+            },
+            { "value": "Yes, the same way as Claude Code", "because": "Claude Code has a registry; Grok Build only has the source-shaped layout" }
+          ]
+        },
+        {
+          "type": "gate",
+          "title": "Do you understand what you would agree to?",
+          "pass": "You understand ADR-2 and what it changes. Agree to it in the change's own review.",
+          "fail": "Not yet — re-read the sections the missed questions link to."
+        }
+      ]
+    },
+    {
       "id": "scope",
       "label": "Scope note",
       "eyebrow": "What this board left out",
-      "title": "Two records were set aside, and nothing proposed matched.",
+      "title": "Two records were set aside, and nothing else proposed matched.",
       "blocks": [
         {
           "type": "table",
           "columns": [{ "label": "Selector or record", "width": "40%" }, "Outcome", "Why"],
           "rows": [
-            [{ "text": [{ "kind": "code", "text": "ADR-1" }] }, { "text": "shown", "verdict": "good" }, { "text": "Effective, and listed in the index at docs/architecture/README.md with the same title." }],
+            [{ "text": [{ "kind": "code", "text": "ADR-2" }] }, { "text": "shown", "verdict": "good" }, { "text": "Added by this change, and listed in the head revision's index at docs/architecture/README.md." }],
+            [{ "text": [{ "kind": "code", "text": "ADR-1" }] }, { "text": "shown", "verdict": "good" }, { "text": "Archived by this change: moved to superseded/ with ADR-2 as its successor." }],
             [{ "text": [{ "kind": "code", "text": "plugin-context-slimming" }] }, { "text": "2 of 4 shown", "verdict": "mixed" }, { "text": "The stream holds four decision files; two carry a Status line." }],
             [{ "text": [{ "kind": "code", "text": "plugin-context-slimming/round-2-remediation" }] }, { "text": "set aside", "verdict": "bad" }, { "text": "No Status line, so it cannot be classified as active, proposed or superseded." }],
             [{ "text": [{ "kind": "code", "text": "plugin-context-slimming/script-retirements" }] }, { "text": "set aside", "verdict": "bad" }, { "text": "No Status line, for the same reason." }],
-            [{ "text": "proposed records" }, { "text": "none" }, { "text": "Neither selector matched a record with status proposed." }]
+            [{ "text": "proposed records" }, { "text": "none" }, { "text": "The selector matched no record with status proposed." }]
           ]
         }
       ]
     }
   ],
   "sources": [
+    { "label": "ADR-2: Resolve installed plugins from their declared marketplace", "ref": "docs/architecture/decisions/harness/adr-2-declared-marketplace-plugin-resolution.md" },
     { "label": "ADR-1: Resolve installed plugins through a projected harness adapter", "ref": "docs/architecture/decisions/superseded/harness/adr-1-installed-plugin-resolution.md" },
     { "label": "L1 · do not rebind working-attitude.md", "ref": ".state/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" },
     { "label": "L2 · the superseded first version", "ref": ".state/works/plugin-context-slimming/decisions/superseded/working-attitude-binding.md" },
