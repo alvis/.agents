@@ -1,6 +1,6 @@
 # Land pull requests by zone
 
-Load this after [create-update.md](create-update.md#6-promote-verified-surfaces-and-add-human-tasks) promotes a PR, and on every [monitor.md](monitor.md) wake that can change a PR's landing state: a review, a description edit, a CI result, or a merge. This direction owns the zone's landing label, its reviewer tasks, automatic merging, stack landing, the after-merge learnings comment, and the after-merge sync trigger. The zone is the one `classify-pr-size.ts` computed after any reviewer recount under [`GIT-PR-SIZE-01`](../../../standards/git/rules/GIT-PR-SIZE-01.md); this file restates no threshold. [merge.md](merge.md) owns merge gates and transport, and direction approval under [staged delivery](../../../directions/staged-delivery.md#approve-the-direction) is a separate gate that never merges anything.
+Load this after [create-update.md](create-update.md#6-promote-verified-surfaces-and-add-human-tasks) promotes a PR, and on every [monitor.md](monitor.md) wake that can change a PR's landing state: a review, a description edit, a CI result, or a merge. This direction owns the zone's landing label, its reviewer tasks, automatic merging, stack landing, the landing status reported per layer, the after-merge learnings comment, and the after-merge sync trigger. The zone is the one `classify-pr-size.ts` computed after any reviewer recount under [`GIT-PR-SIZE-01`](../../../standards/git/rules/GIT-PR-SIZE-01.md); this file restates no threshold. [merge.md](merge.md) owns merge gates and transport, and direction approval under [staged delivery](../../../directions/staged-delivery.md#approve-the-direction) is a separate gate that never merges anything.
 
 ## Zone policy
 
@@ -20,7 +20,7 @@ Apply it only while substantive AI review is `PASS` and hosted CI is green for t
 
 ## Check the merge trigger
 
-Fetch fresh evidence on each wake, bound to the PR's current head and base OIDs; an event is a hint, never authority. On a wake with an interactive user present, hand off every board [Explain proposed ADRs](create-update.md#explain-proposed-adrs) left pending, without delaying any other action.
+Fetch fresh evidence on each wake, bound to the PR's current head and base OIDs; an event is a hint, never authority. On a wake with an interactive user present, hand off every board [Explain proposed ADRs](create-update.md#explain-proposed-adrs) or [Present the sign-off board](create-update.md#present-the-sign-off-board) left pending for a PR still open, without delaying any other action.
 
 - **Automatic merge gates.** The latest independent review records a substantive `PASS` under the [review-loop exit gate](review-loop.md#exit-gate); hosted CI is green under the [poll contract](create-update.md#poll-contract); the PR is open, ready, and mergeable without conflicts; no current review requests changes; no label whose name or description holds the PR from merging is present; every conversation and inline comment has been consumed, so a buffered comment still inside its quiet window delays the merge until its batch is read and answered; and no unchecked specification-deviation task remains in Verification.
 - **Human approval (yellow only).** Either any checked task line inside the managed `coding:reviewer-tasks` block whose revision line names the current head and base, or a GitHub review in state `APPROVED` whose `commit_id` is the current head and whose author is a user account, not a bot or app. The generator clears ticks when the head or base changes, so an older revision's tick or approval never counts.
@@ -34,6 +34,19 @@ Run [merge.md](merge.md)'s preconditions for the PR, then merge it with `--metho
 ## Land a stack
 
 Walk the stack bottom-up from its lowest open layer. A layer is eligible when its own zone's trigger holds at its current head and base; the first layer that is red, black, opted out, ADR-changing, unapproved yellow, or otherwise blocked ends the walk, and no layer above it merges automatically, even when green. A layer above that point carries no auto-merge label until the walk reaches it, so a label-driven merge bot cannot land it early. For a GitHub PR stack, merge the eligible bottom run atomically through [github-stacks.md](../references/github-stacks.md#merge-and-navigate) with the highest eligible layer as the target and squash as the method. For a conventional linear stack, validate the whole open stack through merge.md, then run its step 6 for the lowest layer only: merge that layer, and restack and retarget every remaining open layer as its descendants without merging any of them; each restacked layer has a new head, so its review, CI, and approval evidence is rebound before the walk resumes on a later wake.
+
+## Landing status
+
+Report each layer's landing as one status, so a person sees at a glance which PRs need them. Take the first row that holds, top to bottom, from this direction's evidence for the current head and base. A waiting layer ranks above a hand merge because merging a stacked PR can also land the open layers below it. Always write the words beside the emoji, so the status survives a screen reader and a plain-text reply. Once the sign-off board has shown a layer's status, report each later change to it, from an approval, a recount, or a merge, in chat on the wake that observes it, rather than showing the board again.
+
+| Emoji | Status | Holds when |
+| --- | --- | --- |
+| ✅ | Merged | GitHub reports the PR `MERGED`. |
+| ⛔ | Blocked | Review, CI, a conflict, a refused merge, a holding label, or an unchecked specification-deviation task stops it, and the agent cannot clear it alone. |
+| ⏳ | Waits | A lower open layer ends the [stack walk](#land-a-stack), or review or CI is still running on its current head, or the agent is repairing it. Name what it waits for and what follows, as in "⏳ Waits for #212, then you merge it". |
+| ✋ | You merge it | It lands as manual-merge under [Zone policy](#zone-policy): red, black, opted out, or ADR-changing. |
+| 🟡 | Merges by itself after you approve | Yellow, and the human approval [the merge trigger](#check-the-merge-trigger) needs is missing. |
+| 🟢 | Merges by itself | Green, or yellow with that approval; the agent merges once the gates hold. |
 
 ## After merge
 
