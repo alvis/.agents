@@ -38,8 +38,9 @@ Read this when creating, locating, or migrating ignored local state. `state-syst
     ├── design/*.md                     # one design candidate or reasoning unit
     ├── review.md                       # review-area roll-up and closure status
     ├── reviews/*.md                    # one area-specific review and its findings
-    └── artifacts/                      # non-Markdown evidence and generated receipts
+    └── artifacts/                      # evidence, research, and generated receipts
         ├── plan-approvals/              # immutable full text, projections/, receipts, and events/ publication history
+        ├── research/                   # briefs/<plugin>/<scope-slug>.md research briefs (templates/research-brief.md) and deep-research <topic-slug>/ runs
         ├── review/                     # domain gate records, such as coding staged-delivery direction verdicts (JSON)
         └── spec-sync/                  # immutable external synchronization evidence
             ├── bases/<base-id>/        # exact accepted external bytes
