@@ -1,6 +1,6 @@
 # Harness compatibility
 
-This manually maintained matrix covers the 55 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
+This manually maintained matrix covers the 56 skills and 22 agents currently shipped by this repository. Update it when source manifests or harness documentation change.
 
 Claude Code, Codex, and Grok Build are native targets. OpenCode support targets stable V1 through `scripts/install_opencode.ts`; OpenCode V2 and `opencode2` are unsupported.
 
@@ -65,6 +65,7 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `coding:pr` skill | 🔌 Integration | 🔌 Integration | 🔌 Integration | 🔌 Integration | Requires authenticated GitHub tooling; supported review writes additionally pass the review-publication guard above. [PR monitoring](plugins/coding/skills/pr/directions/monitor.md) additionally requires an exposed event/delayed-wake service; missing timing or thread-settlement capabilities are reported, never inferred from native skill support. Source: [SKILL.md](plugins/coding/skills/pr/SKILL.md). |
 | `coding:presetter` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-presetter`. Source: [SKILL.md](plugins/coding/skills/presetter/SKILL.md). |
 | `coding:refactor` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-refactor`. Source: [SKILL.md](plugins/coding/skills/refactor/SKILL.md). |
+| `coding:research` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-research`. Pull-request history requires authenticated GitHub tooling; semantic search uses a session tool when one indexes the repository. Source: [SKILL.md](plugins/coding/skills/research/SKILL.md). |
 | `coding:review-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-review-code`. Source: [SKILL.md](plugins/coding/skills/review-code/SKILL.md). |
 | `coding:setup-project` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-setup-project`. Source: [SKILL.md](plugins/coding/skills/setup-project/SKILL.md). |
 | `coding:sync-tool` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-sync-tool`. Source: [SKILL.md](plugins/coding/skills/sync-tool/SKILL.md). |
