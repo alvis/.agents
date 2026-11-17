@@ -157,8 +157,14 @@ export function renderQuestion(
           // hiding the trade-offs from a screen reader entirely, which trades
           // a verbosity bug for information loss. Both attributes or neither.
           // `id` already passed SAFE_ID and the index is unique per question,
-          // so these stay valid URL fragments without a second check
-          const detailId = `q-${escapeHtml(id)}-opt-${index}`;
+          // so these stay valid URL fragments without a second check. The
+          // `qo-` prefix is the options' alone: under the question's own `q-`
+          // a note authored as `c-opt-0` would draw `q-c-opt-0` beside this
+          // option's, and a radio would be described by that note's textarea.
+          // Every option id ends in its index or in a fixed suffix after it,
+          // so reading the id from the right recovers the question it came
+          // from, and two questions can never draw the same one
+          const detailId = `qo-${escapeHtml(id)}-${index}`;
           const badges = renderTags(choice.tags, `${detailId}-tags`, at);
           const tradeoffs = `${renderTradeoff(choice.pros, "pros", "Pros", `${at}.pros`)}${renderTradeoff(choice.cons, "cons", "Cons", `${at}.cons`)}`;
           // the summary sits in the title row, apart from the trade-offs below
