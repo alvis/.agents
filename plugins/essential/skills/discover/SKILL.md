@@ -1,6 +1,6 @@
 ---
 name: discover
-description: "Answers every decision, explanation, and status question with an interactive board and discovers material unknowns before planning. Use for choosing between approaches, explaining anything, work status, blindspot passes, brainstorms, architecture and planning interviews, required pre-plan direction boards, reference semantics, disposable prototypes, readiness checks, finished-build accounts, or explaining recorded decisions to a newcomer."
+description: "Answers every decision, explanation, and status question with an interactive board and discovers material unknowns before planning. Use for choosing between approaches, explaining anything, work status, blindspot passes, brainstorms, architecture and planning interviews, required pre-plan direction boards, reference semantics, disposable prototypes, readiness checks, finished-build accounts, or explaining recorded decisions or an ADR a change proposes."
 requirements:
   model: capable
   effort: deliberate
@@ -12,14 +12,14 @@ Reduce consequential uncertainty before it becomes an implementation assumption.
 
 ## Boundaries
 
-- Use for: every decision the user must make or approve, every explanation (asked or not, including the end-of-task summary), every status answer, explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a pre-plan direction review required by `essential:directions/plan.md#confirm-the-direction-and-architecture` or a multi-round interview, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, and the recorded decisions explained to someone new to the repository.
+- Use for: every decision the user must make or approve, every explanation (asked or not, including the end-of-task summary), every status answer, explicit "blindspot pass" or "unknown unknowns" requests, unfamiliar code or domains, broad solution brainstorming, preferences the user can recognize but not yet articulate, a pre-plan direction review required by `essential:directions/plan.md#confirm-the-direction-and-architecture` or a multi-round interview, extracting semantics from a reference, disposable prototypes, readiness checks before planning, the standing of work already in flight, an account of a finished build for whoever has to merge it, the recorded decisions explained to someone new to the repository, and an ADR a change proposes explained to whoever must agree to it.
 - Do not use for: fact-finding reports (`essential:deep-research`), metric-driven optimization (`essential:autoresearch`), or production UI design (`web:design`). Clear bounded implementation needs no exploratory discovery unless `essential:directions/plan.md#confirm-the-direction-and-architecture` requires a board.
 - Never claim an unknown unknown has been found merely because it is plausible; record it as a hypothesis until evidence supports it.
 
 ## Inputs and output
 
 - **Required**: the problem, goal, or artifact to explore; `decisions` takes optional record selectors instead.
-- **Optional**: a mode name; `--only`, for `decisions` alone; `--persist`; explicit `--work-id`; the user's experience, confidence, references, hard constraints, and known unanswered questions.
+- **Optional**: a mode name; `--range` and `--only`, for `decisions` alone; `--persist`; explicit `--work-id`; the user's experience, confidence, references, hard constraints, and known unanswered questions.
 
 Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work directory from that contract. Run the resolver normally, or with `--work-id` for an explicit user override or the identifier selected by Essential's work-stream lifecycle. Treat an existing match as a candidate and reuse it only when its charter owns the requested outcome. On `work_id_required`, a main-agent run follows that lifecycle to select an identifier and reruns without asking the user to approve it; a subagent returns the resolver payload unless it already received the resolved work ID and root. The main agent performs the contract's ignore gate and no-clobber bootstrap before the first persistent artifact.
 
@@ -57,7 +57,7 @@ The evidence ledger uses these fields:
    - `state`: the unknown is where work already in flight actually stands — read from the local state tree when one holds the work, else from labelled evidence;
    - `status`: only when named, as in `/discover status` — a Kanban glance at the current workstream's tasks when this session started or resumed one, otherwise at every live workstream by phase;
    - `implementation`: a change is built and someone else has to understand what it departed from before they can merge it;
-   - `decisions`: someone new to the repository needs the decisions it already rests on — human-approved ADRs and agent-recorded local decisions — explained.
+   - `decisions`: someone new to the repository needs the decisions it already rests on — human-approved ADRs and agent-recorded local decisions — explained, or someone must understand an ADR a change proposes, and what it changes elsewhere, before agreeing to it.
 3. **Load only the selected mode reference** and execute it:
    - [blindspots](directions/blindspots.md)
    - [options](directions/options.md)

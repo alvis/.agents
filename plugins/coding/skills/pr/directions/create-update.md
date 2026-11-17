@@ -366,7 +366,11 @@ Supply every selected bookmark explicitly in bottom-up order with the exact loca
 | Bookmark or branch conflict | Confirm the intended change, then rerun the selected action against that exact head. |
 | Conventional title invalid | Reword through `coding:commit`, then restart that iteration. |
 
-Refresh the existing [monitor](monitor.md) with every verified updated head/base and newly created PR. With an accepted internal `--publish-only`, return the verified stack map plus refreshed expected hosted checks and their workflow/ruleset/config inputs. Do not enter review or hosted-CI convergence; the verified invoking review or red-CI parent owns the next step.
+Refresh the existing [monitor](monitor.md) with every verified updated head/base and newly created PR. With an accepted internal `--publish-only`, run [Explain proposed ADRs](#explain-proposed-adrs), then return the verified stack map plus refreshed expected hosted checks and their workflow/ruleset/config inputs. Do not enter review or hosted-CI convergence; the verified invoking review or red-CI parent owns the next step.
+
+#### Explain proposed ADRs
+
+Once publication is verified, collect the ADRs the published diff adds, edits, or archives under `docs/architecture/decisions/`, measured from the merge base of the stack's bottom base and its top head; an ADR the change only cites is not in the set. When that set is non-empty and an interactive user is present, hand one board for the whole stack to an owner that meets `essential:discover`'s requirements, as the skill-eligibility handoff in `essential:hooks/ALLAGENT.md` routes it, to run `essential:discover decisions --range=<merge-base-oid>..<top-head-oid>`, attributing each record to the PR that changes it. Record each shown record's path and head blob ID with the [monitor](monitor.md)'s persisted state; on a later publication, a review-driven one included, show the board again only when a recorded blob changed or a new record appeared. With no interactive user, persist the board there as pending and continue; the next update or resume with a user present hands it off, and [landing.md](landing.md#check-the-merge-trigger) does the same on a monitor wake, so the board reaches a user at the first chance. The board informs: it never blocks review, readiness, or landing, and [landing.md](landing.md#zone-policy) owns how an ADR change lands.
 
 ### 4. Converge review comments
 

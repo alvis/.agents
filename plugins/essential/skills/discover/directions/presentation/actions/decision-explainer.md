@@ -1,8 +1,8 @@
 # Decision explainer direction
 
-Use this direction when a newcomer needs the decisions a repository already rests on explained before they can work in it. The page answers, per decision, "what problem was this?", "what did we choose, in plain words?", "what else was on the table?", and "what does it mean for what I do on Monday?" — and lets the reader ask for more on any one of them without having to know what to ask.
+Use this direction when a newcomer needs the decisions a repository already rests on explained before they can work in it, or when someone must understand an ADR a change proposes before agreeing to it. The page answers, per decision, "what problem was this?", "what did we choose, in plain words?", "what else was on the table?", and "what does it mean for what I do on Monday?" — and lets the reader ask for more on any one of them without having to know what to ask.
 
-It is not the [domain explainer](domain-explainer.md), which makes one unfamiliar mechanism concrete so that a decision can be *taken*. This board explains decisions already taken, many at once, to someone who was not there; it settles nothing, and every question on it is a follow-up.
+It is not the [domain explainer](domain-explainer.md), which makes one unfamiliar mechanism concrete so that a decision can be *taken*. This board explains decisions already taken or proposed by a change, many at once, to someone who was not there; it settles nothing. Its questions are follow-ups and a closing quiz, and agreeing to a proposed record belongs to that change's own review.
 
 ## Entry conditions
 
@@ -10,19 +10,21 @@ Reached from the [decisions](../../decisions.md) mode, which owns which records 
 
 ## Suggested composition
 
-1. Masthead: the `--only` set in the lede, and `meta` counts per kind and status — ADRs, local decisions, active, proposed, superseded — so the reader knows the size of what they are about to read.
+1. Masthead: the range and `--only` set in the lede, and `meta` counts per kind and status — proposed in this change, archived by this change, local decisions, active, proposed, superseded — so the reader knows the size of what they are about to read.
 2. An orientation section: two or three sentences on what an ADR is (a human-approved record under `docs/architecture/decisions/`) against a local decision (one an agent recorded while working, under `.state/works/<stream>/decisions/`), and a `glossary` of every term the decisions below repeat. Terms used once are defined where they are used, with a `term` run.
-3. One section per decision, in the order a newcomer meets them — foundations before what builds on them, active before proposed, superseded last:
+3. One section per decision. Range records come first, because they are why the board exists, each added or edited record followed by any record it archives; the rest follow in the order a newcomer meets them — foundations before what builds on them, active before proposed, superseded last:
    - a `tldr` whose lead states the choice in one line;
-   - the kind and status in the section `eyebrow`, spelled as words — `ADR · human-approved · active`, `Local decision · AI-recorded · proposed — not yet agreed`, `… · superseded` — so the status survives greyscale and a screen reader;
+   - the kind and status in the section `eyebrow`, spelled as words — `ADR · human-approved · active`, `Local decision · AI-recorded · proposed — not yet agreed`, `… · superseded`, `ADR · proposed in this change · not yet agreed`, `ADR · archived by this change · replaced if it lands` — so the status survives greyscale and a screen reader;
    - the problem as a story: the concrete situation, and what breaks without the decision;
    - the illustration the mode chose: `tree`, `code`, `mermaid` or `diagram`, or `table`;
    - the decision in plain words, then the alternatives it beat and why, in a `table` when there are more than two;
+   - for a range record, what the decision was and what it becomes as a `diff` of paired passages, and an **Implications** `table` — area, what it must now do, the file that shows it, and observed or inference — as the mode traces them;
    - "What this means for you": the one or two things the reader now does, or must not do, because of it;
    - the record itself as a `source` run, with the files it cites;
    - the follow-up question below.
 4. A superseded decision says what replaced it in a `callout` and links the successor's section when both are on the board.
-5. A scope note section when the mode left anything out: unresolved selectors, records outside the `--only` set, records set aside, and index mismatches, each with its reason.
+5. A closing quiz section of `quiz` blocks, each `explains` naming the decision section that teaches it; with range records, a `gate` follows, worded as [the mode's quiz step](../../decisions.md) requires.
+6. A scope note section when the mode left anything out: unresolved selectors, records outside the `--only` set, records set aside, and index mismatches, each with its reason.
 
 ## The follow-up question
 
