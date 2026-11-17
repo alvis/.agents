@@ -12,9 +12,12 @@ export const DEVIATION_CSS = `
 .deviation-heading{margin:0 0 .8rem; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 /* numbered, because the count is part of what the block reports: one departure
    and nine departures are different changes to be asked to merge */
-.deviations{counter-reset:deviation; display:grid; gap:.85rem; margin:0; padding:0; list-style:none}
-.deviation{counter-increment:deviation; position:relative; padding:1.1rem 1.2rem 1.1rem 3.2rem; border:1px solid var(--ui-border-strong); border-left:3px solid var(--ui-amber); border-radius:var(--radius-card); background:var(--ui-canvas)}
-.deviation::before{content:counter(deviation); position:absolute; inset-block-start:1.15rem; inset-inline-start:1.1rem; min-width:1.5rem; color:var(--ui-amber-ink); font:700 .9rem/1 var(--font-mono); text-align:end}
+/* a ruled list, as the observations are: an ink rule opens and closes the set
+   and a hairline is the seam between two departures */
+.deviations{counter-reset:deviation; display:grid; margin:0; padding:0; list-style:none; border-block:1px solid var(--ui-ink)}
+.deviation{counter-increment:deviation; position:relative; padding:1.1rem 0 1.1rem 2.8rem}
+.deviation+.deviation{border-top:1px solid var(--ui-border)}
+.deviation::before{content:counter(deviation); position:absolute; inset-block-start:1.15rem; inset-inline-start:.5rem; min-width:1.5rem; color:var(--ui-amber-ink); font:700 .9rem/1 var(--font-mono); text-align:end}
 .deviation-title{margin:0 0 .8rem; font-family:var(--font-display); font-size:1rem; font-weight:560; letter-spacing:-.01em}
 /* one column below the fold-out width: two 12rem columns of prose set side by
    side on a phone are two columns of one word each */
@@ -22,8 +25,11 @@ export const DEVIATION_CSS = `
 @media (min-width:44rem){
   .deviation-pair{grid-template-columns:1fr 1fr; gap:1rem}
 }
-.deviation-side{padding:.7rem .8rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-surface)}
-.deviation-side[data-side="found"]{border-color:var(--ui-amber); background:var(--ui-amber-soft)}
+/* each side is a callout: a left rule and no fill. The plan's rule is neutral
+   and what the code revealed takes the amber, so the departure is the side
+   that carries the colour; the label words are what survive greyscale */
+.deviation-side{padding:.1rem 0 .1rem 1rem; border-left:2px solid var(--ui-border-strong)}
+.deviation-side[data-side="found"]{border-left-color:var(--ui-amber)}
 .deviation-label{margin:0 0 .35rem; font:700 .72rem/1.5 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .deviation-side[data-side="found"] .deviation-label{color:var(--ui-amber-ink)}
 .deviation-body{color:var(--ui-muted); font-size:.92rem}

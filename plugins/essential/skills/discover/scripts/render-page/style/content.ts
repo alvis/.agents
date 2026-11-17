@@ -80,18 +80,27 @@ export const CONTENT_CSS = `
 .moment-tags{display:inline-flex; flex-wrap:wrap; gap:.3rem}
 .moment-tags span{padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:9999px; font-size:.72rem; color:var(--ui-muted)}
 
-.kanban{margin:0; padding:0; list-style:none; display:grid; gap:.8rem; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); align-items:start}
-.kanban-lane{min-width:0; padding:.8rem .85rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
-.kanban-lane h4{margin:0 0 .55rem; display:flex; gap:.5rem; align-items:baseline; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
+/* a lane is a column under a heading rule, as a variant is, and its cards are
+   ruled rows, as a disclosure's are: the space between lanes is the seam, so
+   neither a lane nor a card needs a frame */
+.kanban{margin:0; padding:0; list-style:none; display:grid; gap:1.4rem 1.25rem; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); align-items:start}
+.kanban-lane{min-width:0; padding-top:.6rem; border-top:2px solid var(--ui-ink)}
+.kanban-lane h4{margin:0 0 .2rem; display:flex; gap:.5rem; align-items:baseline; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .kanban-count{margin-left:auto; font-variant-numeric:tabular-nums; color:var(--ui-muted)}
-.kanban-cards{margin:0; padding:0; list-style:none; display:grid; gap:.45rem}
-.kanban-card{min-width:0; overflow-wrap:anywhere; padding:.5rem .65rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised); font-size:.88rem}
+.kanban-cards{margin:0; padding:0; list-style:none; display:grid}
+.kanban-card{min-width:0; overflow-wrap:anywhere; padding:.5rem 0; font-size:.88rem}
+.kanban-card+.kanban-card{border-top:1px solid var(--ui-border)}
 /* a pointer opens a detailed card from anywhere on its face, which stays
    selectable text; the open control is what the keyboard reaches, kept out of
-   sight and drawn as the card's own focus ring when it has focus */
-.kanban-card.is-detailed{position:relative; cursor:pointer}
-.kanban-card.is-detailed:hover{border-color:var(--ui-border-strong); background:var(--ui-surface)}
-.kanban-card.is-detailed:has(.kanban-open:focus-visible){outline:2px solid var(--ui-focus); outline-offset:2px}
+   sight and drawn as the card's own focus ring when it has focus. With no frame
+   to say the row opens, a chevron at its end says so, as a settings row does;
+   its alternative text is empty because the open control already names the
+   card to a screen reader */
+.kanban-card.is-detailed{position:relative; padding-right:1.3rem; cursor:pointer}
+.kanban-card.is-detailed::after{content:"\\203A" / ""; position:absolute; inset-block-start:.42rem; inset-inline-end:.15rem; color:var(--ui-faint); font:600 1.05rem/1 var(--font-body)}
+.kanban-card.is-detailed:hover{text-decoration:underline; text-decoration-color:var(--ui-border-strong); text-underline-offset:.2em}
+.kanban-card.is-detailed:hover::after{color:var(--ui-accent-ink)}
+.kanban-card.is-detailed:has(.kanban-open:focus-visible){outline:2px solid var(--ui-focus); outline-offset:2px; border-radius:var(--radius-control)}
 .kanban-open{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0}
 .kanban-open[hidden]{display:none}
 .kanban-dialog{width:min(40rem,calc(100vw - 2rem)); max-height:min(85vh,48rem); padding:0; overflow:auto; border:1px solid var(--ui-border-strong); border-radius:var(--radius-card); background:var(--ui-surface); color:var(--ui-ink); font-size:1rem}

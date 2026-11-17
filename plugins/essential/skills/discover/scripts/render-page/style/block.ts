@@ -62,31 +62,38 @@ td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::bef
 .step p{margin:.25rem 0 0; color:var(--ui-muted)}
 
 /* SC-6 — severity reaches four channels, colour last: the severity word as
-   visible text, a glyph, a distinct left-edge style, then colour. The edge
+   visible text, a glyph, a distinct left-rule style, then colour. The rule
    style is what keeps all four apart under filter:grayscale(1), so it is
-   load-bearing: do not collapse these four rules onto one border-style. */
-.findings{margin:0; padding:0; list-style:none; display:grid; gap:.85rem}
-.finding{padding:1rem 1.15rem; border:1px solid var(--ui-border); border-left:7px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-raised)}
-.finding-head{margin:0; display:flex; flex-wrap:wrap; gap:.35rem .8rem; align-items:baseline}
-.finding-severity{flex:none; padding:.1rem .5rem; border:1px solid currentColor; border-radius:var(--radius-chip); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
+   load-bearing: do not collapse these four rules onto one border-style. The
+   rule is 4px, twice the callout's, because a double rule needs three pixels
+   to draw two lines and a 2px dotted rule reads as solid at a glance. */
+.findings{margin:0; padding:0; list-style:none; display:grid; gap:1.4rem}
+/* min-height:2rem keeps the rule at least 32px tall under border-box, the
+   height below which a dashed rule paints as one segment and reads as solid */
+.finding{min-height:2rem; padding:.15rem 0 .15rem 1rem; border-left:4px solid var(--ui-border-strong)}
+.finding-head{margin:0; display:flex; flex-wrap:wrap; gap:.35rem .6rem; align-items:baseline}
+/* the severity is a label rather than a chip, as the callout's tone is: the
+   " · " is what separates it from the title once no fill sits behind it */
+.finding-severity{flex:none; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
 .finding-severity::before{margin-right:.35rem}
+.finding-severity::after{content:" · "; white-space:pre; color:var(--ui-faint)}
 .finding-title{margin:0; font-family:var(--font-display); font-size:1.08rem; font-weight:560; letter-spacing:-.015em}
-.finding-text{margin:.5rem 0 0; max-width:70ch; color:var(--ui-muted)}
-.finding-meta{margin:.7rem 0 0; display:grid; gap:.3rem}
+.finding-text{margin:.4rem 0 0; max-width:70ch; color:var(--ui-muted)}
+.finding-meta{margin:.6rem 0 0; display:grid; gap:.3rem}
 .finding-meta div{display:flex; flex-wrap:wrap; gap:.15rem .5rem}
 .finding-meta dt{margin:0; flex:none; font:700 .72rem/1.7 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
 .finding-meta dd{margin:0; font-size:.88rem; color:var(--ui-muted)}
 .finding[data-severity="critical"]{border-left-style:double; border-left-color:var(--ui-critical)}
-.finding[data-severity="critical"] .finding-severity{color:var(--ui-critical-ink); background:var(--ui-critical-soft)}
+.finding[data-severity="critical"] .finding-severity{color:var(--ui-critical-ink)}
 .finding[data-severity="critical"] .finding-severity::before{content:"!!"}
 .finding[data-severity="elevated"]{border-left-style:solid; border-left-color:var(--ui-amber)}
-.finding[data-severity="elevated"] .finding-severity{color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
+.finding[data-severity="elevated"] .finding-severity{color:var(--ui-amber-ink)}
 .finding[data-severity="elevated"] .finding-severity::before{content:"!"}
 .finding[data-severity="watch"]{border-left-style:dashed; border-left-color:var(--ui-accent)}
-.finding[data-severity="watch"] .finding-severity{color:var(--ui-accent-ink); background:var(--ui-accent-soft)}
+.finding[data-severity="watch"] .finding-severity{color:var(--ui-accent-ink)}
 .finding[data-severity="watch"] .finding-severity::before{content:"~"}
 .finding[data-severity="clear"]{border-left-style:dotted; border-left-color:var(--ui-positive)}
-.finding[data-severity="clear"] .finding-severity{color:var(--ui-positive-ink); background:var(--ui-positive-soft)}
+.finding[data-severity="clear"] .finding-severity{color:var(--ui-positive-ink)}
 .finding[data-severity="clear"] .finding-severity::before{content:"+"}
 
 /* the hub's whole content: one card per board, sized by the blurb rather than

@@ -1702,25 +1702,17 @@ describe("fn:renderPage new blocks", () => {
     const edgeWidth = /\.finding\{[^}]*border-left:(\d+)px solid/.exec(css);
     expect(edgeWidth).not.toBeNull();
     expect(Number(edgeWidth?.[1])).toBeGreaterThanOrEqual(3);
-    // 2. Under ~32px of card height a dash paints as one segment, making
-    //    `dashed` read as `solid`. The 32 was measured at the 7px edge above;
-    //    dash length scales with border width, so a narrower edge yields
-    //    shorter dashes and needs less height — this floor stays valid as the
-    //    width shrinks. Card height is content-dependent (measured
-    //    207px-642px), so vertical padding is the only floor we can assert.
-    //    Read the whole shorthand: value 1 is the vertical padding only in
-    //    the 1- and 2-value forms, so a 4-value drift would pass silently.
-    const pad = /\.finding\{[^}]*padding:([^;}]+)/.exec(css);
-    expect(pad).not.toBeNull();
-    const sides = (pad?.[1] ?? "").trim().split(/\s+/);
-    const rem = (value: string | undefined): number =>
-      Number(/^([\d.]+)rem$/.exec(value ?? "")?.[1]);
-    const [top, bottom] =
-      sides.length > 2
-        ? [rem(sides[0]), rem(sides[2])]
-        : [rem(sides[0]), rem(sides[0])];
-
-    expect((top + bottom) * 16).toBeGreaterThanOrEqual(32);
+    // 2. Under ~32px of edge height a dash paints as one segment, making
+    //    `dashed` read as `solid`. The 32 was measured at a 7px edge; dash
+    //    length scales with border width, so a narrower edge yields shorter
+    //    dashes and needs less height — this floor stays valid as the width
+    //    shrinks. Entry height is content-dependent, so the floor is pinned
+    //    as the entry's own min-height, which under the sheet's border-box
+    //    reset is the edge's height whatever the padding.
+    expect(css).toContain("*,*::before,*::after{box-sizing:border-box}");
+    const floor = /\.finding\{[^}]*min-height:([\d.]+)rem/.exec(css);
+    expect(floor).not.toBeNull();
+    expect(Number(floor?.[1]) * 16).toBeGreaterThanOrEqual(32);
   });
 
   it("should draw a finding's owner and evidence only when given", () => {

@@ -12,11 +12,14 @@
 export const OBSERVATION_CSS = `
 /* one column, not a grid: a card is read down and compared against the one
    above it, and two columns of five-line cards make that a diagonal scan */
-.observations{counter-reset:observation; display:grid; gap:.75rem; margin:0; padding:0; list-style:none}
+/* a ruled list, as the table is: an ink rule opens and closes the set and a
+   hairline is the seam between two cards, so no card needs a frame of its own */
+.observations{counter-reset:observation; display:grid; margin:0; padding:0; list-style:none; border-block:1px solid var(--ui-ink)}
 /* the number is drawn from a counter rather than authored, so inserting a card
    renumbers the set instead of leaving the author to renumber it by hand */
-.observation{counter-increment:observation; position:relative; padding:1.1rem 1.2rem 1.1rem 3.2rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-canvas)}
-.observation::before{content:counter(observation); position:absolute; inset-block-start:1.15rem; inset-inline-start:1.1rem; min-width:1.5rem; color:var(--ui-faint); font:700 .9rem/1 var(--font-mono); text-align:end}
+.observation{counter-increment:observation; position:relative; padding:1.1rem 0 1.1rem 2.8rem}
+.observation+.observation{border-top:1px solid var(--ui-border)}
+.observation::before{content:counter(observation); position:absolute; inset-block-start:1.15rem; inset-inline-start:.5rem; min-width:1.5rem; color:var(--ui-faint); font:700 .9rem/1 var(--font-mono); text-align:end}
 .observation-head{display:flex; gap:.75rem; align-items:flex-start}
 .observation-title{flex:1 1 12rem; min-width:0; margin:0; font-family:var(--font-display); font-size:1rem; font-weight:560; letter-spacing:-.01em}
 /* the source badge: a circle, so it reads as an avatar rather than as another
@@ -37,6 +40,10 @@ export const OBSERVATION_CSS = `
 /* dashed, because the rule separates the case from the question it leads to
    rather than dividing two cards; a solid line at this width reads as an edge */
 .observation-tick{display:flex; gap:.6rem; align-items:center; margin-top:.9rem; padding-top:.8rem; border-top:1px dashed var(--ui-border-strong); color:var(--ui-muted); font-size:.9rem; cursor:pointer}
-.observation:has(input:checked){border-color:var(--ui-accent); box-shadow:inset 3px 0 0 var(--ui-accent)}
+/* a ticked card takes the callout's left rule in the accent, drawn as a shadow
+   so the text does not move when the box is ticked; the tick itself and the
+   bolder label are what survive greyscale */
+.observation:has(input:checked){box-shadow:inset 2px 0 0 var(--ui-accent)}
+.observation:has(input:checked)::before{color:var(--ui-accent-ink)}
 .observation:has(input:checked) .observation-tick{color:var(--ui-accent-ink); font-weight:600}
 `;
