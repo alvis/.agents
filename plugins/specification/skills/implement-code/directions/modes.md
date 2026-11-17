@@ -5,7 +5,7 @@ Load only the selected mode. All code-writing children receive exact work/spec p
 ## Child chains
 
 - **COMMIT_PLAN**: per runnable leaf task ID read from `state.md`, `coding:write-code` → `coding:commit`. Pass the parent-owned review capsule; the child returns self-checks, focused validation, and risks. The named owner reviews the integrated delivery.
-- **PI_ITERATE**: `coding:complete-code` → `coding:complete-test` → `coding:fix` → self-checks and focused validation under the parent-owned review capsule → `coding:commit`. Return implementation evidence and outstanding risks to the named review owner. Unmarked missing work routes to `coding:write-code`.
+- **PI_ITERATE**: `coding:complete-code` → `coding:test` `for-maintenance` → `coding:fix` → self-checks and focused validation under the parent-owned review capsule → `coding:commit`. Return implementation evidence and outstanding risks to the named review owner. Unmarked missing work routes to `coding:write-code`.
 - **DRAFT_THEN_ASK**: no coding; point to `specification:plan-code`. If the user requests a lightweight draft, route to `coding:draft-code` then hand over.
 - **AUDIT_AND_COMPLETE**: baseline review → complete/write/fix gaps → final review → commit.
 - **VERIFY_ONLY**: review only, no commit.

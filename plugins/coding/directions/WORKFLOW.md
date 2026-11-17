@@ -40,7 +40,7 @@ Skills own actions; never delegate work “to” a skill or pass a skill name as
 | Refactor green code | [Implementation](implementation.md) | `coding:refactor` |
 | Modernize supported syntax or APIs | [Implementation](implementation.md) | `coding:modernize` |
 | Document source-backed behavior | [Implementation](implementation.md) | `coding:document` |
-| Author tests or improve coverage | [Implementation](implementation.md) | `coding:complete-test` |
+| Author tests or improve coverage | [Implementation](implementation.md) | `coding:test` |
 | Lint source | [Implementation](implementation.md) | `coding:lint` |
 | Review code | [Review](review.md) | `coding:review-code` |
 | Save or reshape local history | [History](history.md) | `coding:commit` or `coding:finalize-commits` |

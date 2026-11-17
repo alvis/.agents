@@ -10,12 +10,12 @@ argument-hint: "<instruction>"
 
 # Draft Code Skeleton
 
-Creates TypeScript-compliant production skeletons with explicit `TODO(implementation):` markers, type definitions, and function signatures. It may outline pending tests, but test markers belong to `coding:complete-test`; production stubs belong to `coding:complete-code`.
+Creates TypeScript-compliant production skeletons with explicit `TODO(implementation):` markers, type definitions, and function signatures. It may outline pending tests, but test markers belong to `coding:test` `for-maintenance`; production stubs belong to `coding:complete-code`.
 
 ## Boundaries
 
 - Use for: starting an already-specified implementation, or preparing typed production structure and runtime-behavior or compiler-semantic test scaffolds for later completion.
-- Do not use for: implementing business logic or producing production-ready code (`coding:write-code`), writing complete tests with assertions beyond the scaffold (`coding:complete-test`), or modifying existing implementations (`coding:refactor` or `coding:fix`).
+- Do not use for: implementing business logic or producing production-ready code (`coding:write-code`), writing complete tests with assertions beyond the scaffold (`coding:test`), or modifying existing implementations (`coding:refactor` or `coding:fix`).
 - Reject when: the instruction is too vague to create meaningful types, the request is for implementation rather than a skeleton, the target directory does not exist, or the skeleton would conflict with existing code structure.
 
 ## Inputs
@@ -58,4 +58,4 @@ Select the applicable standards below before drafting, and apply each as a write
 
 ## Completion
 
-Report the parsed instruction; context sources discovered; files created with a one-line purpose each; counts of types defined, functions drafted, and markers placed; verification commands with results; and next steps — complete production stubs with `coding:complete-code`, then route pending test markers to `coding:complete-test`. Follow `essential:references/output-manifest.md` when writing eligible work Markdown, and return every created or materially rewritten path as `generated_files` to the main agent.
+Report the parsed instruction; context sources discovered; files created with a one-line purpose each; counts of types defined, functions drafted, and markers placed; verification commands with results; and next steps — complete production stubs with `coding:complete-code`, then route pending test markers to `coding:test` `for-maintenance`. Follow `essential:references/output-manifest.md` when writing eligible work Markdown, and return every created or materially rewritten path as `generated_files` to the main agent.
