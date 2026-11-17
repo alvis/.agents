@@ -15,7 +15,7 @@
     --ui-critical:#b0402f; --ui-critical-soft:#f6e2dc; --ui-critical-ink:#7a2a1e;
     --ui-code:#1c1c1a; --ui-code-ink:#f2efe6; --ui-focus:#b85c3e;
     --ui-shadow-small:0 10px 26px rgba(45,41,32,.11);
-    --radius-control:.85rem; --radius-card:1.25rem;
+    --radius-control:.75rem; --radius-card:1rem; --radius-question:1.25rem; --radius-chip:.6rem;
     --font-display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
     --font-body:"Avenir Next",Avenir,"Segoe UI",sans-serif;
     --font-mono:"SFMono-Regular",Menlo,Consolas,monospace;
@@ -117,13 +117,13 @@
     font-size:.75rem; color:var(--ui-muted);
   }
   .docnav p{margin:0 0 .6rem; color:var(--ui-faint); font:700 .6rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
-  .docnav a{display:block; margin-left:-.6rem; padding:.42rem .6rem; border-radius:.7rem; color:inherit; text-decoration:none}
+  .docnav a{display:block; margin-left:-.6rem; padding:.42rem .6rem; border-radius:var(--radius-chip); color:inherit; text-decoration:none}
   .docnav a:hover{background:var(--ui-surface-raised); color:var(--ui-ink)}
   .docnav a.is-active{background:var(--ui-surface-raised); color:var(--ui-ink); font-weight:700; box-shadow:inset 2px 0 0 var(--board-accent)}
   .docnav .rule{height:1px; margin:1.2rem 0; background:var(--ui-border)}
   .counts-row{display:flex; justify-content:space-between; align-items:center; padding:.4rem .1rem; font:600 .64rem/1.2 var(--font-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ui-faint)}
   .counts-row strong{
-    display:grid; place-items:center; min-width:1.6rem; min-height:1.6rem; border-radius:.55rem;
+    display:grid; place-items:center; min-width:1.6rem; min-height:1.6rem; border-radius:var(--radius-chip);
     background:var(--board-accent-soft); color:var(--board-accent-ink); font-size:.7rem;
   }
   .boardset{display:grid; gap:.35rem; font:500 .7rem/1.4 var(--font-body)}
@@ -157,7 +157,7 @@
   .lede .mono{background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:5px; padding:0 .35em}
 
   /* stat strip — template meta-grid voice with lesson's color rails */
-  .stats{display:grid; grid-template-columns:repeat(5,1fr); margin:2.2rem 0 0; border:1px solid var(--ui-border); border-radius:var(--radius-card); overflow:hidden; background:color-mix(in srgb, var(--ui-surface) 88%, transparent)}
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); margin:2.2rem 0 0; border-top:1px solid var(--ui-ink)}
   .stat{position:relative; padding:1.05rem 1.1rem .95rem}
   .stat + .stat{box-shadow:inset 1px 0 0 var(--ui-border)}
   .stat .rail{position:absolute; left:0; top:0; bottom:0; width:3px}
@@ -197,7 +197,7 @@
   .act:hover{box-shadow:inset 0 0 0 1px var(--board-accent); color:var(--board-accent-ink)}
   .act.on{background:var(--ui-positive-soft); color:var(--ui-positive); border-color:var(--ui-positive); font-weight:700}
   .act.noted{background:var(--board-accent-soft); color:var(--board-accent-ink); border-color:var(--board-accent)}
-  @media (max-width:52rem){ section{grid-template-columns:1fr; gap:1.4rem} .s-head{position:static} .stats{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:52rem){ section{grid-template-columns:1fr; gap:1.4rem} .s-head{position:static} .stats{grid-template-columns:repeat(2,1fr)} /* two columns: the odd cells open a row, so they drop the divider, and later rows take a top rule */ .stat:nth-child(odd){box-shadow:none} .stat:nth-child(n+3){border-top:1px solid var(--ui-border)} }
 
   /* filter chips */
   .chips{display:flex; flex-wrap:wrap; gap:.5rem}
@@ -217,7 +217,7 @@
   @media (max-width:52rem){ .cards{grid-template-columns:1fr} }
   .card{
     display:flex; flex-direction:column; gap:.7rem;
-    border:1px solid var(--ui-border); border-radius:1rem;
+    border:1px solid var(--ui-border); border-radius:var(--radius-card);
     background:color-mix(in srgb, var(--ui-surface-raised) 82%, transparent);
     padding:1.15rem 1.2rem 1rem; box-shadow:inset 3px 0 0 var(--vc,var(--ui-border-strong));
   }
@@ -249,7 +249,7 @@
     font-size:.74rem; color:var(--ui-faint);
   }
   .owner{display:inline-flex; gap:.4rem; align-items:center; font:600 .66rem/1 var(--font-mono)}
-  .owner .av{display:inline-grid; place-items:center; width:1.35rem; height:1.35rem; border-radius:.45rem; background:var(--board-accent-soft); color:var(--board-accent-ink); font-size:.56rem}
+  .owner .av{display:inline-grid; place-items:center; width:1.35rem; height:1.35rem; border-radius:var(--radius-chip); background:var(--board-accent-soft); color:var(--board-accent-ink); font-size:.56rem}
 
   /* critical path */
   .path{display:flex; flex-wrap:wrap; gap:.55rem; align-items:stretch}
