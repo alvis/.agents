@@ -1,10 +1,13 @@
 /** the content blocks: metrics, tables, steps, and findings. */
 export const BLOCK_CSS = `
 /* wide escape: recovered width goes to grids and tables, never to prose */
-.metrics{display:grid; gap:.6rem; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))}
-.metric{padding:.9rem 1rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised)}
+/* one ruled line: every cell carries a left divider and 1rem of left padding, and the strip is pulled 1rem left then clipped by that same 1rem, so whichever cell opens a row (first, or after an auto-fit wrap) loses its divider and its padding with no markup or per-row selector */
+.metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr)); margin-left:-1rem; clip-path:inset(0 0 0 1rem); border-top:1px solid var(--ui-ink)}
+.metric{padding:.7rem 1rem .2rem; border-left:1px solid var(--ui-border)}
+/* 30rem: below it the 13rem cells plus the 1rem bleed collapse to one column on phones, where a divider has nothing to separate, so each cell takes a top rule instead */
+@media (max-width:30rem){.metric+.metric{border-top:1px solid var(--ui-border)}}
 .metric dt{margin:0; font:650 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
-.metric dd{margin:.35rem 0 0; font-size:1.35rem; font-weight:600; letter-spacing:-.01em}
+.metric dd{margin:.35rem 0 0; font-size:1.5rem; font-weight:500; letter-spacing:-.02em}
 
 /* positioned so overflow-x can clip the absolutely-positioned .sr-only labels:
    a static ancestor is not their containing block, so they escape the scroller */
