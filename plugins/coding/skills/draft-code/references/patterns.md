@@ -1,6 +1,6 @@
 # Drafting Patterns
 
-Canonical placeholder forms and skeleton examples for `coding:draft-code`. These exact forms are the handoff contract: `coding:complete-code` claims only the production markers below, and `coding:complete-test` claims only the test placeholders below. Ambiguous plain `TODO:` markers are claimable by neither.
+Canonical placeholder forms and skeleton examples for `coding:draft-code`. These exact forms are the handoff contract: `coding:complete-code` claims only the production markers below, and `coding:test` (`for-maintenance`) claims only the test placeholders below. Ambiguous plain `TODO:` markers are claimable by neither.
 
 ## Production markers
 
@@ -23,7 +23,7 @@ Canonical placeholder forms and skeleton examples for `coding:draft-code`. These
 
 ## Test placeholders
 
-- Use `describe.todo()` / `it.todo()` while no callable runtime entrypoint exists. They mark planned behavior as pending and are completed later by `coding:complete-test`.
+- Use `describe.todo()` / `it.todo()` while no callable runtime entrypoint exists. They mark planned behavior as pending and are completed later by `coding:test` `for-maintenance`.
 - Once a public runtime stub is callable, write the smallest test that invokes it and fails on missing behavior.
 - When the contract promises compiler-observable behavior permitted by `TST-CORE-10`, use the project's configured type-test mechanism for the smallest representative consumer case. An acceptance case compiles successfully; a rejection case uses the mechanism's expected-diagnostic convention; overload resolution uses a representative call; narrowing uses a representative predicate/assertion call and its continuation; and a transformation compares representative consumer inputs and outputs. Without the expected-diagnostic convention, leave a rejection case pending or isolate it outside the normal compilation graph until it can run without making type diagnostics fail.
 - Do not enumerate type/interface members, exact signatures, schema fields, export inventories, or barrel layout. Declaration shape alone receives no test scaffold (`TST-CORE-10`, `TST-CORE-12`); type diagnostics and affected-consumer builds validate it.

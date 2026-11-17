@@ -19,7 +19,7 @@ Two mechanisms make saves and publication safe around AI-driven edits:
 | `coding:write-code` | New functions, features, modules, or endpoints via a TDD lifecycle. |
 | `coding:draft-code` | Typed skeletons with canonical `TODO(implementation)` placeholders. |
 | `coding:complete-code` | Completing explicit production stubs and draft sentinels. |
-| `coding:complete-test` | Test TODOs, coverage gaps, fixtures, redundancy cleanup. |
+| `coding:test` | Tests matched to the change type (new code, logic change, bug fix, refactor, performance) and test maintenance: pending markers, coverage gaps, fixtures, redundancy cleanup. |
 | `coding:fix` | Diagnosed failures: broken tests, type errors, lint failures, red CI. |
 | `coding:refactor` | Behavior-preserving structural improvement of green code. |
 | `coding:modernize` | Version-supported syntax/API upgrades. |

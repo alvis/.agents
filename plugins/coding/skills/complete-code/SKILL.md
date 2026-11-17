@@ -10,7 +10,7 @@ argument-hint: "<scope>"
 
 # Complete Code
 
-Finish only explicit production implementation stubs. The surrounding contract, types, tests, and specification must already make the intended behavior clear. `coding:complete-test` owns test authoring; `coding:write-code` owns new functionality.
+Finish only explicit production implementation stubs. The surrounding contract, types, tests, and specification must already make the intended behavior clear. `coding:test` owns test authoring; `coding:write-code` owns new functionality.
 
 ## Boundaries
 
@@ -26,7 +26,7 @@ Do not claim neighboring work:
 | Finding | Action |
 |---|---|
 | `FIXME` | Route to `coding:fix`. |
-| Test-file TODO, `it.todo`, or `describe.todo` | Route to `coding:complete-test`. |
+| Test-file TODO, `it.todo`, or `describe.todo` | Route to `coding:test` `for-maintenance`. |
 | Missing functionality without an explicit stub | Route to `coding:write-code`. |
 | Newly requested feature | Route to `coding:write-code`. |
 | Ambiguous marker | Leave untouched and report it as blocked. |
@@ -38,7 +38,7 @@ This skill may read and run existing tests to discover and verify the establishe
 
 - **Required**: `<scope>` — the file, directory, or package to scan.
 - **Optional**: none. If `$ARGUMENTS` contains `--test-only`, stop immediately with exactly:
-  > `--test-only` was removed; use `coding:complete-test <scope>`.
+  > `--test-only` was removed; use `coding:test for-maintenance <scope>`.
 - **Prerequisites**: select `universal`, `function`, `typescript`, `documentation`, and `observability`, plus `testing` when touching tests to verify a contract. Apply each as a writer under `essential:directions/standards.md`.
 
 ## State gate

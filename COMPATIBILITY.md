@@ -53,7 +53,6 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `coding:cleanup` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-cleanup`. Source: [SKILL.md](plugins/coding/skills/cleanup/SKILL.md). |
 | `coding:commit` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-commit`. Receipt-bound command filtering preserves backup advice and post-rewrite diagnostics, but OpenCode exposes no skill-scope event. Source: [SKILL.md](plugins/coding/skills/commit/SKILL.md). |
 | `coding:complete-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-complete-code`. Source: [SKILL.md](plugins/coding/skills/complete-code/SKILL.md). |
-| `coding:complete-test` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-complete-test`. Source: [SKILL.md](plugins/coding/skills/complete-test/SKILL.md). |
 | `coding:document` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-document`. Source: [SKILL.md](plugins/coding/skills/document/SKILL.md). |
 | `coding:draft-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-draft-code`. Source: [SKILL.md](plugins/coding/skills/draft-code/SKILL.md). |
 | `coding:finalize-commits` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-finalize-commits`. Source: [SKILL.md](plugins/coding/skills/finalize-commits/SKILL.md). |
@@ -69,6 +68,7 @@ Claude Code, Codex, and Grok Build are native targets. OpenCode support targets 
 | `coding:review-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-review-code`. Source: [SKILL.md](plugins/coding/skills/review-code/SKILL.md). |
 | `coding:setup-project` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-setup-project`. Source: [SKILL.md](plugins/coding/skills/setup-project/SKILL.md). |
 | `coding:sync-tool` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-sync-tool`. Source: [SKILL.md](plugins/coding/skills/sync-tool/SKILL.md). |
+| `coding:test` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-test`. Source: [SKILL.md](plugins/coding/skills/test/SKILL.md). |
 | `coding:write-code` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `coding-write-code`. Source: [SKILL.md](plugins/coding/skills/write-code/SKILL.md). |
 | `essential:autoresearch` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-autoresearch`. Source: [SKILL.md](plugins/essential/skills/autoresearch/SKILL.md). |
 | `essential:deep-research` skill | ✅ Native | ✅ Native | 🟡 Adapted | 🟡 Adapted | OpenCode name: `essential-deep-research`. Source: [SKILL.md](plugins/essential/skills/deep-research/SKILL.md). |
