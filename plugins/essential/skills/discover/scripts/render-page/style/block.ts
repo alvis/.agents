@@ -64,7 +64,7 @@ td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::bef
 .findings{margin:0; padding:0; list-style:none; display:grid; gap:.85rem}
 .finding{padding:1rem 1.15rem; border:1px solid var(--ui-border); border-left:7px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-raised)}
 .finding-head{margin:0; display:flex; flex-wrap:wrap; gap:.35rem .8rem; align-items:baseline}
-.finding-severity{flex:none; padding:.1rem .5rem; border:1px solid currentColor; border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
+.finding-severity{flex:none; padding:.1rem .5rem; border:1px solid currentColor; border-radius:var(--radius-chip); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
 .finding-severity::before{margin-right:.35rem}
 .finding-title{margin:0; font-family:var(--font-display); font-size:1.08rem; font-weight:560; letter-spacing:-.015em}
 .finding-text{margin:.5rem 0 0; max-width:70ch; color:var(--ui-muted)}

@@ -44,7 +44,7 @@ export const CONTENT_CSS = `
 
 /* the rating is the pill's own text, so these colours repeat a claim the row
    already makes in words — never the only place it is stated */
-.severity-pill{display:inline-block; padding:.1rem .5rem; border:1px solid currentColor; border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase}
+.severity-pill{display:inline-block; padding:.1rem .5rem; border:1px solid currentColor; border-radius:var(--radius-chip); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase}
 .severity-pill[data-severity="critical"]{color:var(--ui-critical-ink); background:var(--ui-critical-soft)}
 .severity-pill[data-severity="high"]{color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
 .severity-pill[data-severity="medium"]{color:var(--ui-muted); background:var(--ui-surface)}
@@ -71,7 +71,7 @@ export const CONTENT_CSS = `
    already carries progress, and one marker cannot honestly carry both. Only a
    classified rail takes the title rule, so a timeline written before this
    still lays out exactly as it did */
-.moment-kind{flex:none; padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint); background:var(--ui-raised)}
+.moment-kind{flex:none; padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:var(--radius-chip); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint); background:var(--ui-raised)}
 .timeline li[data-kind] .moment-title{flex:1 1 14rem; min-width:0}
 .timeline li[data-kind="discovery"] .moment-kind{border-color:var(--ui-accent); color:var(--ui-accent-ink); background:var(--ui-accent-soft)}
 .timeline li[data-kind="deviation"] .moment-kind{border-color:var(--ui-amber); color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
@@ -121,7 +121,7 @@ export const CONTENT_CSS = `
    over the accent wash reads as two stances at once, one of them the page's
    default. The badge keeps the raised surface so it stays a chip against every
    wash rather than dissolving into the family it names. */
-.callout-tone{margin-right:.5rem; padding:.1rem .45rem; border:1px solid currentColor; border-radius:.4rem; background:var(--ui-raised); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
+.callout-tone{margin-right:.5rem; padding:.1rem .45rem; border:1px solid currentColor; border-radius:var(--radius-chip); background:var(--ui-raised); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
 .callout[data-tone="good"]{--tone-edge:var(--ui-positive); --tone-wash:var(--ui-positive-soft)}
 .callout[data-tone="good"] .callout-tone{color:var(--ui-positive-ink)}
 .callout[data-tone="bad"]{--tone-edge:var(--ui-critical); --tone-wash:var(--ui-critical-soft)}
@@ -131,7 +131,7 @@ export const CONTENT_CSS = `
 
 /* the board-level trade-offs block. .tradeoff-panel rather than .tradeoffs,
    which the choice block's inline pros/cons strip already owns */
-.tradeoff-panel{margin:1.4rem 0; padding:1rem 1.1rem; border:1px solid var(--ui-border); border-radius:var(--radius-panel); background:var(--ui-surface)}
+.tradeoff-panel{margin:1.4rem 0; padding:1rem 1.1rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
 .tradeoff-panel h3{margin:0 0 .8rem; font-size:1rem}
 .tradeoff-grid{display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))}
 .tradeoff-column h4{margin:0 0 .4rem; font:700 .72rem/1.4 var(--font-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ui-muted)}
@@ -145,7 +145,7 @@ export const CONTENT_CSS = `
 .tradeoff-column[data-tradeoff="fails"] h4{color:var(--ui-critical-ink)}
 /* a finding's citation anchor: mono, so a reply quoting it back reads as the
    same token, and drawn before the severity it qualifies */
-.finding-id{padding:.05em .4em; border:1px solid var(--ui-border-strong); border-radius:.35rem; font:700 .72rem/1.4 var(--font-mono); color:var(--ui-muted)}
+.finding-id{padding:.05em .4em; border:1px solid var(--ui-border-strong); border-radius:var(--radius-chip); font:700 .72rem/1.4 var(--font-mono); color:var(--ui-muted)}
 /* a row's provenance rides the last cell, so the row stays as wide as one
    making no claim at all */
 .row-provenance{margin-left:.4rem; white-space:nowrap}

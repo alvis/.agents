@@ -63,7 +63,7 @@ export const DIAGRAM_CSS = `
 
 .diagram-legend{display:flex; flex-wrap:wrap; gap:.5rem 1.35rem; color:var(--ui-muted); font-size:.82rem}
 .dg-key{display:inline-flex; gap:.5rem; align-items:center}
-.dg-key-tag{padding:.12rem .42rem; border:1px solid var(--ui-border-strong); border-radius:.35rem; color:var(--ui-ink); font:650 .75rem/1.35 var(--font-mono); letter-spacing:.1em}
+.dg-key-tag{padding:.12rem .42rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-chip); color:var(--ui-ink); font:650 .75rem/1.35 var(--font-mono); letter-spacing:.1em}
 .dg-key-line{width:1.5rem; border-top:2px solid}
 .dg-key-flow{color:var(--ui-accent)}
 .dg-key-fanout{color:var(--ui-amber); border-top-style:dashed}

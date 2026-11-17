@@ -3,12 +3,12 @@ export const QUESTION_CSS = `
 /* a fieldset defaults to min-inline-size:min-content, which makes it refuse
    to shrink and leaves the min() below with nothing to resolve against.
    Without this the card overflowed a 272px page by 50px. */
-.question{min-width:0; margin:0; scroll-margin-block:1.5rem; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
+.question{min-width:0; margin:0; scroll-margin-block:1.5rem; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-question); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
 .question legend,.question .q-label{padding:0; font-family:var(--font-display); font-size:1.2rem; font-weight:560; letter-spacing:-.015em}
 /* the citation code, drawn ahead of the title it belongs to. It reads as a
    chip rather than as part of the sentence, so the eye can skip it, while it
    stays inside the legend where a screen reader announces it with the title */
-.q-ref{display:inline-block; margin-right:.5rem; padding:.05em .4em; border-radius:.35rem; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font-family:var(--font-mono); font-size:.75em; font-weight:600; letter-spacing:.02em; vertical-align:.08em}
+.q-ref{display:inline-block; margin-right:.5rem; padding:.05em .4em; border-radius:var(--radius-chip); background:var(--ui-accent-soft); color:var(--ui-accent-ink); font-family:var(--font-mono); font-size:.75em; font-weight:600; letter-spacing:.02em; vertical-align:.08em}
 .question .ask{margin:.5rem 0 1rem; max-width:70ch; color:var(--ui-muted)}
 /* min() keeps the track from demanding 17rem in a column narrower than that;
    without it a 272px page overflows by 50px and the card breaks its container */
@@ -34,7 +34,7 @@ export const QUESTION_CSS = `
    renderer because the shortcut it advertises only exists while the script
    runs. It is hidden where there is no keyboard to press it: a reader on a
    phone would otherwise be shown a key they have no way to use. */
-.option-key{display:none; flex:0 0 auto; min-width:1.4rem; padding:.1rem .3rem; border:1px solid var(--ui-border-strong); border-radius:.35rem; background:var(--ui-raised); color:var(--ui-muted); font:700 .72rem/1.5 var(--font-mono); text-align:center; text-transform:uppercase}
+.option-key{display:none; flex:0 0 auto; min-width:1.4rem; padding:.1rem .3rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-chip); background:var(--ui-raised); color:var(--ui-muted); font:700 .72rem/1.5 var(--font-mono); text-align:center; text-transform:uppercase}
 @media (hover:hover) and (pointer:fine){.option-key{display:block}}
 /* a plain block wrapper: it exists to give aria-describedby one target for
    the summary and trade-offs, and must not change how they already stack */
@@ -102,7 +102,7 @@ export const QUESTION_CSS = `
 /* an ordering probe. The list is numbered by CSS rather than by an <ol>
    marker so the number stays put as items move past each other: a marker that
    travelled with its item would report the order the reader started from. */
-.probe{margin:0; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
+.probe{margin:0; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-question); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
 .probe-title{margin:0; font-family:var(--font-display); font-size:1.2rem; font-weight:560; letter-spacing:-.015em}
 .probe-hint{margin:.5rem 0 1rem; max-width:70ch; color:var(--ui-muted); font-size:.9rem}
 .probe-list{counter-reset:rank; margin:0; padding:0; list-style:none; display:grid; gap:.5rem}
