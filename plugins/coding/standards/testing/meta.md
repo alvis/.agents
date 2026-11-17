@@ -23,6 +23,8 @@ This standard enforces requirements beyond typical Vitest practices:
 | Export contracts and static data pinned in tests | **Delete export/static-data tests and test consumers instead ([TST-CORE-12](rules/tst-core-12.md))** |
 | Checked-in artifacts verified by tests | **Assert executed consumer/generator behavior instead of repository content ([TST-CORE-13](rules/tst-core-13.md))** |
 | Output wording pinned for regression detection | **Exact wording requires an explicit supported contract ([TST-CORE-14](rules/tst-core-14.md))** |
+| One run of side-effecting async code accepted as tested | **Same-input double run asserting the documented end state ([TST-CORE-15](rules/tst-core-15.md))** |
+| Refactors guarded by coverage | **Pins asserting observable output or effect of touched supported behavior, inputs and assertions unchanged ([TST-CORE-16](rules/tst-core-16.md))** |
 | Coverage thresholds tuned per project | **100% statements, branches, functions, and lines before ready or merge, with at least one behavioral test per non-static-data exported runtime function; only an unapproved `direction-review` draft is exempt (`TST-COVR-01`)** |
 | Hoisted mocks used broadly            | **`vi.hoisted` only for spy/error scenarios**  |
 | Test-double value prefixes accepted | **Semantic names without test-double prefixes ([TST-MOCK-13](rules/tst-mock-13.md))** |

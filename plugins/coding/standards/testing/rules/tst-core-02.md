@@ -2,7 +2,7 @@
 
 ## Intent
 
-Write failing tests before implementing new supported behavior, then implement and refactor. When already-correct behavior lacks a regression oracle, prove that an initially passing case detects the named regression before retaining it. A performance-only improvement may use a one-off local before/after measurement without retaining a test when `TST-CORE-04` finds no lasting value.
+Write failing tests before implementing new supported behavior, then implement and refactor. When already-correct behavior lacks a regression oracle, prove that an initially passing case detects the named regression before retaining it. Performance-only changes follow [TST-CORE-04](tst-core-04.md) and [TST-CORE-16](tst-core-16.md).
 
 ## Fix
 
@@ -36,4 +36,4 @@ it('should handle null input', () => { ... });
 
 ## Related
 
-TST-CORE-01, TST-CORE-03, TST-CORE-04
+TST-CORE-01, TST-CORE-03, TST-CORE-04, TST-CORE-16

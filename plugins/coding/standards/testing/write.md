@@ -72,6 +72,8 @@ AAA spacing: blank lines between arrange/act/assert. No `// Arrange` / `// Act` 
 - **TST-CORE-12**: Test consumer behavior instead of export contracts, exported static data, or static-data function return values; [the rule](rules/tst-core-12.md) owns allowed boundaries.
 - **TST-CORE-13**: Supply checked-in artifacts to executed consumers/generators and assert resulting behavior or fresh generated structure; never assert the artifacts' existence, layout, inventories, content, parity, or systematic properties under [the rule](rules/tst-core-13.md).
 - **TST-CORE-14**: Assert supported output effects and structure; pin exact wording only for an explicit supported contract under [the rule](rules/tst-core-14.md).
+- **TST-CORE-15**: Run side-effecting async operations twice with the same input and assert the documented end state, placed where deduplication happens, under [the rule](rules/tst-core-15.md).
+- **TST-CORE-16**: Pin each touched supported public behavior's observable output or effect before a refactor or performance-only change, and keep the pins' inputs and assertions unchanged, under [the rule](rules/tst-core-16.md).
 
 ### Coverage (TST-COVR)
 

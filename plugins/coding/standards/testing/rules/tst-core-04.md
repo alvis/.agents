@@ -16,7 +16,7 @@ it("should return empty list for an uncovered fallback", () => {
 });
 ```
 
-For a performance-only improvement, a one-off local before/after measurement suffices when existing tests cover the supported behavior and the change introduces no new behavior path or meaningful edge case. Commit a performance test only when it protects a stable, supported performance requirement. A new branch introduced by the improvement still needs coverage under `TST-COVR-01`.
+For a performance-only improvement, pin the touched behavior under [TST-CORE-16](tst-core-16.md) and take a one-off local before/after measurement instead of a committed performance test when existing tests cover the supported behavior and the change introduces no new behavior path or meaningful edge case. Commit a performance test only when it protects a stable, supported performance requirement. A new branch introduced by the improvement still needs coverage under `TST-COVR-01`.
 
 ## Edge Cases
 
