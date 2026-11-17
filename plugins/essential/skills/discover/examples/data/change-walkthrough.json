@@ -23,6 +23,10 @@
       {
         "label": "Reviewer",
         "value": "On-call lead"
+      },
+      {
+        "label": "Stack",
+        "value": "#212 → #213 (illustrative)"
       }
     ]
   },
@@ -50,10 +54,10 @@
           "title": "The four files, in reading order",
           "root": "services/beacon",
           "items": [
-            { "name": "src/alert/fingerprint.ts", "status": "new", "section": "fingerprint", "note": "what makes two alerts the same" },
-            { "name": "src/alert/suppress.ts", "status": "new", "section": "window", "note": "the ten-minute window" },
-            { "name": "src/alert/dispatch.ts", "status": "changed", "section": "window", "note": "the only caller" },
-            { "name": "src/alert/dispatch.spec.ts", "status": "changed", "note": "six new cases" }
+            { "name": "src/alert/fingerprint.ts", "status": "new", "section": "fingerprint", "note": "#212 · what makes two alerts the same" },
+            { "name": "src/alert/suppress.ts", "status": "new", "section": "window", "note": "#212 · the ten-minute window" },
+            { "name": "src/alert/dispatch.ts", "status": "changed", "section": "window", "note": "#213 · the only caller" },
+            { "name": "src/alert/dispatch.spec.ts", "status": "changed", "note": "#213 · six new cases" }
           ]
         },
         {
@@ -231,7 +235,7 @@
             {
               "language": "rust",
               "label": "ingest/src/fingerprint.rs",
-              "code": "/// The fields that decide two alerts are the same alert.\nconst IDENTITY: [&str; 3] = [\"rule\", \"service\", \"instance\"];\n\n/// Builds the fingerprint two alerts must share to be treated as one.\npub fn fingerprint_of(alert: &Alert) -> String {\n    let mut key = String::new();\n    for field in IDENTITY {\n        key.push_str(alert.field(field).unwrap_or(\"\"));\n        key.push('\\0');\n    }\n    key\n}",
+              "code": "/// The fields that decide two alerts are the same alert.\nconst IDENTITY: [&str; 3] = [\"rule\", \"service\", \"instance\"];\n\n/// Builds the fingerprint two alerts must share to be treated as one.\npub fn fingerprint_of(alert: &Alert) -> String {\n    IDENTITY\n        .map(|field| alert.field(field).unwrap_or(\"\"))\n        .join(\"\\0\")\n}",
               "selections": [
                 {
                   "text": "alert.field(field).unwrap_or(\"\")",
@@ -240,7 +244,7 @@
                   ]
                 },
                 {
-                  "text": "key.push('\\0');",
+                  "text": ".join(\"\\0\")",
                   "note": [
                     "NUL, not a hyphen. A service literally named ",
                     {
@@ -342,6 +346,214 @@
               "evidence": "src/alert/suppress.ts:18, covered by two of the six new tests."
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "signoff",
+      "label": "Sign-off",
+      "eyebrow": "Check with your own eyes",
+      "title": "Five details to confirm before you sign off.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Review passed, so both PRs are ready. Review checks what a reviewer can read; these are the details only the person who owns the pager can confirm. Tick each one you have checked. A tick is your own note — it approves nothing on GitHub."
+        },
+        {
+          "type": "checklist",
+          "id": "signoff-checks",
+          "ref": "S1",
+          "label": "Sign-off checks",
+          "ask": "Which of these have you checked yourself?",
+          "response": "follow-up",
+          "options": [
+            {
+              "value": "Region belongs in the fingerprint",
+              "summary": "src/alert/fingerprint.ts:2 — two regions failing for different reasons must not share a key (W-2)."
+            },
+            {
+              "value": "Per-replica window is acceptable while flagged off",
+              "summary": "src/alert/suppress.ts:5 — four replicas, four maps; decide whether the shadow run can live with that (W-1)."
+            },
+            {
+              "value": "Escalation still pages inside the window",
+              "summary": "src/alert/suppress.ts:18 — the one rule the on-call lead asked for."
+            },
+            {
+              "value": "Rust and TypeScript keys match byte for byte",
+              "summary": "ingest/src/fingerprint.rs and src/alert/fingerprint.ts — compare where each puts the NUL."
+            },
+            {
+              "value": "The runbook says the same as the code",
+              "summary": "The paging paragraph in the orientation section, against shouldPage."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "landing",
+      "label": "Landing",
+      "eyebrow": "How it merges",
+      "title": "One PR merges itself after you approve. The other is yours to merge.",
+      "blocks": [
+        {
+          "type": "prose",
+          "text": "Merge map, bottom-up."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "PR",
+            "Zone",
+            "Landing status",
+            "What you do"
+          ],
+          "rows": [
+            [
+              {
+                "text": "#212 fingerprint and window"
+              },
+              {
+                "text": "yellow"
+              },
+              {
+                "text": "🟡 Merges by itself after you approve"
+              },
+              {
+                "text": "Approve it on GitHub; the agent squash-merges once CI holds."
+              }
+            ],
+            [
+              {
+                "text": "#213 dispatch wiring"
+              },
+              {
+                "text": "red"
+              },
+              {
+                "text": "⏳ Waits for #212, then you merge it"
+              },
+              {
+                "text": "Merge it yourself after #212 lands and #213 is rebased."
+              }
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "bad",
+          "title": "You merge this one by hand",
+          "lead": "1 PR",
+          "text": "#213 — red zone, so no agent merges it. It waits until #212 has landed."
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Before: tick the sign-off checks",
+              "text": "Every unticked item above is something no one has confirmed yet.",
+              "state": "current"
+            },
+            {
+              "title": "Before: approve #212",
+              "text": "Your approval is its merge trigger; nothing merges it without one.",
+              "state": "todo"
+            },
+            {
+              "title": "After #212 lands: check the rebase of #213",
+              "text": "The agent rebases #213 onto the new base. Wait for its CI to pass again on the new head.",
+              "state": "todo"
+            },
+            {
+              "title": "Merge #213",
+              "text": "Squash-merge it on GitHub.",
+              "state": "todo"
+            },
+            {
+              "title": "After each merge: read what the agent posts",
+              "text": "It may post one review-learnings comment, then updates the tickets and documents the PR body links.",
+              "state": "todo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "label": "Check your understanding",
+      "eyebrow": "Before you sign off",
+      "title": "Three questions an incident or a merge would ask you.",
+      "blocks": [
+        {
+          "type": "quiz",
+          "id": "q-region",
+          "response": "follow-up",
+          "ref": "Q1",
+          "label": "Two regions",
+          "ask": "Disk pressure on ledger, instance primary, resolves in eu. A minute later the same rule fires for ledger, instance primary, in us, for an unrelated reason, on the same dispatch replica. With the flag on, does it page?",
+          "explains": "fingerprint",
+          "options": [
+            {
+              "value": "No — it is suppressed as a flap",
+              "correct": true,
+              "because": "region is not in IDENTITY, so the us firing shares the eu fingerprint inside the window (W-2)"
+            },
+            {
+              "value": "Yes — it is a different alert",
+              "because": "they would be, if region were part of the fingerprint; it is not"
+            }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "q-escalate",
+          "response": "follow-up",
+          "ref": "Q2",
+          "label": "A worse refire",
+          "ask": "An alert resolves as a warning and refires as critical three minutes later. Does it page?",
+          "explains": "window",
+          "options": [
+            {
+              "value": "Yes — an escalation always pages",
+              "correct": true,
+              "because": "shouldPage checks escalated before declining as a flap"
+            },
+            {
+              "value": "No — it is inside the ten-minute window",
+              "because": "the window only suppresses a refire that is not worse than the one before"
+            }
+          ]
+        },
+        {
+          "type": "quiz",
+          "id": "q-merge",
+          "response": "follow-up",
+          "ref": "Q3",
+          "label": "Who merges",
+          "ask": "You approve #212 and it lands. What happens to #213?",
+          "explains": "landing",
+          "options": [
+            {
+              "value": "It waits for you to merge it",
+              "correct": true,
+              "because": "it is red, so it lands by hand whatever happens below it"
+            },
+            {
+              "value": "The agent merges it next",
+              "because": "the agent merges only green, or yellow with approval"
+            },
+            {
+              "value": "It merges with #212",
+              "because": "a stack lands bottom-up, one zone rule per layer"
+            }
+          ]
+        },
+        {
+          "type": "gate",
+          "title": "Do you understand what you are signing off?",
+          "pass": "You know what this stack does and how it lands. Give your verdict below.",
+          "fail": "Not yet — re-read the sections the missed questions name before you sign off."
         },
         {
           "type": "decision",
