@@ -3,16 +3,21 @@ export const QUESTION_CSS = `
 /* a fieldset defaults to min-inline-size:min-content, which makes it refuse
    to shrink and leaves the min() below with nothing to resolve against.
    Without this the card overflowed a 272px page by 50px. */
-.question{min-width:0; margin:0; scroll-margin-block:1.5rem; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
+.question{min-width:0; margin:0; scroll-margin-block:1.5rem; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-question); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
 .question legend,.question .q-label{padding:0; font-family:var(--font-display); font-size:1.2rem; font-weight:560; letter-spacing:-.015em}
 /* the citation code, drawn ahead of the title it belongs to. It reads as a
    chip rather than as part of the sentence, so the eye can skip it, while it
    stays inside the legend where a screen reader announces it with the title */
-.q-ref{display:inline-block; margin-right:.5rem; padding:.05em .4em; border-radius:.35rem; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font-family:var(--font-mono); font-size:.75em; font-weight:600; letter-spacing:.02em; vertical-align:.08em}
+.q-ref{display:inline-block; margin-right:.5rem; padding:.05em .4em; border-radius:var(--radius-chip); background:var(--ui-accent-soft); color:var(--ui-accent-ink); font-family:var(--font-mono); font-size:.75em; font-weight:600; letter-spacing:.02em; vertical-align:.08em}
 .question .ask{margin:.5rem 0 1rem; max-width:70ch; color:var(--ui-muted)}
-/* min() keeps the track from demanding 17rem in a column narrower than that;
+/* a checklist's short options still wrap into as many columns as fit; min()
+   keeps the track from demanding 17rem in a column narrower than that, since
    without it a 272px page overflows by 50px and the card breaks its container */
 .choices{display:grid; gap:.6rem; grid-template-columns:repeat(auto-fit,minmax(min(17rem,100%),1fr))}
+/* a choice's options go one per row, so they are compared down a single
+   reading line with room for their trade-offs; minmax(0,1fr) lets a long
+   unbroken value shrink the row instead of pushing the card out */
+.question[data-question-kind="choice"] .choices{grid-template-columns:minmax(0,1fr)}
 .choice{display:flex; flex-wrap:wrap; gap:.7rem; align-items:flex-start; padding:.85rem 1rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-canvas); cursor:pointer}
 /* the marked option carries the tone of what marking it means, so the card and
    the chip in the drawer bar never say two different things about one answer.
@@ -27,19 +32,26 @@ export const QUESTION_CSS = `
 .question:has(input[type="radio"][data-recommended]) .choice:has(input[type="radio"]:checked){border-color:var(--ui-amber); box-shadow:inset 3px 0 0 var(--ui-amber)}
 .question:has(input[type="radio"][data-recommended]) .choice:has(input[type="radio"][data-recommended]:checked){border-color:var(--ui-positive); box-shadow:inset 3px 0 0 var(--ui-positive)}
 /* the body must be allowed to shrink, or a long pro/con clause pushes the
-   badge column off the card instead of wrapping inside it */
+   card wider than its column instead of wrapping inside it */
 .choice-body{flex:1 1 12rem; min-width:0}
 .choice strong{display:block}
+/* the title row: value, then summary, then the tags pushed to the right edge
+   by .badges' margin-left:auto. It wraps, so on a narrow card the summary and
+   then the tags drop below the value instead of squeezing it */
+.choice-head{display:flex; flex-wrap:wrap; gap:.35rem .6rem; align-items:baseline}
 /* the key that chooses this option, drawn by the runtime rather than the
    renderer because the shortcut it advertises only exists while the script
    runs. It is hidden where there is no keyboard to press it: a reader on a
    phone would otherwise be shown a key they have no way to use. */
-.option-key{display:none; flex:0 0 auto; min-width:1.4rem; padding:.1rem .3rem; border:1px solid var(--ui-border-strong); border-radius:.35rem; background:var(--ui-raised); color:var(--ui-muted); font:700 .72rem/1.5 var(--font-mono); text-align:center; text-transform:uppercase}
+.option-key{display:none; flex:0 0 auto; min-width:1.4rem; padding:.1rem .3rem; border:1px solid var(--ui-border-strong); border-radius:var(--radius-chip); background:var(--ui-raised); color:var(--ui-muted); font:700 .72rem/1.5 var(--font-mono); text-align:center; text-transform:uppercase}
 @media (hover:hover) and (pointer:fine){.option-key{display:block}}
 /* a plain block wrapper: it exists to give aria-describedby one target for
-   the summary and trade-offs, and must not change how they already stack */
+   the trade-offs, and must not change how they stack */
 .choice-detail{display:block}
 .choice small{display:block; margin-top:.2rem; color:var(--ui-muted)}
+/* in the title row the summary sits on the value's baseline, so it drops the
+   top margin it needs when it stacks under a checklist option */
+.choice-head small{margin-top:0; font-size:.92rem}
 /* the tags are real words, so they survive greyscale on their own; the pill
    is decoration over that text, never the only thing carrying the meaning.
    One hue per tag, in the order questions.md lists them: three of the six used
@@ -65,9 +77,18 @@ export const QUESTION_CSS = `
 .tradeoff-item::before{content:"+ "; font-family:var(--font-mono); font-weight:700}
 .tradeoff[data-tradeoff="cons"] .tradeoff-item::before{content:"- "}
 /* questions.md asks a material decision to say which answer is recommended
-   AND why; the badge is the which, this line is the why */
-.recommendation{margin:1rem 0 0; max-width:70ch; padding:.7rem .9rem; border-left:3px solid var(--tag-recommended); border-radius:0 var(--radius-control) var(--radius-control) 0; background:var(--tag-recommended-soft); color:var(--tag-recommended-ink)}
-.recommendation-label{margin-right:.4rem; font:700 .72rem/1.4 var(--font-mono); letter-spacing:.06em; text-transform:uppercase}
+   AND why; the badge is the which, this line is the why. It is a ruled line
+   above the options rather than a filled panel: the green top rule ties it to
+   the Recommended badge, and leaving it unfilled keeps it from reading as an
+   option of its own. The reason is one wrapped grid item, so inline marks in
+   it can never split it into extra cells */
+.recommendation{display:grid; grid-template-columns:7.5rem minmax(0,1fr); gap:1rem; margin:0 0 1rem; padding:.8rem 0; border-top:1px solid var(--tag-recommended); border-bottom:1px solid var(--ui-border); color:var(--ui-ink)}
+.recommendation-label{color:var(--tag-recommended-ink); font:700 .72rem/1.4 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
+/* the reason may run long; min-width:0 lets its grid track wrap it rather than widen the card */
+.recommendation-text{min-width:0}
+/* 30rem: below it a 7.5rem label column leaves the reason too narrow to read,
+   so the label stacks above the text */
+@media (max-width:30rem){.recommendation{grid-template-columns:minmax(0,1fr); gap:.3rem}}
 /* the segmented row is ordinals only; the point's wording rides along as the
    radio's accessible name and the endpoints are spelled out beneath it. The
    input covers its whole segment, so the 44px target is the segment itself. */
@@ -102,7 +123,7 @@ export const QUESTION_CSS = `
 /* an ordering probe. The list is numbered by CSS rather than by an <ol>
    marker so the number stays put as items move past each other: a marker that
    travelled with its item would report the order the reader started from. */
-.probe{margin:0; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
+.probe{margin:0; padding:1.4rem 1.5rem; border:1px solid var(--ui-border); border-radius:var(--radius-question); background:var(--ui-raised); box-shadow:var(--ui-shadow)}
 .probe-title{margin:0; font-family:var(--font-display); font-size:1.2rem; font-weight:560; letter-spacing:-.015em}
 .probe-hint{margin:.5rem 0 1rem; max-width:70ch; color:var(--ui-muted); font-size:.9rem}
 .probe-list{counter-reset:rank; margin:0; padding:0; list-style:none; display:grid; gap:.5rem}

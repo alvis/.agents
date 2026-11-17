@@ -1,14 +1,17 @@
 /** the content blocks: metrics, tables, steps, and findings. */
 export const BLOCK_CSS = `
 /* wide escape: recovered width goes to grids and tables, never to prose */
-.metrics{display:grid; gap:.6rem; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))}
-.metric{padding:.9rem 1rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised)}
+/* one ruled line: every cell carries a left divider and 1rem of left padding, and the strip is pulled 1rem left then clipped by that same 1rem, so whichever cell opens a row (first, or after an auto-fit wrap) loses its divider and its padding with no markup or per-row selector */
+.metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr)); margin-left:-1rem; clip-path:inset(0 0 0 1rem); border-top:1px solid var(--ui-ink)}
+.metric{padding:.7rem 1rem .2rem; border-left:1px solid var(--ui-border)}
+/* 30rem: below it the 13rem cells plus the 1rem bleed collapse to one column on phones, where a divider has nothing to separate, so each cell takes a top rule instead */
+@media (max-width:30rem){.metric+.metric{border-top:1px solid var(--ui-border)}}
 .metric dt{margin:0; font:650 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
-.metric dd{margin:.35rem 0 0; font-size:1.35rem; font-weight:600; letter-spacing:-.01em}
+.metric dd{margin:.35rem 0 0; font-size:1.5rem; font-weight:500; letter-spacing:-.02em}
 
 /* positioned so overflow-x can clip the absolutely-positioned .sr-only labels:
    a static ancestor is not their containing block, so they escape the scroller */
-.table-wrap{position:relative; overflow-x:auto; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised)}
+.table-wrap{position:relative; overflow-x:auto}
 table{width:100%; border-collapse:collapse; font-size:.95rem}
 /* a diff splits its width evenly between the two sides and wraps inside each,
    so a long paragraph grows the row rather than the page */
@@ -25,7 +28,8 @@ table.diff tr.is-same td{color:var(--ui-muted)}
 .diff-figure figcaption{font-weight:650}
 th,td{padding:.8rem 1rem; text-align:left; border-bottom:1px solid var(--ui-border); vertical-align:top}
 th{font:700 .74rem/1.2 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
-tbody tr:last-child td{border-bottom:0}
+thead th{border-bottom-color:var(--ui-ink)}
+tbody tr:last-child :is(td,th){border-bottom-color:var(--ui-ink)}
 /* the glyph is decorative ::before content, so it reaches no screen reader;
    VERDICT_LABEL emits the same judgement as real text beside it */
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0}
@@ -34,7 +38,7 @@ td[data-verdict="good"]{color:var(--ui-positive-ink)} td[data-verdict="good"]::b
 td[data-verdict="mixed"]{color:var(--ui-amber-ink)} td[data-verdict="mixed"]::before{content:"~"}
 td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::before{content:"!"}
 
-.callout{max-width:70ch; padding:1.1rem 1.3rem; border:1px solid var(--ui-border); border-left:4px solid var(--tone-edge,var(--ui-accent)); border-radius:var(--radius-control); background:var(--tone-wash,var(--ui-accent-soft))}
+.callout{max-width:70ch; padding:.1rem 0 .1rem 1rem; border-left:2px solid var(--tone-edge,var(--ui-accent))}
 .callout h3{margin:0 0 .4rem; font-size:1rem; letter-spacing:-.01em}
 .callout p{margin:0; color:var(--ui-muted)}
 
@@ -58,31 +62,38 @@ td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::bef
 .step p{margin:.25rem 0 0; color:var(--ui-muted)}
 
 /* SC-6 — severity reaches four channels, colour last: the severity word as
-   visible text, a glyph, a distinct left-edge style, then colour. The edge
+   visible text, a glyph, a distinct left-rule style, then colour. The rule
    style is what keeps all four apart under filter:grayscale(1), so it is
-   load-bearing: do not collapse these four rules onto one border-style. */
-.findings{margin:0; padding:0; list-style:none; display:grid; gap:.85rem}
-.finding{padding:1rem 1.15rem; border:1px solid var(--ui-border); border-left:7px solid var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-raised)}
-.finding-head{margin:0; display:flex; flex-wrap:wrap; gap:.35rem .8rem; align-items:baseline}
-.finding-severity{flex:none; padding:.1rem .5rem; border:1px solid currentColor; border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
+   load-bearing: do not collapse these four rules onto one border-style. The
+   rule is 4px, twice the callout's, because a double rule needs three pixels
+   to draw two lines and a 2px dotted rule reads as solid at a glance. */
+.findings{margin:0; padding:0; list-style:none; display:grid; gap:1.4rem}
+/* min-height:2rem keeps the rule at least 32px tall under border-box, the
+   height below which a dashed rule paints as one segment and reads as solid */
+.finding{min-height:2rem; padding:.15rem 0 .15rem 1rem; border-left:4px solid var(--ui-border-strong)}
+.finding-head{margin:0; display:flex; flex-wrap:wrap; gap:.35rem .6rem; align-items:baseline}
+/* the severity is a label rather than a chip, as the callout's tone is: the
+   " · " is what separates it from the title once no fill sits behind it */
+.finding-severity{flex:none; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.1em; text-transform:uppercase}
 .finding-severity::before{margin-right:.35rem}
+.finding-severity::after{content:" · "; white-space:pre; color:var(--ui-faint)}
 .finding-title{margin:0; font-family:var(--font-display); font-size:1.08rem; font-weight:560; letter-spacing:-.015em}
-.finding-text{margin:.5rem 0 0; max-width:70ch; color:var(--ui-muted)}
-.finding-meta{margin:.7rem 0 0; display:grid; gap:.3rem}
+.finding-text{margin:.4rem 0 0; max-width:70ch; color:var(--ui-muted)}
+.finding-meta{margin:.6rem 0 0; display:grid; gap:.3rem}
 .finding-meta div{display:flex; flex-wrap:wrap; gap:.15rem .5rem}
 .finding-meta dt{margin:0; flex:none; font:700 .72rem/1.7 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
 .finding-meta dd{margin:0; font-size:.88rem; color:var(--ui-muted)}
 .finding[data-severity="critical"]{border-left-style:double; border-left-color:var(--ui-critical)}
-.finding[data-severity="critical"] .finding-severity{color:var(--ui-critical-ink); background:var(--ui-critical-soft)}
+.finding[data-severity="critical"] .finding-severity{color:var(--ui-critical-ink)}
 .finding[data-severity="critical"] .finding-severity::before{content:"!!"}
 .finding[data-severity="elevated"]{border-left-style:solid; border-left-color:var(--ui-amber)}
-.finding[data-severity="elevated"] .finding-severity{color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
+.finding[data-severity="elevated"] .finding-severity{color:var(--ui-amber-ink)}
 .finding[data-severity="elevated"] .finding-severity::before{content:"!"}
 .finding[data-severity="watch"]{border-left-style:dashed; border-left-color:var(--ui-accent)}
-.finding[data-severity="watch"] .finding-severity{color:var(--ui-accent-ink); background:var(--ui-accent-soft)}
+.finding[data-severity="watch"] .finding-severity{color:var(--ui-accent-ink)}
 .finding[data-severity="watch"] .finding-severity::before{content:"~"}
 .finding[data-severity="clear"]{border-left-style:dotted; border-left-color:var(--ui-positive)}
-.finding[data-severity="clear"] .finding-severity{color:var(--ui-positive-ink); background:var(--ui-positive-soft)}
+.finding[data-severity="clear"] .finding-severity{color:var(--ui-positive-ink)}
 .finding[data-severity="clear"] .finding-severity::before{content:"+"}
 
 /* the hub's whole content: one card per board, sized by the blurb rather than

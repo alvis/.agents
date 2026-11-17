@@ -370,6 +370,8 @@ A single-answer question.
 
 A material decision must explain its recommendation: a `Recommended` badge states which without stating why.
 
+The `recommendation` is drawn above the options as the board's answer, while the options keep their authored order.
+
 #### `checklist`
 
 A multi-select question; its answer is a set, joined by `", "`. Takes `options` of `{ value, summary? }`.

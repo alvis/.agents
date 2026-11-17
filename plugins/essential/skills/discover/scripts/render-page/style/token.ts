@@ -59,7 +59,10 @@ export const TOKEN_CSS = `
   --tag-pragmatic:#ca449a; --tag-pragmatic-soft:#ffecf8; --tag-pragmatic-ink:#9d1f74;
   --tag-hotfix:var(--ui-critical); --tag-hotfix-soft:var(--ui-critical-soft); --tag-hotfix-ink:var(--ui-critical-ink);
   --tag-workaround:var(--ui-amber); --tag-workaround-soft:var(--ui-amber-soft); --tag-workaround-ink:var(--ui-amber-ink);
-  --radius-control:.5rem; --radius-card:.875rem;
+  /* Baseline v2 scale: controls sit tightest, cards one step up, question cards one more so the primary surface reads largest, chips stay small to read as labels */
+  --radius-control:.75rem; --radius-card:1rem;
+  --radius-question:1.25rem; /* the question and probe cards are the board's primary surface */
+  --radius-chip:.6rem; /* small square-cornered labels must stay visibly squarer than controls */
   /* system faces only, because a board fetches nothing: the display and body
      stacks resolve to the platform grotesk a reader already has installed, and
      the layout's tight tracking is set for one */

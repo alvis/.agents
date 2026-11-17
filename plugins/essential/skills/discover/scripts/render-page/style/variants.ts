@@ -46,8 +46,8 @@ export const WIDE_TRACK = `max(${PROSE_TRACK}, ${DESKTOP_PANEL})`;
 export const VARIANTS_CSS = `
 .variants{display:flex; flex-direction:column; gap:.8rem; min-width:0}
 .variants-title{margin:0; font-family:var(--font-display); font-weight:560; font-size:1.15rem; letter-spacing:-.015em}
-/* min() lets one track shrink below its floor in a column narrower than it, as
-   .choices does; a bare minmax(30rem,1fr) overflows a 272px page */
+/* min() lets one track shrink below its floor in a column narrower than it; a
+   bare minmax(30rem,1fr) overflows a 272px page */
 /* stretch, so panels compared side by side are as tall as one another: unequal
    heights read as unequal weight. A figure inside one still scrolls in its own
    frame, because the panel holds it and the frame is what overflows */
@@ -56,7 +56,8 @@ export const VARIANTS_CSS = `
 /* a grid item will not shrink below its content unless told it may, and a
    figure drawn at natural size would then push its neighbours out of the row
    instead of scrolling inside its own frame */
-.variant{display:flex; flex-direction:column; gap:.8rem; min-width:0; padding:1rem 1.1rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
+.variant{display:flex; flex-direction:column; gap:.8rem; min-width:0; padding-top:.8rem; border-top:2px solid var(--ui-border)}
+.variant:first-child{border-top-color:var(--ui-ink)}
 /* the panel's gap spaces what it holds, so a held block brings no margin of its
    own: a paragraph's would double the gap, and the panel read as loose */
 .variant > *{margin:0}

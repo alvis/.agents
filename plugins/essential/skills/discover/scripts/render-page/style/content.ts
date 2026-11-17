@@ -6,7 +6,7 @@ export const CONTENT_CSS = `
 
 /* the summary leads the page, so it is set apart by an edge rather than a fill:
    a filled panel at the top reads as a banner to skip past */
-.tldr{margin:0; padding:1rem 1.2rem; border:1px solid var(--ui-border); border-left:5px solid var(--ui-accent); border-radius:var(--radius-card); background:var(--ui-raised)}
+.tldr{margin:0; padding:.2rem 0 .2rem 1.2rem; border-left:2px solid var(--ui-ink)}
 .tldr h3{margin:0 0 .6rem; font:700 .74rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .tldr ul{margin:0; padding-left:1.2rem; display:grid; gap:.45rem; max-width:70ch; color:var(--ui-muted)}
 .tldr strong{color:var(--ui-ink)}
@@ -44,7 +44,7 @@ export const CONTENT_CSS = `
 
 /* the rating is the pill's own text, so these colours repeat a claim the row
    already makes in words — never the only place it is stated */
-.severity-pill{display:inline-block; padding:.1rem .5rem; border:1px solid currentColor; border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase}
+.severity-pill{display:inline-block; padding:.1rem .5rem; border:1px solid currentColor; border-radius:var(--radius-chip); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase}
 .severity-pill[data-severity="critical"]{color:var(--ui-critical-ink); background:var(--ui-critical-soft)}
 .severity-pill[data-severity="high"]{color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
 .severity-pill[data-severity="medium"]{color:var(--ui-muted); background:var(--ui-surface)}
@@ -71,7 +71,7 @@ export const CONTENT_CSS = `
    already carries progress, and one marker cannot honestly carry both. Only a
    classified rail takes the title rule, so a timeline written before this
    still lays out exactly as it did */
-.moment-kind{flex:none; padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:.4rem; font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint); background:var(--ui-raised)}
+.moment-kind{flex:none; padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:var(--radius-chip); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint); background:var(--ui-raised)}
 .timeline li[data-kind] .moment-title{flex:1 1 14rem; min-width:0}
 .timeline li[data-kind="discovery"] .moment-kind{border-color:var(--ui-accent); color:var(--ui-accent-ink); background:var(--ui-accent-soft)}
 .timeline li[data-kind="deviation"] .moment-kind{border-color:var(--ui-amber); color:var(--ui-amber-ink); background:var(--ui-amber-soft)}
@@ -80,18 +80,27 @@ export const CONTENT_CSS = `
 .moment-tags{display:inline-flex; flex-wrap:wrap; gap:.3rem}
 .moment-tags span{padding:.05rem .45rem; border:1px solid var(--ui-border); border-radius:9999px; font-size:.72rem; color:var(--ui-muted)}
 
-.kanban{margin:0; padding:0; list-style:none; display:grid; gap:.8rem; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); align-items:start}
-.kanban-lane{min-width:0; padding:.8rem .85rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
-.kanban-lane h4{margin:0 0 .55rem; display:flex; gap:.5rem; align-items:baseline; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
+/* a lane is a column under a heading rule, as a variant is, and its cards are
+   ruled rows, as a disclosure's are: the space between lanes is the seam, so
+   neither a lane nor a card needs a frame */
+.kanban{margin:0; padding:0; list-style:none; display:grid; gap:1.4rem 1.25rem; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); align-items:start}
+.kanban-lane{min-width:0; padding-top:.6rem; border-top:2px solid var(--ui-ink)}
+.kanban-lane h4{margin:0 0 .2rem; display:flex; gap:.5rem; align-items:baseline; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .kanban-count{margin-left:auto; font-variant-numeric:tabular-nums; color:var(--ui-muted)}
-.kanban-cards{margin:0; padding:0; list-style:none; display:grid; gap:.45rem}
-.kanban-card{min-width:0; overflow-wrap:anywhere; padding:.5rem .65rem; border:1px solid var(--ui-border); border-radius:var(--radius-control); background:var(--ui-raised); font-size:.88rem}
+.kanban-cards{margin:0; padding:0; list-style:none; display:grid}
+.kanban-card{min-width:0; overflow-wrap:anywhere; padding:.5rem 0; font-size:.88rem}
+.kanban-card+.kanban-card{border-top:1px solid var(--ui-border)}
 /* a pointer opens a detailed card from anywhere on its face, which stays
    selectable text; the open control is what the keyboard reaches, kept out of
-   sight and drawn as the card's own focus ring when it has focus */
-.kanban-card.is-detailed{position:relative; cursor:pointer}
-.kanban-card.is-detailed:hover{border-color:var(--ui-border-strong); background:var(--ui-surface)}
-.kanban-card.is-detailed:has(.kanban-open:focus-visible){outline:2px solid var(--ui-focus); outline-offset:2px}
+   sight and drawn as the card's own focus ring when it has focus. With no frame
+   to say the row opens, a chevron at its end says so, as a settings row does;
+   its alternative text is empty because the open control already names the
+   card to a screen reader */
+.kanban-card.is-detailed{position:relative; padding-right:1.3rem; cursor:pointer}
+.kanban-card.is-detailed::after{content:"\\203A" / ""; position:absolute; inset-block-start:.42rem; inset-inline-end:.15rem; color:var(--ui-faint); font:600 1.05rem/1 var(--font-body)}
+.kanban-card.is-detailed:hover{text-decoration:underline; text-decoration-color:var(--ui-border-strong); text-underline-offset:.2em}
+.kanban-card.is-detailed:hover::after{color:var(--ui-accent-ink)}
+.kanban-card.is-detailed:has(.kanban-open:focus-visible){outline:2px solid var(--ui-focus); outline-offset:2px; border-radius:var(--radius-control)}
 .kanban-open{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0}
 .kanban-open[hidden]{display:none}
 .kanban-dialog{width:min(40rem,calc(100vw - 2rem)); max-height:min(85vh,48rem); padding:0; overflow:auto; border:1px solid var(--ui-border-strong); border-radius:var(--radius-card); background:var(--ui-surface); color:var(--ui-ink); font-size:1rem}
@@ -116,22 +125,22 @@ export const CONTENT_CSS = `
 .ledger-fact dd{margin:0; color:var(--ui-ink); font:.86rem/1.6 var(--font-body); overflow-wrap:anywhere}
 .ledger-empty{margin:0; color:var(--ui-faint); font:italic .86rem/1.6 var(--font-body)}
 
-/* the tone word carries the stance; these rules only repeat it in colour. A
-   tone paints the whole aside — edge and wash together — because an edge alone
-   over the accent wash reads as two stances at once, one of them the page's
-   default. The badge keeps the raised surface so it stays a chip against every
-   wash rather than dissolving into the family it names. */
-.callout-tone{margin-right:.5rem; padding:.1rem .45rem; border:1px solid currentColor; border-radius:.4rem; background:var(--ui-raised); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
-.callout[data-tone="good"]{--tone-edge:var(--ui-positive); --tone-wash:var(--ui-positive-soft)}
+/* the tone word carries the stance; these rules only repeat it in colour, on
+   the aside's left rule and on the word itself. The word is a label rather than
+   a chip, and the " · " after it is what separates it from the title, so the
+   tone still reads in greyscale with no fill behind it. */
+.callout-tone{font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
+.callout-tone::after{content:" · "; white-space:pre}
+.callout[data-tone="good"]{--tone-edge:var(--ui-positive)}
 .callout[data-tone="good"] .callout-tone{color:var(--ui-positive-ink)}
-.callout[data-tone="bad"]{--tone-edge:var(--ui-critical); --tone-wash:var(--ui-critical-soft)}
+.callout[data-tone="bad"]{--tone-edge:var(--ui-critical)}
 .callout[data-tone="bad"] .callout-tone{color:var(--ui-critical-ink)}
-.callout[data-tone="neutral"]{--tone-edge:var(--ui-border-strong); --tone-wash:var(--ui-surface)}
+.callout[data-tone="neutral"]{--tone-edge:var(--ui-border-strong)}
 .callout[data-tone="neutral"] .callout-tone{color:var(--ui-muted)}
 
 /* the board-level trade-offs block. .tradeoff-panel rather than .tradeoffs,
    which the choice block's inline pros/cons strip already owns */
-.tradeoff-panel{margin:1.4rem 0; padding:1rem 1.1rem; border:1px solid var(--ui-border); border-radius:var(--radius-panel); background:var(--ui-surface)}
+.tradeoff-panel{margin:1.4rem 0; padding:1rem 1.1rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
 .tradeoff-panel h3{margin:0 0 .8rem; font-size:1rem}
 .tradeoff-grid{display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))}
 .tradeoff-column h4{margin:0 0 .4rem; font:700 .72rem/1.4 var(--font-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ui-muted)}
@@ -145,7 +154,7 @@ export const CONTENT_CSS = `
 .tradeoff-column[data-tradeoff="fails"] h4{color:var(--ui-critical-ink)}
 /* a finding's citation anchor: mono, so a reply quoting it back reads as the
    same token, and drawn before the severity it qualifies */
-.finding-id{padding:.05em .4em; border:1px solid var(--ui-border-strong); border-radius:.35rem; font:700 .72rem/1.4 var(--font-mono); color:var(--ui-muted)}
+.finding-id{padding:.05em .4em; border:1px solid var(--ui-border-strong); border-radius:var(--radius-chip); font:700 .72rem/1.4 var(--font-mono); color:var(--ui-muted)}
 /* a row's provenance rides the last cell, so the row stays as wide as one
    making no claim at all */
 .row-provenance{margin-left:.4rem; white-space:nowrap}

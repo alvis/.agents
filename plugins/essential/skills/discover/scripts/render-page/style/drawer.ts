@@ -38,7 +38,7 @@ export const DRAWER_CSS = `
 .chip-strip[data-overflow="end"]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 1.4rem),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 1.4rem),transparent)}
 .chip-strip[data-overflow="both"]{-webkit-mask-image:linear-gradient(90deg,transparent,#000 1.4rem,#000 calc(100% - 1.4rem),transparent); mask-image:linear-gradient(90deg,transparent,#000 1.4rem,#000 calc(100% - 1.4rem),transparent)}
 .chip-strip::-webkit-scrollbar{display:none}
-.q-chip{display:inline-grid; flex:none; place-items:center; min-width:2rem; height:1.7rem; padding:0 .35rem; border:1px solid transparent; border-radius:.45rem; background:transparent; color:var(--ui-muted); font:700 .72rem/1 var(--font-mono); text-decoration:none}
+.q-chip{display:inline-grid; flex:none; place-items:center; min-width:2rem; height:1.7rem; padding:0 .35rem; border:1px solid transparent; border-radius:var(--radius-chip); background:transparent; color:var(--ui-muted); font:700 .72rem/1 var(--font-mono); text-decoration:none}
 /* one tone per status, and the same tone the card that produced it wears:
    green for going with the board's recommendation, which is what Approve and a
    checked recommended option are; amber for overriding it, which is Change and
@@ -105,7 +105,7 @@ export const DRAWER_CSS = `
 @media (max-width:40rem){.drawer-grid{grid-template-columns:minmax(0,1fr)}}
 .drawer-grid h3{margin:0 0 .55rem; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.11em; text-transform:uppercase; color:var(--ui-faint)}
 .drawer-nav{display:grid; gap:.15rem}
-.drawer-nav a{padding:.3rem .5rem; border-radius:.55rem; color:var(--ui-muted); text-decoration:none; font-size:.85rem}
+.drawer-nav a{padding:.3rem .5rem; border-radius:var(--radius-chip); color:var(--ui-muted); text-decoration:none; font-size:.85rem}
 .drawer-nav a[aria-current="location"]{background:var(--ui-accent-soft); color:var(--ui-accent-ink); font-weight:700}
 /* the tally is words ("2 open", "settled"), and the colour only echoes them: a
    section with nothing asked of it carries no tally at all, and an empty one
@@ -122,7 +122,7 @@ export const DRAWER_CSS = `
 .board-set{display:flex; flex-wrap:wrap; gap:.35rem .9rem; align-items:baseline; width:min(100% , var(--cap)); margin-inline:auto; padding:.65rem .9rem; border:1px dashed var(--ui-border-strong); border-radius:var(--radius-control); background:var(--ui-canvas)}
 .board-set h3{margin:0; flex:none; font:700 .72rem/1.2 var(--font-mono); letter-spacing:.11em; text-transform:uppercase; color:var(--ui-faint)}
 .board-set ul{margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:.2rem .35rem}
-.board-set a{display:block; padding:.2rem .5rem; border-radius:.55rem; color:var(--ui-muted); text-decoration:none; font-size:.85rem}
+.board-set a{display:block; padding:.2rem .5rem; border-radius:var(--radius-chip); color:var(--ui-muted); text-decoration:none; font-size:.85rem}
 .board-set a:hover{color:var(--ui-ink)}
 /* the same treatment the section list gives the section in view, because it
    answers the same question one level up: which of these am I looking at */
@@ -145,7 +145,7 @@ export const DRAWER_CSS = `
 .summary-jump{display:flex; flex:1 1 auto; gap:.5rem; align-items:baseline; min-width:0; color:inherit; text-decoration:none}
 .summary-jump:hover .summary-name{text-decoration:underline}
 .summary-jump:focus-visible{outline:2px solid var(--ui-focus); outline-offset:2px; border-radius:.3rem}
-.summary-ref{flex:none; padding:0 .3em; border-radius:.3rem; background:var(--ui-accent-soft); color:var(--ui-accent-ink); font:700 .72rem/1.6 var(--font-mono)}
+.summary-ref{flex:none; padding:0 .3em; border-radius:var(--radius-chip); background:var(--ui-accent-soft); color:var(--ui-accent-ink); font:700 .72rem/1.6 var(--font-mono)}
 .summary-name{min-width:0}
 /* the control that summons the reply. Shipped hidden and revealed by the
    runtime, because without scripting there is no modal to open and the reply
