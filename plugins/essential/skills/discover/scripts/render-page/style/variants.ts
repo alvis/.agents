@@ -56,7 +56,8 @@ export const VARIANTS_CSS = `
 /* a grid item will not shrink below its content unless told it may, and a
    figure drawn at natural size would then push its neighbours out of the row
    instead of scrolling inside its own frame */
-.variant{display:flex; flex-direction:column; gap:.8rem; min-width:0; padding:1rem 1.1rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
+.variant{display:flex; flex-direction:column; gap:.8rem; min-width:0; padding-top:.8rem; border-top:2px solid var(--ui-border)}
+.variant:first-child{border-top-color:var(--ui-ink)}
 /* the panel's gap spaces what it holds, so a held block brings no margin of its
    own: a paragraph's would double the gap, and the panel read as loose */
 .variant > *{margin:0}

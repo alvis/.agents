@@ -72,8 +72,11 @@ export const ANNOTATION_CSS = `
    runtime owns for a box lit by a partner, so the two can hold at once */
 .dg-node.is-chosen .dg-box{stroke:var(--ui-accent); stroke-width:3}
 
-.disclosure{margin:.8rem 0; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-surface)}
-.disclosure>summary{padding:.6rem .8rem; color:var(--ui-ink); font:600 .9rem/1.5 var(--font-body); cursor:pointer}
-.disclosure>summary:focus-visible{outline:2px solid var(--ui-focus); outline-offset:-2px; border-radius:var(--radius-card)}
-.disclosure-body{padding:0 .8rem .8rem}
+.disclosure{margin:.8rem 0; border-block:1px solid var(--ui-border)}
+/* adjacent disclosures share one rule: the later one drops its top rule and the earlier one its bottom margin */
+.disclosure+.disclosure{margin-top:0; border-top:0}
+.disclosure:has(+.disclosure){margin-bottom:0}
+.disclosure>summary{padding:.7rem 0; color:var(--ui-ink); font:600 .9rem/1.5 var(--font-body); cursor:pointer}
+.disclosure>summary:focus-visible{outline:2px solid var(--ui-focus); outline-offset:2px}
+.disclosure-body{padding:0 0 .7rem 1.3rem}
 `;

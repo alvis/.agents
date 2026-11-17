@@ -11,7 +11,7 @@ export const BLOCK_CSS = `
 
 /* positioned so overflow-x can clip the absolutely-positioned .sr-only labels:
    a static ancestor is not their containing block, so they escape the scroller */
-.table-wrap{position:relative; overflow-x:auto; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised)}
+.table-wrap{position:relative; overflow-x:auto}
 table{width:100%; border-collapse:collapse; font-size:.95rem}
 /* a diff splits its width evenly between the two sides and wraps inside each,
    so a long paragraph grows the row rather than the page */
@@ -28,7 +28,8 @@ table.diff tr.is-same td{color:var(--ui-muted)}
 .diff-figure figcaption{font-weight:650}
 th,td{padding:.8rem 1rem; text-align:left; border-bottom:1px solid var(--ui-border); vertical-align:top}
 th{font:700 .74rem/1.2 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; color:var(--ui-faint)}
-tbody tr:last-child td{border-bottom:0}
+thead th{border-bottom-color:var(--ui-ink)}
+tbody tr:last-child :is(td,th){border-bottom-color:var(--ui-ink)}
 /* the glyph is decorative ::before content, so it reaches no screen reader;
    VERDICT_LABEL emits the same judgement as real text beside it */
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0}
@@ -37,7 +38,7 @@ td[data-verdict="good"]{color:var(--ui-positive-ink)} td[data-verdict="good"]::b
 td[data-verdict="mixed"]{color:var(--ui-amber-ink)} td[data-verdict="mixed"]::before{content:"~"}
 td[data-verdict="bad"]{color:var(--ui-critical-ink)} td[data-verdict="bad"]::before{content:"!"}
 
-.callout{max-width:70ch; padding:1.1rem 1.3rem; border:1px solid var(--ui-border); border-left:4px solid var(--tone-edge,var(--ui-accent)); border-radius:var(--radius-control); background:var(--tone-wash,var(--ui-accent-soft))}
+.callout{max-width:70ch; padding:.1rem 0 .1rem 1rem; border-left:2px solid var(--tone-edge,var(--ui-accent))}
 .callout h3{margin:0 0 .4rem; font-size:1rem; letter-spacing:-.01em}
 .callout p{margin:0; color:var(--ui-muted)}
 

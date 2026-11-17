@@ -74,7 +74,7 @@ export const DIAGRAM_CSS = `
    rather than being drawn at a fixed one */
 .tree-figure{display:flex; flex-direction:column; gap:.6rem; margin:0}
 .tree-title{font-family:var(--font-display); font-weight:560; font-size:1.05rem; color:var(--ui-ink)}
-.tree{overflow-x:auto; margin:0; padding:.9rem 1rem; border:1px solid var(--ui-border); border-radius:var(--radius-card); background:var(--ui-raised); color:var(--ui-ink); font:.82rem/1.7 var(--font-mono); tab-size:2}
+.tree{overflow-x:auto; margin:0; padding:.2rem 0 .2rem 1rem; border-left:2px solid var(--ui-border); color:var(--ui-ink); font:.82rem/1.7 var(--font-mono); tab-size:2}
 .tree-note{color:var(--ui-muted)}
 /* the gutter's word is what says the status; colour only echoes it, so it
    survives greyscale. Moved has no colour of its own: it is the one status that

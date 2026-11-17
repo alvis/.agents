@@ -6,7 +6,7 @@ export const CONTENT_CSS = `
 
 /* the summary leads the page, so it is set apart by an edge rather than a fill:
    a filled panel at the top reads as a banner to skip past */
-.tldr{margin:0; padding:1rem 1.2rem; border:1px solid var(--ui-border); border-left:5px solid var(--ui-accent); border-radius:var(--radius-card); background:var(--ui-raised)}
+.tldr{margin:0; padding:.2rem 0 .2rem 1.2rem; border-left:2px solid var(--ui-ink)}
 .tldr h3{margin:0 0 .6rem; font:700 .74rem/1.2 var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ui-faint)}
 .tldr ul{margin:0; padding-left:1.2rem; display:grid; gap:.45rem; max-width:70ch; color:var(--ui-muted)}
 .tldr strong{color:var(--ui-ink)}
@@ -116,17 +116,17 @@ export const CONTENT_CSS = `
 .ledger-fact dd{margin:0; color:var(--ui-ink); font:.86rem/1.6 var(--font-body); overflow-wrap:anywhere}
 .ledger-empty{margin:0; color:var(--ui-faint); font:italic .86rem/1.6 var(--font-body)}
 
-/* the tone word carries the stance; these rules only repeat it in colour. A
-   tone paints the whole aside — edge and wash together — because an edge alone
-   over the accent wash reads as two stances at once, one of them the page's
-   default. The badge keeps the raised surface so it stays a chip against every
-   wash rather than dissolving into the family it names. */
-.callout-tone{margin-right:.5rem; padding:.1rem .45rem; border:1px solid currentColor; border-radius:var(--radius-chip); background:var(--ui-raised); font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
-.callout[data-tone="good"]{--tone-edge:var(--ui-positive); --tone-wash:var(--ui-positive-soft)}
+/* the tone word carries the stance; these rules only repeat it in colour, on
+   the aside's left rule and on the word itself. The word is a label rather than
+   a chip, and the " · " after it is what separates it from the title, so the
+   tone still reads in greyscale with no fill behind it. */
+.callout-tone{font:700 .72rem/1.6 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; vertical-align:.08em}
+.callout-tone::after{content:" · "; white-space:pre}
+.callout[data-tone="good"]{--tone-edge:var(--ui-positive)}
 .callout[data-tone="good"] .callout-tone{color:var(--ui-positive-ink)}
-.callout[data-tone="bad"]{--tone-edge:var(--ui-critical); --tone-wash:var(--ui-critical-soft)}
+.callout[data-tone="bad"]{--tone-edge:var(--ui-critical)}
 .callout[data-tone="bad"] .callout-tone{color:var(--ui-critical-ink)}
-.callout[data-tone="neutral"]{--tone-edge:var(--ui-border-strong); --tone-wash:var(--ui-surface)}
+.callout[data-tone="neutral"]{--tone-edge:var(--ui-border-strong)}
 .callout[data-tone="neutral"] .callout-tone{color:var(--ui-muted)}
 
 /* the board-level trade-offs block. .tradeoff-panel rather than .tradeoffs,
