@@ -135,8 +135,15 @@ export function renderQuestion(
         block.recommendation,
         `${path}.recommendation`,
       );
+      // the board's answer comes before the options, so a reader weighs each
+      // option against it instead of meeting it after choosing. The options
+      // keep their authored order: the recommended one is found by its badge,
+      // never by being hoisted to the top
+      const lead = recommendation
+        ? `<p class="recommendation"><span class="recommendation-label">Board recommends</span> <span class="recommendation-text">${escapeHtml(recommendation)}</span></p>`
+        : "";
 
-      return `${head}<div class="choices">${requireFilledArray<Choice>(block.choices, `${path}.choices`)
+      return `${head}${lead}<div class="choices">${requireFilledArray<Choice>(block.choices, `${path}.choices`)
         .map((choice, index) => {
           const at = `${path}.choices[${index}]`;
           requireObject<Choice>(choice, at);
@@ -154,15 +161,13 @@ export function renderQuestion(
           const detailId = `q-${escapeHtml(id)}-opt-${index}`;
           const badges = renderTags(choice.tags, `${detailId}-tags`, at);
           const tradeoffs = `${renderTradeoff(choice.pros, "pros", "Pros", `${at}.pros`)}${renderTradeoff(choice.cons, "cons", "Cons", `${at}.cons`)}`;
-          // a label's content model is phrasing content, so the trade-offs
-          // are spans made list-like in CSS. A <ul> here would still parse as
-          // a child of the label — <label> is not in the parser's special
-          // set, so nothing reparents it — but it is invalid HTML, and the
-          // spans buy conformance at no cost to the whole-card click target
-          const detail = `${summary ? `<small>${escapeHtml(summary)}</small>` : ""}${tradeoffs ? `<span class="tradeoffs">${tradeoffs}</span>` : ""}`;
-          // an option carrying no detail and no tags already announces as its
-          // title alone, so it needs neither attribute
-          const describedBy = [detail ? detailId : "", badges ? `${detailId}-tags` : ""]
+          // the summary sits in the title row, apart from the trade-offs below
+          // it, so it carries its own id for the description to reach
+          const summaryId = `${detailId}-summary`;
+          // an option carrying no summary, trade-offs or tags already
+          // announces as its title alone, so it needs neither attribute. The
+          // ids run in reading order: summary, trade-offs, tags
+          const describedBy = [summary ? summaryId : "", tradeoffs ? detailId : "", badges ? `${detailId}-tags` : ""]
             .filter(Boolean)
             .join(" ");
           // the runtime reads this to tell a confirmed recommendation from an
@@ -171,10 +176,22 @@ export function renderQuestion(
           const suggested = (choice.tags ?? []).includes("Recommended")
             ? " data-recommended"
             : "";
+          // one title row holds the value, the summary and the tags, so a tag
+          // reads as part of the option's name line rather than as a column
+          // beside the card
+          const titleRow = `<span class="choice-head"><strong>${escapeHtml(value)}</strong>${summary ? `<small id="${summaryId}">${escapeHtml(summary)}</small>` : ""}${badges}</span>`;
+          // a label's content model is phrasing content, so the trade-offs
+          // are spans made list-like in CSS. A <ul> here would still parse as
+          // a child of the label — <label> is not in the parser's special
+          // set, so nothing reparents it — but it is invalid HTML, and the
+          // spans buy conformance at no cost to the whole-card click target
+          const detail = tradeoffs
+            ? `<span class="choice-detail" id="${detailId}"><span class="tradeoffs">${tradeoffs}</span></span>`
+            : "";
 
-          return `<label class="choice"><input type="radio" name="${escapeHtml(id)}" value="${escapeHtml(value)}"${suggested}${describedBy ? ` aria-label="${escapeHtml(value)}" aria-describedby="${describedBy}"` : ""} /><span class="choice-body"><strong>${escapeHtml(value)}</strong>${detail ? `<span class="choice-detail" id="${detailId}">${detail}</span>` : ""}</span>${badges}</label>`;
+          return `<label class="choice"><input type="radio" name="${escapeHtml(id)}" value="${escapeHtml(value)}"${suggested}${describedBy ? ` aria-label="${escapeHtml(value)}" aria-describedby="${describedBy}"` : ""} /><span class="choice-body">${titleRow}${detail}</span></label>`;
         })
-        .join("")}</div>${recommendation ? `<p class="recommendation"><span class="recommendation-label">Recommendation</span> ${escapeHtml(recommendation)}</p>` : ""}</fieldset>`;
+        .join("")}</div></fieldset>`;
     }
     case "checklist": {
       const { id, head } = openQuestion(block, path, ids, "fieldset");

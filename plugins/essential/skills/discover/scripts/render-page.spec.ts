@@ -147,22 +147,27 @@ function announcedName(label: string): string[] {
 function elementById(html: string, id: string): string {
   const start = html.indexOf(`id="${id}"`);
   if (start === -1) throw new Error(`no element carries id ${id}`);
-  // both description targets are spans, so walk to the matching close tag
+  // a target is a span or the summary's <small>, so read the tag name off the
+  // element and walk to its own matching close tag; a fixed </span> would run
+  // a <small> on into the badges beside it
+  const element = html.lastIndexOf("<", start);
+  const tag = /^<([a-z]+)/.exec(html.slice(element))?.[1];
+  if (!tag) throw new Error(`id ${id} sits outside an element`);
   let cursor = html.indexOf(">", start) + 1;
   let depth = 1;
   while (depth > 0) {
-    const open = html.indexOf("<span", cursor);
-    const close = html.indexOf("</span>", cursor);
+    const open = html.indexOf(`<${tag}`, cursor);
+    const close = html.indexOf(`</${tag}>`, cursor);
     if (close === -1) throw new Error(`id ${id} is never closed`);
     if (open !== -1 && open < close) {
       depth = depth + 1;
-      cursor = open + 5;
+      cursor = open + tag.length + 1;
     } else {
       depth = depth - 1;
-      cursor = close + 7;
+      cursor = close + tag.length + 3;
     }
   }
-  return html.slice(start, cursor);
+  return html.slice(element, cursor);
 }
 
 /** the full description a radio's `aria-describedby` resolves to. */
@@ -651,7 +656,8 @@ describe("fn:renderPage", () => {
 
     // a choice without summary, tags, pros/cons, or a recommendation draws
     // none of those elements rather than an empty shell of each
-    expect(html).not.toContain("<small>");
+    expect(html).not.toMatch(/<small\b/);
+    expect(html).not.toContain('-summary"');
     expect(html).not.toContain('class="badge"');
     expect(html).not.toContain('class="badges"');
     expect(html).not.toContain('class="tradeoffs"');
@@ -746,7 +752,7 @@ describe("fn:renderPage", () => {
     );
   });
 
-  it("should state the recommendation and its reason after the choices", () => {
+  it("should state the board's recommendation and its reason before the choices", () => {
     const html = render(
       choicePage(
         { value: "only", tags: ["Recommended"] },
@@ -759,9 +765,94 @@ describe("fn:renderPage", () => {
 
     // the badge says which; questions.md also wants the why, and the why is
     // a property of the question rather than of any single answer, so it sits
-    // after the grid rather than inside one label
+    // between the ask and the options rather than inside one label
     expect(html).toContain(
-      '</div><p class="recommendation"><span class="recommendation-label">Recommendation</span> Producer adapter, because it is the only option we can reverse inside one sprint.</p></fieldset>',
+      '<p class="ask">A</p><p class="recommendation"><span class="recommendation-label">Board recommends</span> <span class="recommendation-text">Producer adapter, because it is the only option we can reverse inside one sprint.</span></p><div class="choices">',
+    );
+    expect(html).not.toMatch(/<\/div><p class="recommendation">/);
+  });
+
+  it("should draw each option as a title row over its trade-offs, in authored order", () => {
+    const html = render(
+      choicePage(
+        { value: "first", summary: "Cheap." },
+        {
+          recommendation: "Second, because it is reversible.",
+          choices: [
+            { value: "first", summary: "Cheap." },
+            {
+              value: "second",
+              summary: "Reversible.",
+              tags: ["Pragmatic", "Recommended"],
+              pros: ["Undo in a sprint"],
+              cons: ["Adapter stays"],
+            },
+          ],
+        },
+      ),
+    );
+    const [first, second] = choiceLabels(html);
+
+    // the recommendation moves above the options but the options never move:
+    // the recommended one keeps its authored place
+    expect(inputAttribute(first, "value")).toBe("first");
+    expect(inputAttribute(second, "value")).toBe("second");
+    // value, summary and tags share one title row; the trade-offs follow it
+    expect(second).toContain(
+      '<span class="choice-body"><span class="choice-head"><strong>second</strong><small id="q-c-opt-1-summary">Reversible.</small><span class="badges" id="q-c-opt-1-tags"><span class="badge" data-tag="Pragmatic">Pragmatic</span><span class="badge" data-tag="Recommended">Recommended</span></span></span><span class="choice-detail" id="q-c-opt-1"><span class="tradeoffs">',
+    );
+    // the radio is still named by its value alone and described by every
+    // other word on the card, in reading order
+    expect(announcedName(second).join(" ")).toBe("second");
+    expect(inputAttribute(second, "aria-describedby")).toBe(
+      "q-c-opt-1-summary q-c-opt-1 q-c-opt-1-tags",
+    );
+    expect(announcedDescription(html, second)).toBe(
+      "Reversible. Pros Undo in a sprint Cons Adapter stays Pragmatic Recommended",
+    );
+    // a summary alone still earns both attributes, and the description reaches it
+    expect(announcedName(first).join(" ")).toBe("first");
+    expect(inputAttribute(first, "aria-describedby")).toBe("q-c-opt-0-summary");
+    expect(announcedDescription(html, first)).toBe("Cheap.");
+    expect(first).not.toContain('class="choice-detail"');
+  });
+
+  it.each([
+    {
+      name: "tags only",
+      choice: { value: "v", tags: ["Ideal"] },
+      describedBy: "q-c-opt-0-tags",
+      description: "Ideal",
+    },
+    {
+      name: "trade-offs only",
+      choice: { value: "v", pros: ["fast"] },
+      describedBy: "q-c-opt-0",
+      description: "Pros fast",
+    },
+    {
+      name: "a summary and cons",
+      choice: { value: "v", summary: "Short.", cons: ["slow"] },
+      describedBy: "q-c-opt-0-summary q-c-opt-0",
+      description: "Short. Cons slow",
+    },
+  ] as const)(
+    "should describe an option carrying $name by exactly what it has",
+    ({ choice, describedBy, description }) => {
+      const html = render(choicePage(choice as Choice));
+      const [label] = choiceLabels(html);
+
+      expect(announcedName(label).join(" ")).toBe("v");
+      expect(inputAttribute(label, "aria-describedby")).toBe(describedBy);
+      expect(announcedDescription(html, label)).toBe(description);
+    },
+  );
+
+  it("should escape an option summary drawn in the title row", () => {
+    const html = render(choicePage({ value: "v", summary: '<b>a</b>&"' }));
+
+    expect(html).toContain(
+      '<small id="q-c-opt-0-summary">&lt;b&gt;a&lt;/b&gt;&amp;&quot;</small>',
     );
   });
 
@@ -1772,13 +1863,16 @@ describe("fn:renderPage new blocks", () => {
     expect(css).toMatch(/\.verdict\{[^}]*min-height:2\.75rem/);
   });
 
-  it("should let a narrow column shrink a choice grid track below its minimum", () => {
+  it("should let a narrow column shrink an option grid track below its minimum", () => {
     const css = stylesheet(render(page(withBlocks(NEW_BLOCKS.checklist))));
 
-    // a bare minmax(17rem,1fr) demanded 272px inside a 272px page and
+    // a checklist wraps its options into as many columns as fit, and a bare
+    // minmax(17rem,1fr) once demanded 272px inside a 272px page and
     // overflowed it by 50px, breaking the question card out of the column
-    expect(css).toMatch(
-      /\.choices\{[^}]*minmax\(min\(17rem,100%\),1fr\)/,
+    expect(css).toMatch(/\.choices\{[^}]*minmax\(min\(17rem,100%\),1fr\)/);
+    // a choice goes one option per row on a track with no minimum at all
+    expect(css).toContain(
+      '.question[data-question-kind="choice"] .choices{grid-template-columns:minmax(0,1fr)}',
     );
     // DR1: the drawer's grid is three declared columns rather than as many as
     // fit, so its tracks carry no minimum of their own to overflow with — and
@@ -1794,7 +1888,7 @@ describe("fn:renderPage new blocks", () => {
   });
 
   it("should let a narrow column shrink a variants track below its density", () => {
-    // the same overflow as the choice grid, at four times the floor: a bare
+    // the overflow the choice grid once had, at four times the floor: a bare
     // minmax(30rem,1fr) demands 480px inside a 272px page
     expect(VARIANTS_CSS).toMatch(
       /\.variants-grid\{[^}]*minmax\(min\(var\(--track\),100%\),1fr\)/,
