@@ -37,7 +37,9 @@ Skills own actions; never delegate work “to” a skill or pass a skill name as
 | Set up a project | [Implementation](implementation.md) | `coding:setup-project` |
 | Complete a production stub | [Implementation](implementation.md) | `coding:complete-code` |
 | Diagnose or fix a failure | [Diagnosis and fix](diagnosis.md) | `coding:fix` |
+| Change working behavior to a new requirement | [Implementation](implementation.md) | `coding:write-code` |
 | Refactor green code | [Implementation](implementation.md) | `coding:refactor` |
+| Improve performance without changing behavior | [Implementation](implementation.md) | `coding:refactor --focus=performance` |
 | Modernize supported syntax or APIs | [Implementation](implementation.md) | `coding:modernize` |
 | Document source-backed behavior | [Implementation](implementation.md) | `coding:document` |
 | Author tests or improve coverage | [Implementation](implementation.md) | `coding:test` |

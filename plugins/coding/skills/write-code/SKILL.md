@@ -1,6 +1,6 @@
 ---
 name: write-code
-description: 'Write production-ready code end to end through a TDD lifecycle of design, skeleton, implementation, tests, and refactoring. Use for new functions, features, modules, components, CLI or API endpoints, or approved tickets; route diagnosed failures to fix and explicit production stubs to complete-code.'
+description: 'Write production-ready code end to end through a TDD lifecycle of design, skeleton, implementation, tests, and refactoring. Use for new functions, features, modules, components, CLI or API endpoints, approved tickets, or deliberate changes to existing behavior; route diagnosed failures to fix and explicit production stubs to complete-code.'
 requirements:
   model: capable
   effort: deliberate
@@ -13,7 +13,7 @@ Risk-adaptive owner for the complete TDD lifecycle. A direct caller first classi
 
 ## Boundaries
 
-- Use for new functions, features, modules, components, endpoints, or an approved specification implemented and tested end to end; use `--resume` for a resumed work stream.
+- Use for deliberate changes to existing behavior that works as currently specified (a new or changed requirement; defects route to `coding:fix`), and for new functions, features, modules, components, endpoints, or an approved specification implemented and tested end to end; use `--resume` for a resumed work stream.
 - Route skeleton-only work to `coding:draft-code`, accepted production stubs to `coding:complete-code`, diagnosed failures to `coding:fix`, green structural cleanup to `coding:refactor`, and reviews to `coding:review-code`.
 - Reject vague requirements without acceptance criteria. Runtime-producing projects require a configured test framework. A public type utility or other declaration that is itself the complete type-level implementation, including one in a mixed runtime package, may instead use its configured typecheck or type-test command, or a defined diagnostics and affected-consumer build route; do not require a runtime test framework or static-shape tests.
 
@@ -36,7 +36,7 @@ For integration work, [mandatory tests-first development and infrastructure read
 
 1. `coding:setup-project`, only if essential structure is missing.
 2. `coding:draft-code`, for types, skeleton, canonical implementation markers, and red/pending test structure.
-3. `coding:complete-code`, then `coding:test` `for-maintenance` for pending tests.
+3. For new behavior, `coding:test` `for-new-code` with `--phase=before` ahead of the implementation and `--phase=after` once it lands; implement through `coding:complete-code`, then `coding:test` `for-maintenance` for remaining pending tests. For a requirement change to existing behavior, run `coding:test` `for-logic-change --phase=before`, edit the existing code directly as the owner (`draft-code` and `complete-code` serve new code only), then run `--phase=after`.
 4. `coding:fix` for diagnosed test/type/lint failures; mechanical standards route to `coding:lint` and coverage/fixture work to `coding:test` `for-maintenance`.
 5. `coding:refactor` for green behavior-preserving cleanup, then `coding:document` when the change affects public behavior, configuration, operations, or project documentation promised by the contract.
 6. Follow review timing in `coding:directions/validation.md` and ownership in `coding:directions/review-evidence.md`. A child assigned to a parent-owned delivery returns self-checks and evidence; the named owner reviews after integration and documentation. Otherwise, perform independent `coding:review-code` when required, with publication-only review deferred to the PR when no current independent evidence exists. Reuse matching independent review evidence across overlapping gates; route outstanding findings to `coding:fix` and repeat the affected review areas until closed or concretely blocked.
