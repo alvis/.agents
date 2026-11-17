@@ -15,7 +15,7 @@ Creates TypeScript-compliant production skeletons with explicit `TODO(implementa
 ## Boundaries
 
 - Use for: starting an already-specified implementation, or preparing typed production structure and runtime-behavior or compiler-semantic test scaffolds for later completion.
-- Do not use for: implementing business logic or producing production-ready code (`coding:write-code`), writing complete tests with assertions beyond the scaffold (`coding:test`), or modifying existing implementations (`coding:refactor` or `coding:fix`).
+- Do not use for: implementing business logic or producing production-ready code (`coding:write-code`), writing complete tests with assertions beyond the scaffold (`coding:test`), or modifying existing implementations (`coding:write-code` for intended logic changes, `coding:refactor` or `coding:fix` otherwise).
 - Reject when: the instruction is too vague to create meaningful types, the request is for implementation rather than a skeleton, the target directory does not exist, or the skeleton would conflict with existing code structure.
 
 ## Inputs
