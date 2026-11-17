@@ -308,7 +308,7 @@ The renderer's 12 block types are its whole content vocabulary. The legacy catal
 | Refusal messages name the JSON path | ❌ | ✅ | — | ☐ | e.g. `sections[2].blocks[0].choices[0].tags[0]: required one of …, received "Blessed"` |
 | Refusal messages name the remedy | ❌ | 🟡 | — | ☐ | Currently names the violation and the legal set; naming the fix is a further step |
 | Id safety and duplicate refusal | ❌ | ✅ | — | ☐ | `[A-Za-z0-9_-]+`, checked before the duplicate test so a malformed id never enters the claimed set |
-| Generated ids registered against collision | ❌ | ❌ | — | ☐ | A question authored `x-opt-0` collides with option 0 of a question authored `x`. Not reachable in current data; unguarded |
+| Generated ids kept apart from authored ones | ❌ | ✅ | — | ☐ | Choice option ids take a `qo-` prefix no other element draws, so no authored question id can repeat one; ids inside an inlined SVG drawing are not scoped |
 | All author text escaped, no pass-through | ✅ | ✅ | ❌ | ☐ | Renderer escapes even the reply template. **This is what blocks every ⚠ inline row** |
 | `</style>` and `</script>` break-out guards | ✅ | ✅ | — | ☐ | Legacy hard-errors on `</style` and escapes `</script` |
 | Modular section composition | ✅ | ❌ | — | ☐ | Legacy merges `sections/*.html` at a marker; superseded by JSON |

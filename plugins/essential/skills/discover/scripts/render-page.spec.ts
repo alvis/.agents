@@ -141,12 +141,35 @@ function announcedName(label: string): string[] {
 }
 
 /**
+ * lists every `id` attribute in a page's markup with the offset of its `id="`
+ *
+ * the inlined stylesheet and scripts are blanked to spaces of the same length
+ * first, so offsets still index `html` and a script that builds markup in a
+ * string is never read as an element
+ */
+function idsOn(html: string): { id: string; at: number }[] {
+  const markup = html.replaceAll(
+    /<(script|style)\b[\s\S]*?<\/\1>/g,
+    (block) => " ".repeat(block.length),
+  );
+  return [...markup.matchAll(/\sid="([^"]*)"/g)].map((found) => ({
+    id: found[1],
+    at: found.index + 1,
+  }));
+}
+
+/**
  * resolves an `aria-describedby` id to the element carrying it, so a test can
  * read what the description actually announces
  */
 function elementById(html: string, id: string): string {
-  const start = html.indexOf(`id="${id}"`);
-  if (start === -1) throw new Error(`no element carries id ${id}`);
+  // a description that resolves to the first of two elements sharing an id
+  // reads correctly here while a browser may pick either, so a repeat fails
+  const [start, repeat] = idsOn(html)
+    .filter((found) => found.id === id)
+    .map((found) => found.at);
+  if (start === undefined) throw new Error(`no element carries id ${id}`);
+  if (repeat !== undefined) throw new Error(`two elements carry id ${id}`);
   // a target is a span or the summary's <small>, so read the tag name off the
   // element and walk to its own matching close tag; a fixed </span> would run
   // a <small> on into the badges beside it
@@ -799,20 +822,20 @@ describe("fn:renderPage", () => {
     expect(inputAttribute(second, "value")).toBe("second");
     // value, summary and tags share one title row; the trade-offs follow it
     expect(second).toContain(
-      '<span class="choice-body"><span class="choice-head"><strong>second</strong><small id="q-c-opt-1-summary">Reversible.</small><span class="badges" id="q-c-opt-1-tags"><span class="badge" data-tag="Pragmatic">Pragmatic</span><span class="badge" data-tag="Recommended">Recommended</span></span></span><span class="choice-detail" id="q-c-opt-1"><span class="tradeoffs">',
+      '<span class="choice-body"><span class="choice-head"><strong>second</strong><small id="qo-c-1-summary">Reversible.</small><span class="badges" id="qo-c-1-tags"><span class="badge" data-tag="Pragmatic">Pragmatic</span><span class="badge" data-tag="Recommended">Recommended</span></span></span><span class="choice-detail" id="qo-c-1"><span class="tradeoffs">',
     );
     // the radio is still named by its value alone and described by every
     // other word on the card, in reading order
     expect(announcedName(second).join(" ")).toBe("second");
     expect(inputAttribute(second, "aria-describedby")).toBe(
-      "q-c-opt-1-summary q-c-opt-1 q-c-opt-1-tags",
+      "qo-c-1-summary qo-c-1 qo-c-1-tags",
     );
     expect(announcedDescription(html, second)).toBe(
       "Reversible. Pros Undo in a sprint Cons Adapter stays Pragmatic Recommended",
     );
     // a summary alone still earns both attributes, and the description reaches it
     expect(announcedName(first).join(" ")).toBe("first");
-    expect(inputAttribute(first, "aria-describedby")).toBe("q-c-opt-0-summary");
+    expect(inputAttribute(first, "aria-describedby")).toBe("qo-c-0-summary");
     expect(announcedDescription(html, first)).toBe("Cheap.");
     expect(first).not.toContain('class="choice-detail"');
   });
@@ -821,19 +844,19 @@ describe("fn:renderPage", () => {
     {
       name: "tags only",
       choice: { value: "v", tags: ["Ideal"] },
-      describedBy: "q-c-opt-0-tags",
+      describedBy: "qo-c-0-tags",
       description: "Ideal",
     },
     {
       name: "trade-offs only",
       choice: { value: "v", pros: ["fast"] },
-      describedBy: "q-c-opt-0",
+      describedBy: "qo-c-0",
       description: "Pros fast",
     },
     {
       name: "a summary and cons",
       choice: { value: "v", summary: "Short.", cons: ["slow"] },
-      describedBy: "q-c-opt-0-summary q-c-opt-0",
+      describedBy: "qo-c-0-summary qo-c-0",
       description: "Short. Cons slow",
     },
   ] as const)(
@@ -848,11 +871,51 @@ describe("fn:renderPage", () => {
     },
   );
 
+  it("should keep option ids apart from every id another question can claim", () => {
+    const option = { value: "v", summary: "Short.", pros: ["fast"], tags: ["Ideal"] };
+    const note = (id: string, ref: string): Block => ({ type: "note", id, ref, label: "N", ask: "A" });
+    // each note's id spells an id an option drew under the old `q-` scheme,
+    // and the notes come first so a browser resolving the first match would
+    // describe the radio with a textarea; choice `c-0` is the question whose
+    // option ids sit nearest choice `c`'s under the current one
+    const html = render(
+      page({
+        sections: [
+          {
+            id: "s",
+            label: "S",
+            title: "T",
+            blocks: [
+              note("c-opt-0", "N1"),
+              note("c-opt-0-summary", "N2"),
+              note("c-opt-0-tags", "N3"),
+              { type: "choice", id: "c", ref: "Q2", label: "C", ask: "A", choices: [option, option] },
+              { type: "choice", id: "c-0", ref: "Q3", label: "C", ask: "A", choices: [option] },
+            ],
+          },
+        ],
+      }),
+    );
+    const ids = idsOn(html).map((found) => found.id);
+
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
+    const labels = choiceLabels(html);
+    expect(labels).toHaveLength(3);
+    for (const label of labels) {
+      const targets = inputAttribute(label, "aria-describedby")!.split(" ");
+
+      expect(targets).toHaveLength(3);
+      for (const target of targets) expect(label).toContain(` id="${target}"`);
+      expect(announcedDescription(html, label)).toBe("Short. Pros fast Ideal");
+    }
+  });
+
   it("should escape an option summary drawn in the title row", () => {
     const html = render(choicePage({ value: "v", summary: '<b>a</b>&"' }));
 
     expect(html).toContain(
-      '<small id="q-c-opt-0-summary">&lt;b&gt;a&lt;/b&gt;&amp;&quot;</small>',
+      '<small id="qo-c-0-summary">&lt;b&gt;a&lt;/b&gt;&amp;&quot;</small>',
     );
   });
 
