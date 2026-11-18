@@ -122,21 +122,76 @@ Show every board in the first of these ways the harness supports. The user can a
 4. **Cloud artifact viewer**, only when the harness cannot open that file for the user and the content is safe to externalize.
 5. **Local desktop browser**, only when no artifact viewer exists either.
 
-The image companion is a valid SVG beside the board whose `data-board` attribute carries the board's bytes in base64; the wrapper names its absolute path as a script string, which the tool replaces with the image's data URL, then decodes the attribute into an iframe of fixed pixel height, because a viewport-relative height makes a frame that grows to fit its page grow without end:
+The image companion is a valid SVG beside the board whose `data-board` attribute carries the board's bytes in base64; the wrapper names its absolute path as a script string, which the tool replaces with the image's data URL, then decodes the attribute into an iframe:
 
 ```bash
 python3 -c 'import base64,sys; b=base64.b64encode(open(sys.argv[1],"rb").read()).decode(); open(sys.argv[2],"w").write(f"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\" data-board=\"{b}\"><rect width=\"1\" height=\"1\" fill=\"none\"/></svg>")' <board>.html <board>.board.svg
 ```
 
+The wrapper sets the iframe to the tool frame's pixel height and hides its own overflow, so the board scrolls inside a frame that never grows; a viewport-relative height makes a frame that grows to fit its page grow without end. Give the tool a height of about 760px, one screen of board that still leaves the reply in view. The 480px floor keeps the board usable while a host reports a collapsed frame.
+
+The wrapper also injects a script into the board, because a `srcdoc` page cannot otherwise:
+
+- **Follow a same-page `#` link.** The frame resolves it against the host's URL and navigates away from the board, so the script scrolls to the target in place and opens any `<details>` around it.
+- **Zoom without losing work.** A host viewer that opens the page again starts a fresh copy and drops every answer and note. A click on the board's background, never on a control or with text selected, instead puts the same page into full screen; Esc or the corner button leaves.
+
+End the tool's title with U+200B, an invisible zero-width space. It marks a page that zooms itself, so a host theme can leave the page's clicks to it instead of covering it with a click-to-zoom layer. Replace only the companion path:
+
 ```html
-<iframe id="board" style="width:100%;height:1600px;border:0;display:block" allow="clipboard-write"></iframe>
+<!doctype html><html><head><meta charset="utf-8">
+<style>html{padding:0 !important;overflow:hidden}body{margin:0}</style>
+</head><body>
+<iframe id="board" style="width:100%;border:0;display:block" allow="fullscreen; clipboard-write"></iframe>
 <script>
+const frame = document.getElementById("board");
+const fit = () => { frame.style.height = Math.max(window.innerHeight, 480) + "px"; };
+fit(); window.addEventListener("resize", fit);
+const inFrame = `<script>(function () {
+  var INTERACTIVE = 'a[href],button,input,select,textarea,label,summary,option,dialog,[role=button],[role=tab],[role=menuitem],[role=option],[role=checkbox],[role=radio],[role=switch],[role=slider],[contenteditable]:not([contenteditable=false]),[tabindex]:not([tabindex="-1"])';
+  addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+    var href = a && a.getAttribute("href");
+    if (!href || href.charAt(0) !== "#" || (a.target && a.target !== "_self")) return;
+    e.preventDefault();
+    if (href.length < 2) { scrollTo(0, 0); return; }
+    var t = document.getElementById(decodeURIComponent(href.slice(1)));
+    if (!t) return;
+    for (var d = t.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
+    t.scrollIntoView({ block: "start" });
+  });
+  addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || document.fullscreenElement || !document.fullscreenEnabled) return;
+    var t = e.target;
+    if (!(t instanceof Element) || t.closest(INTERACTIVE)) return;
+    var s = getSelection();
+    if (s && !s.isCollapsed) return;
+    document.documentElement.requestFullscreen().catch(function () {});
+  });
+  var css = document.createElement("style");
+  css.textContent = 'html:not(:fullscreen) body{cursor:zoom-in}'
+    + ':where(' + INTERACTIVE + '){cursor:pointer}'
+    + ':where(input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]),textarea,[contenteditable]:not([contenteditable=false])){cursor:text}'
+    + '#board-exit-fs{position:fixed;top:12px;right:12px;z-index:2147483647;font:12px/1 system-ui,sans-serif;padding:8px 12px;border-radius:999px;'
+    + 'border:1px solid color-mix(in srgb,CanvasText 25%,transparent);background:color-mix(in srgb,Canvas 88%,transparent);color:CanvasText;cursor:pointer;backdrop-filter:blur(6px)}'
+    + '#board-exit-fs[hidden]{display:none}';
+  document.head.appendChild(css);
+  var exit = document.createElement("button");
+  exit.id = "board-exit-fs"; exit.type = "button"; exit.hidden = true; exit.textContent = "Exit full screen (Esc)";
+  exit.addEventListener("click", function () { document.exitFullscreen().catch(function () {}); });
+  document.body.appendChild(exit);
+  document.addEventListener("fullscreenchange", function () { exit.hidden = !document.fullscreenElement; });
+})();<\/script>`;
 fetch("/absolute/path/<board>.board.svg").then((r) => r.text()).then((t) => {
   const b64 = new DOMParser().parseFromString(t, "image/svg+xml").documentElement.getAttribute("data-board");
-  document.getElementById("board").srcdoc = new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+  const html = new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+  const at = html.lastIndexOf("</body>");
+  frame.srcdoc = at < 0 ? html + inFrame : html.slice(0, at) + inFrame + html.slice(at);
 });
-</script>
+</script></body></html>
 ```
+
+The path must stay absolute: a relative one resolves against the host's page origin, which refuses it, and the board stays blank.
 
 The companion carries the whole board, so a board with Mermaid weighs several megabytes; when the tool refuses that size, move on to the file link. Never externalize sensitive discovery content merely to satisfy the preference order.
 
