@@ -16,7 +16,6 @@ export const IGNORE_MARKER = "doc-path-gate: ignore";
 /** path prefixes naming generated or local-only trees never validated */
 export const RUNTIME_ROOTS = [
   "docs/",
-  ".state/",
   ".claude/",
   "state/",
   "reviews/",
@@ -59,7 +58,7 @@ export const EXAMPLE_ROOTS = new Set([
   "UserProfile",
 ]);
 /** directory names pruned from repository walks */
-export const EXCLUDED_TREE_NAMES = new Set([".git", ".state", "__pycache__"]);
+export const EXCLUDED_TREE_NAMES = new Set([".git", "__pycache__"]);
 /** directories that must never nest inside a plugin references tree */
 export const FORBIDDEN_REFERENCE_SEGMENTS = new Set([
   "assets",
@@ -961,7 +960,7 @@ export function mentions(
 /**
  * decides whether a mention is exempt from resolution checks.
  * @param mention normalized mention text
- * @returns true for runtime trees, templates, prose, and absolute paths
+ * @returns true for runtime trees, templates, prose, and absolute or home paths
  */
 export function isSkipped(mention: string): boolean {
   if (
@@ -981,7 +980,7 @@ export function isSkipped(mention: string): boolean {
   if (mention.endsWith("/") && (mention.match(/\//g)?.length ?? 0) === 1)
     return true;
   if (!mention.includes("/")) return true;
-  return isAbsolute(mention);
+  return isAbsolute(mention) || mention.startsWith("~/");
 }
 
 /**

@@ -142,10 +142,10 @@ function recentSection(streams: Stream[]): Section {
 }
 
 /**
- * builds a project-state board from a `.state` tree.
+ * builds a project-state board from a state root.
  *
  * pure: it is handed what was read and returns the page data, so the renderer
- * never learns that `.state` exists and this can be tested against a tree that
+ * never learns where state lives and this can be tested against a tree that
  * was never on a disk.
  * @param tree everything the tree had to say
  * @param at when the board was built, as already-formatted text

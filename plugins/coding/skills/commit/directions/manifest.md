@@ -4,11 +4,11 @@ Save a lifecycle-owned closed set without capturing or disturbing unrelated deve
 
 ## Producer contract
 
-The lifecycle parent writes immutable JSON under `<work-root>/artifacts/history/save-manifests/<manifest-sha256>.json`. The hash is SHA-256 of the exact file bytes and is passed separately on invocation; the manifest cannot authenticate itself. The artifacts directory and manifest must be ignored in the resolver-selected state root, and neither may be reached through a symlink. Work artifacts live centrally; publication files belong to the active source workspace.
+The lifecycle parent writes immutable JSON under `<work-root>/artifacts/history/save-manifests/<manifest-sha256>.json`. The hash is SHA-256 of the exact file bytes and is passed separately on invocation; the manifest cannot authenticate itself. The artifacts directory and manifest must lie in the resolver-selected state root, and neither may be reached through a symlink. Work artifacts live centrally; publication files belong to the active source workspace.
 
-Before every helper action, bind `STATE_RESOLVER` to the absolute `essential:scripts/resolve-state-workspace` executable selected by `essential:references/state.md`. Pass it as `--state-resolver`; never take an executable path from a scope request or receipt. The helper invokes it read-only with the work ID, requires `resolved` and `state_ignored: true`, and verifies the active workspace and exact work directory. A missing resolver or changed state identity blocks the save.
+Before every helper action, bind `STATE_RESOLVER` to the absolute `essential:scripts/resolve-state-workspace` executable selected by `essential:references/state.md`. Pass it as `--state-resolver`; never take an executable path from a scope request or receipt. The helper invokes it read-only with the work ID, requires `resolved`, and verifies the active workspace and exact work directory. A missing resolver or changed state identity blocks the save.
 
-To avoid hand-computed hashes or status records, the parent first writes an ignored scope request with schema `state-scoped-save-request/v1`, `work_id`, `scope_complete: true`, the full `publication_paths` as `{path, origin}` entries, the exact dirty `selected_paths`, and the child `generated_file_manifests` used to derive them. Invoke `coding:commit --prepare-paths-from=<scope-request>`; this no-history route resolves `repo`, `work_root`, and `base_rev` from the active work state and runs only:
+To avoid hand-computed hashes or status records, the parent first writes a state-root scope request with schema `state-scoped-save-request/v1`, `work_id`, `scope_complete: true`, the full `publication_paths` as `{path, origin}` entries, the exact dirty `selected_paths`, and the child `generated_file_manifests` used to derive them. Invoke `coding:commit --prepare-paths-from=<scope-request>`; this no-history route resolves `repo`, `work_root`, and `base_rev` from the active work state and runs only:
 
 ```bash
 bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" build \
@@ -19,7 +19,7 @@ bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" build \
 
 The dependency-free bundled helper recomputes the active workspace's complete inventory, file/link hashes, deletion states, repository identity, and exclusions, seals canonical JSON with no-clobber semantics, and returns the exact manifest path/hash plus `/coding:commit --paths-from=... --manifest-sha256=...` invocation. Preparation never stages, saves, finalizes, or publishes.
 
-Every path named by `generated_file_manifests` must resolve to an ignored, regular artifacts file under the active work root and contain canonical JSON with this exact producer schema:
+Every path named by `generated_file_manifests` must resolve to a regular artifacts file under the active work root and contain canonical JSON with this exact producer schema:
 
 ```json
 {
@@ -51,7 +51,7 @@ The manifest contains:
     "git_common_dir": "<realpath>"
   },
   "state_workspace": {
-    "state_root": "<canonical default source tree>",
+    "state_root": "<canonical state root>",
     "work_dir": "<canonical central work directory>",
     "active_workspace": "<canonical source workspace>"
   },
@@ -92,7 +92,7 @@ The manifest contains:
     "complete": true,
     "generated_file_manifests": [
       {
-        "path": ".state/works/<work-id>/artifacts/children/coding.json",
+        "path": "<state-root>/works/<work-id>/artifacts/children/coding.json",
         "sha256": "<exact canonical receipt bytes hash>"
       }
     ],
@@ -101,11 +101,11 @@ The manifest contains:
 }
 ```
 
-For `jj-colocated`, `build_state.jj` is an exact object containing the sealed operation id, working-copy commit id and change id, its exact sole parent, the matching Git HEAD, `mutable: true`, `conflicts: false`, `divergent: false`, and the selected jj diff hash. A plain Git manifest must use `jj: null`. A registered non-colocated workspace uses `jj-workspace`: its sole working-copy parent replaces Git HEAD as the history boundary. `build_state.jj.git_head` is `null`, and `default_workspace` binds preservation evidence. It carries no workspace-local Git index claim.
+For `jj-colocated`, `build_state.jj` is an exact object containing the sealed operation id, working-copy commit id and change id, its exact sole parent, the matching Git HEAD, `mutable: true`, `conflicts: false`, `divergent: false`, and the selected jj diff hash. A plain Git manifest must use `jj: null`. A registered non-colocated workspace uses `jj-workspace`: its sole working-copy parent replaces Git HEAD as the history boundary. `build_state.jj.git_head` is `null`. It carries no workspace-local Git index claim.
 
 `publication_paths` is the full, exact set of lifecycle-created, modified, or deleted project artifacts intended for eventual publication, including source, tests, project documentation, active-work specification materializations, and provenance receipts. `selected_paths` is its exact subset that is currently dirty and must enter this save. `excluded_dirty_paths` is every other dirty or untracked path in the repository. Expand untracked directories to individual files. A dirty path must occur in exactly one of `selected_paths` or `excluded_dirty_paths`.
 
-The producer reconciles all child `generated_files` receipts with the diff from `base_rev`; the save helper independently performs the strict union and content reconciliation above. The producer must block rather than attest `complete: true` when a lifecycle-owned publishable path is omitted, a selected file also contains unrelated user-owned edits, or ownership cannot be determined. Paths under the active `.state/works/` root, `.state/working.md`, the scoped-save manifest/receipt, and any other ignored work state are never publication or selected paths. A publishable generated path that is unexpectedly ignored is a configuration blocker, not a reason to force-add it.
+The producer reconciles all child `generated_files` receipts with the diff from `base_rev`; the save helper independently performs the strict union and content reconciliation above. The producer must block rather than attest `complete: true` when a lifecycle-owned publishable path is omitted, a selected file also contains unrelated user-owned edits, or ownership cannot be determined. Paths under the active `<state-root>/works/` root, `<state-root>/works/<work-id>/state/working.md`, the scoped-save manifest/receipt, and any other work state are never publication or selected paths.
 
 ## Validate before mutation
 
@@ -119,14 +119,14 @@ bun run "${CODING_COMMIT_SKILL_DIR}/scripts/validate_scoped_save.ts" preflight \
 ```
 
 1. Resolve the repository independently. Require its canonical root, VCS mode, and canonical Git common directory to equal `repository`; require `base_rev` to resolve in that repository. Re-resolve and compare `state_workspace`. Require current Git HEAD or the jj-workspace sole parent and, when applicable, the complete jj operation/working-copy state to equal sealed `build_state`. Any history writer between preparation and preflight makes the manifest stale even when selected file bytes did not change.
-2. Require the manifest's real path to be inside the resolved work artifacts directory, all existing ancestors to be real directories rather than symlinks, and `git check-ignore` to confirm it is ignored. Hash the exact bytes and compare the full lowercase 64-hex digest to both the argument and filename. Before reading `--scope`, `--manifest`, `--snapshot`, the work root, or a linked generated-file artifacts path, reject lexical `.`/`..`, repeated/trailing separators, relative CLI paths, and any other non-normalized component; normalization after access is not validation.
+2. Require the manifest's real path to be inside the resolved work artifacts directory, all existing ancestors to be real directories rather than symlinks, and its path to lie under the resolved state root. Hash the exact bytes and compare the full lowercase 64-hex digest to both the argument and filename. Before reading `--scope`, `--manifest`, `--snapshot`, the work root, or a linked generated-file artifacts path, reject lexical `.`/`..`, repeated/trailing separators, relative CLI paths, and any other non-normalized component; normalization after access is not validation.
 3. Reject duplicate or case-colliding paths, directories, submodule interiors, absolute paths, pathspec magic, control characters, empty components, `.` or `..`, and any path whose existing parent is a symlink. A selected leaf symlink is allowed only when it is the versioned object itself; hash its link text without dereferencing it. For a deletion, validate the nearest existing parent. Every resolved parent must remain inside the canonical repository root.
 4. Recompute exact file/link hashes, Git object modes, deletion state, and the mode-specific dirty inventory. Git and colocated routes compare physical files, index modes/OIDs, and HEAD against NUL-safe porcelain-v2 output; reject tracked assume-unchanged or skip-worktree flags and `core.filemode=false`, which conceal byte or mode changes. Native jj workspaces compare pinned parent and working-copy trees with physical files as specified below. Require every publication, selected, and excluded entry to match the manifest and require the selected set to be exactly the dirty publication subset. A new, missing, or changed byte, mode, deletion, or status entry makes the manifest stale; stop without mutation and return to the lifecycle owner for review and a new immutable manifest.
 5. Re-read every bound producer receipt, require its exact stored hash, validate its strict schema and current physical hashes/modes/deletions, and require the reconciled generated-file union to remain exactly the publication set.
 6. Before creating an index backup, pathspec, or history change, reject a selected path with `filter`, `text`, `eol`, `working-tree-encoding`, or `ident` clean attributes, and reject file selections when `core.autocrlf` is active. This fail-closed rule prevents Git's clean conversion from making the saved blob differ from the reviewed physical bytes.
 7. Require every selected path to be isolatable as a whole file. If selected and user-owned hunks share one path, the repository is mid-merge, the index has unmerged entries, a hook/tool cannot preserve an unrelated staged entry, or the installed VCS cannot express the exact selection, stop `blocked_scope`; never broaden the save, stash the checkout, or reset paths.
 
-Capture a tool-native rollback handle and old HEAD/change ID before mutation. Git and colocated routes also capture the exact raw Git index bytes, original existence, and file mode; a non-colocated jj workspace has no local Git index to back up. When an index exists, store it in an ignored, immutable checksum-bound backup beside the preflight snapshot. Also retain the canonical `excluded_dirty_paths` inventory as the preservation baseline. The helper's preflight output supplies an ignored immutable snapshot and, for Git operations, a NUL-delimited literal pathspec file; consume those exact returned paths.
+Capture a tool-native rollback handle and old HEAD/change ID before mutation. Git and colocated routes also capture the exact raw Git index bytes, original existence, and file mode; a non-colocated jj workspace has no local Git index to back up. When an index exists, store it in an immutable checksum-bound backup beside the preflight snapshot. Also retain the canonical `excluded_dirty_paths` inventory as the preservation baseline. The helper's preflight output supplies an immutable snapshot and, for Git operations, a NUL-delimited literal pathspec file; consume those exact returned paths.
 
 <IMPORTANT>
 Treat the selected set as closed. Never interpolate manifest text into a shell command, use a glob or directory operand, run `git add .`, stage all changes, stash, clean, reset a non-selected path, or accept an interactive selection. Pass each validated path as a literal argv operand or through a NUL-delimited literal pathspec file.
@@ -192,4 +192,4 @@ Recovery first requires every selected and excluded physical byte, link, deletio
 
 After either route, report `blocked_scope`. Never report a successful scoped save after a partial proof or silently keep a commit that captured extra paths.
 
-Write an immutable ignored result receipt beside the manifest containing the manifest path/hash, old and new revision/change ids, selected path set and saved-tree hashes, pre/post excluded-inventory digest, rollback handle, verification results, current Git HEAD or jj operation/working-copy-parent proof, and `non_selected_preserved: true`. Finalization and publication owners must require this PASS receipt before consuming the saved change.
+Write an immutable result receipt beside the manifest containing the manifest path/hash, old and new revision/change ids, selected path set and saved-tree hashes, pre/post excluded-inventory digest, rollback handle, verification results, current Git HEAD or jj operation/working-copy-parent proof, and `non_selected_preserved: true`. Finalization and publication owners must require this PASS receipt before consuming the saved change.

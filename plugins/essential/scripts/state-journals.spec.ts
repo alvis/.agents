@@ -44,7 +44,7 @@ class JournalHarness {
   constructor() {
     this.root = realpathSync(mkdtempSync(join(tmpdir(), "state-journals-")));
     onTestFinished(() => rmSync(this.root, { recursive: true, force: true }));
-    this.state = join(this.root, ".state");
+    this.state = join(this.root, "state");
     this.work = join(this.state, "works/demo");
     this.input = join(this.root, "summary.md");
     mkdirSync(this.work, { recursive: true });

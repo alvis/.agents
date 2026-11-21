@@ -12,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  README.md|docs/*|*/docs/*|.state/*|*/.state/*) ;;\n  .claude/agent-memory/aesthetic-evaluator/*|*/.claude/agent-memory/aesthetic-evaluator/*|REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its agent-memory dir or a report file (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return findings in your response instead of editing.\"}}'"
+            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  README.md|docs/*|*/docs/*|\"$HOME\"/.agents/states/*) ;;\n  .claude/agent-memory/aesthetic-evaluator/*|*/.claude/agent-memory/aesthetic-evaluator/*|REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its agent-memory dir or a report file (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return findings in your response instead of editing.\"}}'"
           }
         ]
       }

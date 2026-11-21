@@ -10,13 +10,20 @@ import {
 import { dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const here = import.meta.dirname;
 const contextScript = resolve(here, "context.sh");
 const sessionStart = resolve(here, "session-start");
 const subagentStart = resolve(here, "subagent-start");
 const roots: string[] = [];
+// Work state lives under HOME, outside the repository, so every run gets its own.
+let home = "";
+let state = "";
+beforeEach(() => {
+  home = temporary();
+  state = resolve(home, ".agents/states/github.com/test/repo");
+});
 afterEach(() => {
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true });
@@ -37,19 +44,24 @@ function fixture(): string {
     { encoding: "utf8" },
   );
   expect(branch.status, branch.stderr).toBe(0);
-  writeFileSync(resolve(root, ".gitignore"), ".state/\n");
+  const remote = spawnSync(
+    "git",
+    ["-C", root, "remote", "add", "origin", "git@github.com:Test/Repo.git"],
+    { encoding: "utf8" },
+  );
+  expect(remote.status, remote.stderr).toBe(0);
   for (const relative of [
     "README.md",
     "CONTEXT.md",
     "DESIGN.md",
     "PLAN.md",
     "NOTES.md",
-    ".state/works/eng-42/goal.md",
-    ".state/works/eng-42/state/working.md",
-    ".state/works/eng-42/state.md",
-    ".state/works/eng-42/decisions.md",
-    ".state/works/eng-99/state/working.md",
-    ".state/works/eng-99/state.md",
+    "@state/works/eng-42/goal.md",
+    "@state/works/eng-42/state/working.md",
+    "@state/works/eng-42/state.md",
+    "@state/works/eng-42/decisions.md",
+    "@state/works/eng-99/state/working.md",
+    "@state/works/eng-99/state.md",
     "docs/README.md",
     "docs/architecture/README.md",
     "docs/architecture/runtime-boundaries.md",
@@ -60,9 +72,11 @@ function fixture(): string {
     "docs/design/checkout-flow.md",
     "docs/design/LEGACY.md",
     "docs/design/system/10-tokens.md",
-    ".state/works/eng-99/goal.md",
+    "@state/works/eng-99/goal.md",
   ]) {
-    const path = resolve(root, relative);
+    const path = relative.startsWith("@state/")
+      ? resolve(state, relative.slice("@state/".length))
+      : resolve(root, relative);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, "");
   }
@@ -74,7 +88,7 @@ function fixture(): string {
   return root;
 }
 function hook(root: string, executable: string, input = ""): string {
-  const environment = { ...process.env };
+  const environment = { ...process.env, HOME: home };
   delete environment.STATE_WORK_ID;
   const result = spawnSync(executable, [], {
     cwd: root,
@@ -89,7 +103,7 @@ function hook(root: string, executable: string, input = ""): string {
   return payload.hookSpecificOutput.additionalContext;
 }
 function repoContext(root: string, workId?: string): string {
-  const environment = { ...process.env };
+  const environment = { ...process.env, HOME: home };
   if (workId === undefined) delete environment.STATE_WORK_ID;
   else environment.STATE_WORK_ID = workId;
   const result = spawnSync(
@@ -125,22 +139,22 @@ describe("Essential context discovery", () => {
     expect(output).not.toContain("\\n");
     assertOrdered(output, [
       "README.md",
-      ".state/works/eng-42/goal.md",
-      ".state/works/eng-42/state/working.md",
-      ".state/works/eng-42/state.md",
+      `${state}/works/eng-42/goal.md`,
+      `${state}/works/eng-42/state/working.md`,
+      `${state}/works/eng-42/state.md`,
       "docs/README.md",
       "docs/architecture/README.md",
       "docs/design/README.md",
     ]);
     for (const absent of [
-      ".state/works/eng-99/state/working.md",
-      ".state/works/eng-99/state.md",
-      ".state/works/eng-99/goal.md",
+      `${state}/works/eng-99/state/working.md`,
+      `${state}/works/eng-99/state.md`,
+      `${state}/works/eng-99/goal.md`,
       "CONTEXT.md",
       "DESIGN.md",
       "PLAN.md",
       "NOTES.md",
-      ".state/works/eng-42/decisions.md",
+      `${state}/works/eng-42/decisions.md`,
       "docs/architecture/LEGACY.md",
       "docs/architecture/runtime-boundaries.md",
       "docs/architecture/decisions/runtime/0001-runtime.md",
@@ -153,10 +167,26 @@ describe("Essential context discovery", () => {
     expect(output.match(/^- readme\.md$/gim)).toHaveLength(1);
   });
 
+  it("points at state outside the repository by its absolute path", () => {
+    const root = fixture();
+    const output = repoContext(root, "eng-42");
+    expect(state.startsWith(root)).toBe(false);
+    expect(output).toContain(`- ${state}/works/eng-42/goal.md\n`);
+    expect(output).not.toContain(".state/");
+  });
+
+  it("says state is unresolved when the repository has no network remote", () => {
+    const root = fixture();
+    spawnSync("git", ["-C", root, "remote", "remove", "origin"]);
+    const output = repoContext(root, "eng-42");
+    expect(output).toContain("State location is unresolved");
+    expect(output).not.toContain("/works/eng-42");
+  });
+
   it("omits every work detail when active selection is ambiguous", () => {
     const output = repoContext(fixture());
-    expect(output).not.toMatch(/\.state\/works\/(?:eng-42|eng-99)\/state/);
-    expect(output).not.toMatch(/\.state\/works\/(?:eng-42|eng-99)\/goal\.md/);
+    expect(output).not.toMatch(/\/works\/(?:eng-42|eng-99)\/state/);
+    expect(output).not.toMatch(/\/works\/(?:eng-42|eng-99)\/goal\.md/);
     assertOrdered(output, [
       "README.md",
       "docs/README.md",
@@ -167,14 +197,14 @@ describe("Essential context discovery", () => {
 
   it("session start injects ordered state entrypoints while subagent start omits catalogs", () => {
     const root = fixture();
-    rmSync(resolve(root, ".state/works/eng-99"), { recursive: true });
+    rmSync(resolve(state, "works/eng-99"), { recursive: true });
     const session = hook(root, sessionStart, '{"source":"startup"}\n');
     expect(session).not.toContain("\\n");
     expect(session).not.toContain("CONTEXT.md");
     assertOrdered(session, [
-      ".state/works/eng-42/goal.md",
-      ".state/works/eng-42/state/working.md",
-      ".state/works/eng-42/state.md",
+      `${state}/works/eng-42/goal.md`,
+      `${state}/works/eng-42/state/working.md`,
+      `${state}/works/eng-42/state.md`,
       "docs/README.md",
       "docs/architecture/README.md",
       "docs/design/README.md",
@@ -185,9 +215,9 @@ describe("Essential context discovery", () => {
     expect(subagent).not.toContain("## Target Repo Documents");
     for (const path of [
       "README.md",
-      ".state/works/eng-42/goal.md",
-      ".state/works/eng-42/state/working.md",
-      ".state/works/eng-42/state.md",
+      `${state}/works/eng-42/goal.md`,
+      `${state}/works/eng-42/state/working.md`,
+      `${state}/works/eng-42/state.md`,
       "docs/README.md",
     ])
       expect(subagent).not.toContain(path);

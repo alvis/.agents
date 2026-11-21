@@ -91,7 +91,7 @@ plan_file="$staging_dir/approved.txt"
 if ! resolved="$("$SCRIPTS_DIR/resolve-state-workspace" --work-id "$work_id")"; then
   fail "workspace resolution refused: $resolved"
 fi
-jq -e '.status == "resolved" and .state_ignored == true' <<<"$resolved" >/dev/null || fail "workspace must resolve with ignored state: $resolved"
+jq -e '.status == "resolved"' <<<"$resolved" >/dev/null || fail "workspace must resolve: $resolved"
 work_dir="$(jq -r '.work_dir' <<<"$resolved")"
 [[ -d "$work_dir" ]] || fail "work stream must be established before saving"
 for required in goal.md state.md; do

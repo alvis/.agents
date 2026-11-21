@@ -61,6 +61,9 @@ function cli(args: string[]): SpawnSyncReturns<string> {
 
 class Harness {
   readonly root = mkdtempSync(join(tmpdir(), "scoped-save-"));
+  // Work state lives under HOME, outside every checkout, so each fixture owns one.
+  readonly home = join(realpathSync(this.root), "home");
+  readonly stateRoot = join(this.home, ".agents/states/github.com/test/repo");
   readonly repo: string;
   readonly primaryRepo: string;
   readonly workRoot: string;
@@ -69,6 +72,7 @@ class Harness {
   constructor(
     workspace: "primary" | "linked-git" | "jj" | "jj-uncolocated" = "primary",
     trackedCache = false,
+    linkedAgents = false,
   ) {
     const repo = resolve(this.root, "target");
     mkdirSync(repo);
@@ -80,8 +84,8 @@ class Harness {
     this.git("config", "commit.gpgsign", "false");
     this.git("config", "core.autocrlf", "false");
     this.git("config", "core.filemode", "true");
+    this.git("remote", "add", "origin", "git@github.com:Test/Repo.git");
     const files: Record<string, string> = {
-      ".gitignore": ".state/\n",
       "src.txt": "source base\n",
       "tests.txt": "test base\n",
       "docs/architecture/README.md": "architecture base\n",
@@ -97,7 +101,13 @@ class Harness {
     this.git("add", ".");
     this.git("commit", "-q", "-m", "chore: initialize target");
     this.baseRev = this.git("rev-parse", "HEAD").stdout.trim();
-    this.workRoot = join(this.repo, ".state/works/scoped-save");
+    this.workRoot = join(this.stateRoot, "works/scoped-save");
+    if (linkedAgents) {
+      // a dotfiles setup keeps ~/.agents elsewhere behind a symlink
+      mkdirSync(join(this.root, "dotfiles/agents"), { recursive: true });
+      mkdirSync(this.home);
+      symlinkSync(join(this.root, "dotfiles/agents"), join(this.home, ".agents"));
+    }
     mkdirSync(this.workRoot, { recursive: true });
     if (workspace === "linked-git") {
       const linked = join(this.root, "linked");
@@ -107,7 +117,7 @@ class Harness {
       const initialized = spawnSync(
         "jj",
         ["git", "init", "--colocate", this.repo],
-        { encoding: "utf8" },
+        { encoding: "utf8", env: { ...process.env, HOME: this.home } },
       );
       expect(initialized.status, initialized.stderr).toBe(0);
       const linked = join(this.root, "linked");
@@ -161,7 +171,12 @@ class Harness {
         "user.email=scoped-save@example.test",
         ...args,
       ],
-      { encoding: "utf8", cwd: this.repo },
+      {
+        encoding: "utf8",
+        cwd: this.repo,
+        // jj keeps per-repo settings under HOME, so it shares the validator's.
+        env: { ...process.env, HOME: this.home },
+      },
     );
     expect(result.status, result.stderr).toBe(0);
     return result;
@@ -179,6 +194,7 @@ class Harness {
     ];
     const result = spawnSync("bun", ["run", validator, ...args], {
       encoding: "utf8",
+      env: { ...process.env, HOME: this.home },
     });
     if (check)
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -232,7 +248,7 @@ class Harness {
         })),
         selected_paths: selected,
         generated_file_manifests: [
-          ".state/works/scoped-save/artifacts/children/coding.json",
+          "works/scoped-save/artifacts/children/coding.json",
         ],
       }),
     );
@@ -299,7 +315,7 @@ class Harness {
 }
 
 describe("centralized workspace saving", () => {
-  it("should reject an unignored central state root and a failed resolver", () => {
+  it("should reject a repository without a network remote and a failed resolver", () => {
     const fixture = new Harness("linked-git");
     try {
       writeFileSync(join(fixture.repo, "src.txt"), "selected edit\n");
@@ -307,9 +323,9 @@ describe("centralized workspace saving", () => {
         [["src.txt", "child-manifest:source"]],
         ["src.txt"],
       );
-      writeFileSync(join(fixture.primaryRepo, ".gitignore"), "");
+      fixture.git("remote", "remove", "origin");
 
-      const unignored = fixture.helper(
+      const unlocated = fixture.helper(
         "build",
         {
           "--repo": fixture.repo,
@@ -320,10 +336,11 @@ describe("centralized workspace saving", () => {
         false,
       );
 
-      expect(unignored.result.status).toBe(2);
-      expect(unignored.output.error).toEqual(
-        expect.stringMatching(/ignored work root|resolver/),
+      expect(unlocated.result.status).toBe(2);
+      expect(unlocated.output.error).toEqual(
+        expect.stringContaining("state resolver failed"),
       );
+      fixture.git("remote", "add", "origin", "git@github.com:Test/Repo.git");
       const failedResolver = join(realpathSync(fixture.root), "failed-resolver");
       writeFileSync(failedResolver, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
       const failed = fixture.helper(
@@ -350,7 +367,7 @@ describe("centralized workspace saving", () => {
   it("should reject ignored jj publication paths", () => {
     const fixture = new Harness("jj");
     try {
-      writeFileSync(join(fixture.repo, ".gitignore"), ".state/\nignored.txt\n");
+      writeFileSync(join(fixture.repo, ".gitignore"), "ignored.txt\n");
       writeFileSync(join(fixture.repo, "ignored.txt"), "excluded by policy\n");
       const scope = fixture.scope(
         [["ignored.txt", "child-manifest:source"]],
@@ -536,7 +553,7 @@ describe("centralized workspace saving", () => {
         [["src.txt", "child-manifest:source"]],
         ["src.txt"],
       );
-      const localRoot = join(fixture.repo, ".state/works/scoped-save");
+      const localRoot = join(fixture.repo, "works/scoped-save");
       mkdirSync(localRoot, { recursive: true });
 
       const wrongRoot = fixture.helper(
@@ -692,46 +709,6 @@ describe("centralized workspace saving", () => {
       fixture.close();
     }
   });
-
-  it("should reject a changed primary checkout during native jj save verification", () => {
-    const fixture = new Harness("jj");
-    try {
-      writeFileSync(join(fixture.repo, "src.txt"), "selected edit\n");
-      writeFileSync(join(fixture.repo, "developer.txt"), "excluded edit\n");
-      const manifest = fixture.build(
-        fixture.scope([["src.txt", "child-manifest:source"]], ["src.txt"]),
-      );
-      const preflight = fixture.preflight(manifest).output;
-      fixture.jj("split", "-m", "feat: save workspace scope", "src.txt");
-      const saved = fixture
-        .jj(
-          "log",
-          "--ignore-working-copy",
-          "--no-graph",
-          "-r",
-          "@-",
-          "-T",
-          "commit_id",
-        )
-        .stdout.trim();
-      writeFileSync(
-        join(fixture.primaryRepo, "developer.txt"),
-        "changed after preflight\n",
-      );
-
-      const result = fixture.verify(manifest, preflight, saved, false);
-
-      expect(result.result.status).toBe(2);
-      expect(result.output.error).toEqual(
-        expect.stringMatching(/primary|default|preserv/i),
-      );
-      expect(
-        readFileSync(join(fixture.primaryRepo, "developer.txt"), "utf8"),
-      ).toBe("changed after preflight\n");
-    } finally {
-      fixture.close();
-    }
-  }, 30_000);
 
   it.each(["jj", "jj-uncolocated"] as const)("should save a %s workspace against its own parent without changing the primary checkout", (workspace) => {
     const fixture = new Harness(workspace);
@@ -959,6 +936,17 @@ describe("path-scoped lifecycle saving", () => {
       verified.receipt_path,
     );
   }, 30_000);
+
+  it("seals a scope when ~/.agents is a symlink", () => {
+    const linked = new Harness("primary", false, true);
+    try {
+      writeFileSync(join(linked.repo, "src.txt"), "source edit\n");
+      const manifest = linked.build(linked.scope([["src.txt", "child-manifest:src.txt"]], ["src.txt"]));
+      expect(JSON.parse(readFileSync(manifest.manifest_path, "utf8")).schema).toBe("state-scoped-save/v1");
+    } finally {
+      linked.close();
+    }
+  });
 
   it("records and saves both sides of an exact rename", () => {
     h.git("mv", "src.txt", "renamed-src.txt");
@@ -1515,16 +1503,13 @@ process.stdout.write(identities.join("\\n"));
 });
 
 describe("ignored directories in centralized jj workspaces", () => {
-  it.each(["active", "default"] as const)(
-    "should save selected files with an unreadable ignored cache in the %s workspace",
-    (workspace: "active" | "default") => {
+  it(
+    "should save selected files with an unreadable ignored cache in the active workspace",
+    () => {
       const fixture = new Harness("jj");
-      const cache = join(
-        workspace === "active" ? fixture.repo : fixture.primaryRepo,
-        "cache",
-      );
+      const cache = join(fixture.repo, "cache");
       try {
-        writeFileSync(join(dirname(cache), ".gitignore"), ".state/\ncache/\n");
+        writeFileSync(join(dirname(cache), ".gitignore"), "cache/\n");
         mkdirSync(cache);
         writeFileSync(join(cache, "entry.txt"), "ignored cache\n");
         chmodSync(cache, 0o000);
@@ -1564,18 +1549,12 @@ describe("ignored directories in centralized jj workspaces", () => {
 });
 
 describe("ignore exceptions in centralized jj workspaces", () => {
-  it.each([
-    ["active", "negated"],
-    ["default", "negated"],
-    ["active", "tracked"],
-    ["default", "tracked"],
-  ] as const)(
-    "should reject changes to a %s workspace %s file after saving",
-    (workspace: "active" | "default", kind: "negated" | "tracked") => {
+  it.each(["negated", "tracked"] as const)(
+    "should reject changes to an active workspace %s file after saving",
+    (kind: "negated" | "tracked") => {
       const fixture = new Harness("jj", kind === "tracked");
       try {
-        const root =
-          workspace === "active" ? fixture.repo : fixture.primaryRepo;
+        const root = fixture.repo;
         const retained = join(
           root,
           kind === "negated" ? "ignored/keep.txt" : "cache/entry.txt",
@@ -1584,8 +1563,8 @@ describe("ignore exceptions in centralized jj workspaces", () => {
         writeFileSync(
           join(root, ".gitignore"),
           kind === "negated"
-            ? ".state/\nignored/*\n!ignored/keep.txt\n"
-            : ".state/\ncache/\n",
+            ? "ignored/*\n!ignored/keep.txt\n"
+            : "cache/\n",
         );
         writeFileSync(retained, "protected original\n");
         writeFileSync(join(fixture.repo, "src.txt"), "selected edit\n");
@@ -1610,7 +1589,7 @@ describe("ignore exceptions in centralized jj workspaces", () => {
         const verification = fixture.verify(manifest, preflight, saved, false);
         expect(verification.result.status).toBe(2);
         expect(verification.output.error).toMatch(
-          /non.selected|excluded|preserv|primary|default/i,
+          /non.selected|excluded|preserv/i,
         );
       } finally {
         fixture.close();

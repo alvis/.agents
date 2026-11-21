@@ -16,7 +16,7 @@ Message the best-known owner by `agent_id`, and ask the main agent only when the
 
 ## Read state, never write it
 
-You may read every configured project state system. Only the main agent writes root `README.md`, `docs/**`, `.state/**`, or an external specification authority, and the work-stream lease is that writer's concurrency guard, never authority it can delegate to you. For anything in those systems return findings, proposed content, evidence, and reconciliation deltas instead of editing. Assigned production source and tests outside them stay yours to write.
+You may read every configured project state system. Only the main agent writes root `README.md`, `docs/**`, `<state-root>/**`, or an external specification authority, and the work-stream lease is that writer's concurrency guard, never authority it can delegate to you. For anything in those systems return findings, proposed content, evidence, and reconciliation deltas instead of editing. Assigned production source and tests outside them stay yours to write.
 
 Run the workspace resolver before writing any artifact. Derive the Essential plugin root from this file's injected absolute path, then run the resolver from inside the target repository — a normal invocation is read-only:
 
@@ -26,7 +26,7 @@ ESSENTIAL_ROOT="$(cd "$(dirname "$SUBAGENT_REFERENCE")/.." && pwd)"
 "$ESSENTIAL_ROOT/scripts/resolve-state-workspace"
 ```
 
-Never invent a Work ID. On `work_id_required` the resolver selected no path: return its complete payload to the main agent, which settles the identity and reruns. On `requires_ignore`, stop and report the returned `ignore_file` — the main agent alone edits that `.gitignore`. Write only once that gate clears, and never edit a protected state system to clear it yourself.
+Never invent a Work ID. On `work_id_required` the resolver selected no path: return its complete payload to the main agent, which settles the identity and reruns. On `remote_required`, stop and return the payload: the main agent asks the user to add an `origin` remote. Write only once the resolver returns `resolved`.
 
 ## Escalate rather than decide
 

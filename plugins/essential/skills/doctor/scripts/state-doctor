@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Structural doctor for Essential local state.
 
-This tool reports deterministic structural defects in `.state/`: broken IDs, dangling dependencies, cycles, contradictory mark/status pairs, missing evidence annotations, broken file references, unsuperseded decisions, stale leases, overview drift, and specification provenance. It never edits files or judges free-form Markdown.
+This tool reports deterministic structural defects in the work state root (`~/.agents/states/<host>/<path>/`): broken IDs, dangling dependencies, cycles, contradictory mark/status pairs, missing evidence annotations, broken file references, unsuperseded decisions, stale leases, overview drift, and specification provenance. It never edits files or judges free-form Markdown.
 
 `--strict` exits nonzero when error-severity findings exist.
 """
@@ -174,7 +174,7 @@ STREAM_LOCAL_SPECIFICATION = re.compile(
     re.IGNORECASE,
 )
 LOCAL_STREAM_DOCUMENT = re.compile(
-    r"^(?:\.\.?/)*(?:\.state/)?(?:works|archive)/[^/#?]+/"
+    r"^(?:\.\.?/)*(?:works|archive)/[^/#?]+/"
     r"(?:goal|charter)\.md(?:[#?].*)?$",
     re.IGNORECASE,
 )
@@ -2479,7 +2479,7 @@ def check_retention(
         "retention",
         f"completed on {completed_on} ({age}d ago) but still in works/, past "
         f"the {COMPLETED_RETENTION_DAYS}-day window",
-        "Move works/<work-id>/ to .state/archive/<work-id>/ first, then drop "
+        "Move works/<work-id>/ to <state-root>/archive/<work-id>/ first, then drop "
         "the overview row: while the stream sits in works/ the row is its only "
         "index, so dropping it first hides live work. The stream stays visible "
         "in Recently landed, and its archived state.md carries it after that.",
@@ -2549,7 +2549,7 @@ def check_outlives_me(
                 "completed stream holds an outlives-me item with no owner: "
                 + body.strip()[:120],
                 "Promote the item, open a successor stream, or record it in "
-                ".state/backlogs/ and name that item as its owner — a completed "
+                "<state-root>/backlogs/ and name that item as its owner — a completed "
                 "row is dropped at retention and shreds the debt.",
             )
 
@@ -2612,7 +2612,7 @@ def check_overview_layout(report: Report, state_dir: Path) -> None:
                 f"{name} is missing ({purpose}); without it that content has "
                 "nowhere to live but the overview, where it rots on a "
                 "different clock than the stream table",
-                f"Create .state/{name} and move the matching narrative out of "
+                f"Create <state-root>/{name} and move the matching narrative out of "
                 "overview.md; drop nothing that is still true and carry no "
                 "paragraph that the current table contradicts.",
             )
@@ -2632,8 +2632,8 @@ def check_overview_layout(report: Report, state_dir: Path) -> None:
                     "State systems, Awaiting you, Streams, Recently landed): "
                     "environment narrative "
                     "belongs in environment.md and traps in traps.md",
-                    "Move the section into .state/environment.md or "
-                    ".state/traps.md as its content dictates, preserving "
+                    "Move the section into <state-root>/environment.md or "
+                    "<state-root>/traps.md as its content dictates, preserving "
                     "authored Goal and Requirements byte-for-byte.",
                 )
             continue
@@ -2650,7 +2650,7 @@ def check_overview_layout(report: Report, state_dir: Path) -> None:
             f"{len(narrative)} preamble line(s), {size} bytes, sit before the "
             "first section: a preamble is environment narrative that belongs "
             "in environment.md",
-            "Move the preamble into .state/environment.md, dated and "
+            "Move the preamble into <state-root>/environment.md, dated and "
             "re-measurable, and leave overview.md its title and metadata.",
         )
 
@@ -2706,19 +2706,6 @@ def check_overview(report: Report, state_dir: Path) -> None:
         if normalize_index_cell(cells[0]) in {"work id", "id", "stream"}:
             columns = overview_column_map(cells)
             header_seen = True
-            legacy_columns = [name for name in ("spec", "links") if name in columns]
-            if legacy_columns:
-                report.warning(
-                    "overview.md",
-                    "overview-legacy-specification",
-                    "the Streams table still has legacy "
-                    f"{', '.join(legacy_columns)!r} column(s); exact "
-                    "specification links must be stream-local",
-                    "During reconciliation, verify each legacy value against "
-                    "the stream charter, preserve exact provenance there, then "
-                    "rewrite the table atomically with documentation-only "
-                    "`Documentations`.",
-                )
             continue
         if set(cells[0]) <= {"-", " ", ":"}:
             continue
@@ -2738,7 +2725,7 @@ def check_overview(report: Report, state_dir: Path) -> None:
             )
         state_path = state_dir / "works" / work_id / "state.md"
         if not state_path.is_file():
-            # Work state is centralized under the default source tree, so an
+            # Each repository has one state root under ~/.agents/states, so an
             # overview row with no state.md beside it is a real dangling row,
             # not a stream that lives elsewhere.
             report.warning(
@@ -2923,7 +2910,7 @@ def check_last_progress(
             "last-progress",
             f"Last progress {recorded.group(1)} does not match the "
             f"{source} evidence dated {expected}: a reformat is not news and "
-            "an mtime dies the moment .state/ is copied out and back",
+            "an mtime dies the moment the state root is copied out and back",
             f"Set the cell to {expected}"
             + (f" {STATE_FALLBACK_MARK}" if source == "state.md" else "")
             + " plus its age.",
@@ -2948,7 +2935,7 @@ def main() -> int:
     scope.add_argument(
         "--state-dir",
         type=Path,
-        help="a .state directory: checks every works/* and archive/* stream "
+        help="the state root: checks every works/* and archive/* stream "
         "plus overview.md",
     )
     parser.add_argument("--json", action="store_true", help="emit findings as JSON")
@@ -2970,7 +2957,7 @@ def main() -> int:
         if root.exists() and not root.is_dir():
             print(f"error: not a directory: {root}", file=sys.stderr)
             return 2
-        if not root.exists() and root.name != ".state":
+        if not root.exists():
             print(f"error: not a directory: {root}", file=sys.stderr)
             return 2
         if root.is_dir():

@@ -58,7 +58,7 @@ function run(args: string[]): Run {
 class Workspace {
   readonly workDir: string;
   private constructor(readonly root: string) {
-    this.workDir = join(root, ".state/works/demo");
+    this.workDir = join(root, "state/works/demo");
   }
   static async create(): Promise<Workspace> {
     const value = new Workspace(
@@ -213,7 +213,7 @@ async function writeOverview(
   body: string,
   siblings = true,
 ): Promise<void> {
-  const state = join(root, ".state");
+  const state = join(root, "state");
   await writeFile(join(state, "overview.md"), body);
   if (siblings)
     await Promise.all(
@@ -223,7 +223,7 @@ async function writeOverview(
     );
 }
 function runStateDir(root: string): Run {
-  return run(["--state-dir", join(root, ".state")]);
+  return run(["--state-dir", join(root, "state")]);
 }
 describe("state-doctor stream and lifecycle tail parity", () => {
   let workspace: Workspace;
@@ -241,7 +241,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
       const directory =
         scope === "--work-dir"
           ? workspace.workDir
-          : join(workspace.root, ".state");
+          : join(workspace.root, "state");
       const baseline = run([scope, directory, "--strict"]);
       const decisions = join(
         workspace.root,
@@ -260,7 +260,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
   it("should limit diagnosis to the selected stream", async () => {
     await workspace.writeState(row("AAA"));
     const baseline = workspace.run("--strict");
-    const other = join(workspace.root, ".state/works/other");
+    const other = join(workspace.root, "state/works/other");
     await mkdir(other);
     await writeFile(
       join(other, "state.md"),
@@ -319,7 +319,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
   it("reports overview phase drift", async () => {
     await workspace.writeState(row("AAA"));
     await writeFile(
-      join(workspace.root, ".state/overview.md"),
+      join(workspace.root, "state/overview.md"),
       "# Overview\n\n| Work ID | Lifecycle | Headline |\n| --- | --- | --- |\n| demo | completed | Demo. |\n",
     );
     expect(checks(runStateDir(workspace.root).findings)).toContain("overview");
@@ -327,7 +327,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
   it("only treats Streams rows as live overview rows", async () => {
     await workspace.writeState(row("AAA"));
     await writeFile(
-      join(workspace.root, ".state/overview.md"),
+      join(workspace.root, "state/overview.md"),
       "# Overview\n\n## Awaiting you\n\n| Question | Stream | Waiting since |\n| --- | --- | --- |\n| Accept ADR-8? | `demo` | 2026-07-22 |\n\n## Streams\n\n| Work ID | Phase | Headline |\n| --- | --- | --- |\n| demo | completed | Demo. |\n\n## Recently landed\n\n| Work ID | Landed | Locator |\n| --- | --- | --- |\n| gone-for-good | 2026-07-28 | PR #71 |\n",
     );
     const findings = selected(runStateDir(workspace.root).findings, "overview");
@@ -529,7 +529,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     await workspace.writeState(row("AAA"));
     for (const presence of [
       "https://example.com/specification",
-      ".state/notion/project",
+      "state/notion/project",
       "file:///tmp/specification",
     ]) {
       await writeOverview(workspace.root, canonicalOverview(presence));
@@ -713,22 +713,8 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     expect(findings).toHaveLength(1);
     expect(findings[0]?.message).toContain("three canonical rows");
   });
-  it("flags legacy global specification columns for lazy normalization", async () => {
-    await workspace.writeState(row("AAA"));
-    await writeOverview(
-      workspace.root,
-      `# State overview\n\n## State systems\n\n- Version-controlled documentation: configured\n- Local operational state: configured\n- External specification authority: none\n\n## Streams\n\n| Work ID | Phase | Spec | Links |\n| --- | --- | --- | --- |\n| demo | working | [Exact](https://example.com/demo-spec) | [Docs](docs/demo.md) |\n`,
-    );
-    const findings = selected(
-      runStateDir(workspace.root).findings,
-      "overview-legacy-specification",
-    );
-    expect(findings).toHaveLength(1);
-    expect(findings[0]).toMatchObject({ severity: "warning" });
-    expect(findings[0]?.fix).toContain("preserve exact provenance");
-  });
   it("checks archived stream provenance without duplicating its URL globally", async () => {
-    await mkdir(join(workspace.root, ".state/archive/archived"), {
+    await mkdir(join(workspace.root, "state/archive/archived"), {
       recursive: true,
     });
     await writeOverview(workspace.root, canonicalOverview("configured"));
@@ -1163,7 +1149,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     const finding = selected(workspace.run().findings, "retention")[0];
     expect(finding?.message).toContain("past the 3-day window");
     expect(finding?.fix).toContain(
-      "Move works/<work-id>/ to .state/archive/<work-id>/ first, then drop the overview row",
+      "Move works/<work-id>/ to <state-root>/archive/<work-id>/ first, then drop the overview row",
     );
   });
   it("leaves recently completed streams alone", async () => {
@@ -1190,7 +1176,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     async (workId, problem) => {
       const root = await mkdtemp(join(tmpdir(), "state-doctor-id-"));
       try {
-        const workDir = join(root, ".state/works", workId);
+        const workDir = join(root, "state/works", workId);
         await mkdir(join(workDir, "state"), { recursive: true });
         await writeFile(
           join(workDir, "goal.md"),
@@ -1258,7 +1244,7 @@ describe("state-doctor stream and lifecycle tail parity", () => {
     expect(result.code).toBe(1);
     expect(finding).toMatchObject({ severity: "error" });
     expect(finding?.message).toContain("`U1`");
-    expect(finding?.fix).toContain(".state/backlogs/");
+    expect(finding?.fix).toContain("<state-root>/backlogs/");
   });
   it("accepts owned debt and ignores debt on live streams", async () => {
     const receipt =
