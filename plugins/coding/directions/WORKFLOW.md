@@ -17,7 +17,7 @@ The tier is also the PR's risk class R0–R3 in its change inventory. [`GIT-PR-S
 
 - Relaxing a guard or gate is R2, unless it gates secrets or external writes, which is R3.
 - Changing instruction contracts that several plugins consume is R2; changing them across domains is R3.
-- A new `.state` artifact, a new state-write target, or changed backup or recovery behavior is persistent data: R3.
+- A new state-root artifact, a new state-write target, or changed backup or recovery behavior is persistent data: R3.
 - A workflow wording change inside one skill that leaves its gates intact is R1.
 
 Use `tech-lead` for multiple dependent milestones, multiple implementers, or Tier 3 work. A public-API change is Tier 2 unless a Tier 3 condition also applies. Consequential work and every publication-bound change require independent review even when one agent implements them; that owner follows [artifact-appropriate validation](validation.md#classify-documentation-only-changes).

@@ -33,7 +33,7 @@ Give the holistic reviewer these inputs, with file paths rather than source cont
 - advisory mechanical-scan results and applicable deterministic-check evidence, bound to the checked revision and inputs;
 - specialist scopes and evidence, or the caller's pending handback that must arrive before finalization;
 - [review.md](../templates/review.md) and `coding:directions/review.md`;
-- instruction to write only its assigned reports, leave reviewed code and `.state` untouched, run no builds/tests/linters, delegate no further, and preserve stable finding IDs/statuses. Keep evidence, plan binding, and reviewed task IDs in each report; return only paths, per-area verdicts/counts, and a short summary for the main agent.
+- instruction to write only its assigned reports, leave reviewed code and the state root untouched, run no builds/tests/linters, delegate no further, and preserve stable finding IDs/statuses. Keep evidence, plan binding, and reviewed task IDs in each report; return only paths, per-area verdicts/counts, and a short summary for the main agent.
 
 The capsule is sufficient by default. Give `state.md` when alignment is selected or resume/cross-slice evidence requires it; give `state/working.md` only when navigation is otherwise missing. Review each shared input once rather than reopening it for each area.
 

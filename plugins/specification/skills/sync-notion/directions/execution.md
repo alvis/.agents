@@ -4,7 +4,7 @@
 
 Accept exact counterpart/output root/database id, immutable base receipt, expected remote revision/hash, and caller-confirmed final hash when supplied. Every remote operation requires `NOTION_TOKEN`, the injected Essential contract, and an explicit destination/team-owned `--transport-profile=<absolute-file>`; this plugin does not install or claim a bundled `notion-sync` distribution. Every mutation also requires one exact destination-local shared transport root, supplied explicitly or resolved from a validated destination-local receipt. A staging/evidence directory, origin-machine path, or unverified suggestion cannot select the transport root or lease scope.
 
-Read the injected absolute `state.md` before project artifact writes; if it is unavailable, stop writes and report the missing contract. Resolve paths only from explicit arguments, active state, or immutable receipts. Require write targets to be ignored and untracked in their owning VCS workspace; otherwise return `requires_ignore` with its exact ignore file. Refuse unmanaged roots.
+Read the injected absolute `state.md` before project artifact writes; if it is unavailable, stop writes and report the missing contract. Resolve paths only from explicit arguments, active state, or immutable receipts. Require write targets to be untracked in their owning VCS workspace; otherwise return `refused`. Refuse unmanaged roots.
 
 Before any content, query, or mutation command, require and validate the explicit absolute transport profile against [../references/transport-profile.md](../references/transport-profile.md). Reject every missing, unsafe, incomplete, secret-bearing, ambiguous, relative, PATH-only, symlinked, mismatched, or unproven profile as `transport_unverified`, with no content command or write. Run `scripts/validate-transport-profile.ts` from the skill root and require its `profile_structure_verified` report. Use only its canonical executable; inert version/help probes must match the configured version, help fingerprint, exact command/flag vectors, output contracts, executable hash, and checksum-bound conformance receipt. Conformance must positively prove recursive pull, search, create, push, conditional update, and conditional create independently, or declare either conditional capability unavailable. Never search `PATH`, substitute/install/upgrade a binary, or treat help text as runtime proof. Read `NOTION_TOKEN` only from the invocation environment and never record it.
 
@@ -14,7 +14,7 @@ Immediately before every executable invocation, reinspect the canonical path as 
 
 Resolve each pair as `{local_path, notion_ref, base_evidence, state}`: prefer frontmatter `ref:`, then explicit ref, then validated search. Load [database-resolution.md](database-resolution.md) only for database/search ambiguity. Reject ambiguous identity, paths outside the declared root, and any root inferred from titles, ids, workspace labels, evidence paths, conventions, or another machine's receipt.
 
-Before creating or using the transport root and `.sync-locks/`, establish the deepest existing ancestor's exact VCS checkout; reject symlinks, unsafe parents, ambiguous ownership, escape, missing ignore coverage, or tracked probe/lock paths. Create missing components only by atomic no-clobber operations after all gates pass, then recheck each component's real-directory type, containment, ignore, and untracked state. Report components this run created on failure and never remove a concurrently owned component.
+Before creating or using the transport root and `.sync-locks/`, establish the deepest existing ancestor's exact VCS checkout; reject symlinks, unsafe parents, ambiguous ownership, escape, or tracked probe/lock paths. Create missing components only by atomic no-clobber operations after all gates pass, then recheck each component's real-directory type, containment, and untracked state. Report components this run created on failure and never remove a concurrently owned component.
 
 Normalize existing pages to transport's canonical lowercase UUID and new pages to `create:<canonical-parent-ref>:<declared-root-relative-local-path>`. Acquire exactly `<transport-root>/.sync-locks/<sha256(normalized-ref)>.lease/` by atomic no-clobber creation, then durably record ref, owner, process/session identity, unguessable token, `created_at`, and `heartbeat_at`. Heartbeat and release only after a fresh token match; release only after final evidence is durable. Leave failed metadata publication contended. Any existing lease returns `concurrent_sync`. Stale recovery requires proof the owner ended, a fresh read-only pull, an explicit recovery decision, and a final old-token match before archive/replace. Never delete or reuse a lease speculatively. This lease coordinates only clients sharing the root; it never replaces conditional remote mutation protection.
 
@@ -61,8 +61,8 @@ For every branch, retry is allowed only when evidence proves the failed attempt 
 - Every successful pair has exact identity/content verification. A skipped or unresolved pair changed neither canonical local bytes nor remote content.
 - Every semantic body creation/change used the one explicitly selected `body_author`; nested callers and receipts matched it exactly. Missing or changed policy refused with `select_body_author`, separately from transport verification.
 - No worker made an interactive choice, no `Keep Both` synthesis bypassed approval, and no skipped conflict became a TODO or push.
-- Paths came from explicit input or transport output, and write roots were ignored/untracked.
-- Any missing transport/lock directories were created only after exact VCS ownership, safe-parent, containment, ignore, and untracked gates; each no-clobber component was revalidated and reported.
+- Paths came from explicit input or transport output, and write roots were untracked.
+- Any missing transport/lock directories were created only after exact VCS ownership, safe-parent, containment, and untracked gates; each no-clobber component was revalidated and reported.
 - Each mutating pair used the deterministic shared-transport lease, all heartbeat/release operations matched its token, and a contended lease caused no canonical or remote write.
 
 ## Completion
@@ -70,12 +70,11 @@ For every branch, retry is allowed only when evidence proves the failed attempt 
 <report>
 
 ```yaml
-status: success|partial|failure|refused|requires_ignore|concurrent_sync|transport_unverified
+status: success|partial|failure|refused|concurrent_sync|transport_unverified
 classification: initial|created|updated|pulled|unchanged|metadata_only|local_only|remote_only|structural_change|converged|concurrent|baseline_required|materialization_conflict|invalid_evidence|resolved|skipped|mixed|not_applicable
 next_action: none|revalidate|establish_baseline|resolve_conflict|specification_reconciliation|recover_partial|verify_owner|provide_conditional_transport|select_body_author
 mode: validate-metadata|local-to-notion|notion-to-local|two-way-merge
 body_author: {capability_id: '<plugin>:<skill>|null', selection_source: explicit_argument|delegated_caller|null, verification: matched|not_required|refused}
-ignore_file: '<absolute owning-workspace path or null>'
 transport:
   profile: '<destination/team logical profile>'
   profile_schema: notion-sync-transport-profile/v1

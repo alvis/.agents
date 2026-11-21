@@ -10,7 +10,7 @@ Everything in this marketplace is built around one observation: **long-running A
 | --- | --- | --- |
 | Contract | What are we trying to make now? | `goal.md` charters, canonical specs |
 | Decision | Why this, and what replaced the old choice? | decision records, ADRs |
-| Execution state | What is happening right now? | `.state/` work state |
+| Execution state | What is happening right now? | Work state under `~/.agents/states/<host>/<path>/` |
 | Evidence | What was verified, against which exact inputs? | task evidence, reviews, receipts |
 | Artifact | What was actually produced? | outputs named by revision or hash |
 | Memory | What reusable lesson may help later? | agent memory |
@@ -21,11 +21,11 @@ Five rules are constitutional:
 2. Never approve an artifact without naming its exact revision.
 3. Never treat `done` as synonymous with `current` — status is history, validity is now.
 4. Every derived artifact names the inputs it was derived from.
-5. Deleting `.state/` must never erase anything consequential.
+5. Deleting work state must never erase anything consequential.
 
 Practical consequences you will see day to day:
 
-- **`.state/` is an operational projection, not the record of record.** It is ignored working memory — rich, continuously persisted, and not byte-reconstructible — held centrally in the default source tree, so every worktree and workspace shares one view of the work. Every state change, discovery, and decision is stored immediately in the journal and its owning state file; accepted decisions, approvals, and published artifact identities also live in versioned `docs/` and external anchors (issue, PR, Notion) via promotion records. The projection becomes disposable only after durable promotion and closure.
+- **Work state is an operational projection, not the record of record.** It is working memory — rich, continuously persisted, and not byte-reconstructible — held outside every checkout at `~/.agents/states/<host>/<path>/`, named from the repository remote ([ADR-3](docs/architecture/decisions/state/adr-3-home-state-root.md)), so every clone, worktree, and workspace shares one view of the work. Every state change, discovery, and decision is stored immediately in the journal and its owning state file; accepted decisions, approvals, and published artifact identities also live in versioned `docs/` and external anchors (issue, PR, Notion) via promotion records. The projection becomes disposable only after durable promotion and closure.
 - **Completed work stays completed.** When a decision or spec change invalidates a finished task, its row keeps `✓ done` and gains `validity: stale (<reason>)`; new remediation tasks carry the rework. The system recomputes only what the changed truth touched instead of restarting everything — and history is never falsified.
 - **Approvals bind to exact revisions.** "Approved" names the artifact, its hash or immutable revision, the reviewer, and the scope. An approval of v7 never silently carries to v8.
 - **Concurrency is technical, not social.** One coordinator per work stream holds an on-disk lease (`state-lease`); state writes are atomic and bump a monotonic `State revision`; an append-only journal records causality so drift between tables is settled by evidence, not guesswork. A small read-only `state-doctor` catches structural defects (cycles, dangling dependencies, contradictory statuses) without ever judging prose.
@@ -110,14 +110,14 @@ The source and manually maintained projection boundaries are documented in [Harn
 
 A work stream is born, executes, and retires through one continuous discipline:
 
-1. **Bootstrap.** The main agent selects a stable Work ID from task context and existing charters, the resolver enforces the `.state/` ignore gate, and a no-clobber bootstrap creates the charter (`goal.md`), state (`state.md`), focus pointer (`state/working.md`), and journal.
+1. **Bootstrap.** The main agent selects a stable Work ID from task context and existing charters, the resolver derives the state root from the repository remote, and a no-clobber bootstrap creates the charter (`goal.md`), state (`state.md`), focus pointer (`state/working.md`), and journal.
 2. **Charter.** `goal.md` owns the goal, scope, and numbered success criteria (`SC-1`…) with expected evidence — so status churn can never drift the definition of done. It also declares the stream's workspace anchors (a git worktree by default; media projects and asset stores for production work).
 3. **Lease.** The coordinator acquires the stream's on-disk lease before any state write. Two sessions can never both believe they own a stream; an expired lease yields only to an explicit, journaled takeover.
 4. **Specify and plan.** Specs carry provenance and approval binds to exact content; plans are task tables with stable three-letter IDs, explicit dependency graphs, and per-task acceptance.
 5. **Execute.** Every status change is journaled first, then reconciled into the tables ("append first, reconcile second"). Workers return evidence with their `capability_id`; only the lease holder writes state.
 6. **Decide.** Decisions record what they supersede, affect, invalidate, and preserve. Acceptance triggers a blast-radius sweep that marks stale work and spawns remediation, journaled as one sweep.
 7. **Review and approve.** Seven canonical review areas; every approval carries the full binding tuple. Spec freshness is re-checked at named moments (before planning, each dispatch batch, review, completion).
-8. **Pause and resume.** `essential:handover` persists everything into `.state/` and refreshes the cross-tree overview; `essential:takeover` resumes from those on-disk files, checks the lease, and drives streams to their success criteria. [Essential's doctor skill](plugins/essential/skills/doctor/SKILL.md) owns structural diagnosis.
+8. **Pause and resume.** `essential:handover` persists everything into the state root and refreshes the cross-tree overview; `essential:takeover` resumes from those on-disk files, checks the lease, and drives streams to their success criteria. [Essential's doctor skill](plugins/essential/skills/doctor/SKILL.md) owns structural diagnosis.
 9. **Promote and retire.** Stable knowledge promotes to versioned `docs/` with provenance; every accepted decision gets an explicit disposition (promote to ADR / product / production record, retain in receipt, or archive); only then is it removed from the live index and permanently archived.
 
 ### Golden development lifecycle
@@ -135,7 +135,7 @@ A work stream is born, executes, and retires through one continuous discipline:
 | 9. Reconcile the spec | Let implementation run the applicable Notion completion gate or local source/work-local-specification recheck. | A change in specification content invalidates plan/code/review evidence; done tasks keep their status and gain stale validity with remediation tasks. |
 | 10. Save and finalize | On deferred `needs_save`, run the exact returned `/coding:commit --paths-from=... --manifest-sha256=...`; on `ready_for_finalization`, skip save; on `no_change`, stop. Then `/coding:finalize-commits` once. | The closed-set save preserves unrelated staged and dirty developer work. |
 | 11. Publish | If no PR was already published, run `/coding:pr create` only when the GitHub and `gh` prerequisites are satisfied; use `/coding:pr update` for an existing PR. | It creates or updates PRs initially as drafts, promotes fully approved surfaces to ready for review, and follows the [PR monitor](plugins/coding/skills/pr/directions/monitor.md) through feedback and landing. |
-| 12. Close or pause | After execution, review, and decision dispositions, set the work `reviewing` with its external landing or acceptance wait as a blocker. Coding work becomes `completed` on merge/default-branch evidence; non-coding work becomes `completed` on explicit acceptance plus a promotion receipt listing durable paths or evidenced `not required`. `/essential:takeover` checks the applicable landing evidence on a later run. Or run `/essential:handover`. | Every required executable leaf must be done. Coding work records its pull request(s); non-coding work records its reviewed deliverables and required accepter. Completion clears the resolved submission blocker and retains only independently unresolved blockers. A pause leaves the whole stream in `.state/works/<work-id>/`, ready for `/essential:takeover`. |
+| 12. Close or pause | After execution, review, and decision dispositions, set the work `reviewing` with its external landing or acceptance wait as a blocker. Coding work becomes `completed` on merge/default-branch evidence; non-coding work becomes `completed` on explicit acceptance plus a promotion receipt listing durable paths or evidenced `not required`. `/essential:takeover` checks the applicable landing evidence on a later run. Or run `/essential:handover`. | Every required executable leaf must be done. Coding work records its pull request(s); non-coding work records its reviewed deliverables and required accepter. Completion clears the resolved submission blocker and retains only independently unresolved blockers. A pause leaves the whole stream in `<state-root>/works/<work-id>/`, ready for `/essential:takeover`. |
 
 When the target is a standalone or non-TypeScript repository, verify each selected skill against the repository's native commands before use.
 
@@ -167,12 +167,12 @@ This path avoids Notion and remote publication entirely. It leaves verified code
 
 ## Work state and recovery
 
-- `.state/works/<work-id>/` is ignored coordination memory — an operational projection rather than a record of record. It lives in the default source tree only, so every worktree resolves to the same streams, and it is self-contained: state, decisions, specification, and `artifacts/` sit together under that one directory.
+- `~/.agents/states/<host>/<path>/works/<work-id>/` is coordination memory — an operational projection rather than a record of record. It lives outside every checkout, keyed by the repository remote, so every clone, worktree, and workspace resolves to the same streams, and it is self-contained: state, decisions, specification, and `artifacts/` sit together under that one directory.
 - `working.md` is the short current-focus pointer; `state.md` is the complete lifecycle, plan, task graph, and evidence index; `state/journal.md` is the append-only causal record the tables are views over.
 - Tasks use stable IDs (`LFE`, `LFE01`) that are never renamed or reused. [Essential's task contract](plugins/essential/references/state-format.md#task-identity-and-tables) defines statuses, validity, and how approved revisions retain replaced or removed work.
 - To pause, run `/essential:handover`; to resume, `/essential:takeover`. The pause writes nothing but state, so it always completes — a stream whose code is still an uncommitted working copy is paused and resumed like any other.
-- `.state/` is ignored, so one reflexive `git clean -fdx` deletes it. Active state is not byte-reconstructible: keep a copy outside the repository until durable promotion and closure.
-- Handover and takeover write only under the default source tree's `.state/` (and the active tree's `docs/` at promotion). A continuation file anywhere else — `/tmp`, `.local/`, the repo root — is a bug, including when output is too large for a response.
+- Active state is not byte-reconstructible: back up `~/.agents/states/` until durable promotion and closure. A repository without a network remote has no state root; the resolver asks for one instead of guessing.
+- Handover and takeover write only under the state root (and the active tree's `docs/` at promotion). A continuation file anywhere else — `/tmp`, `.local/`, the repo root — is a bug, including when output is too large for a response.
 - Full detail, including the lease and doctor tools: [plugins/essential/README.md](plugins/essential/README.md).
 
 ## Agent team

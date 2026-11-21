@@ -48,9 +48,9 @@
             "An ",
             { "kind": "term", "text": "ADR", "definition": "architecture decision record: a decision a human approved, kept under docs/architecture/decisions/" },
             " is a decision a person reviewed and approved; it lives in the repository and every contributor follows it. A ",
-            { "kind": "term", "text": "local decision", "definition": "a decision an agent recorded while working, kept in the local state tree under .state/works/<stream>/decisions/" },
+            { "kind": "term", "text": "local decision", "definition": "a decision an agent recorded while working, kept in the local state tree under <state-root>/works/<stream>/decisions/" },
             " is one an agent recorded while doing a piece of work; it lives outside the repository, in the state tree on the machine that did the work, and it binds that ",
-            { "kind": "term", "text": "work stream", "definition": "one unit of work with its own folder of state under .state/works/<stream>/" },
+            { "kind": "term", "text": "work stream", "definition": "one unit of work with its own folder of state under <state-root>/works/<stream>/" },
             " until someone promotes it or it is replaced."
           ]
         },
@@ -370,7 +370,7 @@
             "The decision, in plain words: keep the instruction where every agent sees it. The saving is one read in one measured scenario, while the cost falls on writing standards, specifications and designs — work the measurement never looked at. The record calls that ",
             { "kind": "mark", "text": "optimizing the metric against the goal" },
             ". ",
-            { "kind": "source", "text": "Decision and Measurement", "ref": ".state/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" }
+            { "kind": "source", "text": "Decision and Measurement", "ref": "<state-root>/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" }
           ]
         },
         {
@@ -443,7 +443,7 @@
         {
           "type": "tree",
           "title": "Where a replaced record goes",
-          "root": ".state/works/plugin-context-slimming/decisions",
+          "root": "<state-root>/works/plugin-context-slimming/decisions",
           "items": [
             { "name": "do-not-rebind-working-attitude.md", "note": "L1 · Supersedes: decisions/superseded/working-attitude-binding.md" },
             {
@@ -569,8 +569,8 @@
   "sources": [
     { "label": "ADR-2: Resolve installed plugins from their declared marketplace", "ref": "docs/architecture/decisions/harness/adr-2-declared-marketplace-plugin-resolution.md" },
     { "label": "ADR-1: Resolve installed plugins through a projected harness adapter", "ref": "docs/architecture/decisions/superseded/harness/adr-1-installed-plugin-resolution.md" },
-    { "label": "L1 · do not rebind working-attitude.md", "ref": ".state/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" },
-    { "label": "L2 · the superseded first version", "ref": ".state/works/plugin-context-slimming/decisions/superseded/working-attitude-binding.md" },
+    { "label": "L1 · do not rebind working-attitude.md", "ref": "<state-root>/works/plugin-context-slimming/decisions/do-not-rebind-working-attitude.md" },
+    { "label": "L2 · the superseded first version", "ref": "<state-root>/works/plugin-context-slimming/decisions/superseded/working-attitude-binding.md" },
     { "label": "The resolver each plugin carries", "ref": "scripts/plugin-root" },
     { "label": "One hook that calls it", "ref": "plugins/coding/hooks/hooks.json" }
   ],

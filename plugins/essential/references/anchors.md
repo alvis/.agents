@@ -19,7 +19,7 @@ Every anchor kind must be able to answer, in its own terms, what the Git adapter
 1. Identity — what uniquely names this workspace.
 2. Current revision — what state it is at now.
 3. Immutable revision — how a point-in-time is named so evidence and approvals can bind to it.
-4. Isolation gate — the equivalent of the `.gitignore` bootstrap gate: where operational files may be written without polluting the record of record.
+4. Isolation gate — where operational files may be written without polluting the record of record.
 
 ## Initiative manifest
 

@@ -2,7 +2,7 @@
 
 Layout for the brief every `<plugin>:research` skill returns to `essential:plan`. The plan skill seeds `essential:discover`'s evidence ledger with these rows unchanged, so the columns and `Kind` values are that ledger's (`essential:skills/discover/SKILL.md` owns them).
 
-With a work stream, save the brief at `artifacts/research/briefs/<plugin>/<scope-slug>.md` inside the active work directory; without one, return it in the conversation. Save one file per researched scope, so a re-entry for scope found mid-build never overwrites the original research. A subagent cannot write `.state/`; it writes the same content to an OS temporary file and returns `artifact: <absolute path>` for the main agent to save. Keep the file within the work-Markdown limit in `essential:references/output-manifest.md`; when the evidence does not fit, keep the rows with the highest decision impact and say what was dropped under Gaps.
+With a work stream, save the brief at `artifacts/research/briefs/<plugin>/<scope-slug>.md` inside the active work directory; without one, return it in the conversation. Save one file per researched scope, so a re-entry for scope found mid-build never overwrites the original research. A subagent cannot write the state root; it writes the same content to an OS temporary file and returns `artifact: <absolute path>` for the main agent to save. Keep the file within the work-Markdown limit in `essential:references/output-manifest.md`; when the evidence does not fit, keep the rows with the highest decision impact and say what was dropped under Gaps.
 
 ```markdown
 # Research brief: <plugin> — <scope>

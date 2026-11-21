@@ -18,13 +18,13 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
 - `ref` is the stable Notion identity and never derives a local filename.
 - `parent` is present only when needed to create an unsynced page.
 - `last_edited_time` is remote revision metadata returned and updated only by Notion transport. The selected body author preserves it byte-for-byte and never replaces it with a local clock. An unsynced locally authored page omits this key until transport supplies it.
-- Local edit timestamps belong in ignored work evidence or the sync receipt, never in Notion transport frontmatter.
+- Local edit timestamps belong in work evidence or the sync receipt, never in Notion transport frontmatter.
 - Preserve Notion properties and relationship annotations verbatim.
 - The transport body remains opaque state and is edited only through the exact explicitly selected body-author capability.
 
 ## Work-local specification evidence
 
-<work-local-specification-provenance source-kinds="local,inline" external="forbidden" external-evidence=".state/**" />
+<work-local-specification-provenance source-kinds="local,inline" external="forbidden" external-evidence="<state-root>/**" />
 
 `spec/README.md` is the readable work-local contract for a reachable repository source or approved inline source. External sources use the separate synchronization receipt schema. Preserve the source contract's semantic frontmatter and body; do not inject source, timestamp, receipt, or hash fields into contract Markdown. Put work-local derivation metadata in `spec/provenance.json`:
 
@@ -48,8 +48,8 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
 }
 ```
 
-- `source_kind` is exactly `local` or `inline`. An external authority uses only its canonical URL in tracked files; its revision and content evidence stay under `.state/works/<work-id>/artifacts/spec-sync/`.
-- `source_locators` contains only durable, portable identifiers. Use `repo:<repository-relative-path>` for a reachable local source and `inline-approved:sha256:<exact-byte-hash>` for an inline-approved candidate. Never publish an absolute local path, an ignored work path, an external-store locator, or a conversation/prompt locator. If an explicit local source is not itself durable, use `local-approved:sha256:<exact-byte-hash>` and retain the approved bytes in the active work's `spec/`.
+- `source_kind` is exactly `local` or `inline`. An external authority uses only its canonical URL in tracked files; its revision and content evidence stay under `<state-root>/works/<work-id>/artifacts/spec-sync/`.
+- `source_locators` contains only durable, portable identifiers. Use `repo:<repository-relative-path>` for a reachable local source and `inline-approved:sha256:<exact-byte-hash>` for an inline-approved candidate. Never publish an absolute local path, an work-state path, an external-store locator, or a conversation/prompt locator. If an explicit local source is not itself durable, use `local-approved:sha256:<exact-byte-hash>` and retain the approved bytes in the active work's `spec/`.
 - Authority has one deterministic interpretation. A reachable `repo:` locator remains the live authority and `spec/` is a checked work-local copy; planning and implementation compare both content directly before use. For `local-approved:` and `inline-approved:` locators, the content-equivalent work-local copy is the active-work authority while the locator remains historical origin evidence. Never treat an unreachable origin and its copy as independently editable truths.
 - `source_revision` and `materialization_revision` are lightweight change signals (a Git blob oid or empty). Authority is the specification content itself: approval, plan, and review bind to it and are confirmed by direct comparison, not by any recorded hash.
 - `approved_content_ref` identifies the exact approved specification content for direct comparison. For a reachable `repo:` source it is that source path; for `local-approved:` and `inline-approved:` origins it is `spec/README.md`. It must resolve while the active work is open.
@@ -58,7 +58,7 @@ parent: 01234567-89ab-cdef-0123-456789abcdef # only for an unsynced child
 - When an intended consumer surface produces `reference.md`, include its source-to-output logical-unit mapping and exact output hash. Remove those conditional entries when no reference file exists; never leave a fictional output in the receipt.
 - The receipt is JSON because this is a strict machine-readable sidecar: standard parsers preserve arrays and objects without Markdown ambiguity or a YAML dependency. Keep lineage separate from semantic contract prose so changing evidence never rewrites the approved contract.
 - The bundled fallback template uses the stable `plugin:specification/spec-code/templates/capability-readme.md` locator, exact installed plugin version, and exact asset SHA-256. This singular `template` object identifies the primary README template. `reference.md` is prescribed by the same workflow/plugin version and is independently hashed as an output; v1 does not add a second template object. Never record the origin machine's plugin cache/install path. Explicit/project templates use a durable `repo:` or selected remote locator instead.
-- `outputs` lists contract Markdown files only and **must exclude `provenance.json` itself**. Compute the provenance file's own exact SHA-256 only after its final write; store that self-hash in ignored work evidence and the run report. Never insert the self-hash into the file it hashes.
-- `receipt_anchor` points to the durable owning task, pull request, or repository record that records completion. It remains resolvable after ignored local work is retired. Only ignored work evidence may contain temporary absolute source or receipt paths.
+- `outputs` lists contract Markdown files only and **must exclude `provenance.json` itself**. Compute the provenance file's own exact SHA-256 only after its final write; store that self-hash in work evidence and the run report. Never insert the self-hash into the file it hashes.
+- `receipt_anchor` points to the durable owning task, pull request, or repository record that records completion. It remains resolvable after local work is retired. Only work evidence may contain temporary absolute source or receipt paths.
 - Filenames follow `naming.md` in the essential plugin's `references/` directory, never a transport-mirror filename.
 - The main agent's final output manifest includes all derived `.md` files and `provenance.json` in `generated_files`. Each writer follows `essential:references/output-manifest.md` for eligible work Markdown as it writes; versioned `docs/**` remains outside that size rule.

@@ -20,7 +20,7 @@ Assess a rendered interface and report evidence-backed findings. This skill owns
 
 Before creating or materially rewriting a project artifact, read the absolute `state.md` path injected by Essential. If unavailable, stop artifact writes and report the missing contract. Resolve the active work directory and start from the exact target/design/review paths in the request or mission capsule. Read `state/working.md` only when navigation is missing and `state.md` only for resume, alignment, or cross-slice dependencies.
 
-The main agent stores raw audit output under `<work-dir>/artifacts/web-audit/<audit-slug>/` and writes canonical `reviews/*.md` areas. A delegated auditor writes only to an assigned temporary directory outside `.state` and returns evidence plus complete proposed review content; the main agent imports that directory into `<work-dir>/artifacts/web-audit/<audit-slug>/` and reconciles `review.md`.
+The main agent stores raw audit output under `<work-dir>/artifacts/web-audit/<audit-slug>/` and writes canonical `reviews/*.md` areas. A delegated auditor writes only to an assigned temporary directory outside the state root and returns evidence plus complete proposed review content; the main agent imports that directory into `<work-dir>/artifacts/web-audit/<audit-slug>/` and reconciles `review.md`.
 
 ## Inputs
 

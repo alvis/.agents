@@ -9,12 +9,12 @@ argument-hint: "<product> <screen descriptions...> [--work-id=<id>] [--context=<
 
 # Create Screen Design
 
-Create new screen design without conflating ignored Notion transport, task-specific design exploration, and durable versioned design knowledge.
+Create new screen design without conflating Notion transport, task-specific design exploration, and durable versioned design knowledge.
 
 ## Boundaries
 
 - Use for new UX contracts, layouts, responsive behavior, interaction states, accessibility, and handoff notes. Existing pages route to `update-screen-design`; implementation/rendered review stays with Web owners.
-- Temporary detail lives in `.state/works/<work-id>/design/<slug>.md`; `design.md` is the main-agent-owned overview. Do not create an independent design artifact elsewhere.
+- Temporary detail lives in `<state-root>/works/<work-id>/design/<slug>.md`; `design.md` is the main-agent-owned overview. Do not create an independent design artifact elsewhere.
 - Notion transport bodies are opaque here. This plugin ships no body grammar or body-authoring skill. Before semantic body creation or change, require the exact external `--body-author=<plugin:skill>` selected by the caller and pass it unchanged through the selected transport operation. Do not choose/derive filenames or size-gate transport files.
 - Durable feature/screen design promotes to `docs/design/<slug>.md`; only truly system-wide tokens/components/states/motion/accessibility update `docs/design/system.md` or its children.
 - Only the main agent writes work state, durable documents, or the external design authority. A delegated run may read sources and return proposed child, body, document, and reconciliation content; it stops before mutation.

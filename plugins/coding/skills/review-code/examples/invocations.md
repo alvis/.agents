@@ -25,7 +25,7 @@ Load only the example matching the invocation.
 ```
 
 ```bash
-/review-code "HEAD~3..HEAD" --area=alignment --plan=/repo/.state/works/auth-refresh/state.md --work-id=auth-refresh
+/review-code "HEAD~3..HEAD" --area=alignment --plan=/repo/<state-root>/works/auth-refresh/state.md --work-id=auth-refresh
 # Asserts canonical root state.md; a mismatch is rejected rather than
 # promoting an implementation-detail or root planning file to authority.
 ```

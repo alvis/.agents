@@ -1,6 +1,6 @@
 # <decision title>
 
-<!-- Create .state/works/<work-id>/decisions/<decision-slug>.md. Fill the required metadata and section prompts; remove author comments and unused optional fields or sections before recording the decision. Existing records require no backfill. Follow ../../../directions/decisions.md for acceptance, supersession, and completion. -->
+<!-- Create <state-root>/works/<work-id>/decisions/<decision-slug>.md. Fill the required metadata and section prompts; remove author comments and unused optional fields or sections before recording the decision. Existing records require no backfill. Follow ../../../directions/decisions.md for acceptance, supersession, and completion. -->
 
 - Status: `<proposed|accepted|rejected|superseded>`
 - Headline: <one-line choice>

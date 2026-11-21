@@ -20,7 +20,7 @@ Produce accurate package documentation from code. This skill owns package `readm
 - Never invent API behavior: every claim must trace to package metadata, exports, entry points, scripts, configuration, or relevant source/tests.
 - Reject a missing project root, unreadable source, or a request to document a different package without changing the selector.
 - Only the main agent writes root `README.md` or `docs/**`. A delegated run returns a source-backed patch proposal and verification evidence without editing tracked documentation.
-- When `goal.md` selects an external specification authority, tracked documentation cites only its canonical external URL. Reject `.state`, `spec/`, transport-mirror, absolute-path, and `file://` references to that specification. Ordinary links among tracked documents remain allowed.
+- When `goal.md` selects an external specification authority, tracked documentation cites only its canonical external URL. Reject the state root, `spec/`, transport-mirror, absolute-path, and `file://` references to that specification. Ordinary links among tracked documents remain allowed.
 
 ## Inputs
 

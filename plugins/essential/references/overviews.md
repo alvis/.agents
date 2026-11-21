@@ -1,8 +1,8 @@
 # Work overviews
 
-Read this when creating or reconciling the global `.state/overview.md`, or the work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
+Read this when creating or reconciling the global `<state-root>/overview.md`, or the work-local `proposals.md`, `changes.md`, `decisions.md`, or `design.md`.
 
-## Global overview (`.state/overview.md`)
+## Global overview (`<state-root>/overview.md`)
 
 ```markdown
 # State overview
@@ -31,24 +31,23 @@ Read this when creating or reconciling the global `.state/overview.md`, or the w
 
 - `Goal` and `Requirements` are authored, never derived; every upsert and rebuild preserves them byte-for-byte, as it does every unrefreshed row. Environment narrative is not preamble — it belongs in `environment.md` and `traps.md` ([work-memory-topology.md](work-memory-topology.md)).
 - `State systems` is required on every reconciled overview. The two required rows are `configured`; the external-authority row is exactly `configured`, `none`, or `pending`. It carries no URL, revision, mirror, or local path; those anchors belong only to each applicable stream's `goal.md`.
-- During the lazy migration of an older overview, verify each legacy global specification cell and preserve its exact stream provenance in that stream's charter before removing the cell. Publish the overview rewrite atomically; do not move an unverified stream link into this project section.
 - `Awaiting you` is derived from every stream's `state/unresolved.md`, so a question only the user can answer is not buried one file deep in a stream nobody is reading.
 - `Phase` is the stream's own field, unchanged ([state-format.md](state-format.md)). `Blocked on` is that stream's nullable `- Blocked on:` line rendered into a cell, which cannot be absent: write the named blocker, `unknown` when the stream is stopped and nobody recorded why, or `-` when it is not blocked. `-` and `unknown` are different facts — one says nothing is holding the stream, the other says something is and the reason was never written down — and a row that renders the second as the first hides a forgotten stream among the healthy ones.
-- `Last progress` is the date of the stream's last journal `status` event plus its age — `2026-07-30 (7d)`. Never any-write, never file mtime: a reformat or a bulk backfill is not progress, and mtime dies the moment `.state/` is copied out and back, which is the designed recovery path. Where the journal is segmented, read the newest segment file, never the tail of the `state/journal.md` index — the index's last line is written whenever a segment is added, so reading it dates every segmented stream to its last bookkeeping sweep and reports dead streams as fresh.
+- `Last progress` is the date of the stream's last journal `status` event plus its age — `2026-07-30 (7d)`. Never any-write, never file mtime: a reformat or a bulk backfill is not progress, and mtime dies when the state root is restored from a backup. Where the journal is segmented, read the newest segment file, never the tail of the `state/journal.md` index — the index's last line is written whenever a segment is added, so reading it dates every segmented stream to its last bookkeeping sweep and reports dead streams as fresh.
 - `Next action` is one imperative sentence at or under 200 characters — long enough for the next step, too short to append to. Without that budget each handover adds to the cell instead of replacing it, and the index becomes the narrative it was meant to point at. Narrative stays in the stream.
-- `Location` is the absolute path of the checkout the stream's code is worked in plus its tree kind, or `-` when the stream records no anchor. Never infer one: an inferred location manufactures a fact that reads exactly like a recorded one. Absolute paths are safe here because `.state/` is machine-local and ignored.
+- `Location` is the absolute path of the checkout the stream's code is worked in plus its tree kind, or `-` when the stream records no anchor. Never infer one: an inferred location manufactures a fact that reads exactly like a recorded one. Absolute paths are safe here because the state root is machine-local.
 - `Documentations` carries durable `docs/` links and capability references. Exact specification links belong in the stream's `goal.md` `## Specification provenance`, never in this table. A capability the stream holds accepted-but-unpushed deviations against is suffixed `(pending-publication)`; resolve a sibling's pending publication before planning new work against that capability.
 - Qualify a cell in the cell. A `†`/`‡` glyph legend is a second vocabulary a reader must learn before reading the first.
 - Sort by phase, then `Last progress`. Ordering costs nothing and cannot go stale, which is exactly what a priority column cannot claim — do not add one.
 - `Recently landed` is the recent view of [completed-work history](#completed-work-history), not a second authoring destination.
 
-Every stream in `.state/works/` is exactly one row. A completed row leaves the table on the schedule in [retirement.md](retirement.md), and every fact in it comes from that stream's `## Completion receipt`, so dropping it loses nothing.
+Every stream in `<state-root>/works/` is exactly one row. A completed row leaves the table on the schedule in [retirement.md](retirement.md), and every fact in it comes from that stream's `## Completion receipt`, so dropping it loses nothing.
 
 ## Completed-work history
 
-`.state/journals/<domain>/<YYYY-MM-DD>-<work-id>.md` is the historical retrospective for one completed stream, using [the template](../templates/journal.md). Its `completed` timestamp is the ordering source; its completion date and stable Work ID name the file. [Naming](naming.md#documents) owns the path convention.
+`<state-root>/journals/<domain>/<YYYY-MM-DD>-<work-id>.md` is the historical retrospective for one completed stream, using [the template](../templates/journal.md). Its `completed` timestamp is the ordering source; its completion date and stable Work ID name the file. [Naming](naming.md#documents) owns the path convention.
 
-`.state/journals.md` is a derived complete index: `# Workstream journals`, then one `## <domain>` section per domain, sorted alphabetically. Each section contains one physical line per retrospective in descending completion-timestamp order, with Work ID ascending for equal timestamps:
+`<state-root>/journals.md` is a derived complete index: `# Workstream journals`, then one `## <domain>` section per domain, sorted alphabetically. Each section contains one physical line per retrospective in descending completion-timestamp order, with Work ID ascending for equal timestamps:
 
 ```markdown
 - <YYYY-MM-DD> — [`<work-id>`](journals/<domain>/<YYYY-MM-DD>-<work-id>.md): <summary>

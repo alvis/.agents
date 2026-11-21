@@ -113,7 +113,7 @@ The `## Continuation` section persists, on disk, everything a resume needs to ro
 
 ## `overview.md`
 
-The global index beside the centralized `.state/works/`: one table of every work stream on the machine, so a single read shows all outstanding work and which checkout each is worked in. Handover upserts only the rows for the streams it refreshed and preserves every other row byte-for-byte. Follow this template:
+The global index beside the centralized `<state-root>/works/`: one table of every work stream on the machine, so a single read shows all outstanding work and which checkout each is worked in. Handover upserts only the rows for the streams it refreshed and preserves every other row byte-for-byte. Follow this template:
 
 ```markdown
 # State overview

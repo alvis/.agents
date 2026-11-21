@@ -13,3 +13,4 @@
 | Document | Status |
 | --- | --- |
 | [ADR-2: Resolve installed plugins from their declared marketplace](decisions/harness/adr-2-declared-marketplace-plugin-resolution.md) | Accepted |
+| [ADR-3: Keep work state in the home directory, keyed by the repository remote](decisions/state/adr-3-home-state-root.md) | Accepted |

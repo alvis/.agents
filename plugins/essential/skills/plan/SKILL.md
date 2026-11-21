@@ -14,7 +14,7 @@ Turn a request into an approved plan that runs from the overview down to subtask
 
 - Use for: planning a project, feature, initiative, or other delivery from a request; planning work that surfaced during execution and the `essential:directions/change-control.md` plan-level route sends here.
 - Do not use for: planning from an approved specification (`specification:plan-code` when installed); a fact-finding report (`essential:deep-research`); a single decision, explanation, or interview (`essential:discover`); executing the plan.
-- Only the main agent runs this skill, because it writes `.state/` under the lease (`essential:references/state-systems.md`). A subagent asked to plan follows the plan direction's shaping-section rule for subagent planners.
+- Only the main agent runs this skill, because it writes the state root under the lease (`essential:references/state-systems.md`). A subagent asked to plan follows the plan direction's shaping-section rule for subagent planners.
 
 ## Inputs
 
