@@ -4,7 +4,7 @@ Read this when creating, accepting, superseding, or dispositioning a work-local 
 
 ## Record and supersede
 
-The main agent writes decision children under the resolved work root and reconciles their overview and affected tasks under the [state lease](lease.md). A subagent returns proposed content, paths, and reconciliation deltas; it never writes `.state/`.
+The main agent writes decision children under the resolved work root and reconciles their overview and affected tasks under the [state lease](lease.md). A subagent returns proposed content, paths, and reconciliation deltas; it never writes the state root.
 
 Never edit an accepted decision into its replacement. Create a successor naming the predecessor in `supersedes`; preserve the predecessor's content, change its status to `superseded`, and add a forward link to the successor.
 

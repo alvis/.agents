@@ -21,7 +21,7 @@ Persist the review first, then render a compact summary. Detailed findings live 
 - Outstanding priorities: `P0:<n> P1:<n> P2:<n> P3:<n>`
 - Dispositions: `open:<n> fixed:<n> acknowledged:<n> deferred:<n> skipped:<n>`
 - Closure: `closed:<n> outstanding:<n>`
-- Summary target: `.state/works/<work-id>/review.md` (`written` or
+- Summary target: `<state-root>/works/<work-id>/review.md` (`written` or
   `reconciliation_returned`)
 - Pattern confirmation: `<confirmed/rejected/pending/stale counts>` — `review.md`
 - Presentation: `<inline|discover HTML|pending choice|non-interactive|reconciliation returned>`

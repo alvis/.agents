@@ -62,8 +62,8 @@ Each PR's commits form a logical chain built with jj: every commit is one unit o
 
 | Flag | Purpose |
 |---|---|
-| `--prepare-paths-from=<scope-request>` | No-history preparation route for a lifecycle parent. Seal its ignored work-artifacts scope request into an immutable manifest and return the exact `--paths-from` invocation; do not save, finalize, or publish. |
-| `--paths-from=<manifest>` | Save only the manifest's exact dirty `selected_paths`; validate the ignored work-artifacts manifest and use [./directions/manifest.md](directions/manifest.md). Requires `--manifest-sha256`. |
+| `--prepare-paths-from=<scope-request>` | No-history preparation route for a lifecycle parent. Seal its work-artifacts scope request into an immutable manifest and return the exact `--paths-from` invocation; do not save, finalize, or publish. |
+| `--paths-from=<manifest>` | Save only the manifest's exact dirty `selected_paths`; validate the work-artifacts manifest and use [./directions/manifest.md](directions/manifest.md). Requires `--manifest-sha256`. |
 | `--manifest-sha256=<sha256>` | Expected SHA-256 of the exact manifest bytes. Valid only with `--paths-from`; prevents a path or manifest swap between lifecycle handoff and save. |
 | `--retrospective` | Distribute pending edits into their owning prior changes. See `./directions/retrospective.md` and the shared Jujutsu guide. |
 | `--reorder [--up-to <rev>]` | Reorder history into a clean linear chain up to target rev (default `main@origin`). Content-equivalence guard uses the selected VCS's verification. See `./directions/reorder.md`. |
@@ -74,7 +74,7 @@ Each PR's commits form a logical chain built with jj: every commit is one unit o
 | `--dry-run` | Print the plan, don't mutate. |
 | `--allow-rewrite-merged` | Explicit consent to rewrite history already merged on origin (skips the graphical or structured user-input tool corrective-PR prompt). |
 
-- **Prerequisites**: a Git repository or registered jj workspace backed by Git. The manifest-scoped route additionally requires a checksum-bound manifest under the resolved work root's ignored artifacts directory. Producer receipts must use the strict generated-files schema and reconcile exactly to the publication set. The helper capability-probes the shared guide's required operations and structural colocation; no version string alone authorizes the scoped route. Publication prerequisites are checked by `coding:pr create`. The directions above bind branch naming, earliest-owner fix routing, and public-history safety. Pull-request size and implementation-composition standards are review inputs and informational here.
+- **Prerequisites**: a Git repository or registered jj workspace backed by Git. The manifest-scoped route additionally requires a checksum-bound manifest under the resolved work root's artifacts directory. Producer receipts must use the strict generated-files schema and reconcile exactly to the publication set. The helper capability-probes the shared guide's required operations and structural colocation; no version string alone authorizes the scoped route. Publication prerequisites are checked by `coding:pr create`. The directions above bind branch naming, earliest-owner fix routing, and public-history safety. Pull-request size and implementation-composition standards are review inputs and informational here.
 
 ## Backup and recovery
 

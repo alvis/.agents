@@ -5,14 +5,14 @@ Read this before using project documentation, work state, or an external specifi
 | System | Presence | Carries | Authoritative layout |
 | --- | --- | --- | --- |
 | Version-controlled documentation | Required | Durable project knowledge under root `README.md` and `docs/` | [durable-documentation.md](durable-documentation.md) |
-| Local work state | Required when work needs persistence; created lazily | Ignored operational memory and revision-bound external-specification copies under `.state/` | [work-memory-topology.md](work-memory-topology.md) |
+| Local work state | Required when work needs persistence; created lazily | Operational memory and revision-bound external-specification copies under the state root defined in [state.md](state.md) | [work-memory-topology.md](work-memory-topology.md) |
 | External specification authority | Optional | Canonical requirements in a system such as Notion | The external system's stable URL and revision model |
 
 ## Access boundary
 
-<project-state-system-access read="all-agents" write="main-agent" protected="README.md,docs/**,.state/**,external-specification" />
+<project-state-system-access read="all-agents" write="main-agent" protected="README.md,docs/**,~/.agents/states/**,external-specification" />
 
-All agents may read every configured system. Only the main agent may write root `README.md`, `docs/**`, `.state/**`, or an external specification authority. A subagent may still write assigned production source and tests outside those systems; for state-system changes it returns findings, proposed content, evidence, and reconciliation deltas to the main agent.
+All agents may read every configured system. Only the main agent may write root `README.md`, `docs/**`, `<state-root>/**`, or an external specification authority. A subagent may still write assigned production source and tests outside those systems; for state-system changes it returns findings, proposed content, evidence, and reconciliation deltas to the main agent.
 
 The main agent alone holds the work-stream lease. A lease is a concurrency guard for that writer, never authority that can be delegated to a subagent. Reviewers return area reports; the main agent writes `reviews/*.md` and reconciles `review.md`.
 
@@ -34,8 +34,8 @@ When an external authority is configured:
 2. `spec/` is the optional readable local materialization.
 3. `artifacts/spec-sync/bases/<base-id>/` and `artifacts/spec-sync/materializations/<base-id>.json` prove which external bytes and revision the materialization represents.
 4. Agents read that local copy when its receipt matches the accepted base in `goal.md`. The main agent refreshes it at initial materialization, when the evidence is absent or mismatched, before review, and at completion or publication—not on every build read or dispatch.
-5. Version-controlled documents and PRs cite only the canonical external URL for an external source, never `.state`, a mirror, an absolute local path, or `file://`.
-6. Specification content and provenance for an active stream stay in `.state/`; the version-controlled `docs/` tree contains durable project guidance only.
+5. Version-controlled documents and PRs cite only the canonical external URL for an external source, never the state root, a mirror, an absolute local path, or `file://`.
+6. Specification content and provenance for an active stream stay in the state root; the version-controlled `docs/` tree contains durable project guidance only.
 
 Without an external authority, a repository source remains at its explicit source path and an inline source remains in the approved work-local copy. Ordinary links among tracked documents remain valid.
 

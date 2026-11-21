@@ -1,9 +1,9 @@
 # Work-memory topology
 
-Read this when creating, locating, or migrating ignored local state. `state-systems.md` owns system selection and access, `state.md` owns the lifecycle and resolver, and `state-format.md` owns state semantics.
+Read this when creating or locating local state. `state-systems.md` owns system selection and access, `state.md` owns the lifecycle and resolver, and `state-format.md` owns state semantics.
 
 ```text
-.state                                  # ignored operational work memory in the default source tree
+<state-root>/                           # ~/.agents/states/<host>/<path>/ operational work memory, defined in state.md
 ├── overview.md                         # authored goal, live-stream index, and five recent completion summaries
 ├── journals.md                         # complete domain-grouped completion index
 ├── journals/<domain>/                  # historical workstream retrospectives

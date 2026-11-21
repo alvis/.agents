@@ -4,7 +4,7 @@ The backbone every other plugin depends on. Essential owns the cross-plugin **st
 
 ## The contracts
 
-Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLAGENT.md`, `hooks/MAINAGENT.md`, and `hooks/SUBAGENT.md` entry points; everything else is read at the moment it matters. Once per session, `hooks/STOP.md` blocks with a `.state` reminder. Grok ignores context-injection and Stop stdout, so the reminder is advisory there.
+Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLAGENT.md`, `hooks/MAINAGENT.md`, and `hooks/SUBAGENT.md` entry points; everything else is read at the moment it matters. Once per session, `hooks/STOP.md` blocks with a state reminder. Grok ignores context-injection and Stop stdout, so the reminder is advisory there.
 
 | Reference | Read when | Owns |
 | --- | --- | --- |
@@ -26,11 +26,11 @@ Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLA
 | `references/reviews.md` | When writing review artifacts | The seven review areas plus plugin-namespaced areas, finding lifecycle |
 | `references/spec-lifecycle.md` | When materializing or revalidating specs | Mirrors, freshness sweep, completion verification |
 | `references/durable-documentation.md` | Before writing versioned project documentation | Entrypoint authority, capability/domain content, template ownership, terminology, migration |
-| `references/work-memory-topology.md` | When creating, locating, or migrating ignored work files | Commented `.state` file map |
+| `references/work-memory-topology.md` | When creating, or locating work files | Commented state-root file map |
 | `./directions/change-control.md` | On a mid-execution finding | Task-local / plan-level / spec-level routing |
 | `./directions/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
 | `./directions/subagent.md` | At the start of an assigned subagent task | The whole worker contract: stable reference, report shape and ceiling, read-only state and resolver gate, escalation, ineligibility transfer |
-| `references/output-manifest.md` | When returning a `generated_files` manifest, or writing Markdown into `.state/` | Manifest shape, the 16,384-byte work-Markdown rule the writer observes, the general length rule |
+| `references/output-manifest.md` | When returning a `generated_files` manifest, or writing Markdown into the state root | Manifest shape, the 16,384-byte work-Markdown rule the writer observes, the general length rule |
 | `./directions/delegate.md` | Before dispatching a subagent or composing a first task handover | Specialist routing, required prompt fields, extensible Context, message ceiling, teammate naming, nesting, model and effort selection |
 | `references/models.md` | When interpreting portable minimums or native profiles | Model Tier, Effort, task shapes, provider mapping |
 
@@ -38,10 +38,10 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 
 ## The tools
 
-- **`scripts/resolve-state-workspace`** — resolves the work identity and paths, enforces the `.state/` ignore gate and symlink/traversal safety, and performs the main-agent-only no-clobber bootstrap of `goal.md`, `state.md`, `state/working.md`, and `state/journal.md`.
+- **`scripts/resolve-state-workspace`** — resolves the work identity and paths, enforces symlink/traversal safety, and performs the main-agent-only no-clobber bootstrap of `goal.md`, `state.md`, `state/working.md`, and `state/journal.md`.
 - **`scripts/state-lease`** — the on-disk main-agent lease (`ensure | acquire | heartbeat | release | status | takeover`). The file stores only the token's SHA-256 digest, so reading it never confers the lease; exactly one live token may write main-agent-owned state; a live foreign lease is never replaced; an expired foreign lease yields only to an explicit, journaled takeover.
 - **`scripts/state-write`** — the lease-verified write path: verifies the presented token, refuses free/expired/foreign leases, heartbeats, and applies the temp-write + atomic rename in one call, so a working main agent can never expire its own lease by working.
-- **`skills/doctor/scripts/state-doctor`** — read-only `.state/` structural checker for stream and overview findings. [The doctor skill](skills/doctor/SKILL.md) owns when and how to invoke it and repair findings.
+- **`skills/doctor/scripts/state-doctor`** — read-only state-root structural checker for stream and overview findings. [The doctor skill](skills/doctor/SKILL.md) owns when and how to invoke it and repair findings.
 
 ## Skills
 
@@ -54,7 +54,7 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 | `essential:handover` | Pausing work: persists all stream state, updates the global overview, releases leases. |
 | `essential:sync` | Writing delivered work back to external trackers and design documents: task status, deviation comments, and approved document edits. |
 | `essential:takeover` | Resuming paused work from the on-disk work directories: checks leases, resolves blocking decisions, and drives streams to their success criteria. |
-| [`essential:doctor`](skills/doctor/SKILL.md) | Structural diagnosis and scoped repair of `.state/`. |
+| [`essential:doctor`](skills/doctor/SKILL.md) | Structural diagnosis and scoped repair of the state root. |
 | `essential:handoff` | A zero-context cross-domain orchestration plan another agent can execute verbatim. |
 | `essential:install` | Installing or refreshing native specialist agents and Grok's startup attachment. |
 | `essential:uninstall` | Removing owned agents and the Grok attachment while preserving edited or unrelated files. |
@@ -66,4 +66,4 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 - **Append first, reconcile second.** Every transition lands in `state/journal.md` (with actor `capability_id`, `rev:<N>`, event type, and what it invalidates) before tables update; crash loss is bounded to one line.
 - **One writer.** The lease holder alone writes `goal.md`, `state.md`, `state/*.md`, overviews, and `review.md`; workers return deltas.
 - **Done stays done.** Invalidation marks `validity: stale` and spawns remediation tasks; history is never falsified.
-- **`.state/` becomes disposable only after durable promotion and closure.** It is not byte-reconstructible. Decisions, approvals, artifact identities, unresolved risks, and reusable conclusions need durable carriers first; keep a copy of active work to guard against `git clean -fdx`.
+- **The state root becomes disposable only after durable promotion and closure.** It is not byte-reconstructible. Decisions, approvals, artifact identities, unresolved risks, and reusable conclusions need durable carriers first; back up `~/.agents/states/`.

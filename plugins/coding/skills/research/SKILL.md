@@ -14,7 +14,7 @@ Find what the repository already decided, built, and rejected that a coding plan
 
 - Use for: preliminary research for a feature, refactor, migration, or other code change; research for scope found during implementation that `essential:plan` re-enters.
 - Do not use for: diagnosing a failure (`coding:fix`), reviewing a change (`coding:review-code`), library or framework documentation (the session's documentation tools or `essential:deep-research`), or writing the plan.
-- Never edit source, documentation, or history. The brief is this skill's only write, and only the main agent saves it into `.state/`.
+- Never edit source, documentation, or history. The brief is this skill's only write, and only the main agent saves it into the state root.
 
 ## Inputs
 
@@ -27,7 +27,7 @@ Find what the repository already decided, built, and rejected that a coding plan
 1. **Frame the queries.** List each distinct concept, symbol, and component the task names, plus the words this codebase uses for them (read the nearest README or module names to learn them). Each becomes one query. List the paths the task likely touches.
 2. **Pick retrieval.** A semantic search tool takes a natural-language query and returns ranked passages of code, documents, or history — a codebase search, vector or embedding search, or knowledge-base MCP server. Inspect the session's tools for one. Probe each candidate with a symbol that exists in this repository; a tool that misses it does not index this repository and is skipped. Run every query through every tool that passes first, then fill gaps with keyword search: `rg` for code and documents, history commands for commits, and `gh` for pull requests and issues. With no passing tool, use keyword search alone and say so in the brief's Retrieval line. Semantic results include stale and nearest-neighbor noise, so a hit becomes evidence only after steps 3–6 open its source.
 3. **Read the code.** Open the entry points, the sibling modules of the same kind, and their tests. Record how the touched area works today and the patterns a change should follow, each with `path:line`.
-4. **Read the decisions.** Find the repository's architecture decision records from its documentation index (commonly `docs/architecture/decisions/`). Read every effective record that constrains the touched area, and archived records only when a relevant current record supersedes them, under `essential:directions/adr-review.md`. Read work-local decisions and completed-work journals for the same domain in `.state/` as `essential:references/state-systems.md` allows. Record each constraint and the option it rules out.
+4. **Read the decisions.** Find the repository's architecture decision records from its documentation index (commonly `docs/architecture/decisions/`). Read every effective record that constrains the touched area, and archived records only when a relevant current record supersedes them, under `essential:directions/adr-review.md`. Read work-local decisions and completed-work journals for the same domain in the state root as `essential:references/state-systems.md` allows. Record each constraint and the option it rules out.
 5. **Read the history.** Find merged pull requests that touched the paths or named the concepts:
 
    Resolve `<owner>/<repo>` from the remote URL: `git remote get-url origin`, or `jj git remote list` in a jj-only workspace.

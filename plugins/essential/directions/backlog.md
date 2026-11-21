@@ -10,7 +10,7 @@ The main agent alone writes the backlog, through `state-write --state-target` un
 
 ## Items and index
 
-Write each item to `.state/backlogs/backlog-<n>-<slug>.md`, named under [naming](../references/naming.md#documents), from [the template](../templates/state/backlogs/backlog.md). Take `<n>` as one above the highest number in the index or under `backlogs/`; the writer refuses a number another item already holds. Other streams write the index too, so reread `.state/backlogs.md` immediately before upserting the item's row:
+Write each item to `<state-root>/backlogs/backlog-<n>-<slug>.md`, named under [naming](../references/naming.md#documents), from [the template](../templates/state/backlogs/backlog.md). Take `<n>` as one above the highest number in the index or under `backlogs/`; the writer refuses a number another item already holds. Other streams write the index too, so reread `<state-root>/backlogs.md` immediately before upserting the item's row:
 
 ```markdown
 # Backlogs
@@ -47,5 +47,5 @@ Once a stream records [landing evidence](stream-completion.md#completed-requires
 A partial filing failure leaves the unfiled items `open` and is reported with the tracker's error; never record a link that was not read back.
 
 <IMPORTANT>
-Issue text stands alone. It never names a backlog ID, Work ID, task ID, `.state/` path, local plan, or other local work state. Restate the item's Finding and Why deferred with repository paths, revisions, and reproduction; never paste its Evidence or History, which may cite local state.
+Issue text stands alone. It never names a backlog ID, Work ID, task ID, state-root path, local plan, or other local work state. Restate the item's Finding and Why deferred with repository paths, revisions, and reproduction; never paste its Evidence or History, which may cite local state.
 </IMPORTANT>

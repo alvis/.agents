@@ -243,7 +243,7 @@
             },
             {
               "title": "The state mode is a second executable, not a renderer flag",
-              "planned": "A `state` mode that reads the `.state` tree.",
+              "planned": "A `state` mode that reads the state root.",
               "found": "The renderer is a pure function of its data, and the module graph enforces it: nothing reachable from the page module may import a `node:` builtin. A `--state` flag on the render CLI would have put a directory walk one import away from that boundary.",
               "chose": "`scripts/render-page/state/cli.ts` reads the tree and writes ordinary page data; `render-page/cli.ts` renders that data knowing nothing about where it came from. The board it produces is indistinguishable from a hand-written one.",
               "revisit": "If a second data source ever wants the same treatment, the shape generalises; one is not yet a pattern."
@@ -414,8 +414,8 @@
           "type": "quiz",
           "id": "quiz-state-read",
           "ref": "Q3",
-          "label": "Where .state is read",
-          "ask": "Which code reads the `.state` tree when a project-state board is built?",
+          "label": "Where the state root is read",
+          "ask": "Which code reads the state root when a project-state board is built?",
           "explains": "log",
           "options": [
             {

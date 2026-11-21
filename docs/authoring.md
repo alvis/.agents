@@ -32,7 +32,7 @@ A named validator is the required check. Hook byte budgets have no test gate; me
 | `memory` is `"project"`; body has exactly one `## Memory` section | Stitch validator preserves one portable memory contract |
 | Each injected payload is at most 2,000 bytes | Author review keeps per-event static context bounded |
 | Each plugin's unconditional instructional read chain is at most 40,960 bytes | Author review bounds context loaded before task selection |
-| Eligible `.state/` work Markdown stays within `plugins/essential/references/output-manifest.md` | Author review; `plugins/essential/scripts/check-markdown-size` is an optional diagnostic |
+| Eligible work-state Markdown stays within `plugins/essential/references/output-manifest.md` | Author review; `plugins/essential/scripts/check-markdown-size` is an optional diagnostic |
 | Subagent dispatch or direct message is at most 4,096 characters | `plugins/essential/directions/delegate.md` preserves transport headroom |
 | A delegated batch is about 10 resources, reports stay under 1,000 tokens, and retries stay near two | `plugins/governance/standards/delegation/` bounds coordination overhead |
 

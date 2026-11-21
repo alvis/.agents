@@ -32,7 +32,7 @@ convention-only casing need no entry.
 Return for each material departure: headline, full task ID, plan expectation,
 evidence, chosen/required alternative, reason, impact, severity, disposition,
 invalidated downstream task IDs, and recheck trigger. The main agent writes a
-lowercase `.state/works/<work-id>/changes/<slug>.md` child and reconciles
+lowercase `<state-root>/works/<work-id>/changes/<slug>.md` child and reconciles
 `changes.md` and `state.md`.
 
 Proceed only when reversible and low impact. For architecture, public API,
@@ -40,4 +40,4 @@ data, security/privacy, destructive migration, user semantics, or acceptance
 changes, stop as `pending_decision` before dependent work.
 ```
 
-No trailing deviations commit exists: `.state` is ignored work state.
+No trailing deviations commit exists: the state root is outside the repository.

@@ -2,17 +2,17 @@
 
 ```bash
 /essential:handover
-# Indexes every state_root/.state/works/<work-id>/ stream — the default
+# Indexes every <state-root>/works/<work-id>/ stream — the default
 # source tree's, whichever checkout you run from — refreshes each continuable
 # stream (planned/working, including separately blocked streams), leaves
-# reviewing/completed streams as awaiting/index-only rows, and updates the global .state/overview.md beside
-# them. No file is written outside .state/.
+# reviewing/completed streams as awaiting/index-only rows, and updates the global <state-root>/overview.md beside
+# them. No file is written outside the state root.
 ```
 
 ```bash
 /essential:handover auth-refresh
 # Optional filter: index all streams but refresh only the matching continuable
-# stream(s). Refreshes .state/works/auth-refresh/state.md and
+# stream(s). Refreshes <state-root>/works/auth-refresh/state.md and
 # state/working.md and reconciles its lazy indexes.
 ```
 
@@ -33,7 +33,7 @@ A `reviewing` or `completed` stream is **not** an error: it stays an awaiting or
 
 ## Pause and resume
 
-To pause, `/essential:handover` refreshes each stream's `state.md` (including the `## Continuation` fields, which name the next owner, next action, continuation intent, and source anchor) and `state/working.md`, and upserts its row in the global `.state/overview.md`. That persistence always completes, so the session can then close. In a new session, `/essential:takeover` with no argument offers every incomplete stream read straight from on-disk state, and reads `overview.md` for each one's `Location` — switching the working directory to that checkout if the chosen stream is worked elsewhere.
+To pause, `/essential:handover` refreshes each stream's `state.md` (including the `## Continuation` fields, which name the next owner, next action, continuation intent, and source anchor) and `state/working.md`, and upserts its row in the global `<state-root>/overview.md`. That persistence always completes, so the session can then close. In a new session, `/essential:takeover` with no argument offers every incomplete stream read straight from on-disk state, and reads `overview.md` for each one's `Location` — switching the working directory to that checkout if the chosen stream is worked elsewhere.
 
 Each stream's `Continuation intent` names the capability-level work type — for example specification-led implementation versus generic coding implementation — never a fixed skill name; takeover maps it to the relevant implementation skill and rejects a missing or contradictory intent.
 
