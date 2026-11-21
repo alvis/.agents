@@ -30,7 +30,7 @@ The `.essential/` ownership record at the selected destination is the removal au
 Only Grok uninstall removes its recorded, unchanged bootstrap attachment from the user `AGENTS.md`. Other harnesses never read or write Grok configuration. Preserve all surrounding user text and any modified attachment.
 </IMPORTANT>
 
-The uninstaller removes recorded files whose content still matches the installed hash, forgets already missing files, and preserves edited files. It retains shared support files while preserved agents need them and keeps unresolved ownership entries for a later retry. Repeated uninstall is harmless.
+The uninstaller leaves the `~/.agents/states` write grant in place; remove it by hand if wanted. It removes recorded files whose content still matches the installed hash, forgets already missing files, and preserves edited files. It retains shared support files while preserved agents need them and keeps unresolved ownership entries for a later retry. Repeated uninstall is harmless.
 
 If uninstall reports modified files, conflicting ownership, or recovery failures, report the paths and remaining work. Do not delete or overwrite them manually. A partial removal is not a complete uninstall.
 

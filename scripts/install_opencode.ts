@@ -41,6 +41,8 @@ import {
 } from "../plugins/essential/skills/install/scripts/stitch_agent.ts";
 import type { AgentSources } from "../plugins/essential/skills/install/scripts/stitch_agent.ts";
 
+import { planOpencodeGrant } from "../plugins/essential/scripts/installation/state-grant.ts";
+import { commitFiles } from "../plugins/essential/scripts/installation/transaction.ts";
 import { resolveHookReceipts } from "./opencode_hook_receipts.ts";
 
 import type { HookReceipt } from "./opencode_hook_receipts.ts";
@@ -205,6 +207,30 @@ function stateDirectory(target: string): string {
 
 function ownershipPath(target: string): string {
   return join(stateDirectory(target), "ownership.json");
+}
+
+/**
+ * Grants OpenCode write access to the home state folder (ADR-3).
+ *
+ * Only the user scope is edited: a project config may be committed and must
+ * not carry a path from one person's home folder.
+ *
+ * @returns the grant outcome reported in the installer result
+ */
+function grantStateAccess(
+  scope: "project" | "user",
+  target: string,
+  apply: boolean,
+): string {
+  if (scope !== "user") return "skipped-project-scope";
+  // a dry run of a first install has no config to read yet
+  if (!pathExists(target)) return "would-grant";
+  const plan = planOpencodeGrant(target);
+  if (plan.manual !== undefined) return `grant by hand: ${plan.manual}`;
+  if (plan.changes.length === 0) return "present";
+  if (!apply) return "would-grant";
+  commitFiles(plan.changes);
+  return "granted";
 }
 
 function transactionPath(target: string): string {
@@ -1898,12 +1924,14 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     if (!Array.isArray(managedPaths)) {
       throw new ProjectionError("generated manifest has no managed paths");
     }
+    const stateGrant = grantStateAccess(args.scope, target, !args.dryRun);
     process.stdout.write(
       `${ensureAscii(
         JSON.stringify(
           {
             status: args.dryRun ? "dry-run" : "installed",
             target,
+            state_grant: stateGrant,
             selected_plugins: selectedPlugins,
             resolved_plugins: resolvedPlugins,
             existing_projection: previousProjection.classification,
