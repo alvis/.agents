@@ -25,11 +25,9 @@ if [[ "${1:-}" == "--state-dir" ]]; then
 fi
 
 [[ -n "$state_dir" ]] || \
-  invalid "--state-dir <absolute .state directory> is required"
+  invalid "--state-dir <absolute state root> is required"
 [[ "$state_dir" == /* ]] || \
   invalid "state directory must be absolute: $state_dir"
-[[ "${state_dir%/}" == */.state ]] || \
-  invalid "state directory must end in .state: $state_dir"
 [[ -d "$state_dir" ]] || \
   invalid "state directory is missing or not a directory: $state_dir"
 [[ $# -gt 0 ]] || invalid "at least one explicit final path is required"

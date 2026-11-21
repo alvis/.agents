@@ -40,7 +40,7 @@ function row(
 class Workspace {
   readonly workDir: string;
   private constructor(readonly root: string) {
-    this.workDir = join(root, ".state/works/demo");
+    this.workDir = join(root, "state/works/demo");
   }
   static async create(): Promise<Workspace> {
     const value = new Workspace(
@@ -439,10 +439,18 @@ describe("bootstrap contract", () => {
     const root = await mkdtemp(join(tmpdir(), "state-doctor-bootstrap-"));
     try {
       spawnSync("git", ["init", "-q", root]);
-      await writeFile(join(root, ".gitignore"), ".state/\n");
+      spawnSync("git", [
+        "-C",
+        root,
+        "remote",
+        "add",
+        "origin",
+        "git@github.com:Test/Repo.git",
+      ]);
       const resolved = spawnSync(resolver, ["--work-id=demo", "--bootstrap"], {
         cwd: root,
         encoding: "utf8",
+        env: { ...process.env, HOME: join(root, "home") },
       });
       const workDir = JSON.parse(resolved.stdout).work_dir;
       const completed = spawnSync(doctor, ["--work-dir", workDir, "--json"], {

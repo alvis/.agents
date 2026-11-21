@@ -18,7 +18,7 @@ usage: state-write --work-dir <dir> --token <token> \
          [--content-file <path>] [--ttl <s>]
 Global targets: overview.md, journals.md, backlogs.md,
 journals/<domain>/<YYYY-MM-DD>-<owned-work-id>.md, or
-backlogs/backlog-<n>-<slug>.md under .state/.
+backlogs/backlog-<n>-<slug>.md under the state root.
 Content is read from --content-file, else stdin. Exit codes: 0 written,
 2 invalid usage, 4 lease free/expired, 5 foreign lease or wrong token.
 USAGE
@@ -74,7 +74,7 @@ done
 work_dir="$(cd "$work_dir" && pwd -P)"
 target_root="$work_dir"
 if [[ -n "$state_target" ]]; then
-  [[ "$(basename "$(dirname "$work_dir")")" == works && "$(basename "$(dirname "$(dirname "$work_dir")")")" == .state ]] || invalid "global writes require .state/works/<work-id>"
+  [[ "$(basename "$(dirname "$work_dir")")" == works ]] || invalid "global writes require <state-root>/works/<work-id>"
   work_id="$(basename "$work_dir")"
   [[ "$work_id" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || invalid "global writes require a valid work ID"
   if [[ "$state_target" == backlogs/* ]]; then

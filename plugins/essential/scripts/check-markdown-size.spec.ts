@@ -23,7 +23,7 @@ afterEach(() => {
 
 class Harness {
   readonly root = mkdtempSync(resolve(tmpdir(), "markdown-size-"));
-  readonly state = resolve(this.root, ".state");
+  readonly state = resolve(this.root, "state");
   readonly log = resolve(this.root, "wc.log");
   readonly environment: NodeJS.ProcessEnv;
   constructor() {
@@ -74,15 +74,15 @@ describe("work markdown size budgeting", () => {
   it("should exempt only the complete root journal and backlog indexes from the size limit", () => {
     const harness = new Harness();
     // One byte above the existing 16 KiB limit distinguishes exclusion from a passing measurement.
-    const index = harness.bytes(".state/journals.md", 16_385);
+    const index = harness.bytes("state/journals.md", 16_385);
     const summary = harness.bytes(
-      ".state/journals/essential/2026-09-30-demo.md",
+      "state/journals/essential/2026-09-30-demo.md",
       16_385,
     );
-    const local = harness.bytes(".state/works/demo/journals.md", 16_385);
-    const backlogIndex = harness.bytes(".state/backlogs.md", 16_385);
+    const local = harness.bytes("state/works/demo/journals.md", 16_385);
+    const backlogIndex = harness.bytes("state/backlogs.md", 16_385);
     const backlogItem = harness.bytes(
-      ".state/backlogs/backlog-1-demo.md",
+      "state/backlogs/backlog-1-demo.md",
       16_385,
     );
 
@@ -111,8 +111,8 @@ describe("work markdown size budgeting", () => {
   it("keeps the 16 KiB boundary in one measurement pass", () => {
     const harness = new Harness();
     const result = harness.run(
-      harness.bytes(".state/works/eng-421/fifteen kib.md", 15 * 1024),
-      harness.bytes(".state/works/eng-421/boundary.md", 16_384),
+      harness.bytes("state/works/eng-421/fifteen kib.md", 15 * 1024),
+      harness.bytes("state/works/eng-421/boundary.md", 16_384),
     );
     expect(result).toMatchObject({
       exitCode: 0,
@@ -123,15 +123,15 @@ describe("work markdown size budgeting", () => {
 
   it("returns every oversized file after one measurement", () => {
     const harness = new Harness();
-    const first = harness.bytes(".state/works/eng-421/one.md", 16_385);
+    const first = harness.bytes("state/works/eng-421/one.md", 16_385);
     const second = harness.bytes(
-      ".state/works/eng-421/dir with spaces/two.md",
+      "state/works/eng-421/dir with spaces/two.md",
       20_000,
     );
     const result = harness.run(
       first,
       second,
-      harness.bytes(".state/works/eng-421/valid.md", 12_289),
+      harness.bytes("state/works/eng-421/valid.md", 12_289),
     );
     expect(result.exitCode).toBe(1);
     expect(result.payload.status).toBe("split_required");
@@ -144,9 +144,9 @@ describe("work markdown size budgeting", () => {
 
   it("deduplicates and excludes working and external Markdown", () => {
     const harness = new Harness();
-    const measured = harness.bytes(".state/works/eng-421/normal.md", 100);
+    const measured = harness.bytes("state/works/eng-421/normal.md", 100);
     const excluded = [
-      harness.bytes(".state/works/eng-421/state/working.md", 30_000),
+      harness.bytes("state/works/eng-421/state/working.md", 30_000),
       harness.bytes("docs/README.md", 30_000),
       harness.bytes("plugins/example/SKILL.md", 30_000),
     ];
@@ -161,7 +161,7 @@ describe("work markdown size budgeting", () => {
   it("passes all-excluded input without calling wc", () => {
     const harness = new Harness();
     const result = harness.run(
-      harness.bytes(".state/works/eng-421/state/working.md", 30_000),
+      harness.bytes("state/works/eng-421/state/working.md", 30_000),
       harness.bytes("docs/architecture/large.md", 30_000),
     );
     expect(result).toMatchObject({
@@ -179,7 +179,7 @@ describe("work markdown size budgeting", () => {
     const symlink = resolve(harness.state, "works/eng-421/linked.md");
     mkdirSync(dirname(symlink), { recursive: true });
     symlinkSync(linked, symlink);
-    const other = harness.bytes("other/.state/works/eng-9/other.md", 20_000);
+    const other = harness.bytes("other/state/works/eng-9/other.md", 20_000);
     const result = harness.run(traversal, symlink, other);
     expect(result).toMatchObject({
       exitCode: 0,
@@ -193,7 +193,7 @@ describe("work markdown size budgeting", () => {
 
   it("distinguishes invalid input from a required split", () => {
     const harness = new Harness();
-    const invalid = harness.bytes(".state/works/eng-421/data.mdc", 10);
+    const invalid = harness.bytes("state/works/eng-421/data.mdc", 10);
     for (const paths of [
       [],
       ["relative.md"],

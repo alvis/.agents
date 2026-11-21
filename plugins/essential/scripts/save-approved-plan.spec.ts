@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 interface Sandbox {
   readonly root: string;
+  readonly home: string;
   readonly work: string;
   readonly input: string;
   readonly goal: string;
@@ -27,8 +28,10 @@ function withSandbox(test: (sandbox: Sandbox) => void): void {
   const root = realpathSync(mkdtempSync(resolve(tmpdir(), "save-approved-plan-")));
   try {
     expect(spawnSync("git", ["init", "--quiet", root]).status).toBe(0);
-    writeFileSync(resolve(root, ".gitignore"), ".state/\n");
-    const work = resolve(root, ".state/works/approved-hook");
+    expect(spawnSync("git", ["-C", root, "remote", "add", "origin", "git@github.com:Test/Repo.git"]).status).toBe(0);
+    // State lives under HOME, so each sandbox gets its own and never touches the real one.
+    const home = resolve(root, "home");
+    const work = resolve(home, ".agents/states/github.com/test/repo/works/approved-hook");
     mkdirSync(work, { recursive: true });
     writeFileSync(resolve(work, "goal.md"), "# Approved hook\n");
     writeFileSync(resolve(work, "state.md"), "Plan source: state.md\nState revision: 1\n");
@@ -43,14 +46,14 @@ function withSandbox(test: (sandbox: Sandbox) => void): void {
     const acquired = spawnSync("bash", [lease, "acquire", "--work-dir", work, "--capability", "pm", "--session", "approval-test"], { encoding: "utf8" });
     expect(acquired.status, acquired.stderr).toBe(0);
     const token = (JSON.parse(acquired.stdout) as { token: string }).token;
-    test({ root, work, input, goal, state, remainder, token });
+    test({ root, home, work, input, goal, state, remainder, token });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
 function save(sandbox: Sandbox, overrides: { readonly token?: string; readonly source?: string; readonly cwd?: string; readonly executable?: string; readonly environment?: NodeJS.ProcessEnv } = {}): ReturnType<typeof spawnSync> {
-  const result = spawnSync(overrides.executable ?? saver, ["--work-id", "approved-hook", "--token", overrides.token ?? sandbox.token, "--plan-file", sandbox.input, "--goal-file", sandbox.goal, "--state-file", sandbox.state, "--remainder-file", sandbox.remainder, "--source", overrides.source ?? "codex:turn-approved"], { cwd: overrides.cwd ?? sandbox.root, env: { ...process.env, ...overrides.environment }, encoding: "utf8" });
+  const result = spawnSync(overrides.executable ?? saver, ["--work-id", "approved-hook", "--token", overrides.token ?? sandbox.token, "--plan-file", sandbox.input, "--goal-file", sandbox.goal, "--state-file", sandbox.state, "--remainder-file", sandbox.remainder, "--source", overrides.source ?? "codex:turn-approved"], { cwd: overrides.cwd ?? sandbox.root, env: { ...process.env, HOME: sandbox.home, ...overrides.environment }, encoding: "utf8" });
   expect(result.error).toBeUndefined();
   return result;
 }
@@ -144,9 +147,9 @@ describe("approved plan persistence", { timeout: 30_000 }, () => {
     expect(existsSync(resolve(sandbox.work, "plan.md"))).toBe(false);
   }));
 
-  it("should require the centralized state ignore gate", () => withSandbox((sandbox) => {
-    writeFileSync(resolve(sandbox.root, ".gitignore"), "");
-    expectRefused(save(sandbox), /workspace|ignored/i);
+  it("should require a network remote to locate the state root", () => withSandbox((sandbox) => {
+    expect(spawnSync("git", ["-C", sandbox.root, "remote", "remove", "origin"]).status).toBe(0);
+    expectRefused(save(sandbox), /workspace resolution refused.*remote_required/s);
     expect(existsSync(resolve(sandbox.work, "plan.md"))).toBe(false);
   }));
 

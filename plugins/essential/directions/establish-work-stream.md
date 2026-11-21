@@ -12,7 +12,7 @@ The main agent selects the identity from task context; the user is never asked m
 4. Inspect every other open stream charter and reuse the one that already owns the outcome. Never broaden a charter to avoid creating an identity.
 5. When no open charter owns the outcome, derive a type-free slug from a stable Task ID or the goal.
 6. Check the selected base against live and archived state, workspace paths, local and remote branches or bookmarks, and surviving pull-request identities. If an unrelated identity occupies it, shorten the base when needed and append the next free ordinal.
-7. Rerun the resolver with `--work-id <selected-id>`. Its filesystem and ignore gates remain authoritative.
+7. Rerun the resolver with `--work-id <selected-id>`. Its filesystem gates remain authoritative.
 
 On `work_id_required`, a main-agent caller performs these steps and reruns; a subagent returns the complete resolver payload to the main agent. Resolver candidates are discovery evidence, not format examples or charter authority.
 
@@ -44,6 +44,6 @@ When choosing a location, never select a provider-specific path such as `.claude
 
 ## Bootstrap state
 
-Run the resolver with the selected ID. After it returns `resolved` with `state_ignored: true`, acquire the main-agent lease and invoke the resolver with `--bootstrap` before creating another work artifact. Replace the generated charter placeholders with the settled goal and behavioral requirements.
+Run the resolver with the selected ID. After it returns `resolved`, acquire the main-agent lease and invoke the resolver with `--bootstrap` before creating another work artifact. Replace the generated charter placeholders with the settled goal and behavioral requirements.
 
 [state.md](../references/state.md) owns resolution and lifecycle semantics; [lease.md](./lease.md) owns the lease-verified invocation and no-clobber mechanics.

@@ -407,11 +407,8 @@ function publish(
   const workId = basename(workDir);
   validateSlug(workId, "work directory ID");
   const worksRoot = dirname(workDir);
-  if (
-    basename(worksRoot) !== "works" ||
-    basename(dirname(worksRoot)) !== ".state"
-  )
-    fail("unsafe_path", "work-dir must be .state/works/<work-id>");
+  if (basename(worksRoot) !== "works")
+    fail("unsafe_path", "work-dir must be <state-root>/works/<work-id>");
   const stateRoot = dirname(worksRoot);
   const summary = parseSummary(readFileSync(summaryFile));
   if (summary.workId !== workId)

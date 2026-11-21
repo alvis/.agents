@@ -10,33 +10,38 @@ usage() {
 usage: resolve-state-workspace [--work-id <id>|--work-id=<id>] \
          [--path <path>|--path=<path>] [--bootstrap]
 
-Resolves the state workspace and selected work identity, enforcing the
-.state ignore gate and path safety. A normal invocation is read-only;
+Resolves the state workspace and selected work identity from the repository
+remote. State lives outside every checkout, in
+$HOME/.agents/states/<host>/<path>/ (ADR-3), so all Git worktrees and jj
+workspaces of one repository share it. A normal invocation is read-only;
 --bootstrap is the main-agent-only no-clobber creation mode.
+
+The key comes from the remote: `origin`, else the sole remote. Host and path are
+lowercased; the user, port, trailing .git, and trailing slashes are dropped;
+nested groups keep every segment (git@github.com:Alvis/Presetter.git becomes
+github.com/alvis/presetter). Local-path and file:// remotes are refused.
 
 Output (JSON) on status:"resolved":
   vcs                 git | jj
   durable_root        active workspace root for versioned docs and repo files
-  repo_root           compatibility alias of durable_root
-  default_workspace   registered default tree (nullable discovery metadata)
   active_workspace    the tree the caller is working in
-  state_root          the tree that owns .state/ — the default source
-                      tree, falling back to active_workspace when no default
-                      tree can be discovered
+  state_key           <host>/<path> derived from the remote
+  state_root          $HOME/.agents/states/<state_key>; holds overview.md,
+                      works/, archive/ directly, with no .state level
   work_id             the selected work identity
   work_id_source      argument | environment | workspace | sole_existing
   work_dir            the only temporary root for the selected work, always
-                      under state_root/.state/works/
-  ignore_file         the state_root .gitignore carrying the .state/ rule
-  state_ignored true when the ignore gate holds
+                      state_root/works/<work_id>
   bootstrap_requested / bootstrap_created / bootstrap_existing
                       bootstrap mode and its exact created/preserved paths
 
-Other statuses: work_id_required (with work_id_grammar, naming_reference,
-workspace_label, suggested_work_id, and existing_work_ids — every stream on
-disk under works/ and archive/, to check a proposed ID against for collision,
-never a set of format examples), requires_ignore (with ignore_file), invalid
-(with error).
+Other statuses: work_id_required (exit 4, with work_id_grammar,
+naming_reference, workspace_label, suggested_work_id, and existing_work_ids —
+every stream on disk under works/ and archive/, to check a proposed ID against
+for collision, never a set of format examples), remote_required (exit 5, with
+remote_candidates; the repository has no usable network remote, so add an
+origin remote and rerun — a name is never guessed), invalid (exit 2, with
+error; includes a state folder that cannot be created or written, naming it).
 EOF
 }
 
@@ -94,6 +99,14 @@ require_safe_entrypoint() {
   fi
 }
 
+# A state folder may sit below a symlinked home or ~/.agents (dotfile setups),
+# so canonical form is judged against the parent's, never against the spelled path.
+stays_in_parent() {
+  local target="$1"
+  [[ "$(canonical_directory "$target")" == \
+     "$(canonical_directory "$(dirname "$target")")/$(basename "$target")" ]]
+}
+
 ensure_safe_directory_component() {
   local target="$1"
   require_safe_directory_component "$target"
@@ -102,33 +115,55 @@ ensure_safe_directory_component() {
       # A competing bootstrap may have created it. Accept only the same safe
       # directory shape; never follow or replace what appeared.
       require_safe_directory_component "$target"
-      [[ -d "$target" ]] || invalid "could not create state directory: $target"
+      [[ -d "$target" ]] ||
+        invalid "cannot create state folder $target; it or its parent is not writable, so grant write access to $states_base"
     fi
   fi
   require_safe_directory_component "$target"
-  [[ "$(canonical_directory "$target")" == "$target" ]] ||
-    invalid "state directory escaped its canonical workspace path: $target"
+  stays_in_parent "$target" ||
+    invalid "state directory escaped its canonical path: $target"
 }
 
-is_effectively_ignored() {
-  local workspace_root="$1"
-  local probe="$2"
-  local git_dir=""
-
-  if git -C "$workspace_root" rev-parse --git-dir >/dev/null 2>&1; then
-    git -C "$workspace_root" check-ignore --no-index -q -- "$probe"
-    return
-  fi
-
-  if command -v jj >/dev/null 2>&1 &&
-     git_dir="$(cd "$workspace_root" && jj --ignore-working-copy git root 2>/dev/null)" &&
-     [[ -n "$git_dir" ]]; then
-    git --git-dir="$git_dir" --work-tree="$workspace_root" \
-      check-ignore --no-index -q -- "$probe"
-    return
-  fi
-
-  return 1
+# Turn a remote URL into <host>/<path>, or fail when it names no network host.
+# Only ssh, https, http, git, and scp-style remotes qualify; a local path or a
+# file:// URL has no host, and a made-up name would let two unrelated folders
+# share state.
+state_key_from_remote() {
+  local url="$1" scheme="" rest="" authority="" host="" path="" segment
+  url="$(printf '%s' "$url" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+  case "$url" in
+    *://*)
+      scheme="$(printf '%s' "${url%%://*}" | tr '[:upper:]' '[:lower:]')"
+      case "$scheme" in
+        ssh | https | http | git | git+ssh | ssh+git) ;;
+        *) return 1 ;;
+      esac
+      rest="${url#*://}"
+      [[ "$rest" == */* ]] || return 1
+      authority="${rest%%/*}"
+      path="${rest#*/}"
+      authority="${authority##*@}"
+      host="${authority%%:*}"
+      ;;
+    /* | ./* | ../* | "~"* | . | ..) return 1 ;;
+    *:*)
+      host="${url%%:*}"
+      host="${host##*@}"
+      path="${url#*:}"
+      ;;
+    *) return 1 ;;
+  esac
+  host="$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')"
+  path="$(printf '%s' "$path" | tr '[:upper:]' '[:lower:]' |
+    sed -E 's#/+$##; s#\.git$##; s#/+$##; s#^/+##')"
+  [[ "$host" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || return 1
+  # 2: a network URL whose path cannot name a folder safely
+  [[ "$path" =~ ^[a-z0-9._~-]+(/[a-z0-9._~-]+)*$ ]] || return 2
+  local IFS='/'
+  for segment in $path; do
+    [[ "$segment" != "." && "$segment" != ".." ]] || return 2
+  done
+  printf '%s/%s' "$host" "$path"
 }
 
 work_id=""
@@ -190,24 +225,19 @@ fi
 
 start_path="$(canonical_directory "$start_path")"
 vcs=""
-repo_root=""
-default_workspace=""
 active_workspace=""
 workspace_label=""
 workspace_source=""
+remote_lines=""
 
 if command -v jj >/dev/null 2>&1 &&
    active_workspace="$(cd "$start_path" && jj --ignore-working-copy root 2>/dev/null)"; then
   vcs="jj"
   active_workspace="$(canonical_directory "$active_workspace")"
-  repo_root="$active_workspace"
-  if default_workspace="$(cd "$start_path" &&
-      jj --ignore-working-copy workspace root --name default 2>/dev/null)" &&
-     [[ -d "$default_workspace" ]]; then
-    default_workspace="$(canonical_directory "$default_workspace")"
-  else
-    default_workspace=""
-  fi
+  # `jj git remote list` prints "<name> <url>" per line, with or without a Git
+  # directory colocated beside the workspace.
+  remote_lines="$(cd "$start_path" &&
+    jj --ignore-working-copy git remote list 2>/dev/null || true)"
 
   while IFS= read -r candidate_name; do
     [[ -n "$candidate_name" ]] || continue
@@ -224,14 +254,12 @@ if command -v jj >/dev/null 2>&1 &&
 elif active_workspace="$(cd "$start_path" && git rev-parse --show-toplevel 2>/dev/null)"; then
   vcs="git"
   active_workspace="$(canonical_directory "$active_workspace")"
-  repo_root="$active_workspace"
-  default_workspace="$(cd "$start_path" && git worktree list --porcelain | \
-    awk 'NR == 1 && $1 == "worktree" {sub(/^worktree /, ""); print; exit}')"
-  if [[ -n "$default_workspace" && -d "$default_workspace" ]]; then
-    default_workspace="$(canonical_directory "$default_workspace")"
-  else
-    default_workspace=""
-  fi
+  while IFS= read -r candidate_name; do
+    [[ -n "$candidate_name" ]] || continue
+    candidate_url="$(cd "$start_path" &&
+      git remote get-url "$candidate_name" 2>/dev/null || true)"
+    remote_lines="${remote_lines}${candidate_name} ${candidate_url}"$'\n'
+  done < <(cd "$start_path" && git remote 2>/dev/null || true)
   workspace_label="$(cd "$start_path" &&
     git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
   if [[ -n "$workspace_label" ]]; then
@@ -241,15 +269,75 @@ else
   invalid "path is not inside a Git worktree or jj workspace: $start_path"
 fi
 
-# Work state is centralized: it lives only in the default source tree, so a
-# secondary worktree or workspace reads and writes the same .state/.
-# Falling back to the active tree keeps single-tree and detached checkouts
-# working when no default tree can be discovered.
-state_root="${default_workspace:-$active_workspace}"
+# The remote names the repository, so every worktree and workspace of it lands
+# on one state folder. Prefer origin; accept a sole remote; never guess.
+remote_names=()
+remote_urls=()
+while IFS= read -r remote_line; do
+  [[ -n "$remote_line" ]] || continue
+  remote_names+=("${remote_line%% *}")
+  if [[ "$remote_line" == *" "* ]]; then
+    remote_urls+=("${remote_line#* }")
+  else
+    remote_urls+=("")
+  fi
+done <<<"$remote_lines"
 
-state_dir="$state_root/.state"
-work_root="$state_dir/works"
-archive_root="$state_dir/archive"
+remote_name=""
+remote_url=""
+remote_index=0
+while [[ $remote_index -lt ${#remote_names[@]} ]]; do
+  if [[ "${remote_names[$remote_index]}" == "origin" ]]; then
+    remote_name="origin"
+    remote_url="${remote_urls[$remote_index]}"
+  fi
+  remote_index=$((remote_index + 1))
+done
+if [[ -z "$remote_name" && ${#remote_names[@]} -eq 1 ]]; then
+  remote_name="${remote_names[0]}"
+  remote_url="${remote_urls[0]}"
+fi
+
+state_key=""
+remote_refusal=""
+if [[ -z "$remote_name" ]]; then
+  if [[ ${#remote_names[@]} -eq 0 ]]; then
+    remote_refusal="the repository has no remote; add an origin remote that points at its network URL, then rerun"
+  else
+    remote_refusal="the repository has several remotes and none is named origin; name one origin, then rerun"
+  fi
+else
+  key_status=0
+  state_key="$(state_key_from_remote "$remote_url")" || key_status=$?
+  if [[ $key_status -eq 2 ]]; then
+    remote_refusal="remote $remote_name ($remote_url) has a path with characters other than a-z 0-9 . _ ~ - or a . or .. segment; point origin at a URL whose path uses only those, then rerun"
+  elif [[ $key_status -ne 0 ]]; then
+    remote_refusal="remote $remote_name ($remote_url) is not a network URL; point origin at an ssh or https URL, then rerun"
+  fi
+fi
+if [[ -n "$remote_refusal" ]]; then
+  remote_candidates_json="$(jq -n '$ARGS.positional' \
+    --args ${remote_names[@]+"${remote_names[@]}"})"
+  jq -n \
+    --arg vcs "$vcs" \
+    --arg active_workspace "$active_workspace" \
+    --argjson remote_candidates "$remote_candidates_json" \
+    --arg error "$remote_refusal" \
+    '{status:"remote_required", vcs:$vcs,
+      durable_root:$active_workspace, active_workspace:$active_workspace,
+      remote_candidates:$remote_candidates, error:$error}'
+  exit 5
+fi
+
+# Work state lives in the home directory, keyed by the remote (ADR-3), never
+# inside a checkout, so every worktree and workspace of one repository shares it.
+home_dir="${HOME:-}"
+[[ -n "$home_dir" && "$home_dir" == /* ]] ||
+  invalid "HOME must be an absolute path to locate ~/.agents/states"
+states_base="$home_dir/.agents/states"
+state_root="$states_base/$state_key"
+work_root="$state_root/works"
+archive_root="$state_root/archive"
 # A parked stream still owns its name. Minting a second one beside it would
 # leave two streams with one identity and no way to tell which unparks.
 if [[ -n "$work_id" && ! -d "$work_root/$work_id" && -d "$archive_root/$work_id" ]]; then
@@ -268,15 +356,20 @@ if [[ -n "$work_id" && ! -d "$work_root/$work_id" ]] &&
   invalid "a new work ID from $work_id_source must fit a path component, at most 255 bytes"
 fi
 
-require_safe_directory_component "$state_dir"
+# Symlinks are refused from the key downward; ~/.agents itself may be a symlink.
+key_walk="$states_base"
+key_segments=()
+IFS='/' read -r -a key_segments <<<"$state_key"
+for key_segment in "${key_segments[@]}"; do
+  key_walk="$key_walk/$key_segment"
+  require_safe_directory_component "$key_walk"
+done
 require_safe_directory_component "$work_root"
-if [[ -d "$state_dir" ]] &&
-   [[ "$(canonical_directory "$state_dir")" != "$state_dir" ]]; then
-  invalid "state directory escaped its canonical workspace path: $state_dir"
+if [[ -d "$state_root" ]] && ! stays_in_parent "$state_root"; then
+  invalid "state directory escaped its canonical path: $state_root"
 fi
-if [[ -d "$work_root" ]] &&
-   [[ "$(canonical_directory "$work_root")" != "$work_root" ]]; then
-  invalid "state root escaped its canonical workspace path: $work_root"
+if [[ -d "$work_root" ]] && ! stays_in_parent "$work_root"; then
+  invalid "state root escaped its canonical path: $work_root"
 fi
 
 work_candidates=()
@@ -341,7 +434,7 @@ if [[ -n "$workspace_label" ]]; then
   # with an optional two-digit stack slice under it. Reading anything looser —
   # a trailing segment that merely happens to match, a longer ordinal, a
   # leading word that is not a conventional-commit type — opens the wrong
-  # `.state/works/<id>/`, which is worse than asking.
+  # `works/<id>/`, which is worse than asking.
   IFS='/' read -r -a label_segments <<<"$workspace_label"
   candidate_from_label=""
   case "${#label_segments[@]}" in
@@ -402,20 +495,18 @@ if [[ -z "$work_id" ]]; then
     naming_reference="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/references/naming.md"
     jq -n \
       --arg vcs "$vcs" \
-      --arg repo_root "$repo_root" \
-      --arg active_workspace "$active_workspace" \
-      --arg default_workspace "$default_workspace" \
+        --arg active_workspace "$active_workspace" \
       --arg workspace_label "$workspace_label" \
+      --arg state_key "$state_key" \
       --arg state_root "$state_root" \
       --arg suggested_work_id "$workspace_work_id" \
       --arg work_id_grammar '^[a-z0-9]+(-[a-z0-9]+)*$ at or under 32 bytes, naming what the work is about: no date prefix, no type prefix, no random suffix' \
       --arg naming_reference "$naming_reference" \
       --argjson existing_work_ids "$existing_work_ids_json" \
       --arg error "work ID requires contextual main-agent selection; rerun with --work-id after checking charter ownership and collisions. existing_work_ids are every stream on disk under works/ and archive/, to check a proposed ID against for collision — not examples of the format, which is work_id_grammar" \
-      '{status:"work_id_required", vcs:$vcs, repo_root:$repo_root,
+      '{status:"work_id_required", vcs:$vcs,
         durable_root:$active_workspace, active_workspace:$active_workspace,
-        state_root:$state_root,
-        default_workspace:(if $default_workspace == "" then null else $default_workspace end),
+        state_key:$state_key, state_root:$state_root,
         workspace_label:(if $workspace_label == "" then null else $workspace_label end),
         suggested_work_id:(if $suggested_work_id == "" then null
           else $suggested_work_id end),
@@ -426,45 +517,16 @@ if [[ -z "$work_id" ]]; then
 fi
 
 work_dir="$work_root/$work_id"
-ignore_file="$state_root/.gitignore"
-active_probe=".state/works/$work_id/state.md"
 
 require_safe_directory_component "$work_dir"
-if [[ -d "$work_dir" ]] &&
-   [[ "$(canonical_directory "$work_dir")" != "$work_dir" ]]; then
-  invalid "state directory escaped its canonical workspace path: $work_dir"
+if [[ -d "$work_dir" ]] && ! stays_in_parent "$work_dir"; then
+  invalid "state directory escaped its canonical path: $work_dir"
 fi
 require_safe_directory_component "$work_dir/state"
 require_safe_entrypoint "$work_dir/state/working.md"
 require_safe_entrypoint "$work_dir/state.md"
 require_safe_entrypoint "$work_dir/goal.md"
 require_safe_entrypoint "$work_dir/state/journal.md"
-
-if [[ ! -f "$ignore_file" ]] ||
-   ! grep -Eq '^[[:space:]]*\.state/[[:space:]]*(#.*)?$' "$ignore_file" ||
-   ! is_effectively_ignored "$state_root" "$active_probe"; then
-  jq -n \
-    --arg vcs "$vcs" \
-    --arg repo_root "$repo_root" \
-    --arg durable_root "$active_workspace" \
-    --arg default_workspace "$default_workspace" \
-    --arg active_workspace "$active_workspace" \
-    --arg state_root "$state_root" \
-    --arg workspace_label "$workspace_label" \
-    --arg work_id "$work_id" \
-    --arg work_id_source "$work_id_source" \
-    --arg work_dir "$work_dir" \
-    --arg ignore_file "$ignore_file" \
-    --arg error "PM must add .state/ to the default source tree .gitignore before creating work artifacts" \
-    '{status:"requires_ignore", vcs:$vcs, repo_root:$repo_root,
-      durable_root:$durable_root,
-      default_workspace:(if $default_workspace == "" then null else $default_workspace end),
-      active_workspace:$active_workspace, state_root:$state_root,
-      workspace_label:(if $workspace_label == "" then null else $workspace_label end),
-      work_id:$work_id, work_id_source:$work_id_source, work_dir:$work_dir,
-      ignore_file:$ignore_file, error:$error}'
-  exit 3
-fi
 
 bootstrap_created=()
 bootstrap_existing=()
@@ -493,7 +555,15 @@ write_bootstrap_file() {
 }
 
 if [[ $bootstrap -eq 1 ]]; then
-  ensure_safe_directory_component "$state_dir"
+  mkdir -p -- "$states_base" 2>/dev/null ||
+    invalid "cannot create state folder $states_base; grant write access to it"
+  [[ -w "$states_base" ]] ||
+    invalid "state folder $states_base is not writable; grant write access to it"
+  key_walk="$states_base"
+  for key_segment in "${key_segments[@]}"; do
+    key_walk="$key_walk/$key_segment"
+    ensure_safe_directory_component "$key_walk"
+  done
   ensure_safe_directory_component "$work_root"
   ensure_safe_directory_component "$work_dir"
   ensure_safe_directory_component "$work_dir/state"
@@ -624,26 +694,23 @@ existing_json="$(jq -n '$ARGS.positional' \
 
 jq -n \
   --arg vcs "$vcs" \
-  --arg repo_root "$repo_root" \
   --arg durable_root "$active_workspace" \
-  --arg default_workspace "$default_workspace" \
   --arg active_workspace "$active_workspace" \
+  --arg state_key "$state_key" \
   --arg state_root "$state_root" \
   --arg workspace_label "$workspace_label" \
   --arg work_id "$work_id" \
   --arg work_id_source "$work_id_source" \
   --arg work_dir "$work_dir" \
-  --arg ignore_file "$ignore_file" \
   --argjson bootstrap_requested "$bootstrap" \
   --argjson bootstrap_created "$created_json" \
   --argjson bootstrap_existing "$existing_json" \
-  '{status:"resolved", vcs:$vcs, repo_root:$repo_root,
+  '{status:"resolved", vcs:$vcs,
     durable_root:$durable_root,
-    default_workspace:(if $default_workspace == "" then null else $default_workspace end),
-    active_workspace:$active_workspace, state_root:$state_root,
+    active_workspace:$active_workspace,
+    state_key:$state_key, state_root:$state_root,
     workspace_label:(if $workspace_label == "" then null else $workspace_label end),
     work_id:$work_id, work_id_source:$work_id_source, work_dir:$work_dir,
-    ignore_file:$ignore_file, state_ignored:true,
     bootstrap_requested:($bootstrap_requested == 1),
     bootstrap_created:$bootstrap_created,
     bootstrap_existing:$bootstrap_existing}'

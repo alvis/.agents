@@ -85,12 +85,12 @@ const READ_ONLY_AGENT_POLICIES: Readonly<
 > = {
   "aesthetic-evaluator": {
     hook_sha256:
-      "8af8edfdebade1440ac05b22cc6a06214b97e242313430ed306f1bd55a3dcfd0",
+      "76835f795ace0210d4f793c6bb4ed570c4570b0d96d796f0441b9f8204b88765",
     edit_patterns: [".claude/agent-memory/aesthetic-evaluator/*"],
   },
   "code-quality-critic": {
     hook_sha256:
-      "02b9715be978c366c6ff8d0aa11304a3a25c35cbfdba44325d45fd29a5389a73",
+      "a2a4d016f1806f06f0f60c4b5af54ad9255f72222c8ce64b60c6b370fc9c4177",
     edit_patterns: [".claude/agent-memory/code-quality-critic/*"],
   },
 };

@@ -1,5 +1,6 @@
 import { lstat, readdir, readFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { homedir } from "node:os";
+import { join, relative, resolve } from "node:path";
 
 import { parseStream, says } from "./parse.ts";
 
@@ -46,7 +47,7 @@ export interface Lease {
   expiresAtSeconds: number;
 }
 
-/** everything one `.state` tree had to say. */
+/** everything one state root had to say. */
 export interface Tree {
   /** the project the tree was read from, named after its directory */
   project: string;
@@ -63,17 +64,22 @@ export interface Tree {
 /**
  * names the project a tree was read from.
  *
- * the directory holding `.state` is the project, and its name is what a reader
- * calls it. It is folded to a slug because it becomes both a board id and the
- * storage key beneath it, and a key is not the place for a space or a leading
- * dot. Two projects of one name under different parents still answer to one
- * slug — a run holding both is refused by name, which is the right answer, and
- * two rendered apart is the residue this cannot reach from a directory alone.
- * @param stateDir the `.state` directory the tree was read from
+ * a state root sits at `~/.agents/states/<host>/<path>`, so its path below
+ * that folder is the repository's key and names the project: `github.com/a/b`
+ * and `gitlab.com/a/b` stay apart. A tree outside that layout is named by its
+ * own folder. The name is folded to a slug because it becomes both a board id
+ * and the storage key beneath it, and a key is not the place for a space or a
+ * leading dot.
+ * @param stateDir the state root the tree was read from
  * @returns the project's name as a slug, empty where it has no directory
  */
 function projectOf(stateDir: string): string {
-  return basename(dirname(stateDir))
+  const dir = resolve(stateDir);
+  const key = relative(join(process.env.HOME || homedir(), ".agents", "states"), dir);
+  const named =
+    key !== "" && !key.startsWith("..") ? key : (dir.split("/").at(-1) ?? "");
+
+  return named
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-+|-+$/gu, "");
@@ -96,7 +102,7 @@ function withinGrace(stream: Stream, now: Date): boolean {
 }
 
 /**
- * reads every live workstream out of a `.state` tree.
+ * reads every live workstream out of a state root.
  *
  * only `works/` is ever enumerated. Archived streams are excluded by their
  * location and nothing else — there is no name to match, no flag to read and
@@ -106,7 +112,7 @@ function withinGrace(stream: Stream, now: Date): boolean {
  * archived work back onto a board that states its own exclusion as a fact.
  * A stream is dropped from the board for one other reason: it says it is
  * `completed` and has not been touched for three days.
- * @param stateDir the `.state` directory
+ * @param stateDir the state root, which holds `works/` directly
  * @param now when the board is being built, which the grace window is measured
  *   against
  * @returns the streams to draw and the ones set aside
@@ -115,7 +121,7 @@ export async function readTree(stateDir: string, now: Date): Promise<Tree> {
   const works = join(stateDir, "works");
   const entries = await readdir(works, { withFileTypes: true }).catch(() => {
     throw new Error(
-      `no workstreams to read: ${works} is not a directory, so this is not a .state tree`,
+      `no workstreams to read: ${works} is not a directory, so this is not a state tree`,
     );
   });
 

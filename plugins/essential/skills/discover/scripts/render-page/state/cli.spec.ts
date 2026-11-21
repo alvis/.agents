@@ -81,7 +81,7 @@ describe("fn:main", () => {
   it("should refuse a run with no output path, and print how to give one", async () => {
     expect(await main([join(root, "state")], NOW)).toBe(2);
     expect(said.join("\n")).toBe(
-      "usage: bun scripts/render-page/state/cli.ts <.state> -o <board.json> [--kanban [--stream <work-id>] [--session <id>]]\n" +
+      "usage: bun scripts/render-page/state/cli.ts <state-root> -o <board.json> [--kanban [--stream <work-id>] [--session <id>]]\n" +
         "state/cli.ts: error: missing the -o <board.json> flag",
     );
   });
@@ -96,14 +96,14 @@ describe("fn:main", () => {
   it("should refuse more than one tree, saying how many it was given", async () => {
     expect(await main(["one", "two", "-o", join(root, "out.json")], NOW)).toBe(2);
     expect(said.join("\n")).toContain(
-      "state/cli.ts: error: expected exactly one .state directory, received 2",
+      "state/cli.ts: error: expected exactly one state directory, received 2",
     );
   });
 
   it("should refuse a directory that is not a state tree, naming what it wanted", async () => {
     expect(await main([root, "-o", join(root, "out.json")], NOW)).toBe(1);
     expect(said.join("\n")).toBe(
-      `state/cli.ts: error: no workstreams to read: ${join(root, "works")} is not a directory, so this is not a .state tree`,
+      `state/cli.ts: error: no workstreams to read: ${join(root, "works")} is not a directory, so this is not a state tree`,
     );
   });
 });

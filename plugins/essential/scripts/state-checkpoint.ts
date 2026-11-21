@@ -17,7 +17,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
@@ -321,7 +321,7 @@ function runHookAction(
     return;
   }
   if (typeof stateRoot !== "string" || !stateRoot) return;
-  const works = join(stateRoot, ".state", "works");
+  const works = join(stateRoot, "works");
   rejectSymlinks(works);
   const pending: WorkRecord[] = [];
   for (const entry of existsSync(works)
@@ -557,9 +557,12 @@ function readFileHash(path: string): string | undefined {
     ? hashBytes(readFileSync(path))
     : undefined;
 }
+// ~/.agents and home may be symlinked (dotfile setups), as the resolver allows,
+// so the walk stops at the states folder
 function rejectSymlinks(path: string): void {
+  const states = join(process.env.HOME || homedir(), ".agents", "states");
   let current = resolve(path);
-  while (true) {
+  while (current !== states) {
     if (lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink())
       throw new Error(`symlink in checkpoint path: ${current}`);
     const parent = dirname(current);
