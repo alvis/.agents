@@ -30,6 +30,8 @@ The installer validates and stitches the discovered templates before changing fi
 
 Agent metadata and harness overlays remain authoritative. Claude receives Markdown, Codex receives TOML, and Grok receives Markdown with its supported model and effort settings. The installer also supplies the shared support files those agents need.
 
+The installer also grants the harness write access to `~/.agents/states`, where work state lives (`essential:references/state.md`), by adding one entry and never turning a sandbox on: Claude `sandbox.filesystem.allowWrite` for Bash plus an `Edit(~/.agents/states/**)` rule in `permissions.allow` for its file tools, Codex `writable_roots`, and Grok `read_write` in the user's selected sandbox profile. When the entry cannot be placed safely, such as a Codex permissions profile or a built-in Grok profile, the installer prints the line to add by hand and carries on. OpenCode V1 receives `permission.external_directory` from its projector, `scripts/install_opencode.ts --scope user`.
+
 <IMPORTANT>
 Only the Grok branch attaches a marked instruction to read and follow `@<absolute-path>/GROK.md` in `${GROK_HOME:-$HOME/.grok}/AGENTS.md`. It preserves other content and refreshes its own unchanged block on reinstallation. Claude and Codex installation never reads or writes that file.
 

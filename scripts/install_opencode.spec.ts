@@ -17,7 +17,7 @@ import {
 import { basename, dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { main, parseArgs } from "./install_opencode.ts";
 import {
@@ -78,6 +78,15 @@ interface LegacyProjection {
   readonly legacyPath: string;
 }
 
+/** the installer imports the shared transaction and grant modules from the Essential plugin */
+function copyInstallationModules(repository: string): void {
+  for (const name of ["state-grant.ts", "transaction.ts"]) {
+    const relative = `plugins/essential/scripts/installation/${name}`;
+    mkdirSync(dirname(join(repository, relative)), { recursive: true });
+    copyFileSync(resolve(repositoryRoot, relative), join(repository, relative));
+  }
+}
+
 async function createFixtureRepository(sandbox: Sandbox): Promise<FixtureRepository> {
   const repository = join(sandbox.root, "repository");
   await writeFixture(
@@ -117,6 +126,7 @@ async function createFixtureRepository(sandbox: Sandbox): Promise<FixtureReposit
   const stitcher = "plugins/essential/skills/install/scripts/stitch_agent.ts";
   mkdirSync(dirname(join(repository, stitcher)), { recursive: true });
   copyFileSync(resolve(repositoryRoot, stitcher), join(repository, stitcher));
+  copyInstallationModules(repository);
   execFileSync("git", ["init", "--quiet"], { cwd: repository });
   execFileSync("git", ["add", "."], { cwd: repository });
   return { repository, scriptPath: join(repository, "scripts", "install_opencode.ts") };
@@ -633,6 +643,8 @@ describe("projection inventory", () => {
         "plugins/fixture/.claude-plugin/plugin.json",
         "plugins/fixture/skills/probe/SKILL.md",
         "plugins/essential/skills/install/scripts/stitch_agent.ts",
+        "plugins/essential/scripts/installation/state-grant.ts",
+        "plugins/essential/scripts/installation/transaction.ts",
         "scripts/harness_contract.ts",
         "scripts/install_opencode.ts",
         "scripts/opencode_adapter.js",
@@ -1225,6 +1237,7 @@ describe("runtime path rewriting", () => {
     const stitcher = "plugins/essential/skills/install/scripts/stitch_agent.ts";
     mkdirSync(dirname(join(repository, stitcher)), { recursive: true });
     copyFileSync(resolve(repositoryRoot, stitcher), join(repository, stitcher));
+    copyInstallationModules(repository);
     execFileSync("git", ["init", "--quiet"], { cwd: repository });
     execFileSync("git", ["add", "."], { cwd: repository });
     scriptPathInFixture = join(repository, "scripts", "install_opencode.ts");
@@ -1288,4 +1301,82 @@ describe("runtime path rewriting", () => {
       missing: "../../fixture/scripts/tool.py",
     });
   });
+});
+
+describe("state write grant", () => {
+  const entry = "~/.agents/states/**";
+  let sandbox: Sandbox;
+  let fixture: FixtureRepository;
+
+  beforeEach(async () => {
+    sandbox = await createSandbox();
+    fixture = await createFixtureRepository(sandbox);
+  });
+
+  afterEach(async () => {
+    await removeTemporaryDirectory(sandbox.root);
+  });
+
+  const install = (extra: readonly string[] = []) =>
+    runInstaller(["--scope", "user", "--plugin", "fixture", ...extra], sandbox, {
+      scriptPath: fixture.scriptPath,
+    });
+  const configDirectory = () => join(realpathSync(sandbox.config), "opencode");
+  const external = (name: string) =>
+    (readJson(join(configDirectory(), name)).permission as {
+      external_directory: Record<string, string>;
+    }).external_directory;
+
+  it("creates opencode.json with the grant and keeps reruns idempotent", async () => {
+    expect((await install()).exitCode).toBe(0);
+    expect(external("opencode.json")).toEqual({ [entry]: "allow" });
+    const second = await install();
+    expect(JSON.parse(second.stdout).state_grant).toBe("present");
+    expect(external("opencode.json")).toEqual({ [entry]: "allow" });
+  }, spawnTimeout * 2);
+
+  it("edits the existing opencode.jsonc and keeps user settings", async () => {
+    mkdirSync(configDirectory(), { recursive: true });
+    const file = join(configDirectory(), "opencode.jsonc");
+    writeFileSync(
+      file,
+      `${JSON.stringify({ theme: "x", permission: { external_directory: { "/mine/**": "allow" } } }, null, 2)}\n`,
+    );
+    expect((await install()).exitCode).toBe(0);
+    expect(existsSync(join(configDirectory(), "opencode.json"))).toBe(false);
+    const edited = readJson(file) as { theme: string };
+    expect(edited.theme).toBe("x");
+    expect(external("opencode.jsonc")).toEqual({
+      "/mine/**": "allow",
+      [entry]: "allow",
+    });
+  }, spawnTimeout);
+
+  it("asks for the entry by hand when both config files exist, and still installs", async () => {
+    mkdirSync(configDirectory(), { recursive: true });
+    writeFileSync(join(configDirectory(), "opencode.json"), "{}\n");
+    writeFileSync(join(configDirectory(), "opencode.jsonc"), "{}\n");
+    const result = await install();
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout).state_grant).toMatch(/^grant by hand: add permission\.external_directory/);
+    expect(readFileSync(join(configDirectory(), "opencode.json"), "utf8")).toBe("{}\n");
+  }, spawnTimeout);
+
+  it("leaves an unparseable jsonc file as it is and asks for the entry by hand", async () => {
+    mkdirSync(configDirectory(), { recursive: true });
+    const file = join(configDirectory(), "opencode.jsonc");
+    writeFileSync(file, '{ // keep\n}\n');
+    const result = await install();
+    expect(JSON.parse(result.stdout).state_grant).toMatch(/^grant by hand: /);
+    expect(readFileSync(file, "utf8")).toBe("{ // keep\n}\n");
+  }, spawnTimeout);
+
+  it("leaves a project-scope config untouched", async () => {
+    const result = await runInstaller(
+      ["--scope", "project", "--project-root", sandbox.project, "--plugin", "fixture"],
+      sandbox,
+      { scriptPath: fixture.scriptPath },
+    );
+    expect(JSON.parse(result.stdout).state_grant).toBe("skipped-project-scope");
+  }, spawnTimeout);
 });
