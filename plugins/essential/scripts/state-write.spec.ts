@@ -364,31 +364,38 @@ describe("cmd:state-write global targets", () => {
     },
   );
 
-  it("should refuse a noncanonical work root", () => {
+  it("should refuse a work directory outside a works folder", () => {
     const harness = new StateWriteHarness();
-    const token = harness.acquire();
+    const stray = resolve(harness.root, "stray/demo");
+    mkdirSync(stray, { recursive: true });
+    const acquired = spawnSync(
+      "/bin/bash",
+      [leaseScript, "acquire", "--work-dir", stray, "--capability", "pm", "--session", "stray"],
+      { encoding: "utf8" },
+    );
+    expect(acquired.status, acquired.stderr).toBe(0);
     const result = spawnSync(
       "/bin/bash",
       [
         stateWrite,
         "--work-dir",
-        harness.workDirectory,
+        stray,
         "--token",
-        token,
+        (JSON.parse(acquired.stdout) as { token: string }).token,
         "--state-target",
         "overview.md",
       ],
       { encoding: "utf8", input: "bad\n" },
     );
     expect(result.status).not.toBe(0);
-    expect(existsSync(resolve(harness.root, "overview.md"))).toBe(false);
+    expect(existsSync(resolve(harness.root, "stray/overview.md"))).toBe(false);
   });
 });
 
 function globalHarness(): GlobalWriteHarness {
   const root = mkdtempSync(resolve(tmpdir(), "state-global-write-"));
   onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  const state = resolve(root, ".state");
+  const state = resolve(root, "states/github.com/test/repo");
   const work = resolve(state, "works/demo");
   mkdirSync(work, { recursive: true });
   const acquired = spawnSync(

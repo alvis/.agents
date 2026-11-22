@@ -1,7 +1,7 @@
 import { mkdir, symlink } from "node:fs/promises";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readTree } from "./read.ts";
 import {
@@ -37,40 +37,66 @@ async function stream(
 
 beforeEach(async () => {
   root = await temporaryDirectory();
+  // the home state root is `~/.agents/states`, so the fixture home is the temp root
+  vi.stubEnv("HOME", root);
 });
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await removeDirectory(root);
 });
 
 describe("fn:readTree", () => {
-  it("should name the project by the directory that holds the tree", async () => {
+  it("should name the project by its key under the home state root", async () => {
+    const stateRoot = ".agents/states/GitHub.com/Some Org/Some.Project";
     await fixture(
       root,
-      "Some Project/.state/works/one/state.md",
+      `${stateRoot}/works/one/state.md`,
       "# Work state\n\n- Phase: `working`\n",
     );
 
-    const tree = await readTree(join(root, "Some Project/.state"), NOW);
+    const tree = await readTree(join(root, stateRoot), NOW);
 
     // a slug, because the name becomes the board's id and the storage key
     // beneath it, and neither is a place for a space or a leading dot
-    expect(tree.project).toBe("some-project");
+    expect(tree.project).toBe("github-com-some-org-some-project");
   });
 
-  it("should tell two trees apart by the projects they sit in", async () => {
-    for (const name of ["alpha", "beta"])
+  it("should tell apart one repository name on two hosts", async () => {
+    const named = [];
+    for (const host of ["github.com", "gitlab.com"]) {
+      const stateRoot = `.agents/states/${host}/alvis/presetter`;
       await fixture(
         root,
-        `${name}/.state/works/one/state.md`,
+        `${stateRoot}/works/one/state.md`,
         "# Work state\n\n- Phase: `working`\n",
       );
+      named.push((await readTree(join(root, stateRoot), NOW)).project);
+    }
 
-    const named = [];
-    for (const name of ["alpha", "beta"])
-      named.push((await readTree(join(root, name, ".state"), NOW)).project);
+    expect(named).toStrictEqual([
+      "github-com-alvis-presetter",
+      "gitlab-com-alvis-presetter",
+    ]);
+  });
 
-    expect(named).toStrictEqual(["alpha", "beta"]);
+  it("should not treat a repository's own .agents/states folder as the home state root", async () => {
+    const stateRoot = "repos/.agents/states/github.com/alvis/presetter";
+    await fixture(root, `${stateRoot}/works/one/state.md`, "# Work state\n\n- Phase: `working`\n");
+
+    expect((await readTree(join(root, stateRoot), NOW)).project).toBe("presetter");
+  });
+
+  it("should name a tree outside the home layout by its own folder", async () => {
+    await fixture(
+      root,
+      "Plain Tree/works/one/state.md",
+      "# Work state\n\n- Phase: `working`\n",
+    );
+
+    const tree = await readTree(join(root, "Plain Tree"), NOW);
+
+    expect(tree.project).toBe("plain-tree");
   });
 
   it("should read every live workstream, in a fixed order", async () => {
@@ -217,7 +243,7 @@ describe("fn:readTree", () => {
 
   it("should refuse a directory that is not a state tree, naming what it looked for", async () => {
     await expect(readTree(root, NOW)).rejects.toThrow(
-      `no workstreams to read: ${join(root, "works")} is not a directory, so this is not a .state tree`,
+      `no workstreams to read: ${join(root, "works")} is not a directory, so this is not a state tree`,
     );
   });
 });

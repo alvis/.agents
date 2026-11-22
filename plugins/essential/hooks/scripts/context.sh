@@ -131,15 +131,20 @@ get_repo_root_documents_context() {
   resolver_payload="$("$essential_root/scripts/resolve-state-workspace" \
     --path "$repo_root" 2>/dev/null || true)"
   resolver_status="$(jq -r '.status // empty' <<<"$resolver_payload" 2>/dev/null || true)"
-  if [[ "$resolver_status" == "resolved" || "$resolver_status" == "requires_ignore" ]]; then
+  if [[ "$resolver_status" == "resolved" ]]; then
     work_dir="$(jq -r '.work_dir // empty' <<<"$resolver_payload")"
     for name in goal.md state/working.md state.md; do
       path="$work_dir/$name"
       if [[ -f "$path" ]]; then
+        # Work state lives under the home directory, outside the repository, so
+        # the pointer is an absolute path; a repo-relative strip only applies to
+        # a path that happens to sit inside it.
         rel="${path#"$repo_root"/}"
         context+="- $rel"$'\n'
       fi
     done
+  elif [[ "$resolver_status" == "remote_required" ]]; then
+    context+="- State location is unresolved: the repository needs an origin remote with a network URL."$'\n'
   elif [[ "$resolver_status" == "work_id_required" ]]; then
     context+="- State selection is unresolved; the main agent selects when artifact work begins."$'\n'
   fi

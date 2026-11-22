@@ -8,6 +8,7 @@ import {
   readdirSync,
   realpathSync,
   unlinkSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
@@ -35,6 +36,8 @@ interface Receipt {
 interface CheckpointHarnessParams {
   root: string;
   installed?: string;
+  /** keep ~/.agents in a dotfiles folder behind a symlink */
+  linkedAgents?: boolean;
 }
 
 const plugin = resolve(import.meta.dirname, "..");
@@ -45,22 +48,40 @@ class CheckpointHarness {
   readonly #root: string;
   readonly #installed: string;
   readonly work: string;
+  readonly stateRoot: string;
   readonly environment: NodeJS.ProcessEnv;
   readonly token: string;
   readonly session = "runtime/session";
 
-  constructor({ root, installed = plugin }: CheckpointHarnessParams) {
+  constructor({ root, installed = plugin, linkedAgents = false }: CheckpointHarnessParams) {
     this.#root = root;
     this.#installed = installed;
-    this.work = join(root, ".state/works/demo");
+    if (linkedAgents) {
+      mkdirSync(join(root, "dotfiles/agents"), { recursive: true });
+      mkdirSync(join(root, "home"));
+      symlinkSync(join(root, "dotfiles/agents"), join(root, "home/.agents"));
+    }
+    this.stateRoot = join(root, "home/.agents/states/github.com/test/repo");
+    this.work = join(this.stateRoot, "works/demo");
     mkdirSync(join(this.work, "state"), { recursive: true });
     mkdirSync(join(root, "tmp"));
-    this.environment = { ...process.env, TMPDIR: join(root, "tmp") };
+    this.environment = {
+      ...process.env,
+      HOME: join(root, "home"),
+      TMPDIR: join(root, "tmp"),
+    };
     for (const variable of HARNESS_ROOT_VARIABLES)
       delete this.environment[variable];
     this.environment.PLUGIN_ROOT = installed;
     expect(this.run("git", ["init", "--quiet"]).status).toBe(0);
-    writeFileSync(join(root, ".gitignore"), ".state/\n");
+    expect(
+      this.run("git", [
+        "remote",
+        "add",
+        "origin",
+        "git@github.com:Test/Repo.git",
+      ]).status,
+    ).toBe(0);
     writeFileSync(join(this.work, "state/journal.md"), "# Journal\n");
     writeFileSync(
       join(this.work, "state.md"),
@@ -162,7 +183,7 @@ class CheckpointHarness {
 
   writeOverview(id: string, before = ""): void {
     writeFileSync(
-      join(this.#root, ".state/overview.md"),
+      join(this.stateRoot, "overview.md"),
       `# Overview\n\n${before}\n## Streams\n\n| Work ID | Phase |\n| --- | --- |\n| ${id} | working |\n`,
     );
   }
@@ -235,7 +256,7 @@ describe("cmd:state-checkpoint", { timeout: 30_000 }, () => {
           await createTemporaryDirectory("checkpoint-help-"),
         );
         context.onTestFinished(() => removeTemporaryDirectory(root));
-        const work = join(root, ".state/works/demo");
+        const work = join(root, "state/works/demo");
         mkdirSync(work, { recursive: true });
         writeFileSync(join(work, "lease.json"), "{}");
         writeFileSync(join(work, "state.md"), "original state\n");
@@ -311,6 +332,16 @@ describe("cmd:state-checkpoint", { timeout: 30_000 }, () => {
       }
     });
   }
+
+  it("should request the repair when ~/.agents is a symlink", async (context) => {
+    const harness = await createHarness(context, plugin, true);
+    harness.track();
+    harness.dirty();
+
+    expect(JSON.parse(harness.hook("Stop").stdout)).toMatchObject({
+      decision: "block",
+    });
+  });
 
   it("should use prompt nonces when Stop has no turn ID", async (context) => {
     const harness = await createHarness(context);
@@ -538,12 +569,13 @@ describe("cmd:state-checkpoint", { timeout: 30_000 }, () => {
 async function createHarness(
   context: TestContext,
   installed = plugin,
+  linkedAgents = false,
 ): Promise<CheckpointHarness> {
   const root = realpathSync(
     await createTemporaryDirectory("checkpoint with space-"),
   );
   context.onTestFinished(() => removeTemporaryDirectory(root));
-  return new CheckpointHarness({ root, installed });
+  return new CheckpointHarness({ root, installed, linkedAgents });
 }
 
 function snapshotHelpDirectory(root: string): unknown[] {

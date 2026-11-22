@@ -14,15 +14,27 @@ import {
 import { extname, isAbsolute, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const here = import.meta.dirname;
 const resolver = resolve(here, "resolve-state-workspace");
 const doctor = resolve(here, "../skills/doctor/scripts/state-doctor");
 const roots: string[] = [];
+// Every run gets its own HOME so no test can touch the real ~/.agents/states.
+const key = "github.com/test/repo";
+const remote = "git@github.com:Test/Repo.git";
+let home = "";
+let state = "";
+beforeEach(() => {
+  home = temporary("resolver-home");
+  state = resolve(home, ".agents/states", key);
+});
 afterEach(() => {
-  for (const root of roots.splice(0))
+  for (const root of roots.splice(0)) {
+    if (existsSync(resolve(root, ".agents")))
+      chmodSync(resolve(root, ".agents"), 0o755);
     rmSync(root, { recursive: true, force: true });
+  }
 });
 
 function temporary(name = "resolver"): string {
@@ -38,22 +50,17 @@ function git(cwd: string, ...args: readonly string[]): string {
   expect(result.status, result.stderr).toBe(0);
   return result.stdout;
 }
-function initialize(root: string, ignored = true): void {
+function initialize(root: string, origin: string | null = remote): void {
   mkdirSync(root);
   git(root, "init", "-q");
   git(root, "symbolic-ref", "HEAD", "refs/heads/main");
   git(root, "config", "user.email", "test@example.com");
   git(root, "config", "user.name", "Test");
-  if (ignored) writeFileSync(resolve(root, ".gitignore"), ".state/\n");
+  if (origin !== null) git(root, "remote", "add", "origin", origin);
 }
 function commitInitial(root: string): void {
   writeFileSync(resolve(root, "readme.md"), "test\n");
-  git(
-    root,
-    "add",
-    "readme.md",
-    ...(existsSync(resolve(root, ".gitignore")) ? [".gitignore"] : []),
-  );
+  git(root, "add", "readme.md");
   git(root, "commit", "-qm", "initial");
 }
 function run(
@@ -79,7 +86,7 @@ function run(
         ...(options.workId === undefined ? [] : ["--work-id", options.workId]),
       ];
   if (options.bootstrap === true) args.push("--bootstrap");
-  const environment = { ...process.env, ...options.environment };
+  const environment = { ...process.env, HOME: home, ...options.environment };
   delete environment.STATE_WORK_ID;
   if (options.environmentWorkId !== undefined)
     environment.STATE_WORK_ID = options.environmentWorkId;
@@ -108,11 +115,10 @@ describe("work state workspace resolution", () => {
       payload: {
         status: "work_id_required",
         vcs: "git",
-        repo_root: linked,
         durable_root: linked,
-        default_workspace: root,
         active_workspace: linked,
-        state_root: root,
+        state_root: state,
+        state_key: key,
         workspace_label: "feat/refunds",
         suggested_work_id: "refunds",
         existing_work_ids: [],
@@ -120,13 +126,13 @@ describe("work state workspace resolution", () => {
     });
     expect(missing.payload).not.toHaveProperty("work_dir");
     for (const id of ["refunds", "other-work"])
-      mkdirSync(resolve(root, ".state/works", id), { recursive: true });
+      mkdirSync(resolve(state, "works", id), { recursive: true });
     expect(run(linked)).toMatchObject({
       exitCode: 0,
       payload: {
         work_id: "refunds",
         work_id_source: "git_branch",
-        work_dir: resolve(root, ".state/works/refunds"),
+        work_dir: resolve(state, "works/refunds"),
       },
     });
   });
@@ -136,7 +142,7 @@ describe("work state workspace resolution", () => {
     initialize(root);
     commitInitial(root);
     for (const id of ["work-id-naming", "unrelated-work"])
-      mkdirSync(resolve(root, ".state/works", id), { recursive: true });
+      mkdirSync(resolve(state, "works", id), { recursive: true });
     for (const branch of [
       "feat/work-id-naming",
       "feat/work-id-naming/01-resolver",
@@ -171,7 +177,7 @@ describe("work state workspace resolution", () => {
     initialize(root);
     commitInitial(root);
     const legacy = `legacy-${"x".repeat(34)}`;
-    mkdirSync(resolve(root, ".state/works", legacy), { recursive: true });
+    mkdirSync(resolve(state, "works", legacy), { recursive: true });
     expect(run(root, { workId: legacy })).toMatchObject({
       exitCode: 0,
       payload: { work_id: legacy },
@@ -203,8 +209,8 @@ describe("work state workspace resolution", () => {
     const root = resolve(temporary(), "parked");
     initialize(root);
     commitInitial(root);
-    mkdirSync(resolve(root, ".state/archive/refunds"), { recursive: true });
-    mkdirSync(resolve(root, ".state/works/unrelated-work"), {
+    mkdirSync(resolve(state, "archive/refunds"), { recursive: true });
+    mkdirSync(resolve(state, "works/unrelated-work"), {
       recursive: true,
     });
     expect(String(run(root, { workId: "refunds" }).payload.error)).toContain(
@@ -223,7 +229,7 @@ describe("work state workspace resolution", () => {
       const root = resolve(temporary(), "suggestion");
       initialize(root);
       commitInitial(root);
-      mkdirSync(resolve(root, ".state/works/unrelated-work"), {
+      mkdirSync(resolve(state, "works/unrelated-work"), {
         recursive: true,
       });
       git(
@@ -243,7 +249,7 @@ describe("work state workspace resolution", () => {
   it("selects explicit then environment then sole existing work", () => {
     const root = resolve(temporary(), "selection");
     initialize(root);
-    mkdirSync(resolve(root, ".state/works/existing"), { recursive: true });
+    mkdirSync(resolve(state, "works/existing"), { recursive: true });
     expect(
       run(root, { workId: "explicit", environmentWorkId: "environment" }),
     ).toMatchObject({
@@ -351,18 +357,35 @@ describe("work state workspace resolution", () => {
     expect(findings).toHaveLength(1);
   });
 
-  it("cannot bootstrap past identity or ignore gates", () => {
+  it("cannot bootstrap past the identity gate or without a usable remote", () => {
     const root = resolve(temporary(), "gates");
-    initialize(root, false);
+    initialize(root);
     expect(run(root, { bootstrap: true })).toMatchObject({
       exitCode: 4,
       payload: { status: "work_id_required" },
     });
-    expect(existsSync(resolve(root, ".state"))).toBe(false);
+    expect(existsSync(resolve(home, ".agents"))).toBe(false);
+    const bare = resolve(temporary(), "bare");
+    initialize(bare, null);
     expect(
-      run(root, { workId: "eng-421-gated", bootstrap: true }),
-    ).toMatchObject({ exitCode: 3, payload: { status: "requires_ignore" } });
+      run(bare, { workId: "eng-421-gated", bootstrap: true }),
+    ).toMatchObject({ exitCode: 5, payload: { status: "remote_required" } });
+    expect(existsSync(resolve(home, ".agents"))).toBe(false);
+  });
+
+  it("leaves no state folder, ignore field, or gate inside the checkout", () => {
+    const root = resolve(temporary(), "clean");
+    initialize(root);
+    const result = run(root, { workId: "eng-421-clean", bootstrap: true });
+    expect(result).toMatchObject({
+      exitCode: 0,
+      payload: { status: "resolved", state_root: state },
+    });
+    for (const field of ["state_ignored", "ignore_file", "default_workspace", "repo_root"])
+      expect(result.payload).not.toHaveProperty(field);
     expect(existsSync(resolve(root, ".state"))).toBe(false);
+    expect(existsSync(resolve(state, ".state"))).toBe(false);
+    expect(existsSync(resolve(state, "works/eng-421-clean/state.md"))).toBe(true);
   });
 
   it("rejects symlinked work roots and entrypoints without external writes", () => {
@@ -370,8 +393,8 @@ describe("work state workspace resolution", () => {
     const outside = resolve(temporary(), "outside");
     mkdirSync(outside);
     initialize(root);
-    mkdirSync(resolve(root, ".state"));
-    symlinkSync(outside, resolve(root, ".state/works"), "dir");
+    mkdirSync(state, { recursive: true });
+    symlinkSync(outside, resolve(state, "works"), "dir");
     const linked = run(root, { workId: "eng-421-symlink", bootstrap: true });
     expect(linked).toMatchObject({
       exitCode: 2,
@@ -380,8 +403,8 @@ describe("work state workspace resolution", () => {
     expect(String(linked.payload.error)).toContain("must not be a symlink");
     expect(readdirSync(outside)).toEqual([]);
 
-    rmSync(resolve(root, ".state/works"), { recursive: true });
-    const work = resolve(root, ".state/works/eng-421-symlink");
+    rmSync(resolve(state, "works"), { recursive: true });
+    const work = resolve(state, "works/eng-421-symlink");
     mkdirSync(work, { recursive: true });
     const victim = resolve(outside, "state.md");
     writeFileSync(victim, "unchanged\n");
@@ -409,8 +432,8 @@ describe("work state workspace resolution", () => {
       "20260727-feat-refunds-v5cfxb",
       "20260721-fix-ingest-a54yx4",
     ])
-      mkdirSync(resolve(root, ".state/works", id), { recursive: true });
-    mkdirSync(resolve(root, ".state/archive/parked-work"), { recursive: true });
+      mkdirSync(resolve(state, "works", id), { recursive: true });
+    mkdirSync(resolve(state, "archive/parked-work"), { recursive: true });
     const result = run(root);
     expect(result.exitCode).toBe(4);
     expect(result.payload.existing_work_ids).toEqual([
@@ -432,49 +455,123 @@ describe("work state workspace resolution", () => {
     expect(extname(namingReference)).toBe(".md");
   });
 
-  it("requires the default tree ignore and rejects later negation", () => {
-    const root = resolve(temporary(), "ignore");
-    initialize(root, false);
-    let result = run(root, { workId: "eng-421-test" });
-    expect(result).toMatchObject({
-      exitCode: 3,
-      payload: {
-        status: "requires_ignore",
-        ignore_file: resolve(root, ".gitignore"),
-      },
-    });
-    writeFileSync(resolve(root, ".gitignore"), ".state/\n!.state/\n");
-    expect(run(root, { workId: "eng-421-test" })).toMatchObject({
-      exitCode: 3,
-      payload: { status: "requires_ignore" },
-    });
-    writeFileSync(resolve(root, ".gitignore"), ".state/\n");
-    result = run(root, { workId: "eng-421-test" });
-    expect(result).toMatchObject({
-      exitCode: 0,
-      payload: { status: "resolved", state_ignored: true },
-    });
-  });
-
-  it("uses the default Git worktree for state and active worktree for durable context", () => {
+  it("shares one state root between a Git worktree and its main checkout", () => {
     const base = temporary();
     const root = resolve(base, "main");
     const linked = resolve(base, "linked");
     initialize(root);
     commitInitial(root);
     git(root, "worktree", "add", "-q", "-b", "linked", linked);
-    const result = run(linked, { workId: "eng-421-test" });
-    expect(result).toMatchObject({
+    const main = run(root, { workId: "eng-421-test" });
+    const secondary = run(linked, { workId: "eng-421-test" });
+    expect(main.payload.state_root).toBe(state);
+    expect(secondary).toMatchObject({
       exitCode: 0,
       payload: {
         status: "resolved",
-        state_ignored: true,
-        state_root: root,
+        state_key: key,
+        state_root: state,
         active_workspace: linked,
         durable_root: linked,
-        work_dir: resolve(root, ".state/works/eng-421-test"),
+        work_dir: resolve(state, "works/eng-421-test"),
       },
     });
+  });
+
+  it.each([
+    ["git@github.com:Alvis/Presetter.git", "github.com/alvis/presetter"],
+    ["git@gitlab.com:a/b/c.git", "gitlab.com/a/b/c"],
+    ["ssh://git@Example.com:2222/Team/App.git/", "example.com/team/app"],
+    ["ssh://deploy@host.example/org/repo", "host.example/org/repo"],
+    ["https://GitHub.com/alvis/presetter.git", "github.com/alvis/presetter"],
+    ["https://user:token@gitlab.com/a/b/c/", "gitlab.com/a/b/c"],
+    ["https://github.com/alvis/presetter///", "github.com/alvis/presetter"],
+  ])("derives the state key from %s", (url, expected) => {
+    const root = resolve(temporary(), "key");
+    initialize(root, url);
+    expect(run(root, { workId: "eng-421-key" })).toMatchObject({
+      exitCode: 0,
+      payload: {
+        state_key: expected,
+        state_root: resolve(home, ".agents/states", expected),
+      },
+    });
+  });
+
+  it("uses origin first, then a sole remote, and otherwise refuses", () => {
+    const root = resolve(temporary(), "remotes");
+    initialize(root, null);
+    git(root, "remote", "add", "upstream", "https://github.com/Up/Stream.git");
+    expect(run(root, { workId: "eng-421-sole" })).toMatchObject({
+      exitCode: 0,
+      payload: { state_key: "github.com/up/stream" },
+    });
+    git(root, "remote", "add", "fork", "https://github.com/Me/Fork.git");
+    expect(run(root, { workId: "eng-421-sole" })).toMatchObject({
+      exitCode: 5,
+      payload: {
+        status: "remote_required",
+        remote_candidates: ["fork", "upstream"],
+      },
+    });
+    git(root, "remote", "add", "origin", "https://github.com/Or/Igin.git");
+    expect(run(root, { workId: "eng-421-sole" })).toMatchObject({
+      exitCode: 0,
+      payload: { state_key: "github.com/or/igin" },
+    });
+  });
+
+  it.each([
+    ["no remote", null],
+    ["a local path", "/srv/git/repo.git"],
+    ["a relative path", "../repo"],
+    ["a file URL", "file:///srv/git/repo.git"],
+    ["a path with traversal", "https://github.com/a/../b"],
+  ])("refuses %s as a state key", (_name, url) => {
+    const root = resolve(temporary(), "refused");
+    initialize(root, url);
+    const result = run(root, { workId: "eng-421-refused", bootstrap: true });
+    expect(result).toMatchObject({
+      exitCode: 5,
+      payload: { status: "remote_required" },
+    });
+    expect(String(result.payload.error)).toContain("origin");
+    expect(result.payload).not.toHaveProperty("state_root");
+    expect(existsSync(resolve(home, ".agents"))).toBe(false);
+  });
+
+  it.each([
+    ["an encoded space", "https://dev.azure.com/org/my%20project/_git/repo"],
+    ["a traversal segment", "https://github.com/a/../b"],
+  ])("names unsupported path characters, not a missing network URL, for %s", (_name, url) => {
+    const root = resolve(temporary(), "unsupported");
+    initialize(root, url);
+    const result = run(root, { workId: "eng-421-unsupported" });
+    expect(result).toMatchObject({ exitCode: 5, payload: { status: "remote_required" } });
+    expect(String(result.payload.error)).toContain("has a path with characters");
+    expect(String(result.payload.error)).not.toContain("not a network URL");
+  });
+
+  it("documents the refusal status and the new root in --help", () => {
+    const help = spawnSync("/bin/bash", [resolver, "--help"], {
+      encoding: "utf8",
+    });
+    expect(help.stderr).toContain("remote_required");
+    expect(help.stderr).toContain("$HOME/.agents/states/");
+    expect(help.stderr).not.toContain("requires_ignore");
+  });
+
+  it("names the state folder when the home state root cannot be written", () => {
+    const root = resolve(temporary(), "unwritable");
+    initialize(root);
+    mkdirSync(resolve(home, ".agents"));
+    chmodSync(resolve(home, ".agents"), 0o500);
+    const result = run(root, { workId: "eng-421-denied", bootstrap: true });
+    expect(result).toMatchObject({ exitCode: 2, payload: { status: "invalid" } });
+    expect(String(result.payload.error)).toContain(
+      resolve(home, ".agents/states"),
+    );
+    expect(String(result.payload.error)).toContain("write access");
   });
 
   it("refuses invalid IDs, environment values, and non-repositories", () => {
@@ -496,16 +593,13 @@ describe("work state workspace resolution", () => {
     const base = temporary();
     const primary = resolve(base, "jj default");
     const secondary = resolve(base, "jj secondary");
-    const gitDirectory = resolve(base, "backing.git");
     const binaries = resolve(base, "bin");
     for (const path of [primary, secondary, binaries]) mkdirSync(path);
-    git(base, "init", "--bare", "-q", gitDirectory);
-    writeFileSync(resolve(primary, ".gitignore"), ".state/\n");
-    mkdirSync(resolve(primary, ".state/works/secondary"), { recursive: true });
+    mkdirSync(resolve(state, "works/secondary"), { recursive: true });
     const jj = resolve(binaries, "jj");
     writeFileSync(
       jj,
-      `#!/bin/sh\n[ "$1" = --ignore-working-copy ] && shift\ncase "$1:$2" in\nroot:) printf '%s\\n' "$JJ_ACTIVE_ROOT" ;;\ngit:root) printf '%s\\n' "$JJ_GIT_DIR" ;;\nworkspace:list) printf 'default\\nsecondary\\n' ;;\nworkspace:root)\n  if [ "\${3:-}" = --name ] && [ "\${4:-}" = default ]; then printf '%s\\n' "$JJ_DEFAULT_ROOT"; else printf '%s\\n' "$JJ_ACTIVE_ROOT"; fi ;;\n*) exit 1 ;;\nesac\n`,
+      `#!/bin/sh\n[ "$1" = --ignore-working-copy ] && shift\ncase "$1:$2" in\nroot:) printf '%s\n' "$JJ_ACTIVE_ROOT" ;;\ngit:remote) printf '%s\n' "$JJ_REMOTES" ;;\nworkspace:list) printf 'default\nsecondary\n' ;;\nworkspace:root) if [ "$4" = default ]; then printf '%s\n' "$JJ_DEFAULT_ROOT"; else printf '%s\n' "$JJ_ACTIVE_ROOT"; fi ;;\n*) exit 1 ;;\nesac\n`,
     );
     chmodSync(jj, 0o755);
     const result = run(secondary, {
@@ -513,19 +607,18 @@ describe("work state workspace resolution", () => {
         PATH: `${binaries}:${process.env.PATH}`,
         JJ_ACTIVE_ROOT: secondary,
         JJ_DEFAULT_ROOT: primary,
-        JJ_GIT_DIR: gitDirectory,
+        JJ_REMOTES: "origin git@github.com:Test/Repo.git",
       },
     });
     expect(result).toMatchObject({
       exitCode: 0,
       payload: {
         vcs: "jj",
-        default_workspace: primary,
         active_workspace: secondary,
-        state_root: primary,
+        state_root: state,
         work_id: "secondary",
         work_id_source: "jj_workspace",
-        work_dir: resolve(primary, ".state/works/secondary"),
+        work_dir: resolve(state, "works/secondary"),
       },
     });
   });

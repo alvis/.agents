@@ -21,7 +21,7 @@ const VALUED = ["-o", "--stream", "--session"] as const;
 /**
  * runs the state board command line interface.
  *
- * this reads `.state` and writes page data — it never renders. Keeping the two
+ * this reads the state root and writes page data — it never renders. Keeping the two
  * apart is what lets `renderPage` stay a pure function of its data: the board
  * this produces is an ordinary data file, indistinguishable from a hand-written
  * one, and `render-page/cli.ts` turns it into a page without knowing where it came
@@ -39,7 +39,7 @@ export async function main(
   env: Record<string, string | undefined> = process.env,
 ): Promise<number> {
   const usage =
-    "usage: bun scripts/render-page/state/cli.ts <.state> -o <board.json> [--kanban [--stream <work-id>] [--session <id>]]";
+    "usage: bun scripts/render-page/state/cli.ts <state-root> -o <board.json> [--kanban [--stream <work-id>] [--session <id>]]";
   const kanban = argv.includes("--kanban");
   const at = (flag: string): number => argv.indexOf(flag);
   const value = (flag: string): string =>
@@ -61,7 +61,7 @@ export async function main(
         : !kanban && (at("--stream") !== -1 || at("--session") !== -1)
           ? "--stream and --session choose a status board, so they need --kanban"
           : positional.length !== 1
-            ? `expected exactly one .state directory, received ${positional.length}`
+            ? `expected exactly one state directory, received ${positional.length}`
             : "";
   if (complaint) {
     console.error(`${usage}\nstate/cli.ts: error: ${complaint}`);

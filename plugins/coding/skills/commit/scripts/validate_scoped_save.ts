@@ -23,7 +23,7 @@ import {
   writeSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import {
   basename,
   dirname,
@@ -382,7 +382,7 @@ function commandBuild(values: Readonly<Record<string, string>>): JsonObject {
   const outputLeaf = `${digest}.json`;
   const output = withSecureDirectory(
     stateRoot(repo),
-    [".state", "works", workId, "artifacts", "history", "save-manifests"],
+    ["works", workId, "artifacts", "history", "save-manifests"],
     true,
     (directory) => {
       const outputPath = join(directory.path, outputLeaf);
@@ -942,21 +942,17 @@ function resolveState(repo: RepositoryContext, workId: string): JsonObject {
   const state = parseJson(result.stdout, "state resolver output");
   if (
     state.status !== "resolved" ||
-    state.state_ignored !== true ||
     state.active_workspace !== repo.root ||
     state.work_id !== workId
   )
     throw new ContractError(
-      "state resolver did not authenticate the active workspace and ignored work root",
+      "state resolver did not authenticate the active workspace and work root",
     );
   const root = absoluteCliPath(state.state_root, "resolved state root");
   const work = absoluteCliPath(state.work_dir, "resolved work root");
-  ensureNoSymlinkChain(root, "/");
+  ensureCanonicalStateRoot(root);
   ensureNoSymlinkChain(work, root);
-  if (
-    realpathSync(root) !== root ||
-    work !== join(root, ".state", "works", workId)
-  )
+  if (work !== join(root, "works", workId))
     throw new ContractError(
       "resolved work root is not canonical for the selected work",
     );
@@ -975,10 +971,6 @@ function resolveState(repo: RepositoryContext, workId: string): JsonObject {
 
 function stateRoot(repo: RepositoryContext): string {
   return requireString(repo.state?.state_root, "resolved state root");
-}
-
-function stateRepository(repo: RepositoryContext): RepositoryContext {
-  return repositoryIdentity(stateRoot(repo), repo.resolver)[0];
 }
 
 function captureBuildState(
@@ -1028,7 +1020,7 @@ function validateBuildStateShape(manifest: JsonObject): JsonObject {
     const jj = requireObject(state.jj, "manifest sealed jj build identity");
     requireExactKeys(
       jj,
-      jjStateFields(repository.vcs),
+      JJ_STATE_FIELDS,
       "manifest jj build state",
     );
     if (jj.mutable !== true || jj.conflicts !== false || jj.divergent !== false)
@@ -1071,8 +1063,6 @@ function jjWorkspaceState(
         `cannot prove a clean ambient Git index for jj: ${decodeReplacement(staged.stderr).trim()}`,
       );
   }
-  const defaultBefore =
-    repo.identity.vcs === "jj-workspace" ? defaultWorkspaceProof(repo) : null;
   requireJjCapabilities(repo, selected);
   runJj(repo, ["status"]);
   const operationId = decodeTrimmedPath(
@@ -1192,21 +1182,8 @@ function jjWorkspaceState(
     divergent: false,
     selected_diff_sha256: sha256(diff),
   };
-  if (repo.identity.vcs === "jj-workspace") {
-    const defaultAfter = defaultWorkspaceProof(repo);
-    if (!deepEqual(defaultBefore, defaultAfter))
-      throw new ContractError("default workspace changed during jj snapshot");
-    snapshot.default_workspace = defaultAfter;
-  }
   repo.snapshot = snapshot;
   return snapshot;
-}
-
-function jjStateFields(vcs: JsonValue | undefined): Set<string> {
-  return new Set([
-    ...JJ_STATE_FIELDS,
-    ...(vcs === "jj-workspace" ? ["default_workspace"] : []),
-  ]);
 }
 
 function workspaceFiles(repo: RepositoryContext): string[] {
@@ -1306,84 +1283,6 @@ function workspaceInventory(
   return result;
 }
 
-function defaultWorkspaceProof(repo: RepositoryContext): JsonObject | null {
-  const root = stateRoot(repo);
-  if (root === repo.root) return null;
-  const primary = stateRepository(repo);
-  const gitDirectory = primary.identity.git_common_dir;
-  if (gitDirectory !== repo.identity.git_common_dir)
-    throw new ContractError(
-      "default workspace does not share the active backing Git store",
-    );
-  const operation = decodeTrimmedPath(
-    runJj(
-      primary,
-      ["op", "log", "-n", "1", "--no-graph", "-T", 'self.id() ++ "\\n"'],
-      { ignoreWorkingCopy: true },
-    ).stdout,
-  );
-  const identity = decodeTrimmedPath(
-    runJj(
-      primary,
-      [
-        "log",
-        "-r",
-        "@",
-        "--no-graph",
-        "-T",
-        'commit_id ++ " " ++ change_id ++ "\\n"',
-      ],
-      { ignoreWorkingCopy: true, atOperation: operation },
-    ).stdout,
-  );
-  const [commit, change] = identity.split(" ");
-  if (!commit || !change)
-    throw new ContractError("default workspace identity is incomplete");
-  const hasIndex = primary.identity.vcs !== "jj-workspace";
-  const head = hasIndex ? currentHead(primary) : null;
-  const index = hasIndex
-    ? decodeTrimmedPath(
-        runGit(primary, [
-          "rev-parse",
-          "--path-format=absolute",
-          "--git-path",
-          "index",
-        ]).stdout,
-      )
-    : null;
-  const existed = index !== null && existsSync(index);
-  const indexHash = existed ? sha256(readFileSync(index!)) : null;
-  const indexMode = existed ? statSync(index!).mode & 0o7777 : null;
-  const indexedPaths = hasIndex
-    ? splitBytes(runGit(primary, ["ls-files", "-z"]).stdout, 0)
-        .filter((path) => path.length)
-        .map(decodePath)
-    : treePaths(primary, commit);
-  const paths = [
-    ...new Set([...workspaceFiles(primary), ...indexedPaths]),
-  ].sort(comparePythonStrings);
-  const physical = paths.map((path) => [
-    path,
-    ...physicalState(primary, validateRelativePath(primary, path)),
-  ]);
-  const afterIndex =
-    index !== null && existsSync(index) ? sha256(readFileSync(index)) : null;
-  if (afterIndex !== indexHash || (hasIndex && currentHead(primary) !== head))
-    throw new ContractError(
-      "default workspace changed while capturing preservation proof",
-    );
-  return {
-    canonical_root: root,
-    git_common_dir: gitDirectory!,
-    head_commit: head,
-    index_existed: existed,
-    index_sha256: indexHash,
-    index_file_mode: indexMode,
-    working_copy_identity: identity,
-    physical_inventory_sha256: sha256(canonicalJson(physical)),
-  };
-}
-
 function requireStableWorkspace(repo: RepositoryContext): void {
   if (repo.identity.vcs !== "jj-workspace") return;
   const snapshot = requireObject(repo.snapshot, "pinned jj snapshot");
@@ -1397,10 +1296,6 @@ function requireStableWorkspace(repo: RepositoryContext): void {
   if (operation !== snapshot.operation_id)
     throw new ContractError(
       "jj operation changed during scoped-save validation",
-    );
-  if (!deepEqual(defaultWorkspaceProof(repo), snapshot.default_workspace))
-    throw new ContractError(
-      "default workspace changed during scoped-save validation",
     );
 }
 
@@ -1641,10 +1536,6 @@ function normalizePublicationRequest(
     if (seen.has(path) || folded.has(foldedPath))
       throw new ContractError(
         `duplicate/case-colliding publication path: ${path}`,
-      );
-    if (path === ".state/working.md" || path.startsWith(".state/works/"))
-      throw new ContractError(
-        `ignored local state cannot be published: ${path}`,
       );
     if (checkIgnored(repo, path))
       throw new ContractError(`publishable lifecycle path is ignored: ${path}`);
@@ -2070,10 +1961,6 @@ function loadProducerReceipt(
       throw new ContractError(
         `duplicate/case-colliding generated path: ${path}`,
       );
-    if (path === ".state/working.md" || path.startsWith(".state/works/"))
-      throw new ContractError(
-        `ignored work state cannot be producer-generated: ${path}`,
-      );
     if (checkIgnored(repo, path))
       throw new ContractError(
         `producer-generated publication path is ignored: ${path}`,
@@ -2350,10 +2237,6 @@ function validateStateEntries(
     requireExactKeys(value, expected, `${label} entry`);
     const path = validateRelativePath(repo, value.path);
     if (label === "publication") {
-      if (path === ".state/working.md" || path.startsWith(".state/works/"))
-        throw new ContractError(
-          `ignored local state cannot be published: ${path}`,
-        );
       if (checkIgnored(repo, path))
         throw new ContractError(
           `publishable lifecycle path is ignored: ${path}`,
@@ -2499,7 +2382,7 @@ function verifyJjSave(
   );
   requireExactKeys(
     preflight,
-    jjStateFields(repo.identity.vcs),
+    JJ_STATE_FIELDS,
     "jj preflight state",
   );
   const preflightOperation = requireString(
@@ -2513,13 +2396,6 @@ function verifyJjSave(
           repo,
           Object.keys(selected).sort(comparePythonStrings),
         );
-  if (
-    repo.identity.vcs === "jj-workspace" &&
-    !deepEqual(current.default_workspace, preflight.default_workspace)
-  )
-    throw new ContractError(
-      "default workspace preservation proof changed after save",
-    );
   const currentOperation = requireString(
     current.operation_id,
     "current jj operation id",
@@ -2670,7 +2546,7 @@ function validateWorkArtifacts(
   child: string,
 ): string {
   const workRoot = absoluteCliPath(workRootArgument, "--work-root");
-  const expected = join(stateRoot(repo), ".state", "works", workId);
+  const expected = join(stateRoot(repo), "works", workId);
   if (workRoot !== expected)
     throw new ContractError(`work root must be ${expected}`);
   ensureNoSymlinkChain(workRoot, stateRoot(repo));
@@ -2688,9 +2564,6 @@ function validateWorkArtifacts(
     throw new ContractError(
       `artifacts path is not a regular file: ${childAbsolute}`,
     );
-  const repoRelative = posixPath(relative(stateRoot(repo), childAbsolute));
-  if (!checkIgnored(stateRepository(repo), repoRelative))
-    throw new ContractError(`work artifacts must be ignored: ${childAbsolute}`);
   return workRoot;
 }
 
@@ -2714,14 +2587,13 @@ function validateArtifactsPointer(
     const parts = value.split("/");
     if (parts[0] === "artifacts") candidate = join(workRoot, ...parts);
     else if (
-      parts.slice(0, 4).join("/") ===
-      `.state/works/${basename(workRoot)}/artifacts`
+      parts.slice(0, 3).join("/") === `works/${basename(workRoot)}/artifacts`
     )
       candidate = join(stateRoot(repo), ...parts);
     else
       throw new ContractError(
         "generated-file artifacts pointer must be absolute, work-root-relative artifacts/, " +
-          "or repo-relative .state/works/<id>/artifacts/",
+          "or state-root-relative works/<id>/artifacts/",
       );
   }
   requireContainedPath(
@@ -2736,10 +2608,6 @@ function validateArtifactsPointer(
       `generated-file artifacts pointer is not a regular file: ${candidate}`,
     );
   const repoRelative = posixPath(relative(stateRoot(repo), candidate));
-  if (!checkIgnored(stateRepository(repo), repoRelative))
-    throw new ContractError(
-      `generated-file artifacts pointer must be ignored: ${candidate}`,
-    );
   return [candidate, repoRelative];
 }
 
@@ -2790,9 +2658,24 @@ function absoluteCliPath(value: JsonValue, label: string): string {
   return value;
 }
 
+// ~/.agents and home may be symlinked (dotfile setups), as the resolver allows,
+// so only the key below ~/.agents/states must be free of symlinks
+function ensureCanonicalStateRoot(root: string): void {
+  const states = join(process.env.HOME || homedir(), ".agents", "states");
+  ensureNoSymlinkChain(root, states);
+  if (realpathSync(root) !== join(realpathSync(states), relative(states, root)))
+    throw new ContractError("resolved work root is not canonical for the selected work");
+}
+
+// only components below `stop` are checked; `stop` is matched as spelled first,
+// so a symlinked ~/.agents above a state root is allowed, then canonically
 function ensureNoSymlinkChain(path: string, stop: string): void {
-  const resolvedStop = realpathSync(stop);
   const lexicalPath = resolve(path);
+  const spelled = relative(resolve(stop), lexicalPath);
+  const resolvedStop =
+    spelled === ".." || spelled.startsWith(`..${sep}`) || isAbsolute(spelled)
+      ? realpathSync(stop)
+      : resolve(stop);
   const descendant = relative(resolvedStop, lexicalPath);
   if (descendant === ".." || descendant.startsWith(`..${sep}`))
     throw new ContractError(`path escapes repository: ${path}`);

@@ -100,7 +100,7 @@ const fixtureCases: readonly FixtureCase[] = [
     name: "skips runtime, placeholder, bare, and absolute mentions",
     documents: {
       "plugins/alpha/doc.md":
-        "`.state/works/x/goal.md` `docs/a.md` `.claude/a.md` `state/a.md` `reviews/a.md` `.github/PULL_REQUEST_TEMPLATE.md` `plugins/<p>/skills/<name>/SKILL.md` `references/{{SLUG}}.md` `operations/{name}.ts` `SKILL.md` `/usr/tool.sh`",
+        "`~/.agents/states/github.com/a/b/works/x/goal.md` `docs/a.md` `.claude/a.md` `state/a.md` `reviews/a.md` `.github/PULL_REQUEST_TEMPLATE.md` `plugins/<p>/skills/<name>/SKILL.md` `references/{{SLUG}}.md` `operations/{name}.ts` `SKILL.md` `/usr/tool.sh`",
     },
     expected: [],
   },
