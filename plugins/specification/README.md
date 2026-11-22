@@ -8,7 +8,7 @@ Every workflow distinguishes three kinds of specification source:
 
 - **Reachable `repo:` local source** — authoritative at its exact path; an approved work-local copy is content-equivalent, never a second authority.
 - **`local-approved:` / `inline-approved:`** — the approved work-local copy becomes the active-work authority after content-equivalence verification.
-- **Notion-backed** — the canonical Notion spec (via its `.mdc` mirror) is authoritative; its revision-bound readable copy and synchronization evidence stay under the active work's `.state/`.
+- **Notion-backed** — the canonical Notion spec (via its `.mdc` mirror) is authoritative; its revision-bound readable copy and synchronization evidence stay under the active the state root.
 
 Approval always binds to exact content confirmed by direct comparison. For local or inline authority, the active work's `spec/` and `spec/provenance.json` record the approved contract, source kind, content hashes, and outputs. `spec/README.md` is the readable work-local contract and `reference.md` is optional for an intended consumer surface. For Notion authority, `goal.md` owns the canonical URL and accepted base while `spec/` plus `artifacts/spec-sync/` provide the verified work-local copy and receipt. Version-controlled `docs/**` remains durable project guidance, never a specification output.
 
@@ -39,7 +39,7 @@ Treat a synchronized specification as three copies:
 Materialize before planning or implementation:
 
 ```text
-/specification:sync-spec <notion-page-ref> --work-id=<id> --mirror=.state/notion --transport-profile=/absolute/path/to/notion-sync-transport.json --mode=materialize
+/specification:sync-spec <notion-page-ref> --work-id=<id> --mirror=<state-root>/notion --transport-profile=/absolute/path/to/notion-sync-transport.json --mode=materialize
 ```
 
 Completion normally runs through `spec-code`/`implement-code`; for advanced recovery, run exactly one `--mode=complete` stage (`--stage=specification` after content approval, or `--stage=implementation` after clean review).

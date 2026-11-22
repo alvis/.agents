@@ -18,7 +18,7 @@ Own transport, pairing, conflict packets, and post-sync integrity for declared l
 - Notion transport bodies are opaque here. `specification:mdc` owns the MDC grammar and authors semantic MDC bodies; another body dialect requires the exact capability supplied as `--body-author=<plugin:skill>`. `notion-sync` may update transport metadata but never interprets body grammar.
 - `validate-metadata` is read-only, interprets only frontmatter identity keys, and never loads a transport profile, reads `NOTION_TOKEN`, or inspects body syntax.
 - A cached mirror is not proof of current Notion state. Every outbound decision compares against a fresh staging pull.
-- Only the main agent may advance a canonical mirror, work state, or the external authority. A delegated run may validate, read, or pull into a unique OS-temporary staging directory and returns evidence/proposed bytes; it never performs outbound mutation or writes `.state/**`.
+- Only the main agent may advance a canonical mirror, work state, or the external authority. A delegated run may validate, read, or pull into a unique OS-temporary staging directory and returns evidence/proposed bytes; it never performs outbound mutation or writes `<state-root>/**`.
 
 ## Inputs
 

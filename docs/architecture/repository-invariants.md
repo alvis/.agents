@@ -18,7 +18,7 @@ A capability unique to one harness must say which harness and why. Claude-only o
 
 ## Truth and evidence
 
-Keep committed artifacts distinct from derived views. Marketplace projections and the compatibility matrix are committed and maintained manually. Overviews and installed plugin caches are rebuildable views. `.state/` is operational working memory, not byte-reconstructible; it becomes disposable only after durable facts are promoted and closure is recorded. Do not add a cache, index, or generated summary that something else then depends on.
+Keep committed artifacts distinct from derived views. Marketplace projections and the compatibility matrix are committed and maintained manually. Overviews and installed plugin caches are rebuildable views. Work state under `~/.agents/states/` is operational working memory, not byte-reconstructible; it becomes disposable only after durable facts are promoted and closure is recorded. Do not add a cache, index, or generated summary that something else then depends on.
 
 `done` records terminal history, not current validity. A workflow deciding what to recompute reads validity and never reopens a completed row to express staleness.
 

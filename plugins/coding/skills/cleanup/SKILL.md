@@ -11,7 +11,7 @@ argument-hint: "[path] [--exclude-remote]"
 
 When running a `jj` operation, follow `coding:directions/jj.md`.
 
-Own evidence-first cleanup of no-longer-needed development state: branches, registered worktrees/workspaces, jj changes, and the resolved state root's ignored `.state/works/<work-id>/` directories. Inventory first, preserve ambiguity, and remove only individually approved, recoverably backed-up eligible targets.
+Own evidence-first cleanup of no-longer-needed development state: branches, registered worktrees/workspaces, jj changes, and the resolved state root's `<state-root>/works/<work-id>/` directories. Inventory first, preserve ambiguity, and remove only individually approved, recoverably backed-up eligible targets.
 
 ## Boundaries
 
@@ -28,7 +28,7 @@ Own evidence-first cleanup of no-longer-needed development state: branches, regi
 
 ## State contract
 
-Before resolving state paths, read the absolute `state.md` path injected by Essential. If unavailable, do not classify or remove `.state/works/`; report the missing contract and continue only the traditional git/jj audit when useful. Cleanup reads final promotion records but does not create or rewrite them, `state/working.md`, `state.md`, or overview files. It makes no durable `docs/` write of its own. Backup metadata lives only in the OS temporary backup tree.
+Before resolving state paths, read the absolute `state.md` path injected by Essential. If unavailable, do not classify or remove `<state-root>/works/`; report the missing contract and continue only the traditional git/jj audit when useful. Cleanup reads final promotion records but does not create or rewrite them, `state/working.md`, `state.md`, or overview files. It makes no durable `docs/` write of its own. Backup metadata lives only in the OS temporary backup tree.
 
 ## Workflow
 
@@ -38,7 +38,7 @@ Before resolving state paths, read the absolute `state.md` path injected by Esse
    - Git worktrees: parse `git worktree list --porcelain`; for every registered local path record HEAD, branch, lock/prunable state, dirty/untracked files, and stashes.
    - jj: record mutable/divergent changes and paths/names returned by the installed version's workspace-listing commands. Include only explicitly registered local workspaces; an entry whose path cannot be resolved is a partial finding, not permission to scan or guess.
    - PRs when authorized: state, merge/close time, base/head, checks, and whether commits are present on the default branch.
-3. **Inventory centralized state.** Resolve one `state_root` from the Essential state contract and enumerate only `state_root/.state/works/*`. For each work directory record:
+3. **Inventory centralized state.** Resolve one `state_root` from the Essential state contract and enumerate only `<state-root>/works/*`. For each work directory record:
    - state-root identity and the recorded `Location` of its source checkout;
    - work ID/path, `state/working.md` and `state.md` presence, lifecycle status, owner, goal, repository revision, completion timestamp, and blockers;
    - `review.md` plus the seven review-area dispositions;
@@ -68,8 +68,8 @@ Before resolving state paths, read the absolute `state.md` path injected by Esse
 7. **Run blind-spot checks.** Check untracked/ignored files, dirty indexes, stashes, submodules, nested repositories, shallow clones, reused remote names, protected branches, git/jj disagreement, unreachable registered workspaces, unresolved named blockers or open questions, missing promotion records, conflicting completion timestamps, and landing-evidence drift. Downgrade the candidate on any unresolved risk.
 8. **Request per-target approval.** Present target type and exact path. For VCS targets, include the registered workspace; for state targets, include the centralized `state_root` and recorded source `Location`. Also present lifecycle class, recommendation, retirement-gate evidence, `retirement_ready_at`, landing age, promotion anchor, blind spots, backup/restore plan, and exact archival or VCS removal command. Only a gate-passing completed work stream is selectable as a state target. Never infer approval from `/cleanup`.
 9. **Back up approved targets.** Use a unique timestamped directory below the platform OS temporary root. For a state target, copy that exact work directory including dotfiles, write metadata containing `state_root`, recorded source `Location`, work ID, repository revision, promotion anchor, evidence summary, original path, and restoration command, then verify the backup is nonempty and its manifest matches. Preserve existing git bundle/patch backups for branches and full-directory backups for worktrees. For jj changes, record IDs and restoration commands because operation history preserves them.
-10. **Retire only approved, verified targets.** Move a completed stream's fully resolved `state_root/.state/works/<work-id>` directory to `state_root/.state/archive/<work-id>` first, then drop its overview row. Never delete a completed stream or anything under `state_root/.state/archive/`: the permanent archive is what prevents retired IDs from being reused. Recheck the gate and backup immediately before the move; never target `state_root/.state/works/`, `state_root/.state/archive/`, `state_root/.state/`, a workspace root, a glob, or an unresolved variable. Use the existing safe git/jj commands for separately approved VCS targets. Forced worktree/branch removal requires a separate explicit approval.
-11. **Verify and report.** Re-run inventories. For each archived state target, prove the source `state_root/.state/works/<work-id>` path is absent, the matching `state_root/.state/archive/<work-id>` path is present, its content matches the verified pre-move manifest plus work ID and repository revision, and its overview row is absent. Prove the archived stream has no named blocker/open question; when responsibility was transferred, verify the named durable carrier remains discoverable and contains the transferred question, and verify the completion-receipt evidence. Prove each unapproved target remains, the promotion anchor remains intact, and restoration information is usable.
+10. **Retire only approved, verified targets.** Move a completed stream's fully resolved `<state-root>/works/<work-id>` directory to `<state-root>/archive/<work-id>` first, then drop its overview row. Never delete a completed stream or anything under `<state-root>/archive/`: the permanent archive is what prevents retired IDs from being reused. Recheck the gate and backup immediately before the move; never target `<state-root>/works/`, `<state-root>/archive/`, a workspace root, a glob, or an unresolved variable. Use the existing safe git/jj commands for separately approved VCS targets. Forced worktree/branch removal requires a separate explicit approval.
+11. **Verify and report.** Re-run inventories. For each archived state target, prove the source `<state-root>/works/<work-id>` path is absent, the matching `<state-root>/archive/<work-id>` path is present, its content matches the verified pre-move manifest plus work ID and repository revision, and its overview row is absent. Prove the archived stream has no named blocker/open question; when responsibility was transferred, verify the named durable carrier remains discoverable and contains the transferred question, and verify the completion-receipt evidence. Prove each unapproved target remains, the promotion anchor remains intact, and restoration information is usable.
 
 <IMPORTANT>
 Cleanup is never automatic. A completed lifecycle routes to permanent archive, not deletion, after its applicable landing evidence has aged three days. Per-target confirmation and a verified recoverable backup remain required. Ambiguous evidence always preserves the directory.
@@ -77,7 +77,7 @@ Cleanup is never automatic. A completed lifecycle routes to permanent archive, n
 
 ## Verification
 
-- Inventory covers branches/remotes when available, registered Git worktrees, registered jj workspaces/changes, and work directories under the one resolved `state_root/.state/works/` path.
+- Inventory covers branches/remotes when available, registered Git worktrees, registered jj workspaces/changes, and work directories under the one resolved `<state-root>/works/` path.
 - Each work directory has lifecycle and retirement classifications, recorded source `Location`, promotion anchor, gate evidence, and landing age.
 - No active, interrupted, ambiguous, under-window, or incomplete-gate work is archivable.
 - A completed stream with a named blocker/open question remains indexed as `needs review` until the question is answered or transferred to a named durable carrier and the blocker is cleared.

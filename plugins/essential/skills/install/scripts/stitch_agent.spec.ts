@@ -164,7 +164,7 @@ describe("agent stitching", () => {
     const access = {
       read: "all-agents",
       write: "main-agent",
-      protected: "README.md,docs/**,.state/**,external-specification",
+      protected: "README.md,docs/**,~/.agents/states/**,external-specification",
     };
     expect(stateSystemAccess(claude)).toEqual(access);
     expect(stitchAgentDefinition(template)).toBe(claude);

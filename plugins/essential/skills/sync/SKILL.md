@@ -14,14 +14,14 @@ Close the loop between delivered work and the external systems that described it
 
 - Use for: updating external task status and recording deviations after delivery; bringing an external design document in line with shipped behavior; retrying items an earlier run left pending.
 - Do not use for: GitHub issues and discussions, which close through the PR's Development links that `coding:pr` sets; any governing specification, which `essential:references/state-systems.md` routes to its owning specification workflow (`specification:sync-spec` when installed); creating tasks or documents; reverting a task when a PR closes unmerged, which stays the user's decision.
-- Only the main agent holding the work's lease runs this skill, because it writes external systems and `.state/` under `essential:references/state-systems.md`. A subagent never runs it; the lease holder runs it when it reconciles the subagent's merge evidence.
+- Only the main agent holding the work's lease runs this skill, because it writes external systems and the state root under `essential:references/state-systems.md`. A subagent never runs it; the lease holder runs it when it reconciles the subagent's merge evidence.
 - Never invent a reference. A record sync cannot reach or identify is reported, never guessed.
 
 ## Inputs
 
 - Optional: one or more locations, each one of:
   - a work directory or Work ID — expands to every delivery its state records (PR URLs in `state.md`, `state/pr-monitor.md`, and `changes/`) plus `goal.md` specification provenance;
-  - a PR number or URL — that PR, plus the other members of its stack when it has one; when a work's `state.md` or `state/pr-monitor.md` under `.state/works/` records the PR, it belongs to that work and step 1's lease check applies;
+  - a PR number or URL — that PR, plus the other members of its stack when it has one; when a work's `state.md` or `state/pr-monitor.md` under `<state-root>/works/` records the PR, it belongs to that work and step 1's lease check applies;
   - an issue number or URL — the references its body lists, judged by the state of the PRs linked to resolve it; with no such PR, plan no status change;
   - an external task or document URL — that record alone, paired with the deliveries in scope that reference it.
 - Default: every work and delivery this session created, updated, or merged, from conversation context and the work streams whose lease this session holds. With none, report that nothing is in scope and stop.

@@ -9,7 +9,7 @@ Use the documented invocations below or the scripts' `--help` output as the inte
   --work-dir "$WORK_DIR" --token "$LEASE_TOKEN" --session "$SESSION_ID"
 ```
 
-Registration alone creates no pending obligation. It preserves a resumed session's unfinished checkpoint. The record lives in `state/checkpoints/<session-sha256>.json` under the resolved work directory and is written only through the lease-verified state writer. No owned stream means no registration and no `.state/` write.
+Registration alone creates no pending obligation. It preserves a resumed session's unfinished checkpoint. The record lives in `state/checkpoints/<session-sha256>.json` under the resolved work directory and is written only through the lease-verified state writer. No owned stream means no registration and no state-root write.
 
 ## Record material changes
 

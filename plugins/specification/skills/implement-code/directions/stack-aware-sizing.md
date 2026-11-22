@@ -17,7 +17,7 @@ Do not skip merely because `local_commits` is empty when relevant dirty changes 
 
 Inspect the exact implementation scope against immutable `base_rev` and record `history_state` as `dirty`, `saved`, or `none`, including `relevant_dirty_paths`, saved change/commit ids, and whether any candidate is already published. Exclude unrelated user-owned dirty paths; if the relevant set cannot be isolated safely, stop `blocked_scope` with the ambiguity rather than capturing unrelated work.
 
-When state is `dirty`, require the parent-provided immutable `scoped_save_manifest` path and SHA-256. Its full publication scope includes all lifecycle-generated source, test, project-documentation, active-work specification/provenance, and deletion paths intended for publication; its selected set is exactly the currently dirty subset. It excludes ignored work state and inventories every unrelated dirty path for before/after preservation. A missing, stale, incomplete, or ambiguous manifest is `blocked_scope`, not permission to fall back to an unscoped save.
+When state is `dirty`, require the parent-provided immutable `scoped_save_manifest` path and SHA-256. Its full publication scope includes all lifecycle-generated source, test, project-documentation, active-work specification/provenance, and deletion paths intended for publication; its selected set is exactly the currently dirty subset. It excludes work state and inventories every unrelated dirty path for before/after preservation. A missing, stale, incomplete, or ambiguous manifest is `blocked_scope`, not permission to fall back to an unscoped save.
 
 ## Recheck the semantic gate
 

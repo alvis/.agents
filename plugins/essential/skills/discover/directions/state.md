@@ -2,8 +2,8 @@
 
 Use this mode when the unknown is where work already in flight actually stands. The local state tree is the honest source when one holds the work; otherwise the source is labelled evidence.
 
-1. Resolve the target repository's `.state` root. The tree it must contain is `works/<id>/state.md`; a directory without one is not a state tree and the mode says so rather than rendering an empty board.
-2. Read every workstream under `works/` and nothing else. Archived streams live under `.state/archive/` and are excluded by their location alone — the read never enumerates that path, so no name match, flag, or filter can be got wrong. A stream whose phase is `completed` is still shown while its `Updated` timestamp is within three days of the run, because work finished but not yet archived is still what someone needs to see.
+1. Resolve the target repository's state root. The tree it must contain is `works/<id>/state.md`; a directory without one is not a state tree and the mode says so rather than rendering an empty board.
+2. Read every workstream under `works/` and nothing else. Archived streams live under `<state-root>/archive/` and are excluded by their location alone — the read never enumerates that path, so no name match, flag, or filter can be got wrong. A stream whose phase is `completed` is still shown while its `Updated` timestamp is within three days of the run, because work finished but not yet archived is still what someone needs to see.
 3. Take each stream's phase, owner, next action, and marked task table as written. The phase is spelled `Phase:` in some streams and `Lifecycle status:` in others; read both, and where a key repeats take the first occurrence, which is the one a reader sees at the top of the file.
 4. Classify blockers, open work, and progress using `essential:references/state-format.md#task-identity-and-tables`. A mark and a status that disagree count as blocked, since the cheaper mistake is showing a task that is fine.
 5. Order the board by what a reader has to act on: blockers and their `unblock:` action first, then a lane per stream, then how far each stream has got, then what changed most recently. Nothing on this board asks the reader a question — it is a report, and it carries no reply.
@@ -13,4 +13,4 @@ When no state tree holds the work, author the board's data from the evidence act
 
 Complete with the live streams, the blockers and their named unblock actions, the streams set aside with the reason for each, and the reading problems the tree presented.
 
-Use the **project state** direction in [presentation](presentation.md). Where a state tree exists, the board is generated from it rather than written by hand — `render-page/state/cli.ts` reads `.state` and emits the board data, `scripts/render-page/cli.ts` renders it — so the work in this mode is reading the tree correctly and saying what it could not read, not authoring sections.
+Use the **project state** direction in [presentation](presentation.md). Where a state tree exists, the board is generated from it rather than written by hand — `render-page/state/cli.ts` reads the state root and emits the board data, `scripts/render-page/cli.ts` renders it — so the work in this mode is reading the tree correctly and saying what it could not read, not authoring sections.

@@ -1,6 +1,6 @@
 # Backlog <n>: <title>
 
-<!-- Create .state/backlogs/backlog-<n>-<slug>.md under ../../../directions/backlog.md. Fill the metadata and section prompts; remove author comments and the optional section when unused. -->
+<!-- Create <state-root>/backlogs/backlog-<n>-<slug>.md under ../../../directions/backlog.md. Fill the metadata and section prompts; remove author comments and the optional section when unused. -->
 
 - Status: `<open|filed|adopted|dropped>`
 - Summary: <one clause, at most 19 words so its index row stays scannable>

@@ -1,13 +1,13 @@
 # State-file format
 
-Use this convention for every new or main-agent-migrated `state.md` and every resumable `state/*.md` child. Work items are LLM-readable Markdown; the doctor checks machine-readable structure while agents judge meaning and evidence. Essential owns the convention, domain skills own task definitions and evidence.
+Use this convention for every `state.md` and every resumable `state/*.md` child. Work items are LLM-readable Markdown; the doctor checks machine-readable structure while agents judge meaning and evidence. Essential owns the convention, domain skills own task definitions and evidence.
 
 ## Roles and authority
 
 - Root `state.md` is the complete execution registry. Its `## Tasks` table contains every parent and numbered subtask in the work item, even when a `state/*.md` child mirrors a subset for detailed resumption.
 - A child state declares `State role: child` and `Parent task: ABC`. It cannot introduce an ID absent from the root registry. The main agent reconciles its mutable fields with the root before dispatch or handover.
 - Root state uses `Plan source: state.md`: the complete root task registry is the approved definition source and consumers never guess among planning files. `state/plan.md` may hold ID-keyed semantic detail, but it is non-authoritative and cannot introduce or redefine tasks.
-- There is no required header token. Preserve any existing state file byte-for-byte until the main agent performs an explicit rewrite; the resolver never rewrites it.
+- There is no required header token. The resolver never rewrites an existing state file.
 
 Root state metadata contains at least:
 
