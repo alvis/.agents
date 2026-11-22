@@ -86,9 +86,19 @@ function sourceCheckout(): {
   return { root, essential };
 }
 
+// the installer grants state access in the harness config, so every run gets
+// its own home and never touches the real one
 function run(...args: readonly string[]) {
+  const home = temporaryRoot();
   const result = spawnSync("bun", ["run", script, ...args], {
     encoding: "utf8",
+    env: {
+      ...process.env,
+      HOME: home,
+      CLAUDE_CONFIG_DIR: resolve(home, ".claude"),
+      CODEX_HOME: resolve(home, ".codex"),
+      GROK_HOME: resolve(home, ".grok"),
+    },
   });
   return {
     exitCode: result.status ?? 1,

@@ -23,6 +23,7 @@ import {
   defaultAgentDestination,
   installManagedFiles,
 } from "../../../scripts/installation.ts";
+import { defaultStateGrantPaths } from "../../../scripts/installation/state-grant.ts";
 import {
   canonicalDirectory,
   InstallationError,
@@ -617,7 +618,11 @@ export function main(argv = process.argv.slice(2)): number {
   }
   destination ??= defaultAgentDestination(harness);
   try {
-    installAgents(pluginRoot, destination, { harness, includeMarketplaces });
+    installAgents(pluginRoot, destination, {
+      harness,
+      includeMarketplaces,
+      stateGrant: defaultStateGrantPaths(harness),
+    });
     return 0;
   } catch (error) {
     if (

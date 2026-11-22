@@ -64,6 +64,28 @@ describe("Essential installation ownership", () => {
     }
   });
 
+  it.each([
+    ["claude", ".claude/settings.json", '{\n  "theme": "dark"\n}\n'],
+    ["codex", "custom codex/config.toml", 'model = "x"\n'],
+  ] as const)("should grant %s state write access once and keep it on uninstall", (harness, configPath, original) => {
+    const sandbox = createSandbox();
+    try {
+      const path = join(sandbox.home, configPath);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, original);
+      const installed = runInstaller(sandbox, "install", harness);
+      expect(installed.status, installed.stderr).toBe(0);
+      expect(installed.stdout).toContain("granted state write access");
+      const granted = readFileSync(path, "utf8");
+      expect(granted).toContain(`${harness === "claude" ? "~" : sandbox.home}/.agents/states`);
+      expect(runInstaller(sandbox, "install", harness).stdout).not.toContain("granted state write access");
+      expect(runInstaller(sandbox, "uninstall", harness).status).toBe(0);
+      expect(readFileSync(path, "utf8")).toBe(granted);
+    } finally {
+      rmSync(sandbox.root, { recursive: true, force: true });
+    }
+  });
+
   it("should attach once, refresh a relocated Grok bootstrap, and preserve surrounding user text", () => {
     const sandbox = createSandbox();
     const userText = "# Personal instructions\n\nKeep my formatting.";
