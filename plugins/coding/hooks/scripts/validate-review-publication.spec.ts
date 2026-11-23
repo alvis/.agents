@@ -118,6 +118,7 @@ const protectedCommands = [
   "gh -R acme/app pr review 35 --approve; echo done",
   "gh api user $(gh pr review 35 --approve)",
   "gh api repos/acme/app/pulls/35/reviews --method POST; echo done",
+  'bash fetch-review-loop-discussion.sh "$PR_URL" >>discussion.jsonl && gh api -X POST repos/acme/app/pulls/35/reviews -f body=Approved',
   'bun plugins/coding/scripts/gh-pr-comment.ts 35 --body "Approved, ship it"',
   "bun gh-pr-comment.ts 35 --body=LGTM-approved",
   'bun gh-pr-comment.ts 35 -b "Requested changes below"',
@@ -220,6 +221,7 @@ describe("review publication shell guard", () => {
     "grep -h 'gh pr comment' notes.txt | cat -n",
     "cd plugins/coding && grep -rn 'gh pr comment' skills | head -5",
     "grep -rn 'gh pr comment' . 2>/dev/null | head",
+    'bash "${CODING_PR_SKILL_DIR}/scripts/fetch-review-loop-discussion.sh" "$PR_URL" \\\n  >>"$REVIEW_DISCUSSION" || exit $?',
   ])("should preserve unrelated and read-only commands: %s", (command) => {
     expect(classifyReviewPublicationCommand(command, pluginRoot).decision).toBe(
       "ignore",
