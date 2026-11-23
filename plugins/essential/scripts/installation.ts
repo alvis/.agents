@@ -10,8 +10,8 @@ import {
   readSnapshot,
 } from "./installation/transaction.ts";
 import type { FileChange, FileSnapshot } from "./installation/transaction.ts";
-import { planStateGrant } from "./installation/state-grant.ts";
-import type { StateGrantPaths } from "./installation/state-grant.ts";
+import { planWriteGrant } from "./installation/write-grant.ts";
+import type { WriteGrantPaths } from "./installation/write-grant.ts";
 
 /** harnesses supported by native agent installation */
 export type HarnessName = "claude" | "codex" | "grok";
@@ -28,11 +28,11 @@ export interface InstallationOptions {
   readonly harness?: HarnessName;
   readonly grokHome?: string;
   /**
-   * where the harness keeps its configuration and where state lives; when set,
-   * installation also grants the harness write access to the home state folder
-   * (ADR-3). Omitted by callers that must not touch harness configuration.
+   * where the harness keeps its configuration and which folders it must write;
+   * when set, installation also grants the harness write access to each root.
+   * Omitted by callers that must not touch harness configuration.
    */
-  readonly stateGrant?: StateGrantPaths;
+  readonly writeGrant?: WriteGrantPaths;
   readonly stdout?: (text: string) => void;
 }
 
@@ -152,9 +152,9 @@ export function installManagedFiles(
       : undefined;
   if (attachment?.change !== undefined) changes.push(attachment.change);
   const grant =
-    options.stateGrant === undefined
+    options.writeGrant === undefined
       ? { changes: [] }
-      : planStateGrant(harness, options.stateGrant);
+      : planWriteGrant(harness, options.writeGrant);
   changes.push(...grant.changes);
   const receipt: Receipt = {
     version: 1,
@@ -172,9 +172,9 @@ export function installManagedFiles(
   for (const file of files)
     options.stdout?.(`installed: ${join(canonicalDestination, file.path)}\n`);
   for (const { path } of grant.changes)
-    options.stdout?.(`granted state write access: ${path}\n`);
+    options.stdout?.(`granted write access: ${path}\n`);
   if (grant.manual !== undefined)
-    options.stdout?.(`grant state write access by hand: ${grant.manual}\n`);
+    options.stdout?.(`grant write access by hand: ${grant.manual}\n`);
 }
 
 /**

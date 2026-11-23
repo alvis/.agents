@@ -67,7 +67,7 @@ describe("Essential installation ownership", () => {
   it.each([
     ["claude", ".claude/settings.json", '{\n  "theme": "dark"\n}\n'],
     ["codex", "custom codex/config.toml", 'model = "x"\n'],
-  ] as const)("should grant %s state write access once and keep it on uninstall", (harness, configPath, original) => {
+  ] as const)("should grant %s write access to every root once and keep it on uninstall", (harness, configPath, original) => {
     const sandbox = createSandbox();
     try {
       const path = join(sandbox.home, configPath);
@@ -75,12 +75,29 @@ describe("Essential installation ownership", () => {
       writeFileSync(path, original);
       const installed = runInstaller(sandbox, "install", harness);
       expect(installed.status, installed.stderr).toBe(0);
-      expect(installed.stdout).toContain("granted state write access");
+      expect(installed.stdout).toContain("granted write access");
       const granted = readFileSync(path, "utf8");
-      expect(granted).toContain(`${harness === "claude" ? "~" : sandbox.home}/.agents/states`);
-      expect(runInstaller(sandbox, "install", harness).stdout).not.toContain("granted state write access");
+      for (const root of [".agents/states", ".cache/qmd", ".config/qmd"])
+        expect(granted).toContain(`${harness === "claude" ? "~" : sandbox.home}/${root}`);
+      expect(runInstaller(sandbox, "install", harness).stdout).not.toContain("granted write access");
       expect(runInstaller(sandbox, "uninstall", harness).status).toBe(0);
       expect(readFileSync(path, "utf8")).toBe(granted);
+    } finally {
+      rmSync(sandbox.root, { recursive: true, force: true });
+    }
+  });
+
+  it("should install and ask for the grant by hand when the settings cannot be parsed", () => {
+    const sandbox = createSandbox();
+    try {
+      const path = join(sandbox.home, ".claude/settings.json");
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, "{ // mine\n}\n");
+      const installed = runInstaller(sandbox, "install", "claude");
+      expect(installed.status, installed.stderr).toBe(0);
+      expect(installed.stdout).toContain("grant write access by hand:");
+      expect(installed.stdout).not.toContain("granted write access");
+      expect(readFileSync(path, "utf8")).toBe("{ // mine\n}\n");
     } finally {
       rmSync(sandbox.root, { recursive: true, force: true });
     }
