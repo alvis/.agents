@@ -22,6 +22,7 @@ This standard enforces requirements beyond common team conventions:
 | Every possible edge case handled | **Only realistic failures are handled; a race needs an occurrence estimate under `GEN-SAFE-04`** |
 | Optimize while implementing             | **Profile first, optimize second**                                 |
 | Mixed style tolerated                   | **Must match established project patterns**                        |
+| New package added when convenient       | **Native runtime API, then existing helper, then dependency tree, transitive included (declared in the importing package's manifest before import), before any new package; one library per job** |
 | Bulky working code accepted             | **A concrete clearer equivalent is required when complexity adds no behavior or readability** |
 | Quick fixes accepted                    | **Root-cause remediation required**                                |
 
@@ -45,6 +46,6 @@ If exception note is missing, submission is rejected.
 ## Rule Groups
 
 - `GEN-SAFE-*`: Safety and root-cause remediation guardrails.
-- `GEN-DESN-*`: Core design hygiene (responsibility, DRY, wrapper value).
+- `GEN-DESN-*`: Core design hygiene (responsibility, DRY, wrapper value, dead code, reuse before adding).
 - `GEN-CONS-*`: Consistency and readability conventions.
 - `GEN-SCAL-*`: Performance/scalability decision discipline.

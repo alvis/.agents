@@ -52,4 +52,4 @@ class ProductManager {
 
 ## Related
 
-GEN-CONS-02, GEN-CONS-03, GEN-DESN-01
+GEN-CONS-02, GEN-CONS-03, GEN-DESN-01, GEN-DESN-05

@@ -64,4 +64,4 @@ function calculateUserDiscount(user: User): number {
 
 ## Related
 
-GEN-DESN-01, GEN-DESN-03, GEN-DESN-04, GEN-CONS-01
+GEN-DESN-01, GEN-DESN-03, GEN-DESN-04, GEN-DESN-05, GEN-CONS-01
