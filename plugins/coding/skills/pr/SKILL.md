@@ -26,7 +26,7 @@ Every PR title, body, branch, review, and comment follows `coding:directions/aut
 ```text
 /coding:pr resolve <number-or-pr-url> [--prefer stack|pr]
 /coding:pr checkout <number-or-pr-url-or-local-branch> [--prefer stack|pr]
-/coding:pr author [<commit-ref>] [--base <ref>]
+/coding:pr author [<commit-ref>] [--base <ref>] [--head <branch>]
 /coding:pr verify --target <revision-anchor> --base <revision-anchor> [--kind standalone|stack-tip]
 /coding:pr create [<commit-ref>] [--branch-prefix <name>] [--remote <name>] [--no-verify] [--no-review] [--max-iteration <count>] [--dry-run]
 /coding:pr update [<pr-number-or-url> | <commit-ref>] [--branch-prefix <name>] [--remote <name>] [--no-verify] [--max-iteration <count>] [--dry-run]
@@ -46,7 +46,7 @@ For every request to create, inspect, update, restructure, publish, check out, s
 
 - `resolve` reports which namespace a number or URL names, and mutates nothing. Follow [resolve.md](directions/resolve.md) and report the resolved surface, the rejected candidate, and any ambiguity.
 - `checkout` lands a resolved stack or PR in a `jj` workspace. Follow [Land the resolved surface](directions/resolve.md#land-the-resolved-surface), which fetches the resolved head and adds a workspace on it, leaving every existing workspace untouched. It never commits, rewrites, pushes, or publishes.
-- `author` writes deterministic PR title and body text without publication, using [message.md](templates/message.md) when the repository has no local template. Follow only [Author the PR text](directions/create-update.md#author-the-pr-text); `--base` selects the intended PR base instead of the first-parent default.
+- `author` writes deterministic PR title and body text without publication, using [message.md](templates/message.md) when the repository has no local template. Follow only [Author the PR text](directions/create-update.md#author-the-pr-text); `--base` selects the intended PR base instead of the first-parent default, and `--head` names the head branch, which a `wip/` draft's title depends on.
 - `verify` classifies documentation-only changes and otherwise runs the fail-closed local test/lint gate for one exact target and base without publishing. Load and follow [verify.md](directions/verify.md); callers must pass resolved immutable revision IDs, and `--kind` defaults to `standalone`. Because these inputs do not identify a base ref or event type, workflow applicability is conservative and the receipt records that mode.
 - `create` follows [create-update.md](directions/create-update.md) with `ACTION=create`, including its review decision and local verification gate, and always loads [stacked-prs.md](directions/stacked-prs.md).
 - `update` republishes existing PR heads for a conventional linear stack, refreshes their title, body, and bases, and drives CI to green. Load and follow [create-update.md](directions/create-update.md) with `ACTION=update`, including its default tip-first and bottom-up local verification gate, and always load [stacked-prs.md](directions/stacked-prs.md).

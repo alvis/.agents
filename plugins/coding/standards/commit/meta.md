@@ -6,7 +6,7 @@ _Scannable requirements for the text of a commit message._
 
 This standard owns the rendered text of a commit message: its header, subject, scope, breaking-change marker, and body. Each violation is an issue that requires a fix before the message is written.
 
-[coding:commit](../../skills/commit/SKILL.md) owns every local history mutation that carries a message — describing, splitting, reordering, absorbing, and rewording. Those are directions, not standards. The [pull-request standard](../git/meta.md) owns the implementation diff and the rendered PR message; a PR title reuses the header contract below, but PR body evidence belongs to that standard.
+[coding:commit](../../skills/commit/SKILL.md) owns every local history mutation that carries a message — describing, splitting, reordering, absorbing, and rewording. Those are directions, not standards. The [pull-request standard](../git/meta.md) owns the implementation diff and the rendered PR message; a PR title reuses the header contract below, except the `wip` title of a [`direction-review` draft](../../directions/staged-delivery.md#build-the-draft), but PR body evidence belongs to that standard.
 
 Read this standard at the moment a message is authored. A commit message is validated before the mutation runs, never repaired afterwards.
 

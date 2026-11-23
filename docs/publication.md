@@ -26,6 +26,6 @@ Run `bun run plugins/governance/skills/write-skill/scripts/quick_validate.ts .` 
 
 Before history mutation, read `plugins/coding/standards/commit/write.md`, which owns the Conventional Commit subject regex and closed type allowlist, and validate the proposed subject against it before mutating history. Use no aliases or emoji prefixes. Scope is a plugin or `plugin/skill`, such as `feat(essential):` or `docs(coding/pr):`; omit scope for global changes.
 
-Ordinary branches are `type/kebab-summary`. Work streams use `type/<work-id>` or `type/<work-id>/NN-<slice>`. Work lands through pull requests, whose titles are also Conventional Commits.
+Ordinary branches are `type/kebab-summary`. Work streams use `type/<work-id>` or `type/<work-id>/NN-<slice>`. Work lands through pull requests, whose titles are also Conventional Commits; a never-merging `direction-review` draft on a `wip/` head is titled `wip` under `coding:directions/staged-delivery.md`.
 
 Tooling is jj-first and Git-compatible. `coding:commit` exclusively owns history mutation, `coding:pr create|update` owns publication and CI, and `coding:pr merge` merges stacks bottom-up. Route those operations through their owners rather than hand-writing commit or pull-request flows.
