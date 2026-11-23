@@ -36,7 +36,7 @@ Find what the repository already decided, built, and rejected that a coding plan
    git log --date=short --format='%h %ad %s' -- <paths>        # jj-only workspace: jj log -r 'files("<path>")'
    gh api -X GET search/issues -f q='repo:<owner>/<repo> is:pr is:merged <terms>' -f sort=updated -f order=desc --jq '.items[] | {number,title,html_url,closed_at}'
    gh api repos/<owner>/<repo>/commits/<sha>/pulls --jq '.[] | {number,title,html_url}'   # the PR that merged a commit
-   gh api repos/<owner>/<repo>/pulls/<n> --jq '{title,body,merged_at,html_url}'
+   gh api repos/<owner>/<repo>/issues/<n> --jq '{title,body,merged_at: .pull_request.merged_at,html_url}'   # the PR, read through the issues API
    ```
 
    The REST forms work where GitHub's GraphQL API is blocked. Read the body of each relevant pull request for what it did, what it rejected and why, and its recorded deviations. Search closed issues the same way (`is:issue is:closed`); an issue closed as not planned often records a rejected approach. Most recent first; stop when further results stop adding new relevant changes.

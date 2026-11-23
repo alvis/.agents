@@ -9,7 +9,7 @@ The link reads and mutations below are GraphQL-only. Where GraphQL is blocked, a
 Use the receiving `HOST`, PR repository `REPOSITORY`, numeric `PR_NUMBER`, and the selected issue's repository `ISSUE_REPOSITORY` and number `ISSUE_NUMBER`. Numbers alone are not globally unique. Require both repositories on the same host, read current state, and preserve valid existing links. An inaccessible issue, a PR passed as an issue, a moved head/base pair, or uncertain resolution intent blocks that association rather than triggering a search or guessed replacement.
 
 ```bash
-PR_ID=$(gh api --hostname "$HOST" "repos/$REPOSITORY/pulls/$PR_NUMBER" --jq .node_id) || exit $?
+PR_ID=$(gh pr view "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --json id --jq .id) || exit $?
 ISSUE_JSON=$(gh api --hostname "$HOST" "repos/$ISSUE_REPOSITORY/issues/$ISSUE_NUMBER") || exit $?
 ISSUE_ID=$(jq -er 'select(.pull_request == null) | .node_id' <<<"$ISSUE_JSON") || exit $?
 ```

@@ -8,8 +8,7 @@ Bind `HOST`, `REPOSITORY`, and numeric `NUMBER` from the target; reject a PR mas
 
 ```bash
 gh api --hostname "$HOST" "repos/$REPOSITORY/issues/$NUMBER"
-gh api --hostname "$HOST" --method GET \
-  "repos/$REPOSITORY/issues/$NUMBER/comments" -F per_page=100 -F page="$PAGE"
+gh api --hostname "$HOST" --method GET "repos/$REPOSITORY/issues/$NUMBER/comments" -F per_page=100 -F page="$PAGE"
 ```
 
 An issue response containing `pull_request` is not an issue. Save the numeric `id`, title, body, state, labels, milestone, type, timestamps, and comment IDs/content for comparison. Page comments from 1 while a next page exists and detail budget remains; each request consumes a detail read. Do not infer thread completeness from a truncated response. Record the latest substantive human evidence separately from generic update timestamps.
