@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Research a coding task before planning: retrieve related merged pull requests, architecture decision records, design and architecture documents, and the code and tests it touches, preferring any semantic search (RAG) tool the session provides, and return an evidence brief. Use when planning code changes, or when essential:plan requests coding research."
+description: "Research a coding task before planning: retrieve related merged pull requests, architecture decision records, design and architecture documents, and the code and tests it touches, preferring the local qmd index and any semantic search (RAG) tool the session provides, and return an evidence brief. Use when planning code changes, or when essential:plan requests coding research."
 requirements:
   model: capable
   effort: deliberate
@@ -25,7 +25,7 @@ Find what the repository already decided, built, and rejected that a coding plan
 ## Workflow
 
 1. **Frame the queries.** List each distinct concept, symbol, and component the task names, plus the words this codebase uses for them (read the nearest README or module names to learn them). Each becomes one query. List the paths the task likely touches.
-2. **Pick retrieval.** A semantic search tool takes a natural-language query and returns ranked passages of code, documents, or history — a codebase search, vector or embedding search, or knowledge-base MCP server. Inspect the session's tools for one. Probe each candidate with a symbol that exists in this repository; a tool that misses it does not index this repository and is skipped. Run every query through every tool that passes first, then fill gaps with keyword search: `rg` for code and documents, history commands for commits, and `gh` for pull requests and issues. With no passing tool, use keyword search alone and say so in the brief's Retrieval line. Semantic results include stale and nearest-neighbor noise, so a hit becomes evidence only after steps 3–6 open its source.
+2. **Pick retrieval.** Start with the repository's local qmd index under `essential:references/local-retrieval.md`: run its `ensure`, then send each query as typed `lex:` and `vec:` lines to every collection it lists. Then inspect the session's tools for another semantic search tool — a codebase search, vector or embedding search, or knowledge-base MCP server that returns ranked passages — and probe each candidate with a symbol that exists in this repository; a tool that misses it does not index this repository and is skipped. Run every query through each source that passes, then fill gaps with keyword search: `rg` for code and documents, history commands for commits, and `gh` for pull requests and issues. The qmd index shows only the default branch, so also run `rg` over the files the current workspace changed, as the reference shows. When qmd is unavailable and no other tool passes, use keyword search alone. Name every route in the brief's Retrieval line in the reference's report form. Semantic results include stale and nearest-neighbor noise, so a hit becomes evidence only after steps 3–6 open its source, using `qmd get` for a qmd hit.
 3. **Read the code.** Open the entry points, the sibling modules of the same kind, and their tests. Record how the touched area works today and the patterns a change should follow, each with `path:line`.
 4. **Read the decisions.** Find the repository's architecture decision records from its documentation index (commonly `docs/architecture/decisions/`). Read every effective record that constrains the touched area, and archived records only when a relevant current record supersedes them, under `essential:directions/adr-review.md`. Read work-local decisions and completed-work journals for the same domain in the state root as `essential:references/state-systems.md` allows. Record each constraint and the option it rules out.
 5. **Read the history.** Find merged pull requests that touched the paths or named the concepts:
@@ -49,7 +49,7 @@ When the touched area spans more files or pull requests than fit comfortably in 
 ## Verification
 
 - Every `observed` row cites a source that was opened, not only retrieved.
-- The Retrieval line names each semantic tool used, or states the keyword fallback and why.
+- The Retrieval line names qmd's mode and indexed commit or why it was unavailable, each other semantic tool used, the `rg` pass over workspace changes, and any keyword-only fallback with its reason.
 - Every effective decision record that constrains the touched area is cited; no archived record appears without its superseding record.
 - Outside the saved brief, the repository's working copy is unchanged (`git status --short` or `jj status` shows nothing new from this run).
 - The brief follows the template and fits its size limit.
