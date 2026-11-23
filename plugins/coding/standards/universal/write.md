@@ -4,7 +4,7 @@
 
 - Fix root causes, never suppress diagnostics without explicit user approval
 - Keep functions/modules focused on one clear purpose (single responsibility)
-- Eliminate duplication by consolidating semantically identical logic
+- Eliminate duplication by consolidating semantically identical logic; reuse native APIs, existing helpers, and the dependency tree before adding a helper or package
 - Wrappers must add concrete value; validation counts only at a trust boundary or for a condition supported execution realistically invalidates independently
 - Build the happy path; handle only failures that realistically occur, and accept finding none
 - Match established architecture and style patterns in the codebase
@@ -25,6 +25,8 @@
 - **GEN-DESN-01**: Keep functions/modules focused on one clear purpose with coherent boundaries. (→ FUNC-ARCH-01)
 - **GEN-DESN-02**: Consolidate duplicated logic into shared utilities when behavior is semantically identical.
 - **GEN-DESN-03**: A wrapper must add concrete value: boundary validation, policy enforcement, transformation, caching, telemetry, retries, or error normalization. (→ FUNC-ARCH-03)
+- **GEN-DESN-04**: Delete symbols with no consumer; a declared public-API export is not dead.
+- **GEN-DESN-05**: Before adding a helper or package, take the first fit in the [reuse order](rules/gen-desn-05.md): native runtime API, existing helper, dependency tree, transitive included (declared in the importing package's manifest before import), a user-approved full swap, then a new package with the official SDK first.
 
 ### Consistency (GEN-CONS)
 
@@ -116,9 +118,10 @@ Before introducing a new pattern, inspect nearby code and match the established 
 1. If diagnostics fail, fix the cause first (`GEN-SAFE-02`).
 2. If considering suppression, stop and get explicit user approval (`GEN-SAFE-01`).
 3. If adding abstraction, verify measurable value (`GEN-DESN-03`).
-4. If adding or removing runtime validation, apply the provenance, independent-invalidation, and exact-producer-test decision contract (`GEN-SAFE-03`).
-5. If adding or requesting failure handling, classify the failure and estimate a race's occurrence first (`GEN-SAFE-04`).
-6. If changing style/patterns, align with current architecture (`GEN-CONS-01`).
-7. If optimizing, provide profiling evidence (`GEN-SCAL-01`).
-8. For complex changes, run "what am I missing" check (`GEN-SCAL-03`).
-9. If replacing a declarative default with a conditional, revert to the declarative form (`GEN-CONS-04`).
+4. If adding a helper or package, walk the reuse order first (`GEN-DESN-05`).
+5. If adding or removing runtime validation, apply the provenance, independent-invalidation, and exact-producer-test decision contract (`GEN-SAFE-03`).
+6. If adding or requesting failure handling, classify the failure and estimate a race's occurrence first (`GEN-SAFE-04`).
+7. If changing style/patterns, align with current architecture (`GEN-CONS-01`).
+8. If optimizing, provide profiling evidence (`GEN-SCAL-01`).
+9. For complex changes, run "what am I missing" check (`GEN-SCAL-03`).
+10. If replacing a declarative default with a conditional, revert to the declarative form (`GEN-CONS-04`).

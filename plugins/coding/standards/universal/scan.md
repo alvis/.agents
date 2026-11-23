@@ -12,6 +12,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 - DO NOT duplicate logic that should be extracted [`GEN-DESN-02`]
 - DO NOT add wrappers that provide no behavioral value [`GEN-DESN-03`] (→ FUNC-ARCH-03)
 - DO NOT keep symbols with no consumer — pre-scan with `fallow dead-code --production`, then deep-dive each candidate case by case [`GEN-DESN-04`]
+- DO NOT add a helper or package before checking, in [reuse order](rules/gen-desn-05.md), native APIs every declared engine and target supports, existing helpers, and the dependency tree; never import an undeclared transitive dependency or add a second library for one job [`GEN-DESN-05`]
 - DO NOT add suppression comments without approval, such as `// @ts-ignore` or `/* eslint-disable */` [`GEN-SAFE-01`] (→ TYP-CORE-04)
 - DO NOT patch symptoms instead of fixing root cause, such as `catch { return }` that hides failures [`GEN-SAFE-02`]
 - DO NOT omit validation at a real trust boundary or revalidate a closed first-party producer postcondition whose exact producer test exists and supported execution cannot realistically invalidate independently [`GEN-SAFE-03`]
@@ -32,6 +33,7 @@ Any single violation blocks submission by default. Protocol: `essential:directio
 | `GEN-DESN-02` | Duplicate logic not extracted | `const y=a+b; const z=a+b`; `function calculateUserDiscount(user: User): number {` |
 | `GEN-DESN-03` | Wrapper adds no behavioral value | `return repo.findById(id)`; `function getUser(id: string): Promise<User> {` |
 | `GEN-DESN-04` | Symbol has no consumer (dead code) | `export const INLINE_PATTERNS = /.../` with no caller; `const logo = '...'` read by no code |
+| `GEN-DESN-05` | Helper or package added before reuse | `import dayjs from 'dayjs'` when every declared target ships `Temporal`; `import debug from 'debug'` undeclared in the package's manifest; `picomatch` added beside `globby` |
 | `GEN-SAFE-01` | Suppression comment used without approval | `// @ts-ignore`; `// @ts-ignore - types are broken here` |
 | `GEN-SAFE-02` | Symptom patched, root cause unresolved | `catch { return }` |
 | `GEN-SAFE-03` | Trust-boundary validation is missing or redundant | `const id = input.id` when `input: unknown`; `validateResult(await closedInternal.run())` despite an exact producer test |
