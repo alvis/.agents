@@ -149,43 +149,14 @@ The checks command reads the head's check runs and commit statuses over REST, so
 
 ### Read the existing discussion
 
-The dedicated reviewer performs this phase after the parent has located or created and verified `REVIEW_DIR`; it receives the pinned capsule and does not repeat parent metadata discovery. Read issue comments, reviews, inline comments, and review-thread state before reviewing. Page every connection; a partial discussion cannot support a `fixed`, `does_not_apply`, or de-duplication decision. Materialize every successful page in `REVIEW_DISCUSSION`, including complete bodies and replies, before projecting bounded counts or identifiers. Capture each `gh` failure before `jq`; never let a projection conceal a failed page.
+The dedicated reviewer performs this phase after the parent has located or created and verified `REVIEW_DIR`; it receives the pinned capsule and does not repeat parent metadata discovery. Read issue comments, reviews, inline comments, and review-thread state before reviewing. Page every connection; a partial discussion cannot support a `fixed`, `does_not_apply`, or de-duplication decision. Materialize every page in `REVIEW_DISCUSSION`, including complete bodies and replies, before projecting bounded counts or identifiers, through the bundled helper as one standalone command; the [review-publication gate](review-publishing.md#guarded-routes-and-limits) refuses these reads when inlined. The helper tags each record with its `kind` and prints nothing when any read fails, so a projection never conceals a failed page:
 
 ```bash
-ISSUE_COMMENTS=$(gh api --hostname "$HOST" --paginate --slurp \
-  "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments?per_page=100") || exit $?
-jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
-  --argjson pr "$PR_NUMBER" \
-  '.[][] | {host:$host, owner:$owner, repo:$repo, pr_number:$pr,
-    kind:"issue_comment", value:.}' \
-  <<<"$ISSUE_COMMENTS" >>"$REVIEW_DISCUSSION" || exit $?
-
-REVIEWS=$(gh api --hostname "$HOST" --paginate --slurp \
-  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews?per_page=100") || exit $?
-jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
-  --argjson pr "$PR_NUMBER" \
-  '.[][] | {host:$host, owner:$owner, repo:$repo, pr_number:$pr,
-    kind:"review", value:.}' \
-  <<<"$REVIEWS" >>"$REVIEW_DISCUSSION" || exit $?
-
-INLINE_COMMENTS=$(gh api --hostname "$HOST" --paginate --slurp \
-  "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments?per_page=100") || exit $?
-jq -c --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
-  --argjson pr "$PR_NUMBER" \
-  '.[][] | {host:$host, owner:$owner, repo:$repo, pr_number:$pr,
-    kind:"inline_comment", value:.}' \
-  <<<"$INLINE_COMMENTS" >>"$REVIEW_DISCUSSION" || exit $?
-
-THREADS=$(bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-threads.ts" \
-  "$PR_NUMBER" --repo "$HOST/$OWNER/$REPO") || exit $?
-jq -ce --arg host "$HOST" --arg owner "$OWNER" --arg repo "$REPO" \
-  --argjson pr "$PR_NUMBER" \
-  '{host:$host, owner:$owner, repo:$repo, pr_number:$pr,
-    kind:"review_threads", value:.}' \
-  <<<"$THREADS" >>"$REVIEW_DISCUSSION" || exit $?
+bash "${CODING_PR_SKILL_DIR}/scripts/fetch-review-loop-discussion.sh" "$PR_URL" \
+  >>"$REVIEW_DISCUSSION" || exit $?
 ```
 
-The threads helper follows every thread and comment page itself, through GraphQL or, where GraphQL is blocked, the cloud proxy's `/ccr/review_threads` route, so its one record is the complete thread inventory. Each thread lists its `comment_ids`, root first; join them to the `inline_comment` records for bodies, authors, and commits. Use identity-scoped queries over `REVIEW_DISCUSSION` to read every record and full body while emitting only counts, stable IDs, and the exact record currently under review. This is bounded presentation, not sampling: the persisted artifact is the authority for the complete discussion.
+The threads helper it calls follows every thread and comment page itself, through GraphQL or, where GraphQL is blocked, the cloud proxy's `/ccr/review_threads` route, so its one record is the complete thread inventory. Each thread lists its `comment_ids`, root first; join them to the `inline_comment` records for bodies, authors, and commits. Use identity-scoped queries over `REVIEW_DISCUSSION` to read every record and full body while emitting only counts, stable IDs, and the exact record currently under review. This is bounded presentation, not sampling: the persisted artifact is the authority for the complete discussion.
 
 Re-evaluate every existing P0/P1/P2 or mandatory-chore thread, including resolved threads whose evidence commit differs from `HEAD_OID`. For each previously reported issue, derive its verdict in every prior review where it was evaluated. Compare the latest verdict with the immediately preceding review's verdict; retain only issues whose verdict changed. The comparison is review-to-review, not commit-to-commit, so several pushes between reviews do not create extra entries.
 
