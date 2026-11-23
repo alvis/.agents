@@ -315,15 +315,21 @@ const STATUS_TEXT: Readonly<Record<StatusAssessment["status"], string>> = {
   "review-in-progress": "Independent review is in progress.",
   "review-started": "Independent review has started.",
 };
+// an id slot holds the digits or, once quotes are removed, a shell variable that
+// expands to them: `$NAME`, `${NAME}`, or a `${NAME…}` parameter form
+const PROTECTED_ID = String.raw`(?:\d+|\$(?:\w+|\{[^}]*\}))`;
 const PROTECTED_REST_PATTERN = new RegExp(
-  String.raw`^repos/[^/]+/[^/]+/pulls/(?:\d+/(?:comments(?:/\d+/replies)?|reviews(?:/\d+(?:/events)?)?|ccr/comments/\d+/(?:un)?resolve)|comments/\d+|reviews/\d+)(?:\?.*)?$`,
+  String.raw`^(?:repos/[^/]+/[^/]+|repositories/ID)/pulls/(?:ID/(?:comments(?:/ID/replies)?|reviews(?:/ID(?:/events|/dismissals)?)?|ccr/comments/ID/(?:un)?resolve)|comments/ID|reviews/ID)(?:\?.*)?$`.replaceAll(
+    "ID",
+    PROTECTED_ID,
+  ),
 );
 // issue comments (addComment, updateIssueComment, deleteIssueComment) are
 // deliberately unguarded so issue triage can publish; a pull-request target is
 // accepted and writes its conversation comments (see review-publishing.md,
 // "Guarded routes and limits")
 const PROTECTED_GRAPHQL_PATTERN =
-  /\b(?:addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|deletePullRequestReview|resolveReviewThread|submitPullRequestReview|unresolveReviewThread|updatePullRequestReview|updatePullRequestReviewComment)\b/;
+  /\b(?:addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|addPullRequestReviewThreadReply|deletePullRequestReview|deletePullRequestReviewComment|dismissPullRequestReview|resolveReviewThread|submitPullRequestReview|unresolveReviewThread|updatePullRequestReview|updatePullRequestReviewComment)\b/;
 
 const modulePath = fileURLToPath(import.meta.url);
 const defaultPluginRoot = resolve(dirname(modulePath), "../../../..");
@@ -2810,7 +2816,7 @@ function looksLikeReviewWrite(command: string): boolean {
     /\bgh\b[\s\S]*?\bpr\s+(?:comment|review)\b/.test(command) ||
     (/\bgh\b[\s\S]*?\bapi\b/.test(command) &&
       (PROTECTED_GRAPHQL_PATTERN.test(command) ||
-        /repos\/[^\s]+\/pulls\//.test(command)))
+        /repos(?:itories)?\/[^\s]+\/pulls\//.test(command)))
   );
 }
 
