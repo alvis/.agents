@@ -33,10 +33,24 @@ Each cell shows the primary install method per the tool's official upstream guid
 | `gh`   | `brew install gh`       | official `cli.github.com` apt repo + `apt install gh` | `dnf install gh` (after config-manager add-repo) | release tarball → `~/.local/bin` | `winget install --id GitHub.cli`   |
 | `fallow` | `cargo install fallow-cli` † | `cargo install fallow-cli` †                 | `cargo install fallow-cli` † | `cargo install fallow-cli` †        | `cargo install fallow-cli` †       |
 | `python` | `brew install python`     | `apt-get update && apt-get install -y python3` | `dnf install -y python3` | _none_ (fails with manual-install note) | `winget install python3` |
+| `qmd`  | `brew install sqlite` first, then `npm install -g @tobilu/qmd` ‡ | `npm install -g @tobilu/qmd` ‡ | `npm install -g @tobilu/qmd` ‡ | `npm install -g @tobilu/qmd` ‡ | `npm install -g @tobilu/qmd` ‡ |
 
 \* When `cargo` is not installed, falls back to the Linux tarball path.
 
 † `cargo` is cross-platform, so `fallow` uses the same command on every OS. It requires the Rust toolchain (`cargo`) as a prerequisite; the installer fails with a clear message pointing at <https://rustup.rs> when `cargo` is absent.
+
+‡ See [qmd](#qmd).
+
+## qmd
+
+`qmd` is the first tool installed as a global JavaScript package; it is configured by `offPathPossible` in [tool-registry.md](tool-registry.md).
+
+- **Runtime**: the host must already have Node 22 or later and `npm`; nothing checks the Node version, because qmd's launcher starts with `#!/usr/bin/env node` and no other runtime can run it. The installer fails only when `npm` is absent.
+- **macOS**: Homebrew SQLite is ensured first (`brew install sqlite`, skipped when already installed) because Apple's bundled SQLite cannot load extensions.
+- **Windows shells**: the npm prefix is converted with `cygpath -u` before it is compared with `PATH` or printed.
+- **PATH**: when `qmd` does not resolve after install, the installer prints the exact `export PATH=…` line to add and sync reports `failed`.
+- **Models**: `qmd pull` runs once after a fresh install (not on updates) and downloads about 2.1 GB into `~/.cache/qmd/models`; a failed pull is reported without failing the install.
+- **npm warnings**: npm 11 skips the global install scripts of `node-llama-cpp` and the tree-sitter grammars unless allowed; prebuilt binaries still load, so embedding, hybrid query, and AST chunking work — do not "fix" the warnings by allowing scripts.
 
 ## Conventions
 

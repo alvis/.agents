@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   chmod,
+  mkdir,
   mkdtemp,
   readFile,
   rm,
@@ -48,6 +49,316 @@ async function isolatedPath(root: string): Promise<string> {
   return `${root}${delimiter}/usr/bin:/bin`;
 }
 
+interface QmdScenario {
+  readonly brew?: boolean;
+  readonly globalBinOnPath?: boolean;
+  readonly installPlacesQmd?: boolean;
+  readonly npm?: boolean;
+  readonly pullFails?: boolean;
+  readonly qmdBefore?: string;
+  readonly sqliteInstalled?: boolean;
+  readonly uname?: string;
+  readonly unreadableVersion?: boolean;
+  readonly windows?: boolean;
+}
+
+const WINDOWS_PREFIX = "C:\\Users\\u\\AppData\\Roaming\\npm";
+const REAL_TOOLS = ["bun", "brew", "node", "npm", "qmd"];
+
+/**
+ * builds a fake toolchain whose every call appends to one ordered log
+ * @param root scratch directory holding the fake executables
+ * @param scenario which fake tools exist and how they behave
+ * @returns the PATH, environment, global bin directory, and call log location
+ */
+async function qmdToolchain(root: string, scenario: QmdScenario = {}) {
+  // a space in the prefix proves the printed PATH line escapes it
+  const prefix = join(root, "npm prefix");
+  // npm on Windows keeps shims in the prefix itself; elsewhere in prefix/bin
+  const binDirectory = scenario.windows
+    ? join(root, "winnpm")
+    : join(prefix, "bin");
+  const utilities = join(root, "utilities");
+  const log = join(root, "calls.log");
+  await mkdir(binDirectory, { recursive: true });
+  await mkdir(utilities);
+  await writeFile(log, "");
+  // the only real programs the installer path needs, linked by name
+  for (const name of ["bash", "chmod", "cp"]) {
+    const found = spawnSync("sh", ["-c", `command -v ${name}`], {
+      encoding: "utf8",
+    }).stdout.trim();
+    await symlink(found, join(utilities, name));
+  }
+  await fakeExecutable(root, "uname", `printf ${scenario.uname ?? "Linux"}`);
+  const qmdBody = (number: string) =>
+    `case "$1" in --version) ${scenario.unreadableVersion ? "exit 1" : `printf '%s\\n' 'qmd ${number} (abc1234)'`};; pull) echo "qmd $*" >>"$CALL_LOG"; ${scenario.pullFails ? "exit 1" : "exit 0"};; *) echo "qmd $*" >>"$CALL_LOG";; esac`;
+  await fakeExecutable(root, "qmd-template", qmdBody("2.9.0"));
+  const install =
+    scenario.installPlacesQmd === false
+      ? ":"
+      : `cp "${join(root, "qmd-template")}" "${binDirectory}/qmd"; chmod 755 "${binDirectory}/qmd"`;
+  if (scenario.npm !== false) {
+    const reported = scenario.windows
+      ? WINDOWS_PREFIX.replaceAll("\\", "\\\\")
+      : prefix;
+    await fakeExecutable(
+      root,
+      "npm",
+      `case "$1" in prefix) printf '%s\\n' "${reported}";; install) echo "npm $*" >>"$CALL_LOG"; ${install};; esac`,
+    );
+  }
+  if (scenario.windows) {
+    await fakeExecutable(
+      root,
+      "cygpath",
+      `printf '%s\\n' "cygpath $*" >>"$CALL_LOG"; [ "$1" = -u ] && [ "$2" = '${WINDOWS_PREFIX}' ] && printf '%s\\n' "${binDirectory}"`,
+    );
+  }
+  if (scenario.brew) {
+    await fakeExecutable(
+      root,
+      "brew",
+      `echo "brew $*" >>"$CALL_LOG"; case "$1" in list) exit ${scenario.sqliteInstalled ? 0 : 1};; esac`,
+    );
+  }
+  if (scenario.qmdBefore !== undefined) {
+    await writeFile(
+      join(binDirectory, "qmd"),
+      `#!/bin/sh\n${qmdBody(scenario.qmdBefore)}\n`,
+    );
+    await chmod(join(binDirectory, "qmd"), 0o755);
+  }
+  const directories = [root, utilities];
+  if (scenario.globalBinOnPath !== false) directories.push(binDirectory);
+  const path = directories.join(delimiter);
+  return {
+    binDirectory,
+    log,
+    path,
+    sync(args: string[]): SpawnSyncReturns<string> {
+      return spawnSync(bunExecutable, ["run", script, ...args], {
+        encoding: "utf8",
+        env: { ...process.env, CALL_LOG: log, PATH: path },
+      });
+    },
+  };
+}
+
+describe("qmd installation paths", () => {
+  async function withScenario(
+    scenario: QmdScenario,
+    body: (
+      toolchain: Awaited<ReturnType<typeof qmdToolchain>>,
+    ) => Promise<void>,
+  ): Promise<void> {
+    const root = await mkdtemp(join(tmpdir(), "sync-tool-qmd-"));
+    try {
+      await body(await qmdToolchain(root, scenario));
+    } finally {
+      await rm(root, { recursive: true });
+    }
+  }
+
+  it("resolves every runtime name to a fake or nothing", async () => {
+    await withScenario({ brew: true }, async (toolchain) => {
+      for (const name of REAL_TOOLS) {
+        const found = spawnSync(
+          "/bin/sh",
+          ["-c", `command -v ${name} || true`],
+          {
+            encoding: "utf8",
+            env: { PATH: toolchain.path },
+          },
+        ).stdout.trim();
+        expect(found === "" || found.includes("sync-tool-qmd-"), name).toBe(
+          true,
+        );
+      }
+    });
+  });
+
+  it("installs with npm and then pulls models once", async () => {
+    await withScenario({}, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status, completed.stderr).toBe(0);
+      expect(completed.stdout).toContain("qmd: installed (qmd.sh)");
+      expect(await readFile(toolchain.log, "utf8")).toBe(
+        "npm install -g @tobilu/qmd\nqmd pull\n",
+      );
+    });
+  });
+
+  it("fails clearly when npm is absent", async () => {
+    await withScenario({ npm: false }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status).toBe(1);
+      expect(completed.stderr).toContain("required command 'npm'");
+      expect(await readFile(toolchain.log, "utf8")).toBe("");
+    });
+  });
+
+  it("ensures Homebrew SQLite before installing on macOS", async () => {
+    await withScenario({ brew: true, uname: "Darwin" }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status, completed.stderr).toBe(0);
+      expect(await readFile(toolchain.log, "utf8")).toBe(
+        "brew list --versions sqlite\nbrew install sqlite\nnpm install -g @tobilu/qmd\nqmd pull\n",
+      );
+    });
+  });
+
+  it("does not reinstall SQLite when Homebrew already has it", async () => {
+    await withScenario(
+      { brew: true, sqliteInstalled: true, uname: "Darwin" },
+      async (toolchain) => {
+        const completed = toolchain.sync(["--only=qmd"]);
+        expect(completed.status, completed.stderr).toBe(0);
+        expect(await readFile(toolchain.log, "utf8")).toBe(
+          "brew list --versions sqlite\nnpm install -g @tobilu/qmd\nqmd pull\n",
+        );
+      },
+    );
+  });
+
+  it("does not touch Homebrew on Linux", async () => {
+    await withScenario({ brew: true }, async (toolchain) => {
+      toolchain.sync(["--only=qmd"]);
+      expect(await readFile(toolchain.log, "utf8")).not.toContain("brew");
+    });
+  });
+
+  it("prints the PATH line and still pulls when the global bin is off PATH", async () => {
+    await withScenario({ globalBinOnPath: false }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status).toBe(1);
+      expect(completed.stderr).toContain(
+        `export PATH=${toolchain.binDirectory.replaceAll(" ", "\\ ")}:$PATH`,
+      );
+      expect(completed.stdout).toContain(
+        "qmd: failed (qmd not on PATH after installer; follow the PATH guidance",
+      );
+      expect(completed.stdout).not.toContain("still missing");
+      expect(await readFile(toolchain.log, "utf8")).toContain("qmd pull");
+    });
+  });
+
+  it("reports a failed pull through the global bin when it is off PATH", async () => {
+    await withScenario(
+      { globalBinOnPath: false, pullFails: true },
+      async (toolchain) => {
+        const completed = toolchain.sync(["--only=qmd"]);
+        expect(completed.status).toBe(1);
+        expect(completed.stderr).toContain("'qmd pull' failed");
+        expect(await readFile(toolchain.log, "utf8")).toBe(
+          "npm install -g @tobilu/qmd\nqmd pull\n",
+        );
+      },
+    );
+  });
+
+  it("points at npm's bin links when the global bin is on PATH but holds no qmd", async () => {
+    await withScenario({ installPlacesQmd: false }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status).toBe(1);
+      expect(completed.stderr).toContain(toolchain.binDirectory);
+      expect(completed.stderr).not.toContain("export PATH=");
+      expect(completed.stdout).toContain("qmd: failed (qmd not on PATH");
+    });
+  });
+
+  it("refuses an unrecognized OS before installing anything", async () => {
+    await withScenario({ uname: "SunOS" }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status).toBe(1);
+      expect(completed.stdout).toContain("qmd: failed (qmd.sh exited 1)");
+      expect(await readFile(toolchain.log, "utf8")).toBe("");
+    });
+  });
+
+  it("converts a Windows npm prefix to a POSIX path for the PATH line", async () => {
+    await withScenario(
+      { globalBinOnPath: false, uname: "MINGW64_NT-10.0", windows: true },
+      async (toolchain) => {
+        const completed = toolchain.sync(["--only=qmd"]);
+        expect(completed.status).toBe(1);
+        expect(completed.stderr).toContain(
+          `export PATH=${toolchain.binDirectory}:$PATH`,
+        );
+        expect(completed.stderr).not.toContain("C:");
+        expect(await readFile(toolchain.log, "utf8")).toBe(
+          `npm install -g @tobilu/qmd\ncygpath -u ${WINDOWS_PREFIX}\nqmd pull\n`,
+        );
+      },
+    );
+  });
+
+  it("skips bin directory lookup when qmd already resolves on PATH", async () => {
+    await withScenario(
+      { uname: "MINGW64_NT-10.0", windows: true },
+      async (toolchain) => {
+        const completed = toolchain.sync(["--only=qmd"]);
+        expect(completed.status, completed.stderr).toBe(0);
+        expect(await readFile(toolchain.log, "utf8")).toBe(
+          "npm install -g @tobilu/qmd\nqmd pull\n",
+        );
+      },
+    );
+  });
+
+  it("reports a failed pull without failing the install", async () => {
+    await withScenario({ pullFails: true }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status, completed.stderr).toBe(0);
+      expect(completed.stderr).toContain("'qmd pull' failed");
+      expect(completed.stdout).toContain("qmd: installed (qmd.sh)");
+    });
+  });
+
+  it("fails rather than reporting installed when the version is unreadable", async () => {
+    await withScenario({ unreadableVersion: true }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status).toBe(1);
+      expect(completed.stdout).toContain(
+        "qmd: failed (version unreadable after installer (need 2.9.0))",
+      );
+    });
+  });
+
+  it("updates an old qmd without pulling again", async () => {
+    await withScenario({ qmdBefore: "2.8.0" }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd"]);
+      expect(completed.status, completed.stderr).toBe(0);
+      expect(completed.stdout).toContain("qmd: updated (qmd.sh)");
+      expect(await readFile(toolchain.log, "utf8")).toBe(
+        "npm install -g @tobilu/qmd\n",
+      );
+    });
+  });
+
+  it("skips the installer for a current qmd and checks its version", async () => {
+    await withScenario({ qmdBefore: "2.9.0" }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd", "--check"]);
+      expect(completed.status).toBe(0);
+      expect(completed.stdout).toContain(
+        "qmd: already_current (version >= 2.9.0)",
+      );
+    });
+  });
+
+  it("plans every step in a dry run without running any", async () => {
+    await withScenario({ brew: true, uname: "Darwin" }, async (toolchain) => {
+      const completed = toolchain.sync(["--only=qmd", "--dry-run"]);
+      expect(completed.status, completed.stderr).toBe(0);
+      expect(completed.stderr).toContain("+ npm install -g @tobilu/qmd");
+      expect(completed.stderr).toContain("brew install sqlite");
+      expect(completed.stderr).toContain("+ qmd pull");
+      expect(completed.stdout).toContain("qmd: skipped (dry-run)");
+      expect(await readFile(toolchain.log, "utf8")).toBe("");
+    });
+  });
+});
+
 describe("coding tool synchronization", () => {
   it("selects trimmed CSV names in registry order and deduplicates", () => {
     expect(resolveToolList(" python, jj,jj ").map(({ name }) => name)).toEqual([
@@ -66,7 +377,7 @@ describe("coding tool synchronization", () => {
 
   it("rejects sorted unknown names with the registered roster", () => {
     expect(() => resolveToolList("zzz,aaa")).toThrow(
-      "sync-tool: unknown tool name(s): aaa, zzz. Registered: brew, jj, gh, fallow, python",
+      "sync-tool: unknown tool name(s): aaa, zzz. Registered: brew, jj, gh, fallow, python, qmd",
     );
   });
 
@@ -113,7 +424,7 @@ describe("coding tool synchronization", () => {
     expect(completed.status).toBe(2);
     expect(completed.stdout).toBe("");
     expect(completed.stderr).toBe(
-      "sync-tool: unknown tool name(s): missing. Registered: brew, jj, gh, fallow, python\n",
+      "sync-tool: unknown tool name(s): missing. Registered: brew, jj, gh, fallow, python, qmd\n",
     );
   });
 
@@ -198,7 +509,7 @@ describe("coding tool synchronization", () => {
     try {
       const completed = cli(["--only=", "--check"], await isolatedPath(root));
       expect(completed.status).toBe(1);
-      expect(completed.stdout).toContain("summary: 5 tools");
+      expect(completed.stdout).toContain("summary: 6 tools");
     } finally {
       await rm(root, { recursive: true });
     }

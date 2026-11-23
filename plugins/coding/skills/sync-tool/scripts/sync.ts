@@ -32,6 +32,8 @@ export interface ToolEntry {
   readonly macosOnly?: boolean;
   readonly minVersion?: string;
   readonly name: string;
+  /** installs into a package manager's global bin directory that may be off PATH */
+  readonly offPathPossible?: boolean;
   readonly versionArguments?: readonly string[];
 }
 type ToolResult = readonly [tool: string, status: Status, action: string];
@@ -53,6 +55,12 @@ export const REGISTRY: readonly ToolEntry[] = [
     installer: "python.sh",
     executable: "python3",
     alwaysRunInstaller: true,
+  },
+  {
+    name: "qmd",
+    installer: "qmd.sh",
+    minVersion: "2.9.0",
+    offPathPossible: true,
   },
 ];
 
@@ -259,14 +267,22 @@ export function runInstaller(
     return ["failed", `${entry.installer} exited ${result.returnCode}`];
   if (options.dryRun) return ["skipped", "dry-run"];
   if (!hasExecutable(executable))
-    return ["failed", `${executable} still missing after installer`];
+    return [
+      "failed",
+      entry.offPathPossible
+        ? `${executable} not on PATH after installer; follow the PATH guidance ${entry.installer} printed above, then re-run`
+        : `${executable} still missing after installer`,
+    ];
   const versionAfter = getVersion(executable, entry.versionArguments);
-  if (
-    entry.minVersion !== undefined &&
-    versionAfter !== undefined &&
-    !versionAtLeast(versionAfter, entry.minVersion)
-  )
-    return ["failed", `version ${versionAfter} below ${entry.minVersion}`];
+  if (entry.minVersion !== undefined) {
+    if (versionAfter === undefined)
+      return [
+        "failed",
+        `version unreadable after installer (need ${entry.minVersion})`,
+      ];
+    if (!versionAtLeast(versionAfter, entry.minVersion))
+      return ["failed", `version ${versionAfter} below ${entry.minVersion}`];
+  }
   return hadBefore
     ? ["updated", entry.installer]
     : ["installed", entry.installer];

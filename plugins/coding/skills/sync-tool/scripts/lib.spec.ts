@@ -85,6 +85,7 @@ describe("sync-tool runtime probing and command execution", () => {
   it.each([
     ["jj 0.44.0", [0, 44, 0]],
     ["v2.3", [2, 3]],
+    ["qmd 2.9.0 (abc1234)", [2, 9, 0]],
     ["tool 1.2.3.4 extra", [1, 2, 3, 4]],
     ["1", undefined],
     ["", undefined],
