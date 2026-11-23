@@ -40,7 +40,7 @@ Templates: `templates/memory.md` (agent memory), `templates/docs/*.template.md` 
 
 - **`scripts/resolve-state-workspace`** — resolves the work identity and paths, enforces symlink/traversal safety, and performs the main-agent-only no-clobber bootstrap of `goal.md`, `state.md`, `state/working.md`, and `state/journal.md`.
 - **`scripts/state-lease`** — the on-disk main-agent lease (`ensure | acquire | heartbeat | release | status | takeover`). The file stores only the token's SHA-256 digest, so reading it never confers the lease; exactly one live token may write main-agent-owned state; a live foreign lease is never replaced; an expired foreign lease yields only to an explicit, journaled takeover.
-- **`scripts/state-write`** — the lease-verified write path: verifies the presented token, refuses free/expired/foreign leases, heartbeats, and applies the temp-write + atomic rename in one call, so a working main agent can never expire its own lease by working.
+- **`scripts/state-write`** — the lease-verified write path: verifies the presented token, refuses free/expired/foreign leases, heartbeats, and applies the temp-write + rename (a copy where the filesystem refuses rename-over) in one call, so a working main agent can never expire its own lease by working.
 - **`skills/doctor/scripts/state-doctor`** — read-only state-root structural checker for stream and overview findings. [The doctor skill](skills/doctor/SKILL.md) owns when and how to invoke it and repair findings.
 
 ## Skills

@@ -6,11 +6,14 @@
 # coordinator-owned state files. The file stores only the token's SHA-256
 # digest — possession of the file never confers the lease; the holder keeps
 # the plaintext token in its own session context. Acquire is atomic
-# (noclobber); heartbeat and release are token-gated temp-write + atomic
-# rename; a live foreign lease is never replaced; an expired foreign lease
+# (noclobber); heartbeat and release are token-gated temp-write + rename
+# (a copy where the filesystem refuses rename-over; see replace-file.sh); a
+# live foreign lease is never replaced; an expired foreign lease
 # yields only to the explicit takeover verb, which the caller must journal
 # as a `lease` event.
 set -euo pipefail
+# shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/replace-file.sh"
 
 usage() {
   cat >&2 <<'EOF'
@@ -152,7 +155,7 @@ write_lease_atomically() {
   local temp
   temp="$(mktemp "$work_dir/.lease.json.XXXXXX")"
   printf '%s\n' "$content" >"$temp"
-  mv -f "$temp" "$lease_path"
+  replace_file "$temp" "$lease_path"
 }
 
 report() {
