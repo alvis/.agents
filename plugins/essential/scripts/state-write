@@ -4,12 +4,15 @@
 # Folds the heartbeat into the write path: verifies the presented plaintext
 # token against the lease digest, refuses when the lease is free, expired, or
 # foreign, heartbeats the lease, and applies the content by temp-file write
-# plus atomic rename — in one call. A coordinator that keeps writing through
-# this helper cannot expire its own lease by working; one that lost the lease
-# gets a hard error before the write instead of a doctor finding after it.
+# plus rename (or copy, where the filesystem refuses rename-over) — in one
+# call. A coordinator that keeps writing through this helper cannot expire its
+# own lease by working; one that lost the lease gets a hard error before the
+# write instead of a doctor finding after it.
 #
 # Run state-write --help for usage.
 set -euo pipefail
+# shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/replace-file.sh"
 
 usage() {
   cat >&2 <<'USAGE'
@@ -172,13 +175,13 @@ if [[ -f "$target_path" ]]; then
 fi
 
 # Heartbeat (refresh expiry, preserve acquisition and ownership), then apply
-# the write atomically.
+# the write (atomically where the filesystem allows; see replace-file.sh).
 now="$(date +%s)"
 "$(dirname "$0")/state-lease" heartbeat \
   --work-dir "$work_dir" --token "$token" --ttl "$ttl" >/dev/null
 mkdir_target="$(dirname "$target_path")"
 [[ -d "$mkdir_target" ]] || mkdir -p -- "$mkdir_target"
-mv -f "$temp" "$target_path"
+replace_file "$temp" "$target_path"
 trap - EXIT
 
 if [[ "$changed" == true ]]; then

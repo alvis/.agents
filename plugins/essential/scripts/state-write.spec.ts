@@ -63,7 +63,12 @@ class StateWriteHarness {
     expect(completed.status, completed.stderr).toBe(0);
     return String((JSON.parse(completed.stdout) as { token: string }).token);
   }
-  write(token: string, target: string, content = "content\n") {
+  write(
+    token: string,
+    target: string,
+    content = "content\n",
+    env: NodeJS.ProcessEnv = process.env,
+  ) {
     const completed = spawnSync(
       "/bin/bash",
       [
@@ -75,12 +80,25 @@ class StateWriteHarness {
         "--target",
         target,
       ],
-      { encoding: "utf8", input: content },
+      { encoding: "utf8", input: content, env },
     );
     return {
       exitCode: completed.status ?? 1,
-      payload: JSON.parse(completed.stdout) as Record<string, unknown>,
+      payload: (completed.stdout
+        ? JSON.parse(completed.stdout)
+        : {}) as Record<string, unknown>,
+      stderr: completed.stderr,
     };
+  }
+  // Puts fake commands first on PATH; each maps a name to its bash body.
+  withFakeCommands(commands: Record<string, string>): NodeJS.ProcessEnv {
+    const bin = resolve(this.root, "bin");
+    mkdirSync(bin, { recursive: true });
+    for (const [name, body] of Object.entries(commands))
+      writeFileSync(resolve(bin, name), `#!/bin/bash\n${body}`, {
+        mode: 0o755,
+      });
+    return { ...process.env, PATH: `${bin}:${process.env.PATH ?? ""}` };
   }
   expire(): void {
     const record = JSON.parse(readFileSync(this.leasePath, "utf8")) as Record<
@@ -183,6 +201,60 @@ describe("lease-guarded state writing", () => {
     expect(
       readFileSync(resolve(harness.workDirectory, "state/journal.md"), "utf8"),
     ).toBe("line\n");
+  });
+
+  describe("on a filesystem that refuses rename over an existing file", () => {
+    // mimics macOS's WebDAV client: renaming to a new name works, over an existing file fails
+    const refusingMv =
+      'for target; do :; done\nif [ -e "$target" ]; then echo "mv: Invalid argument" >&2; exit 1; fi\nexec /bin/mv "$@"\n';
+    const hiddenEntries = (directory: string) =>
+      readdirSync(directory).filter((name) => name.startsWith("."));
+
+    it("should fall back to copying and still heartbeat the lease", () => {
+      const harness = new StateWriteHarness();
+      const token = harness.acquire();
+      const lease = JSON.parse(readFileSync(harness.leasePath, "utf8")) as {
+        heartbeat_epoch: number;
+      };
+      writeFileSync(
+        harness.leasePath,
+        JSON.stringify({ ...lease, heartbeat_epoch: 0 }),
+      );
+      writeFileSync(resolve(harness.workDirectory, "state.md"), "old state\n");
+      const env = harness.withFakeCommands({ mv: refusingMv });
+
+      const result = harness.write(token, "state.md", "new state\n", env);
+
+      expect(result.exitCode, result.stderr).toBe(0);
+      expect(result.payload).toMatchObject({ status: "written" });
+      expect(
+        readFileSync(resolve(harness.workDirectory, "state.md"), "utf8"),
+      ).toBe("new state\n");
+      const after = JSON.parse(readFileSync(harness.leasePath, "utf8")) as {
+        heartbeat_epoch: number;
+      };
+      expect(after.heartbeat_epoch).toBeGreaterThan(0);
+      expect(hiddenEntries(harness.workDirectory)).toEqual([]);
+    });
+
+    it("should restore the previous content when the fallback copy fails partway", () => {
+      const harness = new StateWriteHarness();
+      const token = harness.acquire();
+      writeFileSync(resolve(harness.workDirectory, "state.md"), "old state\n");
+      const env = harness.withFakeCommands({
+        mv: refusingMv,
+        // tears the target when copying the staged state-write content, as a dropped connection would
+        cp: 'source="${@: -2:1}" target="${@: -1}"\ncase "$(basename "$source")" in .state-write.*) printf "torn" >"$target"; exit 1 ;; esac\nexec /bin/cp "$@"\n',
+      });
+
+      const result = harness.write(token, "state.md", "new state\n", env);
+
+      expect(result.exitCode).not.toBe(0);
+      expect(
+        readFileSync(resolve(harness.workDirectory, "state.md"), "utf8"),
+      ).toBe("old state\n");
+      expect(hiddenEntries(harness.workDirectory)).toEqual([]);
+    });
   });
 
   it("refuses free, expired, and foreign leases", () => {
