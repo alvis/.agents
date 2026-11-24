@@ -41,7 +41,7 @@ Read this when creating or locating local state. `state-systems.md` owns system 
     └── artifacts/                      # evidence, research, and generated receipts
         ├── plan-approvals/              # immutable full text, projections/, receipts, and events/ publication history
         ├── research/                   # briefs/<plugin>/<scope-slug>.md research briefs (templates/research-brief.md) and deep-research <topic-slug>/ runs
-        ├── review/                     # domain gate records, such as coding staged-delivery direction verdicts (JSON)
+        ├── review/                     # gate records: checkpoint reports and verdicts, and domain gates such as coding staged-delivery direction verdicts (JSON)
         └── spec-sync/                  # immutable external synchronization evidence
             ├── bases/<base-id>/        # exact accepted external bytes
             └── materializations/

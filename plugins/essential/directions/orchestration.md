@@ -42,6 +42,23 @@ If no domain critic fits, use a general-purpose agent as a criteria-based review
 
 Record changed-code completion exactly as `REVIEWED: source=<specialist|general|external|none> reviewer=<agent-id|tool-name|none> verdict=<ok|blocked|unavailable|not-required> round=<n>`, where `not-required` records `round=0`.
 
+## Gate each checkpoint
+
+[Plans](plan.md) group tasks into the checkpoints `EXPLORE`, `IMPLEMENTATION`, `REVIEW`, and `FOLLOWUP`. Once every task in a checkpoint is terminal, and before any task in the next checkpoint starts, the main agent writes a checkpoint report, gets it reviewed, and acts on the verdict; a domain lead returns its tasks' evidence instead of gating. This gate is separate from persistence acknowledgement under [checkpoint.md](checkpoint.md).
+
+<report>
+
+The checkpoint report lists each of the checkpoint's tasks with its status, the evidence it returned — changed paths, commands run and their results, declared-review verdicts — and any deviation, unverified claim, or open risk. A claim without evidence is reported as unverified, never as done.
+
+</report>
+
+Review the report against each task's acceptance criteria and its cited evidence yourself, or, at your discretion, delegate the review under [Select a reviewer](delegate.md#select-a-reviewer), giving that reviewer only the report, the evidence it cites, and the acceptance criteria. A delegated reviewer returns the verdict and at most two lines, with its gaps in a bounded report that you save into the checkpoint record, as under [Review responsibility](#review-responsibility). The review returns one verdict:
+
+- `pass` — the evidence supports every task's acceptance; start the next checkpoint.
+- `follow-up` — each gap with the evidence that exposes it. Before starting the next checkpoint, add one task per gap: to the current checkpoint when the next checkpoint builds on it, then gate the current checkpoint again; otherwise to `FOLLOWUP`. At `FOLLOWUP`, every gap stays in `FOLLOWUP`, which is then gated again.
+
+In a lifecycle stream, save the report and verdict as `artifacts/review/checkpoint-<lowercase checkpoint>-<round>.md`, with round starting at `1` and increasing on each re-gate, journal the verdict as a `decision` event on the Work ID, and add follow-up tasks through [change control](change-control.md). Outside one, deliver both in the conversation.
+
 ## Context discipline
 
 Report context usage only when the runtime measures it; otherwise report task affinity and whether enough remains — never invent a percentage or token count. Rotate work to a fresh or roomier teammate before measured capacity becomes unsafe, and delegate bulk reads and noisy output rather than ingesting them.
