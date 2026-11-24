@@ -1,6 +1,6 @@
 ---
 name: sync-tool
-description: 'Install or update registered coding CLI tools (brew, jj, gh, fallow, python) across macOS, Linux, and Windows. Use when tools are missing, stale, or needed on PATH for a sibling skill, including requests to install jj/gh/brew, update coding tools, or verify CLI dependencies before work.'
+description: 'Install or update registered coding CLI tools (brew, jj, gh, fallow, python, qmd) across macOS, Linux, and Windows. Use when tools are missing, stale, or needed on PATH for a sibling skill, including requests to install jj/gh/brew, update coding tools, or verify CLI dependencies before work.'
 requirements:
   model: routine
   effort: instinctive
@@ -30,7 +30,7 @@ Idempotently installs or updates a fixed registry of coding CLI tools from their
   - `--dry-run` — print each planned installer command without executing (sets `DRY_RUN=1` for each installer).
   - `--force` — reinstall/upgrade even when already at minimum version (sets `FORCE=1`).
   - `SYNC_TOOL_NO_WAIT=1` (env var) — for `gh` post-install: print the auth banner once and exit non-zero instead of polling, so CI and other non-interactive callers fail fast.
-- **Prerequisites**: `bash` (Git-Bash/MSYS/Cygwin on Windows), `bun` on `PATH`, and network access to upstream package sources (Homebrew, GitHub releases, apt/dnf, winget, crates.io).
+- **Prerequisites**: `bash` (Git-Bash/MSYS/Cygwin on Windows), `bun` on `PATH`, and network access to upstream package sources (Homebrew, GitHub releases, apt/dnf, winget, crates.io, the npm registry), and, for `qmd`, Node 22 or later with `npm` already installed — nothing checks the Node version ([platforms.md](references/platforms.md#qmd)).
 
 ## Workflow
 
@@ -49,6 +49,7 @@ Idempotently installs or updates a fixed registry of coding CLI tools from their
 4. Decide, then re-verify; repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping:
    - All tools pass — report the results.
    - `gh` auth failure (`gh-auth-aborted` or `gh-auth-no-wait` action) — surface the banner instructions and defer to the caller; never auto-retry interactive auth.
+   - `qmd` installed off `PATH` (status `failed` with PATH guidance) — surface the `export PATH=…` line the installer printed and defer to the caller; a retry cannot fix it.
    - Installation error — retry once with `--only=<that-tool>` and the same mode flags; if the retry also fails, report the underlying error.
    - In `--check` or `--dry-run` mode — never retry; just report.
 
