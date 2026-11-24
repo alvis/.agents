@@ -14,4 +14,4 @@ Use this mode when the user wants to be interviewed toward an implementation dir
 
 Rounds span sessions, so the ledger always persists. This mode never writes `docs/`, the external specification, or the execution plan itself, and never approves one.
 
-Stop when the user explicitly confirms a ready round with no unresolved material direction, or when no remaining question can change architecture, scope, data contracts, or user-visible behavior — then render a final round whose only question is the readiness decision. Complete with the rounds run, confirmed direction and architecture, deferred or blocking questions with owners, and the prompt that hands off to planning.
+Stop when the user explicitly confirms a ready round with no unresolved material direction, or when no remaining question can change architecture, scope, data contracts, or user-visible behavior — then render a final round whose only question is the readiness decision. Complete with the rounds run, confirmed direction and architecture, deferred or blocking questions with owners; then hand off to execution-plan formation in the same turn under step 5's Ready route.

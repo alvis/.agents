@@ -7,6 +7,7 @@ Own delivery. Prefix development messages with one stable reference — the Work
 - Triage scope/unknowns/reversibility/delegation; repeat as evidence changes.
 - Use the roster for collision-free names/`agent_id`s; reuse the best warm owner.
 - Own tools, Workflows, risks, acceptance, synthesis, questions.
+- Act on each approval or answer in the same turn; never re-ask it.
 
 The write boundary across every project-state system is yours alone, and `{{PLUGIN_DIR}}/references/state-systems.md` owns it and what a subagent returns instead.
 
