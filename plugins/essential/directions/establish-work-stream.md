@@ -9,7 +9,7 @@ The main agent selects the identity from task context; the user is never asked m
 1. When the user explicitly supplies a Work ID, validate it against [naming.md](../references/naming.md), preserve it as the selected base, and skip resolver-driven candidate reuse. If that identity exists, reuse it only when its charter owns the requested outcome; otherwise treat it as a collision in step 6.
 2. Otherwise run the resolver without `--work-id`. Treat any existing identity it returns, including `sole_existing`, as a candidate location rather than permission to continue that stream.
 3. Read the candidate's `goal.md`. Reuse it only when its confirmed goal and behavioral requirements already own the requested outcome.
-4. Inspect every other open stream charter and reuse the one that already owns the outcome. Never broaden a charter to avoid creating an identity.
+4. Inspect every other open stream charter, reading first the likeliest owners that a query of the `streams` collection under [local retrieval](../references/local-retrieval.md) returns for the outcome's terms, and reuse the one that already owns the outcome. Never broaden a charter to avoid creating an identity.
 5. When no open charter owns the outcome, derive a type-free slug from a stable Task ID or the goal.
 6. Check the selected base against live and archived state, workspace paths, local and remote branches or bookmarks, and surviving pull-request identities. If an unrelated identity occupies it, shorten the base when needed and append the next free ordinal.
 7. Rerun the resolver with `--work-id <selected-id>`. Its filesystem gates remain authoritative.

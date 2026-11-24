@@ -22,7 +22,7 @@ Every plan delivers only the core work that achieves its Goal and Requirements. 
 
 ### Follow precedent
 
-For material work, gather precedent before designing through each installed `<plugin>:research` skill the work touches, as [`essential:plan`](../skills/plan/SKILL.md) runs them. Where no researcher covers a domain, search the same repository for how similar work was carried out: version-control history and merged pull requests touching the affected paths, sibling modules of the same kind, and their tests. Build the design on that precedent, list it under Context's **Precedents**, and state the reason for any departure.
+For material work, gather precedent before designing through each installed `<plugin>:research` skill the work touches, as [`essential:plan`](../skills/plan/SKILL.md) runs them. Where no researcher covers a domain, search the same repository for how similar work was carried out: first the local qmd index's `docs` and `history` collections under [local retrieval](../references/local-retrieval.md), then version-control history and merged pull requests touching the affected paths, sibling modules of the same kind, and their tests. Build the design on that precedent, list it under Context's **Precedents**, and state the reason for any departure.
 
 ### Confirm the direction and architecture
 

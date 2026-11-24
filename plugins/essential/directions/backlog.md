@@ -4,7 +4,7 @@ Read this when work surfaces an issue outside its goal, and when that work lands
 
 ## Capture
 
-When the focus test defers an issue, record it as a backlog item and continue the goal without fixing it. Work the current stream will carry out is a task in its [registry](../references/state-format.md#task-identity-and-tables), never a backlog item; the backlog holds only what no stream is carrying out.
+When the focus test defers an issue, record it as a backlog item and continue the goal without fixing it. First search for an item that already records it: query the `memory` collection under [local retrieval](../references/local-retrieval.md), which covers `backlogs.md` and `backlogs/`, and when an open item matches, add the new source to that item instead of filing a duplicate. Work the current stream will carry out is a task in its [registry](../references/state-format.md#task-identity-and-tables), never a backlog item; the backlog holds only what no stream is carrying out.
 
 The main agent alone writes the backlog, through `state-write --state-target` under an owned stream's [lease](lease.md); a subagent returns the finding, its location, and evidence instead. Work without a stream that must record a finding first [establishes a stream for that work](establish-work-stream.md), never one for the finding alone, so the finding is triaged when the work lands.
 

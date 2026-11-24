@@ -27,6 +27,7 @@ Contracts load progressively: Claude Code and Codex inject the small `hooks/ALLA
 | `references/spec-lifecycle.md` | When materializing or revalidating specs | Mirrors, freshness sweep, completion verification |
 | `references/durable-documentation.md` | Before writing versioned project documentation | Entrypoint authority, capability/domain content, template ownership, terminology, migration |
 | `references/work-memory-topology.md` | When creating, or locating work files | Commented state-root file map |
+| `references/local-retrieval.md` | Before searching the repository's own docs, code, or work state for evidence | The `qmd-index ensure` gate, collection choice, typed qmd queries, opening hits before citing, workspace-change search, the `rg` fallback |
 | `./directions/change-control.md` | On a mid-execution finding | Task-local / plan-level / spec-level routing |
 | `./directions/retirement.md` | When promoting, parking, or retiring | Promotion provenance, idle-stream parking, retirement gates |
 | `./directions/subagent.md` | At the start of an assigned subagent task | The whole worker contract: stable reference, report shape and ceiling, read-only state and resolver gate, escalation, ineligibility transfer |
