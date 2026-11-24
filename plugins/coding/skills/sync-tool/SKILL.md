@@ -49,7 +49,7 @@ Idempotently installs or updates a fixed registry of coding CLI tools from their
 4. Decide, then re-verify; repeat until every check passes or a concrete blocker remains, then report the blocker instead of looping:
    - All tools pass — report the results.
    - `gh` auth failure (`gh-auth-aborted` or `gh-auth-no-wait` action) — surface the banner instructions and defer to the caller; never auto-retry interactive auth.
-   - `qmd` installed off `PATH` (status `failed` with PATH guidance) — surface the `export PATH=…` line the installer printed and defer to the caller; a retry cannot fix it.
+   - `qmd` installed but unresolvable (status `failed`, `does not resolve after installer`) — surface the guidance the installer printed, either an `export PATH=…` line or a bin-links hint, and defer to the caller; a retry cannot fix it.
    - Installation error — retry once with `--only=<that-tool>` and the same mode flags; if the retry also fails, report the underlying error.
    - In `--check` or `--dry-run` mode — never retry; just report.
 

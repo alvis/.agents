@@ -29,7 +29,7 @@ To register a new tool (e.g., `rg`):
    - `minVersion`: minimum acceptable `--version` output.
    - `versionArguments`: arguments that produce a parseable version string (default `["--version"]`).
    - `macosOnly`: `true` only for tools that genuinely don't apply elsewhere (e.g., `brew`).
-   - `offPathPossible`: `true` when the installer places the executable in a package manager's global bin directory that may be off `PATH` (e.g., `qmd`). When such an install leaves the tool unresolvable, `sync.ts` reports `failed` with a pointer to the `export PATH=…` line the installer printed, instead of a bare "still missing".
+   - `offPathPossible`: `true` when the installer places the executable in a package manager's global bin directory that may be off `PATH` (e.g., `qmd`). When such an install leaves the tool unresolvable, `sync.ts` reports `failed` with a pointer to the guidance the installer printed (an `export PATH=…` line, or a bin-links hint when the bin directory is already on `PATH`), instead of a bare "still missing".
 3. **Update this file**: Add a row to the table above.
 4. **Update `references/platforms.md`**: Document the per-OS install method for the new tool.
 
