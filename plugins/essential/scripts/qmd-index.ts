@@ -810,11 +810,11 @@ export function startEmbed(prefix: string, names: string[]): void {
   }
 }
 
-// starts the job when this repository has documents to embed and no job of ours runs; true when it started one
-function embedIfPending(identity: Identity): boolean {
+// starts the job when this repository has documents to embed and no job of ours runs; true when it started one. only the names of `listed` are read, so a listing taken before a document update stays valid; without one, qmd is asked only after the running check
+function embedIfPending(identity: Identity, listed?: Map<string, Listed>): boolean {
   if (embedRunning(identity.prefix)) return false;
-  const listed = listCollections();
-  const present = ownNames(identity.prefix).filter((name) => listed.has(name));
+  const known = listed ?? listCollections();
+  const present = ownNames(identity.prefix).filter((name) => known.has(name));
   const counts = ownCounts(present, readConfig().embedModel);
   const targets = counts
     ? present.filter((name) => pendingOf(counts.get(name) as Counts) > 0)
@@ -896,10 +896,12 @@ function ensure(cwd: string): Report {
     const { collections: defs } = readConfig();
     refuseOwnCommands(identity.prefix, defs);
     reconcile(wanted, absent, listed, defs);
-    scopedUpdate(ownNames(identity.prefix).filter((name) => listCollections().has(name)));
+    // reconcile just added and removed collections, so list again once; the update below changes document counts but never the names, so the embed step reuses this listing and only the report re-lists for fresh counts
+    const present = listCollections();
+    scopedUpdate(ownNames(identity.prefix).filter((name) => present.has(name)));
     return report(
       identity,
-      embedIfPending(identity),
+      embedIfPending(identity, present),
       absent.map(({ name, reason }) => ({ name, reason })),
     );
   });
