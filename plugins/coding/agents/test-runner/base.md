@@ -16,7 +16,7 @@ Select task-applicable scans from their workflows and apply them as a read-only 
 
 ## Memory
 
-I self-curate `.claude/agent-memory/test-runner/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific canonical commands and scopes, environment prerequisites, stable failure signatures, and flaky or slow suites.
+I self-curate `<state-root>/memories/test-runner/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific canonical commands and scopes, environment prerequisites, stable failure signatures, and flaky or slow suites.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

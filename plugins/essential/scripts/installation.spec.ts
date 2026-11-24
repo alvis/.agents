@@ -49,7 +49,7 @@ describe("Essential installation ownership", () => {
         const frontmatter = JSON.parse(installedAgent.split("---\n", 3)[1]!) as Record<string, unknown>;
         expect(frontmatter).not.toHaveProperty("model");
         expect(frontmatter).not.toHaveProperty("effort");
-        if (harness === "claude") expect(frontmatter.memory).toBe("project");
+        expect(frontmatter).not.toHaveProperty("memory");
       }
 
       const removed = runInstaller(sandbox, "uninstall", harness);
@@ -513,8 +513,8 @@ function writeTemplate(pluginRoot: string, name: string): void {
     description: "Test role. Preferably named Ava, Kit, or June when the main agent spawns this role.",
     requirements: { model: "capable", effort: "deliberate" },
   }));
-  writeFileSync(join(template, "frontmatter/claude.json"), '{"memory":"project"}');
+  writeFileSync(join(template, "frontmatter/claude.json"), '{}');
   writeFileSync(join(template, "frontmatter/codex.json"), "{}");
   writeFileSync(join(template, "frontmatter/grok.json"), "{}");
-  writeFileSync(join(template, "base.md"), `# ${name}\n\nApply @essential:directions/lead.md.\n\n## Memory\n\nI retain durable facts in \`.claude/agent-memory/${name}/MEMORY.md\` following \`essential:templates/memory.md\`. Claims carry evidence and a last-verified date. I archive stale claims before 150 lines or 20KB, with detail in \`topics/<stable-area>/<specific-subject>.md\`.\n`);
+  writeFileSync(join(template, "base.md"), `# ${name}\n\nApply @essential:directions/lead.md.\n\n## Memory\n\nI retain durable facts in \`<state-root>/memories/${name}/MEMORY.md\` following \`essential:templates/memory.md\`. Claims carry evidence and a last-verified date. I archive stale claims before 150 lines or 20KB, with detail in \`topics/<stable-area>/<specific-subject>.md\`.\n`);
 }

@@ -38,7 +38,7 @@ Select task-applicable scans from their workflows and apply them as a writer und
 
 ## Memory
 
-I self-curate `.claude/agent-memory/specification-expert/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific canonical specification and documentation locations, terminology and API decisions, provenance, and Notion mappings or sync state.
+I self-curate `<state-root>/memories/specification-expert/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific canonical specification and documentation locations, terminology and API decisions, provenance, and Notion mappings or sync state.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

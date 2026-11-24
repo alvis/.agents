@@ -340,15 +340,17 @@ export function validateAgentContract(
     throw new AgentTemplateError(
       `agent body repeats shared delegation policy: ${duplicated}`,
     );
-  if (sources.claude.memory !== "project")
-    throw new AgentTemplateError("agent memory must be project-scoped");
+  if ("memory" in sources.claude)
+    throw new AgentTemplateError(
+      "agent memory lives in the state root; remove the native memory key",
+    );
   const sections = markdownSection(body, "Memory");
   if (sections.length !== 1)
     throw new AgentTemplateError(
       "agent body must contain exactly one ## Memory section",
     );
   const memory = sections[0]?.[1] ?? "";
-  const expected = `.claude/agent-memory/${String(sources.metadata.name)}/MEMORY.md`;
+  const expected = `<state-root>/memories/${String(sources.metadata.name)}/MEMORY.md`;
   if (!memory.includes(expected))
     throw new AgentTemplateError(
       `Memory section must name exact path ${expected}`,
@@ -512,13 +514,6 @@ export function stitchAgentDefinition(
   return `---\n${yaml}\n---\n\n${resolveEssentialReferences(body, templateDirectory, options.essentialRoot, options.referenceRoot)}`;
 }
 
-function removeMarkdownSection(body: string, heading: string): string {
-  const match = markdownSection(body, heading)[0];
-  if (match === null) return body;
-  const before = body.slice(0, match.index).trimEnd();
-  const after = body.slice(match.index + match[0].length).replace(/^\n+/, "");
-  return before && after ? `${before}\n\n${after}` : before || after;
-}
 function harnessNeutralText(text: string): string {
   return text
     .replaceAll(
@@ -529,7 +524,7 @@ function harnessNeutralText(text: string): string {
     .replace(/^[^\n.!?]*\bworktree\b[^\n.!?]*[.!?][ \t]*/gm, "");
 }
 function stripClaudeOnlyBehavior(body: string): string {
-  let projected = removeMarkdownSection(body, "Memory");
+  let projected = body;
   const delegation = markdownSection(projected, "Delegation Modes")[0] ?? null;
   if (delegation !== null && delegation[1]?.includes("Dynamic Workflow")) {
     const direct =
@@ -544,7 +539,6 @@ function stripClaudeOnlyBehavior(body: string): string {
   }
   projected = `${harnessNeutralText(projected).trimEnd()}\n`;
   const unsupported = [
-    ".claude/agent-memory/",
     "Dynamic Workflow",
     "Workflow launches",
     "worktree",

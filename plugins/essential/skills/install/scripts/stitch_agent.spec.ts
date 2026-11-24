@@ -40,7 +40,7 @@ function temporaryRoot(): string {
 }
 
 function memory(name: string): string {
-  return `\n## Memory\n\nI retain durable repository knowledge in \`.claude/agent-memory/${name}/MEMORY.md\`. I follow \`essential:templates/memory.md\`. Current facts carry evidence and a last-verified date. Sources override memory; I archive old claims before 150 lines or 20KB. I move detail to \`topics/<stable-area>/<specific-subject>.md\`.\n`;
+  return `\n## Memory\n\nI retain durable repository knowledge in \`<state-root>/memories/${name}/MEMORY.md\`. I follow \`essential:templates/memory.md\`. Current facts carry evidence and a last-verified date. Sources override memory; I archive old claims before 150 lines or 20KB. I move detail to \`topics/<stable-area>/<specific-subject>.md\`.\n`;
 }
 
 function stateSystemAccess(document: string): Record<string, string> {
@@ -110,7 +110,7 @@ function writeTemplate(
   );
   writeFileSync(
     resolve(template, "frontmatter/claude.json"),
-    JSON.stringify({ memory: "project", ...options.claude }),
+    JSON.stringify(options.claude ?? {}),
   );
   writeFileSync(
     resolve(template, "frontmatter/codex.json"),
@@ -158,8 +158,8 @@ describe("agent stitching", () => {
     expect(projected).toMatchObject({
       name: "test-agent",
       color: "blue",
-      memory: "project",
     });
+    expect(projected).not.toHaveProperty("memory");
     expect(jsonNativeSettings(claude)).toEqual({});
     const access = {
       read: "all-agents",
@@ -213,7 +213,6 @@ describe("agent stitching", () => {
   );
 
   it.each([
-    ["a memory path", "\nSee also `.claude/agent-memory/test-agent/EXTRA.md`."],
     ["a worktree", "\nFirst. A worktree survives this sentence."],
   ])("hard-fails when a Grok body retains %s", (_label, extra) => {
     const root = temporaryRoot();
@@ -238,6 +237,26 @@ describe("agent stitching", () => {
     expect(codex).toContain("## End");
   });
 
+  it("should keep the state-root memory section on every harness", () => {
+    const root = temporaryRoot();
+    const template = writeTemplate(root, "test-agent");
+    const path = "<state-root>/memories/test-agent/MEMORY.md";
+
+    expect(stitchAgentDefinition(template)).toContain(path);
+    expect(stitchCodexAgentDefinition(template)).toContain(path);
+    expect(stitchGrokAgentDefinition(template)).toContain(path);
+  });
+
+  it("should reject the native Claude memory key", () => {
+    const root = temporaryRoot();
+    const template = writeTemplate(root, "test-agent", {
+      claude: { memory: "project" },
+    });
+    expect(() => stitchAgentDefinition(template)).toThrow(
+      "remove the native memory key",
+    );
+  });
+
   it("requires three distinct preferred names", () => {
     expect(
       preferredNameCandidates(
@@ -253,6 +272,11 @@ describe("agent stitching", () => {
 
   it.each([
     ["missing memory", "# Test agent\n", "exactly one ## Memory"],
+    [
+      "legacy memory path",
+      "# Test agent\n\n## Memory\n\nI retain durable facts in `.claude/agent-memory/test-agent/MEMORY.md` following `essential:templates/memory.md`. Claims carry evidence and a last-verified date. I archive stale claims before 150 lines or 20KB, with detail in `topics/<stable-area>/<specific-subject>.md`.\n",
+      "<state-root>/memories/test-agent/MEMORY.md",
+    ],
     [
       "fixed routing",
       `# Test agent\n\nI always spawn helpers.\n${memory("test-agent")}`,

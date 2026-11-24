@@ -82,22 +82,55 @@ const OPEN_CODE_COLOR_BY_CLAUDE_COLOR: Readonly<Record<string, string>> = {
   red: "error",
   yellow: "warning",
 };
-const READ_ONLY_AGENT_POLICIES: Readonly<
-  Record<
-    string,
-    { readonly hook_sha256: string; readonly edit_patterns: readonly string[] }
-  >
-> = {
-  "aesthetic-evaluator": {
-    hook_sha256:
-      "76835f795ace0210d4f793c6bb4ed570c4570b0d96d796f0441b9f8204b88765",
-    edit_patterns: [".claude/agent-memory/aesthetic-evaluator/*"],
-  },
-  "code-quality-critic": {
-    hook_sha256:
-      "a2a4d016f1806f06f0f60c4b5af54ad9255f72222c8ce64b60c6b370fc9c4177",
-    edit_patterns: [".claude/agent-memory/code-quality-critic/*"],
-  },
+type PermissionRules = readonly (readonly [pattern: string, action: "allow" | "deny"])[];
+
+interface ReadOnlyAgentPolicy {
+  readonly hook_sha256: string;
+  /** matched against the edited path relative to the worktree, which reaches the home state root through `../` */
+  readonly edit_rules: PermissionRules;
+  /** matched against the absolute parent directory of an external path; OpenCode expands a leading `~` */
+  readonly external_rules: PermissionRules;
+}
+
+/** state-root subtrees a critic's memory glob could otherwise reach before its own folder, because OpenCode's `*` crosses `/`; mirrors the Claude fence */
+const MEMORY_GLOB_ESCAPES = [
+  "memories/*",
+  "works",
+  "archive",
+  "journals",
+  "backlogs",
+  "notion",
+] as const;
+
+/** rules that let a fenced critic write only its own memory folder, under `essential:templates/memory.md`; OpenCode applies the last matching rule */
+function criticMemoryRules(root: string, name: string): PermissionRules {
+  return [
+    ["*", "deny"],
+    [`${root}/*/memories/${name}/*`, "allow"],
+    ...MEMORY_GLOB_ESCAPES.map(
+      (subtree) =>
+        [`${root}/*/${subtree}/*memories/${name}/*`, "deny"] as const,
+    ),
+  ];
+}
+
+function criticMemoryPolicy(name: string, hookSha256: string): ReadOnlyAgentPolicy {
+  return {
+    hook_sha256: hookSha256,
+    edit_rules: criticMemoryRules("../*.agents/states", name),
+    external_rules: criticMemoryRules("~/.agents/states", name),
+  };
+}
+
+const READ_ONLY_AGENT_POLICIES: Readonly<Record<string, ReadOnlyAgentPolicy>> = {
+  "aesthetic-evaluator": criticMemoryPolicy(
+    "aesthetic-evaluator",
+    "c77063f84800825f7ee3e573d322b3f1f1d3846c416d01e93313582be473cd28",
+  ),
+  "code-quality-critic": criticMemoryPolicy(
+    "code-quality-critic",
+    "a99f2110f85073954a688ad15eee1a9b64580b749b75525c69524d74f21038cc",
+  ),
 };
 
 /** Raised when the projection cannot be completed safely. */
@@ -868,9 +901,12 @@ function writeCommand(
   );
 }
 
-function agentPermissions(name: string, claude: JsonObject): readonly string[] {
+function agentPermissions(
+  name: string,
+  claude: JsonObject,
+): ReadOnlyAgentPolicy | undefined {
   const hooks = claude.hooks;
-  if (hooks === undefined || hooks === null) return [];
+  if (hooks === undefined || hooks === null) return undefined;
   const policy = READ_ONLY_AGENT_POLICIES[name];
   if (
     policy === undefined ||
@@ -890,7 +926,7 @@ function agentPermissions(name: string, claude: JsonObject): readonly string[] {
       `changed security-sensitive hooks for agent ${name}`,
     );
   }
-  return policy.edit_patterns;
+  return policy;
 }
 
 function writeAgent(agentRoot: string, destination: string): string {
@@ -938,12 +974,20 @@ function writeAgent(agentRoot: string, destination: string): string {
   ];
   if (projectedColor !== undefined)
     frontmatter.push(`color: ${projectedColor}`);
-  if (permissions.length > 0) {
-    frontmatter.push("permission:", "  edit:", '    "*": deny');
-    for (const pattern of permissions) {
-      frontmatter.push(`    ${ensureAscii(JSON.stringify(pattern))}: allow`);
-    }
-    frontmatter.push("  bash: deny", "  external_directory: deny");
+  if (permissions !== undefined) {
+    const rules = (key: string, entries: PermissionRules): string[] => [
+      `  ${key}:`,
+      ...entries.map(
+        ([pattern, action]) =>
+          `    ${ensureAscii(JSON.stringify(pattern))}: ${action}`,
+      ),
+    ];
+    frontmatter.push(
+      "permission:",
+      ...rules("edit", permissions.edit_rules),
+      "  bash: deny",
+      ...rules("external_directory", permissions.external_rules),
+    );
   }
   frontmatter.push("---", "");
   const body = injectRequirementsLine(

@@ -29,7 +29,7 @@ Code and harness quality itself is not my job — the producers route their diff
 
 ## Memory
 
-I self-curate `.claude/agent-memory/ai-research-lead/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific research hypotheses, metric and dataset decisions, experiment results, reproducibility constraints, and keep/kill/iterate outcomes.
+I self-curate `<state-root>/memories/ai-research-lead/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific research hypotheses, metric and dataset decisions, experiment results, reproducibility constraints, and keep/kill/iterate outcomes.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

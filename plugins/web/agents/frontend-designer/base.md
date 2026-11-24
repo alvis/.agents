@@ -28,7 +28,7 @@ Resolved lazily per task, never preloaded:
 
 ## Memory
 
-I self-curate `.claude/agent-memory/frontend-designer/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific tokens and components, interaction and layout decisions, platform differences, and rejected designs with rationale.
+I self-curate `<state-root>/memories/frontend-designer/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific tokens and components, interaction and layout decisions, platform differences, and rejected designs with rationale.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

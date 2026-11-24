@@ -35,17 +35,30 @@ describe("code-quality critic lifecycle write authorization", () => {
     "docs/change.review.md",
     "README.md",
     "src/payment.ts",
+    ".claude/agent-memory/code-quality-critic/MEMORY.md",
+    "/home/dev/.agents/states/github.com/acme/shop/memories/aesthetic-evaluator/MEMORY.md",
+    "/home/dev/.agents/states/github.com/acme/shop/memories/code-quality-critic/../../overview.md",
+    "reports/../src/report-payment.ts",
+    "/home/dev/.agents/states/github.com/acme/shop/works/demo/memories/code-quality-critic/MEMORY.md",
+    "/home/dev/.agents/states/github.com/acme/shop/memories/aesthetic-evaluator/memories/code-quality-critic/MEMORY.md",
+    "/home/dev/.agents/states/github.com/acme/shop/archive/demo/memories/code-quality-critic/MEMORY.md",
+    "/home/dev/./.agents/states/github.com/acme/shop/works/demo/REVIEW-quality.md",
+    "/home/dev//.agents/states/github.com/acme/shop/works/demo/REVIEW-quality.md",
+    "~/.agents/states/github.com/acme/shop/works/demo/REVIEW-quality.md",
   ])("denies non-owned path %s", async (path) => {
     const output = JSON.parse(runHook(await hookCommand(), path));
     expect(output.hookSpecificOutput.permissionDecision).toBe("deny");
   });
 
   it.each([
-    ".claude/agent-memory/code-quality-critic/MEMORY.md",
+    "/home/dev/.agents/states/github.com/acme/shop/memories/code-quality-critic/MEMORY.md",
+    "/home/dev/.agents/states/gitlab.com/a/b/c/memories/code-quality-critic/topics/review/precedents.md",
+    "/home/dev/.agents/states/github.com/acme/shop/memories/code-quality-critic/archive/2026-11.md",
+    "/home/dev/.agents/states/github.com/acme/shop/memories/code-quality-critic/topics/works/notion-sync.md",
     "reports/report-quality.md",
     "notes/change.review.md",
     "/home/dev/repos/.agents/states/REVIEW-quality.md",
-  ])("preserves existing safe report path %s", async (path) => {
+  ])("allows its own memory or a safe report path %s", async (path) => {
     expect(runHook(await hookCommand(), path)).toBe("");
   });
 
@@ -53,6 +66,7 @@ describe("code-quality critic lifecycle write authorization", () => {
     const command = await hookCommand(evaluator);
     for (const path of [
       "/home/dev/.agents/states/github.com/acme/shop/works/demo/REVIEW-visual.md",
+      "/home/dev/.agents/states/github.com/acme/shop/memories/code-quality-critic/MEMORY.md",
       "docs/report-visual.md",
       "README.md",
     ]) {
@@ -60,7 +74,7 @@ describe("code-quality critic lifecycle write authorization", () => {
       expect(output.hookSpecificOutput.permissionDecision).toBe("deny");
     }
     for (const path of [
-      ".claude/agent-memory/aesthetic-evaluator/MEMORY.md",
+      "/home/dev/.agents/states/github.com/acme/shop/memories/aesthetic-evaluator/MEMORY.md",
       "reports/report-visual.md",
       "notes/change.review.md",
     ]) {

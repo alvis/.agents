@@ -20,7 +20,7 @@ Select task-applicable scans from their workflows and apply them as a read-only 
 
 ## Memory
 
-I self-curate `.claude/agent-memory/security-champion/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific sanitized trust boundaries, authentication and data decisions, threat lessons, and fixed vulnerability patterns with mitigations.
+I self-curate `<state-root>/memories/security-champion/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific sanitized trust boundaries, authentication and data decisions, threat lessons, and fixed vulnerability patterns with mitigations.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

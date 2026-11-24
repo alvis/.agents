@@ -1,7 +1,6 @@
 {
   "color": "purple",
   "permissionMode": "acceptEdits",
-  "memory": "project",
   "background": true,
   "maxTurns": 15,
   "initialPrompt": "Greet the user and request: the package or scope to sweep. Offer that you'll find the test/lint/type scripts, run the full sweep once, and report counts and concrete failures. Then wait; once there's a scope, select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md` — you don't author tests or run speculatively."

@@ -420,6 +420,42 @@ describe("projection inventory", () => {
       expect(frontmatter).toMatch(/^  edit:$/m);
       expect(frontmatter).toMatch(/^    "\*": deny$/m);
       expect(frontmatter).toMatch(/^  bash: deny$/m);
+      const memoryRules = (root: string): string =>
+        [
+          '    "*": deny',
+          `    "${root}/*/memories/code-quality-critic/*": allow`,
+          ...["memories/*", "works", "archive", "journals", "backlogs", "notion"].map(
+            (subtree) => `    "${root}/*/${subtree}/*memories/code-quality-critic/*": deny`,
+          ),
+        ].join("\n");
+      expect(frontmatter).toContain(`  edit:\n${memoryRules("../*.agents/states")}\n  bash: deny\n`);
+      expect(frontmatter.endsWith(`  external_directory:\n${memoryRules("~/.agents/states")}\n`)).toBe(true);
+
+      // OpenCode V1 compiles `*` to `.*` and applies the last matching rule.
+      const decide = (key: string, target: string): string | undefined => {
+        const block = frontmatter.split(`  ${key}:\n`)[1]!.split(/\n  (?! )/)[0]!;
+        let action: string | undefined;
+        for (const [, pattern, rule] of block.matchAll(/^ {4}"(.+)": (allow|deny)$/gm)) {
+          const source = pattern!.replace(/[.+^${}()|[\]\\]/g, "\\$&").replaceAll("*", ".*");
+          if (new RegExp(`^${source}$`).test(target)) action = rule;
+        }
+        return action;
+      };
+      const root = "/Users/dev/.agents/states/github.com/acme/shop";
+      for (const [suffix, expected] of [
+        ["memories/code-quality-critic/MEMORY.md", "allow"],
+        ["memories/code-quality-critic/archive/2026-11.md", "allow"],
+        ["memories/code-quality-critic/topics/works/notion-sync.md", "allow"],
+        ["memories/aesthetic-evaluator/MEMORY.md", "deny"],
+        ["memories/aesthetic-evaluator/memories/code-quality-critic/MEMORY.md", "deny"],
+        ["works/demo/memories/code-quality-critic/MEMORY.md", "deny"],
+        ["overview.md", "deny"],
+      ] as const) {
+        const relative = `../../.agents/states/github.com/acme/shop/${suffix}`;
+        const parent = `${root}/${suffix}`.replace(/\/[^/]+$/, "/*").replace("/Users/dev", "~");
+        expect(decide("edit", relative), relative).toBe(expected);
+        expect(decide("external_directory", parent), parent).toBe(expected);
+      }
       expect(frontmatter).not.toMatch(/^(?:model|effort|model_reasoning_effort): /m);
     } finally {
       await removeTemporaryDirectory(sandbox.root);
@@ -437,7 +473,6 @@ describe("projection inventory", () => {
         requirements: { model: "expert", effort: "instinctive" },
       }));
       await writeFixture(agentRoot, "frontmatter/claude.json", JSON.stringify({
-        memory: "project",
         maxTurns: 4,
         initialPrompt: "Handle the fixture task.",
         color: "blue",
