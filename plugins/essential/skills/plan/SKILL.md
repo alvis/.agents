@@ -35,7 +35,7 @@ Turn a request into an approved plan that runs from the overview down to subtask
    - **Subtasks** — leaf tasks `<PARENT>01` to `<PARENT>99` under one milestone, each one owner and one coherent change with its own check. `essential:references/state-format.md` allows one child level, so a subtask that needs its own subtasks becomes a milestone.
 
    Every deferred unknown becomes an `EXPLORE` subtask or a numbered assumption with its verification task. Brief Precedents go under Context's **Precedents**.
-5. **Approve.** Present the plan as the plan direction orders, including its cut-to-core question and any required direction board, and persist it on approval under `essential:directions/approve-plan.md`. Never start execution from this skill.
+5. **Approve.** Present the plan as the plan direction orders, including its cut-to-core question and any required direction board, and persist it on approval under `essential:directions/approve-plan.md`. This skill never executes; execution follows approval under `essential:directions/plan.md#act-on-approval`.
 6. **Re-enter for work found later.** When execution surfaces work the approved plan lacks, `essential:directions/change-control.md` classifies it. A task-local finding stays on its row. A plan-level finding runs this skill with `--scope`, in this order:
    1. Research and discover the `--scope` work alone (steps 2–3), at the depth its risk warrants. A tiny addition still gets a researcher pass and an open-row check; it skips only what its risk does not need.
    2. Raise the change-control `proposals/` child as `open`.
