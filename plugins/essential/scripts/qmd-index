@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Keeps this repository's prefixed qmd collections current. Run
+# `qmd-index ensure|embed|status`; qmd-index.ts owns the contract.
+set -euo pipefail
+
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if ! command -v bun >/dev/null 2>&1; then
+  printf '{"status":"unavailable","mode":null,"reason":"bun is not installed"}\n'
+  exit 0
+fi
+
+exec bun "$SCRIPTS_DIR/qmd-index.ts" "$@"

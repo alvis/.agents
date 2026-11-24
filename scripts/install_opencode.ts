@@ -41,7 +41,10 @@ import {
 } from "../plugins/essential/skills/install/scripts/stitch_agent.ts";
 import type { AgentSources } from "../plugins/essential/skills/install/scripts/stitch_agent.ts";
 
-import { planOpencodeGrant } from "../plugins/essential/scripts/installation/state-grant.ts";
+import {
+  defaultWritableRoots,
+  planOpencodeGrant,
+} from "../plugins/essential/scripts/installation/write-grant.ts";
 import { commitFiles } from "../plugins/essential/scripts/installation/transaction.ts";
 import { resolveHookReceipts } from "./opencode_hook_receipts.ts";
 
@@ -210,14 +213,14 @@ function ownershipPath(target: string): string {
 }
 
 /**
- * Grants OpenCode write access to the home state folder (ADR-3).
+ * Grants OpenCode write access to every root Essential's tools write.
  *
  * Only the user scope is edited: a project config may be committed and must
  * not carry a path from one person's home folder.
  *
  * @returns the grant outcome reported in the installer result
  */
-function grantStateAccess(
+function grantWriteAccess(
   scope: "project" | "user",
   target: string,
   apply: boolean,
@@ -225,12 +228,13 @@ function grantStateAccess(
   if (scope !== "user") return "skipped-project-scope";
   // a dry run of a first install has no config to read yet
   if (!pathExists(target)) return "would-grant";
-  const plan = planOpencodeGrant(target);
-  if (plan.manual !== undefined) return `grant by hand: ${plan.manual}`;
-  if (plan.changes.length === 0) return "present";
-  if (!apply) return "would-grant";
-  commitFiles(plan.changes);
-  return "granted";
+  const plan = planOpencodeGrant(target, defaultWritableRoots());
+  const byHand = plan.manual === undefined ? undefined : `grant by hand: ${plan.manual}`;
+  if (plan.changes.length === 0) return byHand ?? "present";
+  if (apply) commitFiles(plan.changes);
+  const outcome = apply ? "granted" : "would-grant";
+  // a refused root still lets the others through, so both are reported
+  return byHand === undefined ? outcome : `${outcome}; ${byHand}`;
 }
 
 function transactionPath(target: string): string {
@@ -1924,14 +1928,14 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     if (!Array.isArray(managedPaths)) {
       throw new ProjectionError("generated manifest has no managed paths");
     }
-    const stateGrant = grantStateAccess(args.scope, target, !args.dryRun);
+    const writeGrant = grantWriteAccess(args.scope, target, !args.dryRun);
     process.stdout.write(
       `${ensureAscii(
         JSON.stringify(
           {
             status: args.dryRun ? "dry-run" : "installed",
             target,
-            state_grant: stateGrant,
+            write_grant: writeGrant,
             selected_plugins: selectedPlugins,
             resolved_plugins: resolvedPlugins,
             existing_projection: previousProjection.classification,
