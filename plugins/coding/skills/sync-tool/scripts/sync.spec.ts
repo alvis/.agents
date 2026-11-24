@@ -236,7 +236,7 @@ describe("qmd installation paths", () => {
         `export PATH=${toolchain.binDirectory.replaceAll(" ", "\\ ")}:$PATH`,
       );
       expect(completed.stdout).toContain(
-        "qmd: failed (qmd not on PATH after installer; follow the PATH guidance",
+        "qmd: failed (qmd does not resolve after installer; follow the guidance",
       );
       expect(completed.stdout).not.toContain("still missing");
       expect(await readFile(toolchain.log, "utf8")).toContain("qmd pull");
@@ -263,7 +263,9 @@ describe("qmd installation paths", () => {
       expect(completed.status).toBe(1);
       expect(completed.stderr).toContain(toolchain.binDirectory);
       expect(completed.stderr).not.toContain("export PATH=");
-      expect(completed.stdout).toContain("qmd: failed (qmd not on PATH");
+      expect(completed.stdout).toContain(
+        "qmd: failed (qmd does not resolve after installer; follow the guidance",
+      );
     });
   });
 

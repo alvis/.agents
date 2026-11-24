@@ -270,7 +270,7 @@ export function runInstaller(
     return [
       "failed",
       entry.offPathPossible
-        ? `${executable} not on PATH after installer; follow the PATH guidance ${entry.installer} printed above, then re-run`
+        ? `${executable} does not resolve after installer; follow the guidance ${entry.installer} printed above, then re-run`
         : `${executable} still missing after installer`,
     ];
   const versionAfter = getVersion(executable, entry.versionArguments);
