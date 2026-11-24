@@ -190,6 +190,68 @@ describe("review publication shell guard", () => {
   });
 
   it.each([
+    'gh api -X POST "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" -f body=x',
+    'gh api -X POST "repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/reviews" -f body=x',
+    "gh api -X POST repos/acme/app/pulls/$N/reviews -f body=x",
+    'gh api -X POST repos/acme/app/pulls/"$N"/comments -f body=x',
+    'gh api -X POST "repos/acme/app/pulls/${N:-35}/reviews" -f body=x',
+    'gh api -X POST "https://api.github.com/repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews" -f body=x',
+    'gh api -X PUT "repos/acme/app/pulls/35/reviews/$REVIEW_ID" -f body=x',
+    'gh api -X POST "repos/acme/app/pulls/$PR_NUMBER/reviews/$REVIEW_ID/events" -f event=APPROVE',
+    'gh api -X PATCH "repos/acme/app/pulls/comments/$COMMENT_ID" -f body=x',
+    'gh api -X DELETE "repos/acme/app/pulls/reviews/${REVIEW_ID}"',
+    'gh api -X POST "repos/acme/app/pulls/$PR_NUMBER/comments/$COMMENT_ID/replies" -f body=x',
+    'gh api --method POST "repos/acme/app/pulls/$PR_NUMBER/ccr/comments/$COMMENT_ID/resolve"',
+    "gh api -X PUT repos/acme/app/pulls/35/reviews/91/dismissals -f message=x",
+    'gh api -X PUT "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews/$REVIEW_ID/dismissals" -f message=x',
+    "gh api -X POST repositories/123/pulls/35/reviews -f event=APPROVE",
+    'gh api -X POST "/repositories/$REPOSITORY_ID/pulls/$PR_NUMBER/comments" -f body=x',
+    "true; gh api -X POST repositories/123/pulls/35/reviews -f body=x",
+    "gh api graphql -f query='mutation { addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\"x\",body:\"b\"}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { deletePullRequestReviewComment(input:{id:\"x\"}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { dismissPullRequestReview(input:{pullRequestReviewId:\"x\",message:\"m\"}) { clientMutationId } }'",
+  ])(
+    "should deny a review write whose ids are shell variables, or a dismissal, alias route, or added mutation: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    'gh api -X POST "repos/$REPOSITORY/issues/$N/comments" -f body=x',
+    'gh api -X POST "repos/$OWNER/$REPO/issues/$PR/comments" -f body=hi',
+    "gh api -X POST repos/o/r/issues/35/comments -f body=hi",
+    'gh api -X PATCH "repos/$OWNER/$REPO/issues/comments/$COMMENT_ID" -f body=x',
+    'gh api -X DELETE "repos/$O/$R/issues/comments/$ID"',
+    'gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews"',
+    'gh api "repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments" --paginate',
+    'gh api "repos/$OWNER/$REPO/pulls/$PR" --jq .head.sha',
+    'gh api --method GET "repos/acme/app/pulls/$PR_NUMBER/reviews/$REVIEW_ID"',
+    "gh api repos/o/r/pulls/35/comments --paginate",
+    "gh api repos/o/r/pulls/35",
+    'source "${CODING_PR_SKILL_DIR}/scripts/fetch-review-loop-discussion.sh" "$PR_URL"',
+    "bash /x/fetch-review-loop-discussion.sh https://github.com/o/r/pull/35",
+    "gh pr view 35 --json reviews",
+    'gh pr view "$PR" --comments',
+    "gh api graphql -f query='query { repository(owner:\"o\",name:\"r\"){ pullRequest(number:35){ reviewThreads(first:50){nodes{isResolved}} } } }'",
+    "gh api graphql -F owner=\"$OWNER\" -f query='query($owner:String!){ repository(owner:$owner,name:\"r\"){ id } }'",
+    "gh issue comment 35 --body hi",
+    "bun /x/plugins/coding/scripts/gh-issue-comment.ts 35 --body hi",
+    "bun /x/plugins/coding/scripts/gh-pr-comment.ts 35 --body 'ran the tests'",
+    "gh pr list",
+    "gh pr checks 35",
+  ])(
+    "should leave issue writes, variable reads, and the discussion helper unguarded: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("ignore");
+    },
+  );
+
+  it.each([
     "gh pr view 35 --json headRefOid",
     "bun run plugins/coding/scripts/gh-pr-view.ts 35 --json headRefOid",
     "bun run plugins/coding/scripts/gh-issue-create.ts --title Bug --body-file bug.md",
@@ -250,6 +312,12 @@ describe("review publication shell guard", () => {
     expect(
       classifyReviewPublicationCommand(`rtk proxy ${publisher}`, pluginRoot)
         .decision,
+    ).toBe("allow");
+    expect(
+      classifyReviewPublicationCommand(
+        `bun ${contractPath} update --approval /tmp/a.json --review-id 91`,
+        pluginRoot,
+      ).decision,
     ).toBe("allow");
     expect(
       classifyReviewPublicationCommand(
