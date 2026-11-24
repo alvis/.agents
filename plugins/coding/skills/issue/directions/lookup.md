@@ -6,9 +6,7 @@ Standalone lookup and nested duplicate lookup search the bound repository's open
 2. Use this REST recipe with `QUERY` containing `repo:OWNER/REPO is:issue in:title,body` plus each chosen term set, excluding neither closed issues nor older reports for lookup. Triage queue retrieval adds `is:open`:
 
 ```bash
-gh api --hostname "$HOST" --method GET search/issues \
-  -f q="$QUERY" -f sort=updated -f order=desc \
-  -F per_page="$PAGE_SIZE" -F page="$PAGE"
+gh api --hostname "$HOST" --method GET search/issues -f q="$QUERY" -f sort=updated -f order=desc -F per_page="$PAGE_SIZE" -F page="$PAGE"
 ```
 
 3. Start at page 1. Choose `PAGE_SIZE` at most 100 (the API page ceiling) and no greater than the remaining candidate allowance. Follow pages while results remain, respecting GitHub's 1,000-result search ceiling; split broad queries by component or time window instead of pretending deeper pagination works. Treat `incomplete_results: true` as incomplete evidence.
