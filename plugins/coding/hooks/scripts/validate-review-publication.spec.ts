@@ -252,6 +252,231 @@ describe("review publication shell guard", () => {
   );
 
   it.each([
+    'gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$N/reviews" -f event=APPROVE',
+    "gh api -X POST repos/$GITHUB_REPOSITORY/pulls/$N/reviews -f event=APPROVE",
+    'gh api -X POST "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" -f body=x',
+    'gh api -X PUT "repos/$GITHUB_REPOSITORY/pulls/$N/reviews/$REVIEW_ID/dismissals" -f message=x',
+    'gh api -X POST "https://api.github.com/repos/$R/pulls/$N/reviews" -f event=APPROVE',
+  ])(
+    "should deny a review write whose owner/repo is one shell variable: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    'true; gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$N/reviews" -f event=APPROVE',
+    'cd repo && gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$N/reviews" -f event=APPROVE',
+  ])(
+    "should deny a chained review write whose owner/repo is one shell variable: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it("should name a chained single-variable repository write as a protected endpoint", () => {
+    const { reason } = classifyReviewPublicationCommand(
+      'grep -n x notes.md; gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$N/reviews" -f event=APPROVE',
+      pluginRoot,
+    );
+
+    expect(reason).toContain(
+      "raw gh api POST targets a protected PR review/comment endpoint",
+    );
+  });
+
+  it.each([
+    "gh api -X POST repos/o/r/pulls/35/reviews -f event=APPROVE -f note=x/gh-pr-comment.ts",
+    "gh api --input payload.json repos/o/r/pulls/35/reviews -H X-Note:/tmp/gh-pr-comment.ts",
+    "gh pr review 35 --approve --body gh-pr-comment.ts",
+  ])(
+    "should deny a review write that merely mentions gh-pr-comment.ts: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    "X=/gh-pr-comment.ts gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+    "X=/gh-pr-comment.ts gh pr review 1 --approve",
+    'GH_DEBUG=/gh-pr-comment.ts gh api -X DELETE "repos/${R}/pulls/comments/$CID"',
+    ">/tmp/gh-pr-comment.ts gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+    "> /tmp/gh-pr-comment.ts gh pr review 1 --approve",
+    ">>/tmp/gh-pr-comment.ts gh pr review 1 --approve",
+    "2>/tmp/gh-pr-comment.ts gh pr review 1 --approve",
+    "</tmp/x/gh-pr-comment.ts gh pr review 1 --approve",
+    "bash -c 'X=/gh-pr-comment.ts gh pr review 1 --approve'",
+    'bash -c \'>/dev/gh-pr-comment.ts gh api -X PUT "repos/$R/pulls/$N/reviews/$RID/dismissals" -f message=x\'',
+  ])(
+    "should deny a review write behind an assignment or redirection that names gh-pr-comment.ts: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    "X+=/gh-pr-comment.ts gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+    "X+=/gh-pr-comment.ts gh pr review 1 --approve",
+    'X=1 X+=/gh-pr-comment.ts gh api -X PUT "repos/$R/pulls/$N/reviews/$RID/dismissals" -f message=x',
+    ">/dev/null X+=/gh-pr-comment.ts gh pr review 1 --approve",
+    "bash -c 'X+=/gh-pr-comment.ts gh pr review 1 --approve'",
+    "X[0]=/gh-pr-comment.ts gh pr review 1 --approve",
+    "{FD}>/tmp/gh-pr-comment.ts gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+    "{FD}</tmp/x/gh-pr-comment.ts gh pr review 1 --approve",
+    "bash -c '{FD}>/tmp/gh-pr-comment.ts gh pr review 1 --approve'",
+  ])(
+    "should still classify the gh write when a prefix the drop-in check does not parse names gh-pr-comment.ts: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    "X=/gh gh pr review 1 --approve",
+    "X=/gh gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+    "</opt/homebrew/bin/gh gh pr review 1 --approve",
+    '>/tmp/gh gh api -X POST "repos/$GITHUB_REPOSITORY/pulls/$N/reviews" -f event=APPROVE',
+    "2>/tmp/gh gh pr comment 1 --body-file verdict.md",
+    "X+=/gh gh pr review 1 --approve",
+    "bash -c 'X=/gh gh pr review 1 --approve'",
+    "rtk X=/gh gh pr review 1 --approve",
+    "X=/gh gh api graphql -f query='mutation{dismissPullRequestReview(input:{pullRequestReviewId:\"x\",message:\"m\"}){clientMutationId}}'",
+  ])(
+    "should classify every word named gh, so a prefix word named gh cannot mask the real write: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    "GH pr review 1 --approve",
+    "Gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+    '/OPT/HOMEBREW/BIN/GH api -X PUT "repos/$R/pulls/$N/reviews/$RID/dismissals" -f message=x',
+    "X=/gh GH pr review 1 --approve",
+    "bash -c 'GH pr review 1 --approve'",
+    "true; GH pr review 1 --approve",
+    "cd repo && Gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE",
+  ])(
+    "should deny a review write whose gh command name differs only in letter case: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    'gh pr view 1 --json title && echo "PR Review done"',
+    'git commit -m "GH-42: address PR review feedback" && git push',
+  ])(
+    "should leave a command alone when only the gh name, not the subcommand, differs in letter case: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("ignore");
+    },
+  );
+
+  it("should deny a command with more words named gh than it classifies", () => {
+    const command = `gh ${"-R gh ".repeat(160_000)}x; gh pr review 1 --approve`;
+
+    const result = classifyReviewPublicationCommand(command, pluginRoot);
+
+    expect(result.decision).toBe("deny");
+  });
+
+  it.each([
+    `gh api -X POST repos/o/r/pulls/1/reviews -f event=APPROVE --jq '${".gh,".repeat(120_000)}.id'`,
+    `gh api --jq '${".repos/".repeat(70_000)}' -X POST repos/o/r/pulls/1/reviews -f event=APPROVE`,
+  ])(
+    "should deny a review write padded inside one long word: %#",
+    (command) => {
+      const result = classifyReviewPublicationCommand(command, pluginRoot);
+
+      expect(result.decision).toBe("deny");
+    },
+  );
+
+  it("should deny a command with more than eight words named gh", () => {
+    const command = `echo ${"gh ".repeat(9)}`;
+
+    const result = classifyReviewPublicationCommand(command, pluginRoot);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        decision: "deny",
+        reason: expect.stringContaining("too many words named gh"),
+      }),
+    );
+  });
+
+  it.each([
+    'gh api -X POST "HTTPS://api.github.com/repos/o/r/pulls/1/reviews" -f event=APPROVE',
+    'gh api -X POST "Https://api.github.com/repos/$R/pulls/$N/reviews" -f event=APPROVE',
+  ])(
+    "should deny a review write whose URL scheme is not lower case: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    "bun run gh-pr-comment.ts 35 --body=LGTM-approved",
+    "X=1 bun /x/plugins/coding/scripts/gh-pr-comment.ts 35 --body Approved",
+    'rtk bun /x/gh-pr-comment.ts 35 -b "Requested changes below"',
+    "command bun /x/gh-pr-comment.ts 35 --body Approved",
+    "sh -c 'bun /x/gh-pr-comment.ts 35 --body Approved'",
+    "./gh-pr-comment.ts 35 --body Approved",
+  ])(
+    "should keep denying an inline verdict body sent through the drop-in: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("deny");
+    },
+  );
+
+  it.each([
+    'gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$N/comments" -f body=x',
+    'gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${N}/comments" -f body=x',
+    'gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" -f body=x',
+    'gh api "repos/$GITHUB_REPOSITORY/pulls/$N/reviews"',
+    'gh api --method GET "repos/${GITHUB_REPOSITORY}/pulls/${N}/comments" --paginate',
+    'gh api "repos/$GITHUB_REPOSITORY/pulls/$N" --jq .head.sha',
+    'bun run plugins/coding/scripts/gh-pr-comment.ts 35 --body "Rebased onto main."',
+    'bun "${CODING_PR_SKILL_DIR}/../../scripts/gh-pr-comment.ts" "$PR_NUMBER" --repo "$HOST/$REPOSITORY" --body-file note.md',
+    "rtk proxy bun /x/plugins/coding/scripts/gh-pr-comment.ts 35 --body 'ran the tests'",
+    "env GH_HOST=github.com bun /x/gh-pr-comment.ts 35 -b 'ran the tests'",
+    "bash -c 'bun /x/gh-pr-comment.ts 35 --body ok'",
+    "./gh-pr-comment.ts 35 --body 'ran the tests'",
+    "X=1 bun /x/plugins/coding/scripts/gh-pr-comment.ts 35 --body 'ran the tests'",
+    "2>/dev/null bun /x/gh-pr-comment.ts 35 --body 'ran the tests'",
+    'gh api "HTTPS://api.github.com/repos/o/r/pulls/1/reviews"',
+    'gh api -X POST "HTTPS://api.github.com/repos/o/r/issues/1/comments" -f body=x',
+  ])(
+    "should leave single-variable repository issue writes and reads, and plain drop-in comments, unguarded: %s",
+    (command) => {
+      expect(
+        classifyReviewPublicationCommand(command, pluginRoot).decision,
+      ).toBe("ignore");
+    },
+  );
+
+  it.each([
     "gh pr view 35 --json headRefOid",
     "bun run plugins/coding/scripts/gh-pr-view.ts 35 --json headRefOid",
     "bun run plugins/coding/scripts/gh-issue-create.ts --title Bug --body-file bug.md",

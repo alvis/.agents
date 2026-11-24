@@ -315,14 +315,18 @@ const STATUS_TEXT: Readonly<Record<StatusAssessment["status"], string>> = {
   "review-in-progress": "Independent review is in progress.",
   "review-started": "Independent review has started.",
 };
-// an id slot holds the digits or, once quotes are removed, a shell variable that
-// expands to them: `$NAME`, `${NAME}`, or a `${NAME…}` parameter form
-const PROTECTED_ID = String.raw`(?:\d+|\$(?:\w+|\{[^}]*\}))`;
+// a shell variable once quotes are removed: `$NAME`, `${NAME}`, or a
+// single-level `${NAME…}` parameter form
+const SHELL_VARIABLE = String.raw`\$(?:\w+|\{[^}]*\})`;
+// an id slot holds the digits or a shell variable that expands to them
+const PROTECTED_ID = String.raw`(?:\d+|${SHELL_VARIABLE})`;
+// the {owner}/{repo} slot holds two segments or one shell variable standing for
+// both, such as `$GITHUB_REPOSITORY`
+const PROTECTED_REPOSITORY = String.raw`(?:[^/]+/[^/]+|${SHELL_VARIABLE})`;
 const PROTECTED_REST_PATTERN = new RegExp(
-  String.raw`^(?:repos/[^/]+/[^/]+|repositories/ID)/pulls/(?:ID/(?:comments(?:/ID/replies)?|reviews(?:/ID(?:/events|/dismissals)?)?|ccr/comments/ID/(?:un)?resolve)|comments/ID|reviews/ID)(?:\?.*)?$`.replaceAll(
-    "ID",
-    PROTECTED_ID,
-  ),
+  String.raw`^(?:repos/REPOSITORY|repositories/ID)/pulls/(?:ID/(?:comments(?:/ID/replies)?|reviews(?:/ID(?:/events|/dismissals)?)?|ccr/comments/ID/(?:un)?resolve)|comments/ID|reviews/ID)(?:\?.*)?$`
+    .replace("REPOSITORY", PROTECTED_REPOSITORY)
+    .replaceAll("ID", PROTECTED_ID),
 );
 // issue comments (addComment, updateIssueComment, deleteIssueComment) are
 // deliberately unguarded so issue triage can publish; a pull-request target is
@@ -330,6 +334,9 @@ const PROTECTED_REST_PATTERN = new RegExp(
 // "Guarded routes and limits")
 const PROTECTED_GRAPHQL_PATTERN =
   /\b(?:addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|addPullRequestReviewThreadReply|deletePullRequestReview|deletePullRequestReviewComment|dismissPullRequestReview|resolveReviewThread|submitPullRequestReview|unresolveReviewThread|updatePullRequestReview|updatePullRequestReviewComment)\b/;
+// each word named gh is classified as a possible gh invocation, and each may
+// scan the rest of the command; a command with more is refused, not classified
+const MAX_GH_CANDIDATES = 8;
 
 const modulePath = fileURLToPath(import.meta.url);
 const defaultPluginRoot = resolve(dirname(modulePath), "../../../..");
@@ -2539,25 +2546,52 @@ function assertSameTarget(
 
 function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
   // gh-pr-comment.ts posts plain comments and refuses verdict language itself;
-  // an inline verdict is refused here too, before the command runs
-  const prComment = words.findIndex((word) => basename(word) === "gh-pr-comment.ts");
+  // an inline verdict is refused here too, before the command runs. The
+  // drop-in check only adds that denial: the gh check below always runs, so
+  // a word that merely names the drop-in never exempts a gh write
+  const prComment = findPrCommentScript(words);
   if (prComment !== -1) {
     const bodies = words.slice(prComment + 1).flatMap((word, index, rest) => {
       const inline = /^(?:--body|-b)=(.*)$/su.exec(word);
       if (inline) return [inline[1]!];
       return word === "--body" || word === "-b" ? [rest[index + 1] ?? ""] : [];
     });
-    return bodies.some((body) => REVIEW_LANGUAGE_PATTERN.test(body))
-      ? "gh-pr-comment.ts posts plain comments only, and this body reads as a review verdict"
-      : null;
+    if (bodies.some((body) => REVIEW_LANGUAGE_PATTERN.test(body)))
+      return "gh-pr-comment.ts posts plain comments only, and this body reads as a review verdict";
   }
-  const ghIndex = words.findIndex((word) => basename(word) === "gh");
-  if (ghIndex === -1) return null;
-  const arguments_ = [...words.slice(ghIndex + 1)];
-  while (arguments_[0]?.startsWith("-")) {
-    const option = arguments_.shift()!;
+  // every word named gh, in any letter case, is a candidate: a prefix word
+  // such as `X=/gh` or `>/tmp/gh` also has that basename, and a
+  // case-insensitive filesystem runs `GH` as gh. A null from one candidate
+  // must never mask a denial from a later one. Each candidate may scan to the
+  // end of the command, so past a small count the command is refused instead
+  // of classified, keeping the work linear in its length
+  const candidates = words.flatMap((word, index) =>
+    basename(word).toLowerCase() === "gh" ? [index] : [],
+  );
+  if (candidates.length > MAX_GH_CANDIDATES)
+    return "too many words named gh to classify a potential review write safely";
+  for (const index of candidates) {
+    const denial = classifyGhInvocation(words, index + 1);
+    if (denial !== null) return denial;
+  }
+  return null;
+}
+
+/**
+ * classifies one gh invocation for a protected review write
+ * @param words words of one simple command
+ * @param start index of the first word after the word named gh
+ * @returns the denial reason, or null when these words make no protected write
+ */
+function classifyGhInvocation(
+  words: readonly string[],
+  start: number,
+): string | null {
+  let position = start;
+  while (words[position]?.startsWith("-")) {
+    const option = words[position++]!;
     if (["-R", "--repo", "--hostname"].includes(option)) {
-      if (arguments_.shift() === undefined)
+      if (words[position++] === undefined)
         return "incomplete gh global option on a potential review write";
       continue;
     }
@@ -2571,13 +2605,13 @@ function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
     return "unsupported gh global option on a potential review write";
   }
   if (
-    arguments_[0] === "pr" &&
-    ["comment", "review"].includes(arguments_[1] ?? "")
+    words[position] === "pr" &&
+    ["comment", "review"].includes(words[position + 1] ?? "")
   ) {
-    return `raw gh pr ${arguments_[1]} bypasses the approved payload`;
+    return `raw gh pr ${words[position + 1]} bypasses the approved payload`;
   }
-  if (arguments_[0] !== "api") return null;
-  const parsed = parseApiArguments(arguments_.slice(1));
+  if (words[position] !== "api") return null;
+  const parsed = parseApiArguments(words, position + 1);
   const endpoint = parsed.endpoint;
   if (parsed.ambiguous) {
     return endpoint === "graphql" ||
@@ -2597,6 +2631,35 @@ function classifyProtectedGitHubWrite(words: readonly string[]): string | null {
     : `raw gh api ${parsed.method} targets a protected PR review/comment endpoint`;
 }
 
+/**
+ * locates the gh-pr-comment.ts drop-in when it is the command being run
+ * @param words unwrapped words of one simple command
+ * @returns the script's index when it runs directly or as the script `bun` or `bun run` runs, otherwise -1
+ */
+function findPrCommentScript(words: readonly string[]): number {
+  // leading `NAME=value` assignments and redirections (`>file`, `2> file`,
+  // `&>file`, `<file`) precede the command word without being it
+  let commandIndex = 0;
+  for (;;) {
+    const word = words[commandIndex] ?? "";
+    if (/^[A-Za-z_]\w*=/.test(word)) {
+      commandIndex += 1;
+      continue;
+    }
+    const redirection = /^(?:\d*|&)(?:<>|<&|>&|>>|>\||<|>)/.exec(word);
+    if (redirection === null) break;
+    commandIndex += word === redirection[0] ? 2 : 1;
+  }
+  const command = words[commandIndex] ?? "";
+  const scriptIndex =
+    basename(command) === "bun"
+      ? commandIndex + (words[commandIndex + 1] === "run" ? 2 : 1)
+      : commandIndex;
+  return basename(words[scriptIndex] ?? "") === "gh-pr-comment.ts"
+    ? scriptIndex
+    : -1;
+}
+
 interface ParsedApiArguments {
   readonly ambiguous: boolean;
   readonly endpoint: string | undefined;
@@ -2606,7 +2669,16 @@ interface ParsedApiArguments {
   readonly queryValues: readonly string[];
 }
 
-function parseApiArguments(arguments_: readonly string[]): ParsedApiArguments {
+/**
+ * parses the arguments of one `gh api` call in place, without copying them
+ * @param arguments_ words of one simple command
+ * @param start index of the first word after `api`
+ * @returns the endpoint, method, payload, and whether the call is ambiguous
+ */
+function parseApiArguments(
+  arguments_: readonly string[],
+  start: number,
+): ParsedApiArguments {
   const valueOptions: Readonly<Record<string, string>> = {
     "--cache": "cache",
     "--field": "field",
@@ -2646,7 +2718,7 @@ function parseApiArguments(arguments_: readonly string[]): ParsedApiArguments {
       hasPayload = true;
     }
   };
-  for (let index = 0; index < arguments_.length; index += 1) {
+  for (let index = start; index < arguments_.length; index += 1) {
     const argument = arguments_[index]!;
     if (argument === "--" && !afterOptions) {
       afterOptions = true;
@@ -2704,7 +2776,7 @@ function parseApiArguments(arguments_: readonly string[]): ParsedApiArguments {
       continue;
     }
     endpoint = argument
-      .replace(/^https?:\/\/[^/]+\//, "")
+      .replace(/^https?:\/\/[^/]+\//i, "")
       .replace(/^\//, "")
       .replace(/^api\/(?:v3\/)?/, "");
   }
@@ -2812,12 +2884,51 @@ function classifyCompoundCommand(command: string): string | null {
 }
 
 function looksLikeReviewWrite(command: string): boolean {
+  // a lazy gh-then-subcommand pattern restarts at every gh word, which is
+  // quadratic in their count; searching onward from the first gh is linear
+  const gh = /\b[Gg][Hh]\b/.exec(command);
+  if (gh === null) return false;
+  const afterGh = gh.index + gh[0].length;
+
   return (
-    /\bgh\b[\s\S]*?\bpr\s+(?:comment|review)\b/.test(command) ||
-    (/\bgh\b[\s\S]*?\bapi\b/.test(command) &&
-      (PROTECTED_GRAPHQL_PATTERN.test(command) ||
-        /repos(?:itories)?\/[^\s]+\/pulls\//.test(command)))
+    matchesFrom(/\bpr\s+(?:comment|review)\b/g, command, afterGh) ||
+    (matchesFrom(/\bapi\b/g, command, afterGh) &&
+      (PROTECTED_GRAPHQL_PATTERN.test(command) || mentionsPullRoute(command)))
   );
+}
+
+/**
+ * reports whether a whitespace-free word holds `repos/` or `repositories/` followed later by `/pulls/`
+ * @param command shell command text
+ * @returns whether any word names a REST pull-request route
+ */
+function mentionsPullRoute(command: string): boolean {
+  // a backtracking `repos/[^\s]+/pulls/` pattern rescans the word from every
+  // `repos/`, which is quadratic; locating the earliest prefix once is linear
+  return command.split(/\s+/).some((word) => {
+    const prefixEnd = Math.min(
+      ...["repos/", "repositories/"].map((prefix) => {
+        const index = word.indexOf(prefix);
+
+        return index < 0 ? Infinity : index + prefix.length;
+      }),
+    );
+
+    return prefixEnd !== Infinity && word.includes("/pulls/", prefixEnd + 1);
+  });
+}
+
+/**
+ * tests a global pattern against text from an offset, keeping word boundaries at the offset intact
+ * @param pattern pattern with the global flag
+ * @param text text to search
+ * @param start offset at which the search begins
+ * @returns whether the pattern matches at or after the offset
+ */
+function matchesFrom(pattern: RegExp, text: string, start: number): boolean {
+  pattern.lastIndex = start;
+
+  return pattern.test(text);
 }
 
 function canonicalJson(input: unknown): string {
