@@ -13,6 +13,7 @@ Read this when creating or locating local state. `state-systems.md` owns system 
 ├── backlogs.md                         # deferred-finding index; ../directions/backlog.md owns it
 ├── backlogs/backlog-<n>-<slug>.md      # one deferred finding and its history
 ├── notion/                             # optional transport mirror; never a contract authority
+├── memories/<agent-name>/MEMORY.md     # one agent's durable lessons (../templates/memory.md)
 ├── archive/<work-id>                   # completed or parked stream; never enumerated by the resolver
 └── works/<work-id>                     # one live stream, phase planned, working, or reviewing
     ├── goal.md                         # approved charter, exact spec provenance, scope, and success criteria

@@ -29,7 +29,7 @@ A named validator is the required check. Hook byte budgets have no test gate; me
 | Agent and skill `requirements.model` and `requirements.effort` use the independent minimums in [Model and effort profiles](../plugins/essential/references/models.md) | Stitch and skill validators reject obsolete intelligence fields and fixed native settings |
 | Agent harness overlays omit `tools` | Agents inherit runtime capabilities |
 | Codex overlay values are scalar TOML fields | Nicknames derive from metadata; stitched Codex and Grok bodies cannot promise Claude-only isolation |
-| `memory` is `"project"`; body has exactly one `## Memory` section | Stitch validator preserves one portable memory contract |
+| No native `memory` key; body has exactly one `## Memory` section naming `<state-root>/memories/<name>/MEMORY.md` | Stitch validator preserves one portable memory contract |
 | Each injected payload is at most 2,000 bytes | Author review keeps per-event static context bounded |
 | Each plugin's unconditional instructional read chain is at most 40,960 bytes | Author review bounds context loaded before task selection |
 | Eligible work-state Markdown stays within `plugins/essential/references/output-manifest.md` | Author review; `plugins/essential/scripts/check-markdown-size` is an optional diagnostic |

@@ -28,7 +28,7 @@ Resolve lazily, per task, never preloaded:
 
 ## Memory
 
-I self-curate `.claude/agent-memory/principal-engineer/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific root causes, performance baselines, validated optimizations, system invariants, and failed approaches.
+I self-curate `<state-root>/memories/principal-engineer/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific root causes, performance baselines, validated optimizations, system invariants, and failed approaches.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

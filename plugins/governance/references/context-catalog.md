@@ -6,7 +6,7 @@ This catalog owns role context assignments. Plugin workflows own standard names,
 
 - **Role context is not task selection.** Each agent declares its role context from the assignment map below. At task time, select standards through `essential:directions/standards.md`; the role list does not exclude other applicable standards.
 - **Repo-derived context is lazy.** The entries in the repo-derived menu are resolved per task, from whatever repo the agent is currently working in. They are NEVER preloaded at agent-definition time and never hold a fixed path in this catalog; an agent's base.md states that it resolves them lazily, not what they currently point to.
-- **Every agent self-curates project memory.** Every roster definition carries `"memory": "project"` and owns `.claude/agent-memory/<name>/MEMORY.md`; there is no external memory steward or shared runtime memory file. Each definition names role-specific durable content and follows `essential:templates/memory.md` for evidence, verification, contradiction replacement, archival, size control, and sensitive-data exclusions.
+- **Every agent self-curates project memory.** Every roster definition owns `<state-root>/memories/<name>/MEMORY.md` and sets no native `memory` key; there is no external memory steward or shared runtime memory file. Each definition names role-specific durable content and follows `essential:templates/memory.md` for evidence, verification, contradiction replacement, archival, size control, and sensitive-data exclusions.
 
 ## Standards menu
 
@@ -64,4 +64,4 @@ Update this catalog when changing a role's context assignment, not when a task s
 
 ## How an agent cites this catalog
 
-An agent's `base.md` Base Context section lists its role context by canonical name + real scan path from the owning workflow, states which repo-derived context it resolves lazily, and — if it carries a `memory` frontmatter key — states that it self-curates `.claude/agent-memory/<name>/MEMORY.md`. See `../skills/create-agent/templates/agent.md` for the required `## Memory` section, `essential:templates/memory.md` for its maintenance schema, and `../skills/create-agent/templates/role-prompt.md` for how the same context list is compressed into an `initialPrompt` load-context clause.
+An agent's `base.md` Base Context section lists its role context by canonical name + real scan path from the owning workflow, states which repo-derived context it resolves lazily, and states that it self-curates `<state-root>/memories/<name>/MEMORY.md`. See `../skills/create-agent/templates/agent.md` for the required `## Memory` section, `essential:templates/memory.md` for its maintenance schema, and `../skills/create-agent/templates/role-prompt.md` for how the same context list is compressed into an `initialPrompt` load-context clause.

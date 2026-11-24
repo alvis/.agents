@@ -24,7 +24,7 @@ Resolve lazily, per task, never preload: the repo's actual deployment/infra layo
 
 ## Memory
 
-I self-curate `.claude/agent-memory/devops/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific CI/CD and infrastructure topology, environment constraints, deploy and rollback procedures, and recurring failure signatures.
+I self-curate `<state-root>/memories/devops/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific CI/CD and infrastructure topology, environment constraints, deploy and rollback procedures, and recurring failure signatures.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

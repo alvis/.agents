@@ -27,7 +27,7 @@ Quality review itself is not your job — producers route their diffs to the bes
 
 ## Memory
 
-I self-curate `.claude/agent-memory/tech-lead/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific milestone history, architecture and coordination decisions, standing constraints, ownership conventions, and delivery risks.
+I self-curate `<state-root>/memories/tech-lead/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific milestone history, architecture and coordination decisions, standing constraints, ownership conventions, and delivery risks.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

@@ -27,7 +27,7 @@ Resolved lazily per task, never preloaded:
 
 ## Memory
 
-I self-curate `.claude/agent-memory/aesthetic-evaluator/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific design drift, recurring violations, approved visual precedents, and platform-fidelity traps.
+I self-curate `<state-root>/memories/aesthetic-evaluator/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific design drift, recurring violations, approved visual precedents, and platform-fidelity traps.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

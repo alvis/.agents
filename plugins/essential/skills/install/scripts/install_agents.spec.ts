@@ -42,7 +42,7 @@ function temporaryRoot(): string {
 }
 
 function memory(name: string): string {
-  return `\n## Memory\n\nI retain durable facts in \`.claude/agent-memory/${name}/MEMORY.md\` following \`essential:templates/memory.md\`. Claims carry evidence and a last-verified date. I archive stale claims before 150 lines or 20KB, with detail in \`topics/<stable-area>/<specific-subject>.md\`.\n`;
+  return `\n## Memory\n\nI retain durable facts in \`<state-root>/memories/${name}/MEMORY.md\` following \`essential:templates/memory.md\`. Claims carry evidence and a last-verified date. I archive stale claims before 150 lines or 20KB, with detail in \`topics/<stable-area>/<specific-subject>.md\`.\n`;
 }
 
 function writeTemplate(plugin: string, name: string, alias = false): string {
@@ -58,7 +58,7 @@ function writeTemplate(plugin: string, name: string, alias = false): string {
   );
   writeFileSync(
     resolve(template, "frontmatter/claude.json"),
-    JSON.stringify({ memory: "project", permissionMode: "default" }),
+    JSON.stringify({ permissionMode: "default" }),
   );
   writeFileSync(resolve(template, "frontmatter/codex.json"), "{}");
   writeFileSync(resolve(template, "frontmatter/grok.json"), "{}");
@@ -196,7 +196,7 @@ describe("agent discovery and installation", () => {
       expect(frontmatter).not.toHaveProperty("model");
       expect(frontmatter).not.toHaveProperty("effort");
       if (harness === "claude") {
-        expect(frontmatter.memory).toBe("project");
+        expect(frontmatter).not.toHaveProperty("memory");
         expect(frontmatter.permissionMode).toBe("default");
       }
     }

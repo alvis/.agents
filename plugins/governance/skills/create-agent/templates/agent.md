@@ -26,7 +26,6 @@
   "skills": ["plugin:skill-name — always plugin-manifest-namespaced, e.g. coding:review-code, essential:deep-research, client:create-screen-design"],
   "mcpServers": "only if this agent needs a specific MCP server beyond what the plugin already wires in",
   "hooks": "critic:true+fence:true agents embed the PreToolUse write fence verbatim; no agent hooks its own review — independent review is carried by the charter and shared orchestration policy",
-  "memory": "REQUIRED and always project — every roster agent owns .claude/agent-memory/<name>/MEMORY.md",
   "background": "true|false — long-running/detached execution",
   "isolation": "worktree | none — an isolated git worktree sandbox for agents that must not race the main working copy (e.g. adversarial red-team, parallel research)",
   "maxTurns": "integer hard cap on agentic turns for this dispatch",
@@ -119,9 +118,9 @@ Lazy, repo-derived context (resolved per task, never preloaded — see context-c
 
 ## Memory
 
-<!-- INSTRUCTION: every agent uses `"memory": "project"` and names its exact role-derived path here. State the role-specific durable knowledge worth retaining. Keep the maintenance paragraph self-contained for installed agents and derive it from essential:templates/memory.md. -->
+<!-- INSTRUCTION: every agent names its exact role-derived path here and sets no native `memory` key. State the role-specific durable knowledge worth retaining. Keep the maintenance paragraph self-contained for installed agents and derive it from essential:templates/memory.md. -->
 
-I self-curate `.claude/agent-memory/<name>/MEMORY.md` under `essential:templates/memory.md`, retaining only durable, repository-specific [role memory categories].
+I self-curate `<state-root>/memories/<name>/MEMORY.md` under `essential:templates/memory.md`, retaining only durable, repository-specific [role memory categories].
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

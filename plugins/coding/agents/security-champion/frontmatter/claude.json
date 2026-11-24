@@ -1,7 +1,6 @@
 {
   "color": "red",
   "permissionMode": "default",
-  "memory": "project",
   "disallowedTools": [
     "MultiEdit",
     "NotebookEdit"

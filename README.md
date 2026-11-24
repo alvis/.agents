@@ -212,7 +212,7 @@ Each role and skill declares independent minimums in `requirements.model` and `r
 
 Each agent's `## Collaboration` section records proven role-level collaborators and delegation targets using role-only definition names. These are runtime defaults, not an allowlist; naming, `agent_id` messaging, main-agent brokering, and nested-spawn policy live in `plugins/essential/hooks/ALLAGENT.md`.
 
-The Claude adapter gives each agent project-scoped memory at `.claude/agent-memory/<role>/MEMORY.md`; Codex and Grok Build keep memory harness-owned. Definitions state the durable role-specific knowledge to retain, while `essential:templates/memory.md` defines the shared evidence, freshness, contradiction, archival, and size-control contract. Memory writers keep filesystem write and edit capabilities available without new hooks; source-read-only roles restrict them to memory by charter.
+Each agent keeps its memory in its own state-root folder on every harness. Definitions state the durable role-specific knowledge to retain, while `essential:templates/memory.md` defines the shared evidence, freshness, contradiction, archival, and size-control contract. Memory writers keep filesystem write and edit capabilities available without new hooks; source-read-only roles restrict them to memory by charter.
 
 ### Delegation topology
 
@@ -269,7 +269,7 @@ Only the main agent names persistent teammates. It chooses one of the three shor
 ### Review and write fences
 
 - **Independent review** is shared conduct, not per-agent machinery: whoever spawns an agent owns its output quality, each producer's own convergence predicate holds it to a clean independent review, and changed-code completion is recorded with the `REVIEWED:` attestation. The rule and its exact attestation format live in [plugins/essential/directions/orchestration.md](plugins/essential/directions/orchestration.md).
-- **Write-fenced critics** (PreToolUse fence): `code-quality-critic`, `aesthetic-evaluator` — may only write to their agent-memory dir or review reports.
+- **Write-fenced critics** (PreToolUse fence): `code-quality-critic`, `aesthetic-evaluator` — may only write to their own state-root memory folder or review reports.
 
 ### Team operation
 

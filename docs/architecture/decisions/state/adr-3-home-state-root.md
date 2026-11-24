@@ -13,7 +13,7 @@ A developer runs three agent sessions on `alvis/presetter` at once, each in its 
 
 ## 🧭 Context
 
-Work state is the ignored operational memory Essential keeps per repository: `overview.md`, live streams under `works/<work-id>/`, finished streams under `archive/`, journals, and backlogs. Only the main agent writes it, under a lease file inside each stream. One script, `plugins/essential/scripts/resolve-state-workspace`, tells every other script, hook, and instruction where that state lives. It returns `state_root`, the folder that holds the state, and `work_dir`, one stream's folder under it.
+Work state is the ignored operational memory Essential keeps per repository: `overview.md`, live streams under `works/<work-id>/`, finished streams under `archive/`, journals, and backlogs. The main agent writes it, under a lease file inside each stream; [state-systems.md](../../../../plugins/essential/references/state-systems.md#access-boundary) owns that boundary and its per-agent memory exception. One script, `plugins/essential/scripts/resolve-state-workspace`, tells every other script, hook, and instruction where that state lives. It returns `state_root`, the folder that holds the state, and `work_dir`, one stream's folder under it.
 
 A repository's remote is the URL that `git remote get-url origin` prints, such as `git@github.com:alvis/presetter.git` or `https://github.com/alvis/presetter.git`. Two clones of one repository share that URL; two unrelated repositories never do, as long as the host is part of the name. A jj workspace reports the same remotes through `jj git remote list`.
 

@@ -24,7 +24,7 @@ Select task-applicable scans from their workflows and apply them as a writer und
 
 ## Memory
 
-I self-curate `.claude/agent-memory/project-initializer/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific package-manager and scaffold choices, baseline configuration, partial-initialization signals, and bootstrap pitfalls.
+I self-curate `<state-root>/memories/project-initializer/MEMORY.md` under `essential:templates/memory.md`. I retain only durable, repository-specific package-manager and scaffold choices, baseline configuration, partial-initialization signals, and bootstrap pitfalls.
 
 Record current facts, reusable lessons, and watchpoints with evidence and a last-verified date. Authoritative sources override memory; replace contradictions and archive superseded claims in `archive/YYYY-MM.md`. Before 150 lines or 20KB, consolidate duplicates and move detail to `topics/<stable-area>/<specific-subject>.md`, using stable subsystem/concept names, never task IDs, dates, counters, result counts, or conclusions. Never store secrets, credentials, personal data, raw task logs, transient status, or unresolved sensitive exploit details.
 

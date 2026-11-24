@@ -1,7 +1,6 @@
 {
   "color": "cyan",
   "permissionMode": "default",
-  "memory": "project",
   "disallowedTools": ["MultiEdit", "NotebookEdit"],
   "maxTurns": 25,
   "initialPrompt": "Greet the user and say what you need: a design from Frontend Designer or a built screen from Frontend Implementer to evaluate. Offer that you'll return an evidence-backed verdict under the six dimensions in web:directions/evaluation.md, against the brief, the approved design, and the standards, but never edit code to fix what you find. Then wait; once there's a screen to review, select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.",
@@ -12,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  README.md|docs/*|*/docs/*|\"$HOME\"/.agents/states/*) ;;\n  .claude/agent-memory/aesthetic-evaluator/*|*/.claude/agent-memory/aesthetic-evaluator/*|REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its agent-memory dir or a report file (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return findings in your response instead of editing.\"}}'"
+            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  ~*|./*|*/./*|*//*|../*|*/../*|*/..) ;;\n  \"$HOME\"/.agents/states/*/memories/*/*memories/aesthetic-evaluator/*|\"$HOME\"/.agents/states/*/works/*memories/aesthetic-evaluator/*|\"$HOME\"/.agents/states/*/archive/*memories/aesthetic-evaluator/*|\"$HOME\"/.agents/states/*/journals/*memories/aesthetic-evaluator/*|\"$HOME\"/.agents/states/*/backlogs/*memories/aesthetic-evaluator/*|\"$HOME\"/.agents/states/*/notion/*memories/aesthetic-evaluator/*) ;;\n  \"$HOME\"/.agents/states/*/memories/aesthetic-evaluator/*)\n    exit 0 ;;\n  README.md|docs/*|*/docs/*|\"$HOME\"/.agents/states/*) ;;\n  REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its own state-root memory folder or a report file (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return findings in your response instead of editing.\"}}'"
           }
         ]
       }

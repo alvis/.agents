@@ -2,7 +2,6 @@
   "color": "yellow",
   "permissionMode": "default",
   "disallowedTools": ["MultiEdit", "NotebookEdit"],
-  "memory": "project",
   "maxTurns": 25,
   "initialPrompt": "Greet the user and say plainly what you need: point you at a diff, branch, or changed files to review, and name the goal or spec it should satisfy if there is one. Offer that you'll rank findings by severity and name any deeper review the change warrants — but never edit the code, never run builds or tests, only report. Then wait; once a real change is named, select task-applicable scans from their workflows and apply them as a read-only reviewer under `essential:directions/standards.md`.",
   "hooks": {
@@ -12,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  README.md|docs/*|*/docs/*|\"$HOME\"/.agents/states/*) ;;\n  .claude/agent-memory/code-quality-critic/*|*/.claude/agent-memory/code-quality-critic/*|REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its agent-memory directory or an existing safe report pattern (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return state-system findings and proposed deltas to the main agent.\"}}'"
+            "command": "f=$(jq -r '.tool_input.file_path // empty')\ncase \"$f\" in\n  ~*|./*|*/./*|*//*|../*|*/../*|*/..) ;;\n  \"$HOME\"/.agents/states/*/memories/*/*memories/code-quality-critic/*|\"$HOME\"/.agents/states/*/works/*memories/code-quality-critic/*|\"$HOME\"/.agents/states/*/archive/*memories/code-quality-critic/*|\"$HOME\"/.agents/states/*/journals/*memories/code-quality-critic/*|\"$HOME\"/.agents/states/*/backlogs/*memories/code-quality-critic/*|\"$HOME\"/.agents/states/*/notion/*memories/code-quality-critic/*) ;;\n  \"$HOME\"/.agents/states/*/memories/code-quality-critic/*)\n    exit 0 ;;\n  README.md|docs/*|*/docs/*|\"$HOME\"/.agents/states/*) ;;\n  REVIEW-*|*/REVIEW-*|report-*|*/report-*|*.review.md)\n    exit 0 ;;\nesac\necho '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Write/Edit is fenced: this critic may only write to its own state-root memory folder or an existing safe report pattern (REVIEW-*, report-*, *.review.md) outside protected project state systems. Return state-system findings and proposed deltas to the main agent.\"}}'"
           }
         ]
       }

@@ -12,7 +12,7 @@ Read this before using project documentation, work state, or an external specifi
 
 <project-state-system-access read="all-agents" write="main-agent" protected="README.md,docs/**,~/.agents/states/**,external-specification" />
 
-All agents may read every configured system. Only the main agent may write root `README.md`, `docs/**`, `<state-root>/**`, or an external specification authority. A subagent may still write assigned production source and tests outside those systems; for state-system changes it returns findings, proposed content, evidence, and reconciliation deltas to the main agent.
+All agents may read every configured system. Only the main agent may write root `README.md`, `docs/**`, `<state-root>/**`, or an external specification authority. One exception: every agent may write its own memory folder, `<state-root>/memories/<agent-name>/`, under `essential:templates/memory.md`; no agent writes another agent's folder. A subagent may still write assigned production source and tests outside those systems; for state-system changes it returns findings, proposed content, evidence, and reconciliation deltas to the main agent.
 
 The main agent alone holds the work-stream lease. A lease is a concurrency guard for that writer, never authority that can be delegated to a subagent. Reviewers return area reports; the main agent writes `reviews/*.md` and reconciles `review.md`.
 

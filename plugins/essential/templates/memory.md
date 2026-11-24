@@ -1,10 +1,10 @@
 # Agent Memory Template
 
-Use this schema for every project-scoped agent memory at `.claude/agent-memory/<agent-name>/MEMORY.md`. The owning agent creates the file lazily and curates it; do not seed empty memory files in a target repository.
+Use this schema for every agent memory at `<state-root>/memories/<agent-name>/MEMORY.md`. `<state-root>` is the `state_root` the handover names, else the one the workspace resolver in [state.md](../references/state.md) reports; when the resolver reports no state root, keep no memory. The owning agent creates the file lazily and is its only writer, under the exception in [state-systems.md](../references/state-systems.md#access-boundary); never seed empty memory files.
 
 ## Template Instructions — Remove After Initialization
 
-This section instructs the agent that initializes the memory file. Apply these rules, then remove this entire section from the instantiated `.claude/agent-memory/<agent-name>/MEMORY.md`:
+This section instructs the agent that initializes the memory file. Apply these rules, then remove this entire section from the instantiated `<state-root>/memories/<agent-name>/MEMORY.md`:
 
 1. Store only durable, repository-specific knowledge that will improve a future task for this role.
 2. Repository source, authoritative specifications, and current runtime evidence always override memory.

@@ -124,7 +124,7 @@ The system-transform hook is experimental in the V1 plugin type, so its matrix s
 
 ## Fail-closed boundaries
 
-Agent overlays may contain security-sensitive Claude hooks. The projector maps the two recognized critic write fences to OpenCode granular edit permissions, limits edits to rooted agent-memory and canonical review-state paths, denies shell and external-directory access for those critics, and rejects a canonical hook unless its complete policy digest is recognized. It does not infer models, permission modes, isolation, background execution, or memory features that OpenCode does not document as equivalent.
+Agent overlays may contain security-sensitive Claude hooks. The projector maps the two recognized critic write fences to OpenCode granular edit permissions, limits edits to the critic's own state-root memory folder, denies shell access and every external directory except that folder, and rejects a canonical hook unless its complete policy digest is recognized. It does not infer models, permission modes, isolation, or background execution that OpenCode does not document as equivalent.
 
 Runtime reads are receipt-bound. The installer rejects any global or skill-frontmatter hook whose event, matcher, command shape, script, payload, or requirements are not represented in `scripts/opencode_contract.json`. Plugin names and bundle paths must match that protocol; every executable, supporting resource, or payload must remain beneath its regular-file bundle path and match its recorded digest before it is read or spawned. The compatibility matrix uses the same hook authority, so an unsupported registration cannot silently disappear from the matrix.
 
