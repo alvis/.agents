@@ -51,7 +51,7 @@ Skills own actions; never delegate work “to” a skill or pass a skill name as
 | Find unused code | Selected skill | `coding:find-unused` |
 | Pause or resume coding work | Selected skill | `essential:handover` or `essential:takeover` |
 
-Issue tracking system: GitHub Issues is coding work's default, owned by `coding:issue`.
+Issue tracking system: GitHub Issues is coding work's default, owned by `coding:issue`. When implementation work meant to resolve a GitHub issue starts, assign the authenticated `gh` user to it through `coding:issue update` before the first change; report a failed or ignored assignment without blocking the work.
 
 Select every row matching the artifact, read its scan before editing, and apply it under `essential:directions/standards.md`. The selected direction may narrow timing or add required evidence; it never replaces the owning skill.
 
