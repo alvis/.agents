@@ -18,10 +18,14 @@ For create and authorized title/body updates, discover effective issue templates
 ```bash
 gh api --hostname "$HOST" --paginate "repos/$REPOSITORY/labels?per_page=100"
 gh api --hostname "$HOST" --paginate "repos/$REPOSITORY/milestones?state=open&per_page=100"
-gh api --hostname "$HOST" --paginate "orgs/$OWNER/issue-types"
+gh api --hostname "$HOST" "repos/$REPOSITORY/issue-types"
 ```
 
-Issue types exist only for organization-owned repositories; a 404 for a user-owned repository means no types, not a failure. Permission errors leave that field unresolved, not silently absent. Type names and milestone numbers are distinct from labels and issue numbers.
+The repository endpoint serves user- and organization-owned repositories alike; only entries with `is_enabled: true` are assignable. A 404 means the host offers no issue types; a permission error leaves the field unresolved, not silently absent. Type names and milestone numbers are distinct from labels and issue numbers.
+
+## Issue type
+
+Classify against documented intended behavior: broken intended behavior is `Bug`; a new observable capability is `Feature`, including an intentional behavior change such as a changed default or retired interaction, even when it also restructures code; behavior-preserving refactors and other non-behavior work are `Task`. A fallback title type in `directions/templates.md` must agree: `bug` is Bug; `feat` is Feature; `enhancement` is Feature when it changes behavior, otherwise Task; `refactor`, `perf`, `docs`, `test`, `build`, `ci`, and `deps` are Task; `security` and `question` take the class their content establishes. Match the class to an enabled discovered type by case-insensitive name. Set it with `PATCH repos/OWNER/REPO/issues/NUMBER` using JSON `{"type": "TYPE_NAME"}` and read back `type.name`.
 
 ## Bodies, comments, and retries
 
@@ -47,7 +51,7 @@ jq -n --argjson labels "$SELECTED_LABELS" '{labels:$labels}' | \
     "repos/$REPOSITORY/issues/$NUMBER/labels" --input -
 ```
 
-Remove only obsolete labels selected by the outcome, using `DELETE repos/OWNER/REPO/issues/NUMBER/labels/URL_ENCODED_NAME`; encode the entire label path segment, including slashes. Read current labels again before removal. Set a milestone by its discovered numeric identifier with `PATCH repos/OWNER/REPO/issues/NUMBER`, using JSON `{"milestone": NUMBER}`; explicit removal uses null. Set a discovered issue type the same way with `{"type": "TYPE_NAME"}` and read back `type.name`.
+Remove only obsolete labels selected by the outcome, using `DELETE repos/OWNER/REPO/issues/NUMBER/labels/URL_ENCODED_NAME`; encode the entire label path segment, including slashes. Read current labels again before removal. Set a milestone by its discovered numeric identifier with `PATCH repos/OWNER/REPO/issues/NUMBER`, using JSON `{"milestone": NUMBER}`; explicit removal uses null. Set the issue type as [Issue type](#issue-type) directs.
 
 For a proven parent/sub-issue relationship, inspect the child's current parent (`GET repos/OWNER/REPO/issues/CHILD/parent`) and the parent's `sub_issues` first, then attach the child by its numeric `id`, not its number:
 
