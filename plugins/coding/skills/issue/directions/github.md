@@ -11,7 +11,7 @@ gh api --hostname "$HOST" "repos/$REPOSITORY/issues/$NUMBER"
 gh api --hostname "$HOST" --method GET "repos/$REPOSITORY/issues/$NUMBER/comments" -F per_page=100 -F page="$PAGE"
 ```
 
-An issue response containing `pull_request` is not an issue. Save the numeric `id`, title, body, state, labels, milestone, type, timestamps, and comment IDs/content for comparison. Page comments from 1 while a next page exists and detail budget remains; each request consumes a detail read. Do not infer thread completeness from a truncated response. Record the latest substantive human evidence separately from generic update timestamps.
+An issue response containing `pull_request` is not an issue. Save the numeric `id`, title, body, state, labels, assignees, milestone, type, timestamps, and comment IDs/content for comparison. Page comments from 1 while a next page exists and detail budget remains; each request consumes a detail read. Do not infer thread completeness from a truncated response. Record the latest substantive human evidence separately from generic update timestamps.
 
 For create and authorized title/body updates, discover effective issue templates and contributing instructions through `directions/templates.md`. Discover existing metadata:
 
@@ -52,6 +52,14 @@ jq -n --argjson labels "$SELECTED_LABELS" '{labels:$labels}' | \
 ```
 
 Remove only obsolete labels selected by the outcome, using `DELETE repos/OWNER/REPO/issues/NUMBER/labels/URL_ENCODED_NAME`; encode the entire label path segment, including slashes. Read current labels again before removal. Set a milestone by its discovered numeric identifier with `PATCH repos/OWNER/REPO/issues/NUMBER`, using JSON `{"milestone": NUMBER}`; explicit removal uses null. Set the issue type as [Issue type](#issue-type) directs.
+
+Assign the authenticated user bound during setup without replacing other assignees, then read back `assignees[].login`. GitHub silently drops an assignee lacking repository access, so absence after a successful call is a failed assignment, not a success:
+
+```bash
+jq -n --arg login "$LOGIN" '{assignees:[$login]}' | \
+  gh api --hostname "$HOST" --method POST \
+    "repos/$REPOSITORY/issues/$NUMBER/assignees" --input -
+```
 
 For a proven parent/sub-issue relationship, inspect the child's current parent (`GET repos/OWNER/REPO/issues/CHILD/parent`) and the parent's `sub_issues` first, then attach the child by its numeric `id`, not its number:
 

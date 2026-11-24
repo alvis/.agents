@@ -1,6 +1,6 @@
 ---
 name: issue
-description: "Create, update, find, and triage GitHub issues with repository templates, relevant metadata, bounded title/body retrieval, and evidence-backed investigation. Use for issue reporting, duplicate discovery, backlog triage, or refreshing issue information. Pull-request publication remains owned by coding:pr; implementation fixes remain owned by coding:fix."
+description: "Create, update, find, and triage GitHub issues, and assign the current user to an issue when work on it starts, with repository templates, relevant metadata, bounded title/body retrieval, and evidence-backed investigation. Use for issue reporting, duplicate discovery, backlog triage, or refreshing issue information. Pull-request publication remains owned by coding:pr; implementation fixes remain owned by coding:fix."
 requirements:
   model: routine
   effort: instinctive
@@ -17,7 +17,7 @@ Own `create`, `update`, `lookup`, and `triage`. Infer the action from intent; pa
 - `create` needs a report or requested change; `update` needs an issue identifier and desired changes; `lookup` needs described symptoms/changes; `triage` accepts issue identifiers or automatic selection.
 - Optional intent: metadata choices, `pick` (default 3), force, read-only preview, candidate/detail budgets, and search restrictions. Three picks bounds the investigation batch while allowing progress past skipped issues.
 - Every issue title, body, and comment follows `coding:directions/authorship.md`.
-- Require authenticated `gh`, `jq`, and Git for code inspection. Check `gh api --hostname "$HOST" user --jq .login`; never install tools, broaden scopes, or change login silently. Report missing prerequisites.
+- Require authenticated `gh`, `jq`, and Git for code inspection. Bind `LOGIN` from `gh api --hostname "$HOST" user --jq .login`, which also checks authentication; never install tools, broaden scopes, or change login silently. Report missing prerequisites.
 
 ## Dispatch
 
