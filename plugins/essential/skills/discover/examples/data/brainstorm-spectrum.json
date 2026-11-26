@@ -211,6 +211,7 @@
       "label": "Your input",
       "eyebrow": "Questions",
       "title": "Two things before this becomes a plan.",
+      "lede": "Put the next four weeks into Band B, deferring the setup wizard where the funnel shows people stop, and run Band A's empty-state rewrite alongside; rank the bands first so the reply carries your order too.",
       "blocks": [
         {
           "type": "probe",

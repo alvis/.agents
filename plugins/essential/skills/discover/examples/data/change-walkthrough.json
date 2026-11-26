@@ -484,6 +484,7 @@
       "label": "Check your understanding",
       "eyebrow": "Before you sign off",
       "title": "Three questions an incident or a merge would ask you.",
+      "lede": "Answer the three questions, then give the verdict: whether this change waits until the suppression window is shared across all four dispatch replicas (finding W-1 above, the one critical finding), or ships flagged off with a window each replica keeps for itself.",
       "blocks": [
         {
           "type": "quiz",

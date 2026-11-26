@@ -85,6 +85,7 @@
       "label": "What it settles",
       "eyebrow": "Questions",
       "title": "The two things the prototype exists to answer.",
+      "lede": "Merged threads should collapse under the one that survives rather than vanish, because three of four testers read the prototype's hiding as deletion; the second question asks what you noticed while driving it.",
       "blocks": [
         {
           "type": "choice",

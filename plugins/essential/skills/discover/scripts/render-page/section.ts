@@ -1,4 +1,5 @@
 import { renderBlock } from "./block.ts";
+import { RenderError } from "./error.ts";
 import { escapeHtml } from "./escape.ts";
 import { requireFreshId } from "./id.ts";
 import { renderInline } from "./inline.ts";
@@ -10,10 +11,22 @@ import {
   requireObject,
   requireString,
 } from "./validate.ts";
+import { QUESTION_TYPES } from "./vocabulary.ts";
 
 import type { PageContext } from "./context.ts";
 import type { Ask } from "./reply.ts";
 import type { Block, Section } from "./types.ts";
+import type { Question } from "./vocabulary.ts";
+
+/** the questions that ask the reader to settle something rather than say it. */
+const SETTLING_TYPES: readonly Block["type"][] = ["choice", "decision"];
+
+/**
+ * blocks that carry no case of their own: a question, a quiz's gate, and a
+ * probe ask or score, and a ledger keeps every row's record behind its own
+ * fold, so the reader sees only codes and status words until they open one.
+ */
+const CASELESS_TYPES: readonly Block["type"][] = [...QUESTION_TYPES, "gate", "probe", "ledger"];
 
 /**
  * draws one section, numbering it and drawing every block it holds
@@ -40,6 +53,10 @@ export function renderSection(section: Section, index: number, page: PageContext
     section.lede === undefined
       ? ""
       : `<p class="section-lede">${renderInline(section.lede, `${at}.lede`)}</p>`;
+  // checked once the blocks have been through their own refusals, so a
+  // malformed block is named for what is wrong with it rather than for the
+  // question it fails to explain
+  requireCaseStated(section.blocks, `${at}.blocks`, section.lede !== undefined);
   // read after the body is drawn, so every question the chips name has been
   // through its own refusals and has an id, a ref and a label worth linking to.
   // chips under a title that is followed directly by its cards repeat what is
@@ -49,6 +66,44 @@ export function renderSection(section: Section, index: number, page: PageContext
     : renderAsks(asksIn(section.blocks, `${at}.blocks`));
 
   return `<section class="section" id="s-${escapeHtml(id)}" data-section data-section-id="${escapeHtml(id)}" data-section-label="${label}" data-section-title="${title}"><div class="section-heading"><p class="section-no">${number}${eyebrow ? ` · ${escapeHtml(eyebrow)}` : ""}</p><h2>${title}</h2>${noteControl(label)}</div>${lede}${asks}<div class="section-body" data-section-body>${body}</div><ul class="note-list" data-note-list aria-label="Notes on ${label}"></ul></section>`;
+}
+
+/**
+ * refuses a choice or decision the reader reaches before anything says what
+ * it is about.
+ *
+ * a board is read cold, by someone who has seen none of the session, the
+ * sources or the files it was written from, so a question has to arrive after
+ * its case — a section lede, or a visible block ahead of it. A closed
+ * disclosure counts only for what it holds itself: opening it to reach a
+ * question shows its case too, but a reader who never opens it sees nothing
+ * of it, so context there cannot be the only case for a question outside it.
+ * An open disclosure and a `variants` panel are on screen, and count for what
+ * follows them.
+ * @param blocks the blocks to read, in reading order
+ * @param at JSON path of `blocks`
+ * @param stated whether the reader has already been given visible context
+ * @returns whether the reader has been given visible context by the end
+ */
+function requireCaseStated(blocks: Block[], at: string, stated: boolean): boolean {
+  let seen = stated;
+  for (const [index, block] of blocks.entries()) {
+    const path = `${at}[${index}]`;
+    if (SETTLING_TYPES.includes(block.type) && !seen)
+      throw new RenderError(
+        `${path}: ${block.type} ${(block as Question).ref} asks the reader to settle something the board has not explained; give its section a lede, or put the context it rests on ahead of it in a block the reader sees without opening a closed disclosure or ledger row`,
+      );
+    if (block.type === "disclosure") {
+      const inside = requireCaseStated(block.blocks, `${path}.blocks`, seen);
+      seen = block.open ? inside : seen;
+    } else if (block.type === "variants")
+      seen = block.items
+        .map((item, panel) => requireCaseStated(item.blocks, `${path}.items[${panel}].blocks`, seen))
+        .some(Boolean);
+    else if (!CASELESS_TYPES.includes(block.type)) seen = true;
+  }
+
+  return seen;
 }
 
 /**

@@ -493,6 +493,7 @@ Every refusal names the problem *and* the JSON path it is at, so an author never
 - a choice tag outside the closed vocabulary
 - a link whose scheme is not `http`, `https` or `mailto`
 - a board that asks a question and carries no `reply`
+- a `choice` or `decision` reached before its case: its section has no `lede`, and no block other than a question, `gate`, `probe`, or `ledger` comes before it where the reader sees it. An open `disclosure` and a `variants` panel count for what follows them; a closed `disclosure` counts only for the questions it holds, because a reader who never opens it sees none of it. The rule is [a board stands alone](../presentation.md#a-board-stands-alone)
 - a run set listing two boards under one `id`, omitting the board being rendered, or giving a board an `href` that leaves the run
 
 ## Where each shape is defined
