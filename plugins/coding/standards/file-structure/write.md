@@ -5,7 +5,7 @@
 - Use kebab-case except for PascalCase React component files.
 - Name modules after their bounded domain or concern, independently of the main export function.
 - Keep exported function identifiers verb-first; filename choice and function naming are separate decisions.
-- Let typed directories carry type context; prefer one specific domain word.
+- Let typed directories carry type context; prefer one specific domain word, and reserve `lib/` for compiled output.
 - Keep only related exports together.
 - Keep index files free of implementation logic and preserve barrel boundaries.
 - Relocate misplaced concerns before splitting a long file.
@@ -18,6 +18,7 @@
 - **FST-NAME-01**: Use kebab-case for ordinary files, PascalCase for React components, and source-matching `.spec` names for tests.
 - **FST-NAME-02**: Name a module for its primary bounded domain or concern, not for its primary exported function; preserve framework- or tooling-required filename conventions.
 - **FST-NAME-03**: Prefer one specific domain word and omit a type suffix already expressed by a typed directory; retain a qualifier only when one word is ambiguous or a framework or tool requires it.
+- **FST-NAME-04**: Never name a source directory `lib` at any depth; `lib` is reserved for compiled or generated output such as a package's build target. Keep it only where a toolchain requires `lib` as its source root. Put reusable helpers in a domain-named or typed directory, such as `utilities/` or `services/`, or in the feature that uses them.
 
 ### Modules (FST-MODL)
 
@@ -35,7 +36,7 @@
 
 ```text
 services/user.ts          # typed directory supplies "service"
-lib/user-service.ts       # suffix required without typed directory
+src/user-service.ts       # suffix required without typed directory
 similarity.ts             # domain entry, even when it exports computeSimilarity()
 similarity/vector.ts      # colliding sub-domain; similarity.ts remains the entry
 user-validator.ts         # class UserValidator
@@ -47,6 +48,19 @@ types/user.ts             # multiple type modules
 ```
 
 Keep more than one word when a single word is ambiguous (`api-client.ts`) or when tooling or a framework requires it. Do not turn a function identifier into the filename (`computeSimilarity` belongs in `similarity.ts`, not `compute-similarity.ts`). If `<domain>.ts` already exists and merging the coherent concern would exceed `max-lines`, place the concern in `<domain>/<sub-domain>.ts` and keep `<domain>.ts` as the public entry. Avoid interface prefixes and implementation suffixes such as `IUserService.ts` and `UserServiceImpl.ts`.
+
+### Source Directories and Compiled Output
+
+`lib` names the compiled or generated output, such as the build target a package's `main`, `types`, and `files` fields point at, so no source directory is named `lib` at any depth. Home a reusable helper by what it is:
+
+```text
+src/utilities/date.ts            # domain-agnostic helper
+src/services/user.ts             # typed directory
+src/features/billing/invoice.ts  # helper used by one feature stays in it
+lib/index.js                     # compiled from src/; never authored
+```
+
+A file named `lib.ts` or a language entry file such as Rust's `src/lib.rs` is not a directory and falls outside `FST-NAME-04`. A toolchain that requires `lib` as its source root, such as Dart's `lib/`, a Ruby gem's `lib/`, or an Elixir project's `lib/`, keeps it, as other tool-required names are kept. A configurable framework default is not a requirement: set SvelteKit's `kit.files.lib` (`$lib`) or shadcn/ui's `aliases.utils` to a compliant directory such as `src/utilities/`.
 
 ### Barrel Boundaries
 
@@ -96,6 +110,7 @@ Examples include `.env.development`, `.env.production`, `.env.test`, and `.env.s
 - Names derived mechanically from the main export, such as `compute-similarity.ts` for `computeSimilarity()`.
 - Collision workarounds that widen a sibling filename, such as `similarity-vector.ts`, when the nested entry pattern is required.
 - Vague catch-alls such as `utils.ts` or `helpers.ts`.
+- Source directories named `lib`, such as `src/lib/`, which claim the name reserved for compiled output.
 - Deep nesting when a flatter structure keeps ownership clear; treat three to four levels as the navigation warning point, not a license to obscure domain boundaries.
 - Unrelated exports grouped only to reduce file count.
 - Helper fragments scattered beside the public entry.
@@ -105,8 +120,9 @@ Examples include `.env.development`, `.env.production`, `.env.test`, and `.env.s
 1. Is it a React component? Use PascalCase; otherwise use kebab-case (`FST-NAME-01`).
 2. What bounded domain or concern does the module own? Name the file for that domain, independent of its main export (`computeSimilarity` → `similarity.ts`) (`FST-NAME-02`).
 3. Does the parent directory already name the type? Drop that suffix unless one word is ambiguous or a framework or tool requires a qualifier (`FST-NAME-03`).
-4. After relocating unrelated concerns, can this coherent concern be merged into `<domain>.ts` without exceeding `max-lines`? If so, create or merge into that file; if an existing `<domain>.ts` makes a separate file impossible and the merge would exceed the limit, or the relocated entry remains over the limit, keep `<domain>.ts` as the entry and nest `<domain>/<sub-domain>.ts` (`FST-MODL-03`).
-5. Are exports unrelated? Split them into their real domain homes (`FST-MODL-01`).
-6. Is this an index or barrel? Apply the barrel boundary and keep logic out (`FST-MODL-02`).
-7. Is the file over `max-lines` after relocation? Use the thin-entry plus helper-directory pattern (`FST-MODL-03`).
-8. Does the application consume environment variables? Add and document the matching example, then preserve override order (`FST-ENVR-01`).
+4. Is a source directory, at any depth, named `lib` where no toolchain requires `lib` as its source root? Rename it to a domain-named or typed directory such as `utilities/`, or move its modules into the feature that uses them; keep `lib` for compiled output (`FST-NAME-04`).
+5. After relocating unrelated concerns, can this coherent concern be merged into `<domain>.ts` without exceeding `max-lines`? If so, create or merge into that file; if an existing `<domain>.ts` makes a separate file impossible and the merge would exceed the limit, or the relocated entry remains over the limit, keep `<domain>.ts` as the entry and nest `<domain>/<sub-domain>.ts` (`FST-MODL-03`).
+6. Are exports unrelated? Split them into their real domain homes (`FST-MODL-01`).
+7. Is this an index or barrel? Apply the barrel boundary and keep logic out (`FST-MODL-02`).
+8. Is the file over `max-lines` after relocation? Use the thin-entry plus helper-directory pattern (`FST-MODL-03`).
+9. Does the application consume environment variables? Add and document the matching example, then preserve override order (`FST-ENVR-01`).

@@ -56,3 +56,4 @@ src/
 - `RPS-COMPS-02` — shared UI lives in `src/components/<bucket>/`
 - `RPS-UTIL-01` — shared logic lives in `src/utilities/`
 - `RPS-LAYOUT-01` — decision order
+- `FST-NAME-04` (`coding:standards/file-structure/write.md`) — `lib` is reserved for compiled output, so a `lib` folder is rejected at any depth, not only under `src/features/`

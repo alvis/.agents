@@ -35,7 +35,7 @@ Select `file-structure`, `universal`, `typescript`, and `documentation` as appli
 
 ## Verification
 
-- Essential files exist: `package.json` (with required fields), a TypeScript config, and `src/` or `lib/` with at least a placeholder entry point.
+- Essential files exist: `package.json` (with required fields), a TypeScript config, and `src/` or `source/` with at least a placeholder entry point.
 - Dependencies resolve when installation was attempted.
 - Structure is consistent with similar projects in the monorepo.
 
