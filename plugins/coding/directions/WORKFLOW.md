@@ -69,5 +69,5 @@ Select every row matching the artifact, read its scan before editing, and apply 
 | Rendered PR messages and implementation-diff size or composition | [Git](../standards/git/scan.md) |
 | Comments, JSDoc, technical documentation, and exported types/APIs requiring documentation | [Documentation](../standards/documentation/scan.md) |
 | Errors, logging, and operational behavior | [Observability](../standards/observability/scan.md) |
-| New or moved files and project setup | [File structure](../standards/file-structure/scan.md) |
+| New, moved, or renamed files and directories, and project setup | [File structure](../standards/file-structure/scan.md) |
 | Semantic review | [Code review](../standards/code-review/scan.md) plus the implementation scans above |

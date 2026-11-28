@@ -23,7 +23,7 @@ Route-local components belong in `src/app/<route>/components/` — not `_compone
 
 ## Edge Cases
 
-- **Other underscore folders** (`_lib/`, `_utils/`): also rename. The constitution does not sanction underscore-prefixed folders. Route-local utilities, when actually needed, can live inline alongside `components/` or be promoted to `src/utilities/`.
+- **Other underscore folders** (`_lib/`, `_utils/`): also rename. The constitution does not sanction underscore-prefixed folders, and `FST-NAME-04` (`coding:standards/file-structure/write.md`) reserves `lib` for compiled output. Route-local utilities, when actually needed, can live inline alongside `components/` or be promoted to `src/utilities/`.
 - **`(group)` folder syntax**: parenthesized route groups are a Next.js routing feature and are allowed.
 
 ## Related

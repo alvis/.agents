@@ -18,7 +18,7 @@ services/user.ts
 repositories/user.ts
 
 // ✅ OK: suffix needed when no typed directory
-lib/token-store.ts
+auth/token-store.ts
 src/user-service.ts
 ```
 

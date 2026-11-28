@@ -16,6 +16,7 @@ This standard enforces requirements beyond common project conventions:
 | Standard Practice | Our Stricter Requirement |
 |---|---|
 | Descriptive multiword filenames | **Name modules for their bounded domain, not their main export, and prefer one specific domain word** |
+| `lib/` as a home for shared source | **`lib` is reserved for compiled or generated output; no source directory is named `lib` at any depth** |
 | Domain collisions and large-file splitting | **Relocate misplaced concerns first, then use a thin `<domain>.ts` entry with a same-base helper directory when a merge would exceed `max-lines`** |
 | Flexible barrel exports | **Barrel-to-barrel exports use subpath aliases; barrel-to-leaf exports are explicit** |
 | Environment samples optional | **Every used environment suffix has a documented `.env.<suffix>.example`** |
@@ -39,6 +40,6 @@ If exception note is missing, submission is rejected.
 
 ## Rule Groups
 
-- `FST-NAME-*`: File casing, domain-derived basenames, path context, and naming exceptions.
+- `FST-NAME-*`: File casing, domain-derived basenames, path context, reserved directory names, and naming exceptions.
 - `FST-MODL-*`: Module cohesion, barrel boundaries, collision-safe nesting, and long-file decomposition.
 - `FST-ENVR-*`: Environment file naming, samples, and override order.

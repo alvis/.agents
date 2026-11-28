@@ -29,7 +29,7 @@ Coherence Mandate: every edit must produce one continuous, deliberate work — r
 
 ## Standards
 
-Select `universal`, `typescript`, `function`, `documentation`, and `naming`, plus `file-structure` when creating or moving files. Apply each as a writer under `essential:directions/standards.md`.
+Select `universal`, `typescript`, `function`, `documentation`, and `naming`, plus `file-structure` when creating, moving, or renaming files or directories. Apply each as a writer under `essential:directions/standards.md`.
 
 ## Workflow
 
