@@ -161,6 +161,7 @@
       "label": "Your shortlist",
       "eyebrow": "One final selection",
       "title": "Which mechanism should we commit to?",
+      "lede": "Commit to the producer adapter: of the four mechanisms compared above, it is the only one that can be undone inside a single sprint, and nothing known yet says which of the other three is right.",
       "blocks": [
         {
           "type": "choice",

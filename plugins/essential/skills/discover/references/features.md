@@ -48,6 +48,7 @@ Fields and rules for the last five live in [the JSON block catalogue](../directi
 
 ## F. Legibility (floor)
 
+- [ ] **The board stands alone** for a reader who has seen nothing else, meeting every part of [its rule](../directions/presentation.md#a-board-stands-alone): codes defined, a visible case beside each question, every member of a group recommendation named, and the background on the board
 - [ ] **A flow is drawn, not narrated**: a section explaining a flow, pipeline, sequence, or state machine carries a diagram — hand-authored SVG where the drawing carries the claim, otherwise a Mermaid figure — with prose as its support, not its substitute
 - [ ] **Column width follows content kind**, chosen by the renderer and never by the author: a `variants` block draws `wide` when a panel holds code or a figure and `prose` otherwise. The widths, and what each is derived from, are in `scripts/render-page/style/variants.ts`
 - [ ] Body text sits inside a readable measure (~45–75ch) at every breakpoint
@@ -68,6 +69,8 @@ Fields and rules for the last five live in [the JSON block catalogue](../directi
 | Board-set block, hidden below two entries, marking exactly the current board | `scripts/render-page/set.spec.ts` |
 | Every authored value escaped; no HTML pass-through | `scripts/render-page/escape.ts`, exercised by every block spec |
 | Unknown or malformed data refused by name, with its JSON path | `scripts/render-page/validate.ts` and `validate`'s callers, spec'd per block |
+| A `choice` or `decision` reached before its case: no section `lede` and no visible non-question block ahead of it | `scripts/render-page/section.ts`, spec'd in `section.spec.ts` |
+| Every code defined, every item's case beside it, every group member listed, the background on the board | the cold-read pass in the skill's Verification; no check reads it from the data, because a code and an ordinary word share a shape |
 | Dual-theme completeness | the author's: `theme` overrides no token by default, and nothing checks the contrast a board reaches once it does |
 | Self-containment — zero network subresources, in every board, including inside a packed `srcdoc` | `scripts/examples.spec.ts` |
 | Every block type and every inline run kind reaches a board | `scripts/examples.spec.ts`, which reads both vocabularies from source rather than from a list |

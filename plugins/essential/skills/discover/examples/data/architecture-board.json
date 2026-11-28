@@ -473,6 +473,7 @@
       "label": "Your input",
       "eyebrow": "Your decision",
       "title": "How locked is this architecture before build?",
+      "lede": "Build to the decisions already approved and leave the two open items flagged: both need load data that only a partial build can produce, so holding the build for them would be a deadlock.",
       "blocks": [
         {
           "type": "choice",

@@ -258,6 +258,7 @@
       "eyebrow": "Your decision",
       "label": "Launch gate",
       "title": "What must be true before the first cohort?",
+      "lede": "No customer sees generated prose until the revocation and replay probes pass, because a reply that reaches a customer record and cannot be withdrawn is the one risk no later gate recovers.",
       "blocks": [
         {
           "type": "checklist",

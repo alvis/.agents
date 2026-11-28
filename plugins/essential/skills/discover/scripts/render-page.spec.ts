@@ -88,6 +88,7 @@ function choicePage(
         id: "s",
         label: "S",
         title: "T",
+        lede: CASE,
         blocks: [
           { type: "choice", id: "c", ref: "Q2", label: "C", ask: "A", choices: [choice], ...overrides },
         ],
@@ -221,6 +222,12 @@ function declarations(css: string): string[] {
 
 /** the kinds a refusal quotes, in the order it quotes them. */
 const QUOTED_KINDS = PAGE_KINDS.map((kind) => JSON.stringify(kind)).join(", ");
+
+/**
+ * the lede a fixture section carries so its questions arrive after their case,
+ * which the renderer refuses a choice or decision without
+ */
+const CASE = "Why the board asks.";
 
 describe("fn:renderPage", () => {
   it("should emit a self-contained page with no external resource", async () => {
@@ -659,6 +666,7 @@ describe("fn:renderPage", () => {
             id: "s",
             label: "S",
             title: "T",
+            lede: CASE,
             blocks: [
               {
                 type: "choice",
@@ -885,6 +893,7 @@ describe("fn:renderPage", () => {
             id: "s",
             label: "S",
             title: "T",
+            lede: CASE,
             blocks: [
               note("c-opt-0", "N1"),
               note("c-opt-0-summary", "N2"),
@@ -1217,7 +1226,7 @@ describe("fn:renderPage kinds", () => {
 
 /** wraps blocks in the one section the validation tests address by path. */
 function withBlocks(...blocks: Block[]): Partial<PageData> {
-  return { sections: [{ id: "s", label: "S", title: "T", blocks }] };
+  return { sections: [{ id: "s", label: "S", title: "T", lede: CASE, blocks }] };
 }
 
 describe("fn:renderPage validation floor", () => {
@@ -2059,6 +2068,7 @@ describe("fn:renderPage single-reply round trip", () => {
         id: "s",
         label: "S",
         title: "T",
+        lede: CASE,
         blocks: [
           NEW_BLOCKS.checklist,
           NEW_BLOCKS.scale,
@@ -2147,6 +2157,7 @@ describe("fn:renderPage questions inside a container", () => {
         id: "s",
         label: "S",
         title: "T",
+        lede: CASE,
         blocks: [
           { type: "note", id: "before", ref: "Q1", label: "Before", ask: "A" },
           { type: "disclosure", summary: "Working", blocks: [NEW_BLOCKS.decision] },
@@ -2196,6 +2207,7 @@ describe("fn:renderPage questions inside a variant", () => {
         id: "s",
         label: "S",
         title: "T",
+        lede: CASE,
         // the section opens with the comparison, so every question it asks is
         // nested and none is among its leading top-level blocks
         blocks: [
